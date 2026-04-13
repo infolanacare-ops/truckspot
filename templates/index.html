@@ -723,6 +723,7 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
     <div class="menu-item" onclick="drawerAction('all')"><div class="menu-icon">🗺</div><span class="menu-label" data-i="menu_all">All parkings</span></div>
     <div class="menu-item" onclick="drawerAction('search')"><div class="menu-icon">🔍</div><span class="menu-label" data-i="menu_search">Search</span></div>
     <div class="menu-item" onclick="drawerAction('markets')"><div class="menu-icon" style="background:rgba(249,115,22,.12);border-color:#f97316">🛍</div><span class="menu-label" data-i="menu_markets">Flohmarkt / Markets</span><span class="menu-badge" id="markets-badge" style="display:none">ON</span></div>
+    <div class="menu-item" onclick="drawerAction('autobahn')"><div class="menu-icon" style="background:rgba(0,100,200,.12);border-color:#0064c8">🇩🇪</div><span class="menu-label">Autobahn DE (oficjalne MOP)</span><span class="menu-badge" id="autobahn-badge" style="display:none">ON</span></div>
     <div class="menu-sep"></div>
     <div class="menu-section" data-i="sec_community">Community</div>
     <div class="menu-item" onclick="drawerAction('add')"><div class="menu-icon" style="background:rgba(139,92,246,.12);border-color:#8b5cf6">＋</div><span class="menu-label" data-i="menu_add">Add a spot</span><span class="menu-badge">+10 pts</span></div>
@@ -1326,6 +1327,7 @@ function drawerAction(action){
     if(action==='nearby') findNearest();
     else if(action==='route') openRoute();
     else if(action==='markets') toggleMarkets();
+    else if(action==='autobahn') toggleAutobahn();
     else if(action==='all') map.setView([51.5,12.0],5);
     else if(action==='add') startAddMode();
     else if(action==='search') openSearch();
@@ -2273,6 +2275,68 @@ function stopNavigation(){
 }
 
 // ══════════════════════════════════════
+// AUTOBAHN DE
+// ══════════════════════════════════════
+let autobahnVisible = false;
+let autobahnMarkers = [];
+
+function toggleAutobahn(){
+  if(autobahnVisible){ hideAutobahn(); }
+  else { loadAndShowAutobahn(); }
+}
+
+function loadAndShowAutobahn(){
+  const b = map.getBounds();
+  const params = new URLSearchParams({
+    south: b.getSouth().toFixed(4), west: b.getWest().toFixed(4),
+    north: b.getNorth().toFixed(4), east: b.getEast().toFixed(4),
+  });
+  showAlert('🇩🇪','Autobahn DE','Pobieranie danych MOP…');
+  fetch('/api/autobahn-parkings?'+params)
+    .then(r=>r.json())
+    .then(data=>{
+      autobahnMarkers.forEach(m=>map.removeLayer(m)); autobahnMarkers=[];
+      autobahnVisible = true;
+      document.getElementById('autobahn-badge').style.display='';
+      data.forEach(p=>{
+        const icon = L.divIcon({className:'',
+          html:'<div class="mk" style="background:#0064c8;font-size:.7rem">🇩🇪</div>',
+          iconSize:[38,38],iconAnchor:[19,38]});
+        const mk = L.marker([p.lat,p.lng],{icon}).addTo(map)
+          .on('click',()=>showAutobahnDetail(p));
+        autobahnMarkers.push(mk);
+      });
+      showAlert('🇩🇪','Autobahn DE', data.length+' MOP załadowane (źródło: autobahn.de)');
+    })
+    .catch(()=>showAlert('⚠️','','Błąd pobierania danych Autobahn'));
+}
+
+function hideAutobahn(){
+  autobahnVisible = false;
+  document.getElementById('autobahn-badge').style.display='none';
+  autobahnMarkers.forEach(m=>map.removeLayer(m)); autobahnMarkers=[];
+}
+
+function showAutobahnDetail(p){
+  const amenHtml = (p.amenities||[]).map(a=>`<span class="amenity">${AMENITY_LABELS[a]||a}</span>`).join('');
+  document.getElementById('panel-content').innerHTML=`
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem">
+      <div class="panel-name" style="flex:1">🇩🇪 ${p.name}</div>
+      <span style="font-size:.65rem;background:rgba(0,100,200,.15);color:#0064c8;border-radius:8px;padding:.15rem .45rem;font-weight:700">${p.road}</span>
+    </div>
+    <div class="panel-addr">📍 ${p.subtitle||'Autostrada '+p.road} · Niemcy</div>
+    ${amenHtml?`<div class="amenities">${amenHtml}</div>`:''}
+    ${p.desc_html?`<div style="font-size:.79rem;color:var(--muted);margin:.6rem 0;line-height:1.5">${p.desc_html}</div>`:''}
+    <div style="font-size:.7rem;color:var(--muted);margin:.5rem 0">
+      📡 Dane: <a href="https://autobahn.api.bund.dev" target="_blank" style="color:var(--blue)">Autobahn GmbH / Bundesministerium (oficjalne)</a>
+    </div>
+    ${occWidgetHtml(p.id)}
+    <button class="nav-btn" onclick="navigateTo(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')">📍 Navigate — Google Maps</button>`;
+  document.getElementById('detail-panel').classList.add('open');
+  map.panTo([p.lat,p.lng]);
+  loadOccupancy(p.id);
+}
+
 // MARKETS (FLOHMARKT)
 // ══════════════════════════════════════
 let marketsVisible = false;

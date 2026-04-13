@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import os, json, secrets, requests as _requests
+import os, json, secrets, time, requests as _requests
 from flask import Flask, render_template, request, jsonify, send_from_directory
 
 app = Flask(__name__)
@@ -12,6 +12,17 @@ SPOTS_PATH      = os.path.join(DATA_DIR, "spots.json")
 MARKETS_PATH    = os.path.join(DATA_DIR, "markets.json")
 COMMENTS_PATH   = os.path.join(DATA_DIR, "comments.json")
 OCCUPANCY_PATH  = os.path.join(DATA_DIR, "occupancy.json")
+
+# ── Autobahn GmbH cache (in-memory, TTL=10 min) ──────────────────────────────
+_AUTOBAHN_CACHE = {}          # road_id -> (timestamp, data)
+_AUTOBAHN_TTL   = 600         # seconds
+_AUTOBAHN_ROADS = [
+    "A1","A2","A3","A4","A5","A6","A7","A8","A9",
+    "A10","A13","A14","A17","A19","A20","A24","A27","A28","A29","A30",
+    "A31","A33","A38","A39","A40","A42","A43","A44","A45","A46",
+    "A57","A59","A61","A63","A65","A66","A67","A70","A71","A72","A73",
+    "A93","A94","A95","A96","A98","A99",
+]
 
 os.makedirs(DATA_DIR, exist_ok=True)
 if not os.path.exists(SPOTS_PATH):
@@ -92,6 +103,79 @@ def api_spots_post():
     with open(SPOTS_PATH, "w", encoding="utf-8") as f:
         json.dump(spots, f, ensure_ascii=False, indent=2)
     return jsonify({"ok": True, "id": new_id}), 201
+
+@app.route("/api/autobahn-parkings")
+def api_autobahn_parkings():
+    """Pobiera parkingi TIR z oficjalnego API Autobahn GmbH (rząd DE, bezpłatne)."""
+    south = request.args.get("south", type=float, default=47.0)
+    west  = request.args.get("west",  type=float, default=5.8)
+    north = request.args.get("north", type=float, default=55.1)
+    east  = request.args.get("east",  type=float, default=15.1)
+
+    now = time.time()
+    results = []
+    for road in _AUTOBAHN_ROADS:
+        # Serve from cache if fresh
+        cached = _AUTOBAHN_CACHE.get(road)
+        if cached and now - cached[0] < _AUTOBAHN_TTL:
+            road_data = cached[1]
+        else:
+            try:
+                r = _requests.get(
+                    f"https://verkehr.autobahn.de/o/autobahn/{road}/services/parking_lorry",
+                    timeout=8, headers={"Accept": "application/json"}
+                )
+                if r.status_code != 200:
+                    continue
+                road_data = r.json().get("parking", [])
+                _AUTOBAHN_CACHE[road] = (now, road_data)
+            except Exception:
+                continue
+
+        for p in road_data:
+            try:
+                lat = float(p["coordinate"]["lat"])
+                lng = float(p["coordinate"]["long"])
+            except (KeyError, ValueError, TypeError):
+                continue
+            # Bbox filter
+            if not (south <= lat <= north and west <= lng <= east):
+                continue
+
+            # Parse capacity/occupancy from description array
+            desc_texts = [d.get("value","") for d in p.get("description",[]) if d.get("type")=="default"]
+            desc_html  = " ".join(desc_texts)
+
+            # Feature icons → amenities
+            icons = [i.get("icon","") for i in p.get("lorryParkingFeatureIcons",[])]
+            amenities = []
+            icon_map = {
+                "TOILETTEBLAU": "toilet", "RASTSTAETTEBLAU": "restaurant",
+                "TANKSTELLEBLAU": "fuel",  "LKWWASCHEBLAU": "truck_wash",
+                "WIFIBLAU": "wifi",        "DUSCHBLAU": "shower",
+                "PARKPLATZLKWBLAU": "secured",
+            }
+            for icon in icons:
+                if icon in icon_map:
+                    amenities.append(icon_map[icon])
+
+            results.append({
+                "id":        f"ab_{road}_{p.get('identifier','')[:20]}",
+                "name":      p.get("title", f"MOP {road}"),
+                "subtitle":  p.get("subtitle",""),
+                "lat":       lat,
+                "lng":       lng,
+                "country":   "DE",
+                "road":      road,
+                "type":      ["tir"],
+                "amenities": amenities,
+                "desc_html": desc_html[:400],
+                "source":    "autobahn_de",
+                "url":       f"https://www.autobahn.de/service/parken/",
+            })
+
+    return jsonify(results)
+
 
 @app.route("/api/osm-parkings")
 def api_osm_parkings():
