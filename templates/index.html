@@ -154,6 +154,58 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
   background:var(--accent);}
 .mk span{transform:rotate(45deg);font-size:1.05rem;line-height:1}
 
+/* ── RADIO PLAYER ── */
+.radio-bar{
+  flex-shrink:0;background:#fff;border-top:1px solid var(--border);
+  padding:.4rem .8rem;display:flex;align-items:center;gap:.6rem;
+  box-shadow:0 -2px 8px var(--shadow);
+}
+.radio-btn{
+  width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#000;font-size:1rem;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.15);
+}
+.radio-info{flex:1;min-width:0}
+.radio-name{font-size:.78rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.radio-status{font-size:.65rem;color:var(--muted)}
+.radio-prev,.radio-next{
+  width:28px;height:28px;border-radius:50%;border:1px solid var(--border);
+  background:var(--panel2);cursor:pointer;font-size:.8rem;
+  display:flex;align-items:center;justify-content:center;color:var(--muted);
+}
+.radio-vol{width:55px;accent-color:var(--accent)}
+
+/* ── ALERT TOAST ── */
+.alert-toast{
+  position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-120px);
+  z-index:1500;
+  background:#fff;border-left:4px solid var(--accent);
+  border-radius:14px;padding:.7rem 1rem;
+  box-shadow:0 8px 32px rgba(0,0,0,.18);
+  display:flex;align-items:center;gap:.7rem;
+  max-width:320px;width:90%;
+  transition:transform .4s cubic-bezier(.34,1.56,.64,1);
+  pointer-events:none;
+}
+.alert-toast.show{transform:translateX(-50%) translateY(0);pointer-events:auto}
+.alert-icon{font-size:1.6rem;flex-shrink:0}
+.alert-text{flex:1;min-width:0}
+.alert-title{font-size:.8rem;font-weight:700;color:var(--text)}
+.alert-desc{font-size:.72rem;color:var(--muted);margin-top:.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.alert-close{background:none;border:none;color:var(--muted);font-size:1rem;cursor:pointer;flex-shrink:0}
+
+/* ── GPS DOT na mapie ── */
+.gps-dot{
+  width:16px;height:16px;background:#3b82f6;border-radius:50%;
+  border:3px solid #fff;box-shadow:0 0 0 4px rgba(59,130,246,.3);
+  animation:pulse-gps 2s infinite;
+}
+@keyframes pulse-gps{
+  0%,100%{box-shadow:0 0 0 4px rgba(59,130,246,.3)}
+  50%{box-shadow:0 0 0 10px rgba(59,130,246,.08)}
+}
+
 /* desktop — wyśrodkuj ekran powitalny */
 @media(min-width:600px){
   #welcome{background:linear-gradient(160deg,#e8f0fe 0%,#f0f4f8 100%)}
@@ -211,6 +263,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
     <span class="topbar-icon" id="topbar-icon">🚛</span>
     <span class="topbar-title" id="topbar-title">TruckSpot</span>
     <span class="topbar-mode" id="topbar-mode">TIR</span>
+    <button class="back-btn" onclick="toggleGps()" id="gps-btn" title="GPS alerty">📍</button>
     <button class="back-btn" onclick="goBack()">← Zmień</button>
   </div>
   <div id="map"></div>
@@ -219,6 +272,27 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
     <div class="stat-item"><span class="stat-val" id="cnt-free">–</span><span class="stat-lbl">bezpłatnych</span></div>
     <div class="stat-item"><span class="stat-val" id="cnt-shower">–</span><span class="stat-lbl">z prysznicem</span></div>
   </div>
+  <!-- RADIO -->
+  <div class="radio-bar" id="radio-bar">
+    <button class="radio-prev" onclick="radioPrev()">‹</button>
+    <button class="radio-btn" id="radio-play-btn" onclick="radioToggle()">▶</button>
+    <button class="radio-next" onclick="radioNext()">›</button>
+    <div class="radio-info">
+      <div class="radio-name" id="radio-name">📻 Wybierz stację</div>
+      <div class="radio-status" id="radio-status">Naciśnij ▶ aby słuchać</div>
+    </div>
+    <input type="range" class="radio-vol" id="radio-vol" min="0" max="1" step="0.05" value="0.7" oninput="radioVolume(this.value)">
+  </div>
+</div>
+
+<!-- ══ ALERT TOAST ══ -->
+<div class="alert-toast" id="alert-toast">
+  <div class="alert-icon" id="alert-icon">📍</div>
+  <div class="alert-text">
+    <div class="alert-title" id="alert-title">Miejsce w pobliżu!</div>
+    <div class="alert-desc" id="alert-desc">–</div>
+  </div>
+  <button class="alert-close" onclick="closeAlert()">✕</button>
 </div>
 
 <!-- ══ DETAIL PANEL ══ -->
@@ -423,6 +497,141 @@ function hexAlpha(hex, alpha){
   const g=parseInt(hex.slice(3,5),16);
   const b=parseInt(hex.slice(5,7),16);
   return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function haversineKm(lat1,lon1,lat2,lon2){
+  const R=6371, dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+// ── RADIO ────────────────────────────────────────────────
+const STATIONS = [
+  {name:'🇵🇱 RMF FM',        url:'https://rmf.fm/stream/rmf_fm_aac'},
+  {name:'🇵🇱 Radio ZET',      url:'https://player.radiozet.pl/play.m3u8'},
+  {name:'🇵🇱 Eska Rock',      url:'https://ic1.smcdn.pl/2330-1.mp3'},
+  {name:'🇩🇪 Antenne Bayern',  url:'https://s6-webradio.antenne.de/antenne'},
+  {name:'🇩🇪 Bayern 3',        url:'https://dispatcher.rndfnk.com/br/br3/live/mp3/low'},
+  {name:'🇩🇪 Radio Hamburg',   url:'https://stream.radiohamburg.de/rhh-live/mp3-128/radioplayer'},
+  {name:'🌍 Truck Radio EU',   url:'https://stream.truckradio.eu/truckradio128'},
+  {name:'🎸 Rock Classics',    url:'https://streams.radiobob.de/rock-classics/mp3-128/dirble'},
+  {name:'🎵 Energy Dance',     url:'https://stream.energy.de/200000'},
+];
+let radioIdx = 0;
+let radioAudio = null;
+let radioPlaying = false;
+
+function radioToggle(){
+  if(!radioAudio){
+    radioAudio = new Audio();
+    radioAudio.volume = parseFloat(document.getElementById('radio-vol').value);
+  }
+  if(radioPlaying){
+    radioAudio.pause();
+    radioAudio.src = '';
+    radioPlaying = false;
+    document.getElementById('radio-play-btn').textContent = '▶';
+    document.getElementById('radio-status').textContent = 'Zatrzymano';
+  } else {
+    radioLoad(radioIdx);
+  }
+}
+
+function radioLoad(idx){
+  if(!radioAudio) radioAudio = new Audio();
+  radioAudio.volume = parseFloat(document.getElementById('radio-vol').value);
+  const s = STATIONS[idx];
+  document.getElementById('radio-name').textContent   = s.name;
+  document.getElementById('radio-status').textContent = '⏳ Łączenie...';
+  document.getElementById('radio-play-btn').textContent = '■';
+  radioAudio.src = s.url;
+  radioAudio.play()
+    .then(()=>{ radioPlaying=true; document.getElementById('radio-status').textContent='▶ Na żywo'; document.getElementById('radio-play-btn').textContent='■'; })
+    .catch(()=>{ document.getElementById('radio-status').textContent='⚠ Błąd — spróbuj innej'; radioPlaying=false; document.getElementById('radio-play-btn').textContent='▶'; });
+}
+
+function radioPrev(){ radioIdx=(radioIdx-1+STATIONS.length)%STATIONS.length; if(radioPlaying||true) radioLoad(radioIdx); }
+function radioNext(){ radioIdx=(radioIdx+1)%STATIONS.length; radioLoad(radioIdx); }
+function radioVolume(v){ if(radioAudio) radioAudio.volume=parseFloat(v); }
+
+// ── GPS ALERTY ────────────────────────────────────────────
+let gpsActive = false;
+let gpsWatchId = null;
+let gpsMarker = null;
+let alertedIds = new Set();
+const ALERT_RADIUS_KM = 5; // alert gdy <5km
+
+function toggleGps(){
+  if(gpsActive){ stopGps(); } else { startGps(); }
+}
+
+function startGps(){
+  if(!navigator.geolocation){ showAlert('❌','GPS niedostępny','Twoja przeglądarka nie obsługuje GPS'); return; }
+  gpsActive = true;
+  document.getElementById('gps-btn').textContent = '🔵';
+  document.getElementById('gps-btn').title = 'GPS aktywny — kliknij aby wyłączyć';
+  gpsWatchId = navigator.geolocation.watchPosition(onGpsUpdate, onGpsError, {
+    enableHighAccuracy:true, maximumAge:10000, timeout:15000
+  });
+  showAlert('📍','GPS włączony','Będziesz powiadamiany o ciekawych miejscach w pobliżu');
+}
+
+function stopGps(){
+  gpsActive = false;
+  if(gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
+  if(gpsMarker) map.removeLayer(gpsMarker);
+  gpsMarker = null;
+  alertedIds.clear();
+  document.getElementById('gps-btn').textContent = '📍';
+  document.getElementById('gps-btn').title = 'GPS alerty';
+}
+
+function onGpsUpdate(pos){
+  const {latitude:lat, longitude:lng} = pos.coords;
+
+  // aktualizuj znacznik pozycji
+  const dotIcon = L.divIcon({className:'',html:'<div class="gps-dot"></div>',iconSize:[16,16],iconAnchor:[8,8]});
+  if(!gpsMarker){
+    gpsMarker = L.marker([lat,lng],{icon:dotIcon,zIndexOffset:1000}).addTo(map);
+  } else {
+    gpsMarker.setLatLng([lat,lng]);
+  }
+
+  // sprawdź pobliskie miejsca
+  allParkings.forEach(p=>{
+    const dist = haversineKm(lat,lng,p.lat,p.lng);
+    if(dist <= ALERT_RADIUS_KM && !alertedIds.has(p.id)){
+      alertedIds.add(p.id);
+      const cfg = MODE_CONFIG[currentMode];
+      const distTxt = dist < 1 ? `${Math.round(dist*1000)} m` : `${dist.toFixed(1)} km`;
+      showAlert(cfg.markerEmoji, `${p.name}`, `${distTxt} od Ciebie · ${p.city}`, p);
+    }
+  });
+}
+
+function onGpsError(err){
+  showAlert('⚠️','Błąd GPS', err.message||'Nie można pobrać lokalizacji');
+}
+
+// ── ALERT TOAST ───────────────────────────────────────────
+let alertTimer = null;
+let alertParking = null;
+
+function showAlert(icon, title, desc, parking=null){
+  alertParking = parking;
+  document.getElementById('alert-icon').textContent  = icon;
+  document.getElementById('alert-title').textContent = title;
+  document.getElementById('alert-desc').textContent  = desc;
+  const toast = document.getElementById('alert-toast');
+  toast.classList.add('show');
+  // kliknięcie w toast otwiera detal
+  toast.onclick = (e)=>{ if(e.target.className==='alert-close') return; if(alertParking) showDetail(alertParking); closeAlert(); };
+  clearTimeout(alertTimer);
+  alertTimer = setTimeout(closeAlert, 7000);
+}
+
+function closeAlert(){
+  document.getElementById('alert-toast').classList.remove('show');
 }
 
 // ── PWA ──────────────────────────────────────────────────
