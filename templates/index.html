@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0d1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>TruckSpot — Parkingi dla kierowców i turystów</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--panel:#161b22;--panel2:#21262d;--border:#30363d;
+  --text:#e6edf3;--muted:#7d8590;
+  --tir:#f59e0b;--camper:#10b981;--tourist:#3b82f6;
+  --accent:#f59e0b;--red:#ef4444;--green:#10b981;
+  --font:'Inter',sans-serif;--font-head:'Montserrat',sans-serif;
+}
+html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--text);overflow:hidden}
+
+/* ── TOPBAR ── */
+.topbar{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  background:rgba(13,17,23,.95);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:.6rem 1rem;display:flex;align-items:center;gap:.75rem;
+}
+.logo{font-family:var(--font-head);font-size:1.05rem;font-weight:800;white-space:nowrap;
+  background:linear-gradient(90deg,var(--tir),#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.mode-btns{display:flex;gap:.4rem;flex:1;justify-content:center}
+.mode-btn{
+  display:flex;align-items:center;gap:.3rem;padding:.35rem .7rem;border-radius:20px;
+  font-size:.78rem;font-weight:600;border:1.5px solid var(--border);background:var(--panel2);
+  color:var(--muted);cursor:pointer;transition:.15s;white-space:nowrap;
+}
+.mode-btn.active-tir   {border-color:var(--tir);   color:var(--tir);   background:rgba(245,158,11,.1)}
+.mode-btn.active-camper{border-color:var(--camper);color:var(--camper);background:rgba(16,185,129,.1)}
+.mode-btn.active-tourist{border-color:var(--tourist);color:var(--tourist);background:rgba(59,130,246,.1)}
+.mode-btn.active-all   {border-color:var(--text);  color:var(--text);  background:rgba(255,255,255,.07)}
+
+/* ── MAP ── */
+#map{position:fixed;top:56px;left:0;right:0;bottom:0;z-index:1}
+
+/* ── STATS BAR ── */
+.stats-bar{
+  position:fixed;bottom:0;left:0;right:0;z-index:900;
+  background:rgba(13,17,23,.92);backdrop-filter:blur(10px);
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-around;
+  padding:.5rem 1rem;font-size:.75rem;color:var(--muted);
+}
+.stat-item{display:flex;flex-direction:column;align-items:center;gap:.1rem}
+.stat-val{font-family:var(--font-head);font-size:1rem;font-weight:800;color:var(--text)}
+.stat-val.tir   {color:var(--tir)}
+.stat-val.camper{color:var(--camper)}
+.stat-val.tourist{color:var(--tourist)}
+
+/* ── DETAIL PANEL ── */
+.detail-panel{
+  position:fixed;bottom:0;left:0;right:0;z-index:950;
+  background:var(--panel);border-top:1px solid var(--border);
+  border-radius:20px 20px 0 0;
+  padding:1rem 1rem 1.5rem;
+  transform:translateY(100%);transition:transform .3s ease;
+  max-height:75vh;overflow-y:auto;
+}
+.detail-panel.open{transform:translateY(0)}
+.panel-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto .75rem}
+.panel-close{position:absolute;top:.75rem;right:1rem;background:var(--panel2);border:none;color:var(--muted);border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center}
+.panel-name{font-family:var(--font-head);font-size:1.1rem;font-weight:800;margin-bottom:.2rem}
+.panel-city{color:var(--muted);font-size:.82rem;margin-bottom:.9rem}
+
+.type-badges{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.8rem}
+.badge{padding:.2rem .6rem;border-radius:20px;font-size:.7rem;font-weight:700;border:1px solid}
+.badge-tir    {color:var(--tir);   border-color:var(--tir);   background:rgba(245,158,11,.1)}
+.badge-camper {color:var(--camper);border-color:var(--camper);background:rgba(16,185,129,.1)}
+.badge-tourist{color:var(--tourist);border-color:var(--tourist);background:rgba(59,130,246,.1)}
+
+.amenities{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.9rem}
+.amenity{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:.25rem .55rem;font-size:.72rem;color:var(--text)}
+
+.spots-row{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.9rem}
+.spot-box{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:.6rem .8rem;text-align:center}
+.spot-num{font-family:var(--font-head);font-size:1.3rem;font-weight:800}
+.spot-lbl{font-size:.67rem;color:var(--muted);margin-top:.1rem}
+
+.rating-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.9rem;font-size:.82rem}
+.stars{color:#fbbf24;font-size:.9rem}
+.price-tag{margin-left:auto;font-weight:700;color:var(--green)}
+
+.poi-section h4{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:.5rem}
+.poi-list{display:flex;flex-direction:column;gap:.35rem}
+.poi-item{display:flex;align-items:center;gap:.6rem;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:.45rem .65rem;font-size:.8rem}
+.poi-icon{font-size:1rem;flex-shrink:0}
+.poi-name{flex:1;font-weight:500}
+.poi-dist{color:var(--muted);font-size:.72rem;white-space:nowrap}
+
+.nav-btn{
+  display:flex;align-items:center;justify-content:center;gap:.5rem;
+  margin-top:.9rem;width:100%;padding:.75rem;border:none;border-radius:12px;
+  font-family:var(--font-head);font-weight:800;font-size:.9rem;cursor:pointer;
+  background:linear-gradient(135deg,var(--tir),#fbbf24);color:#000;transition:.15s;
+}
+.nav-btn:hover{opacity:.9}
+
+/* ── LEAFLET MARKER OVERRIDES ── */
+.marker-tir    .marker-inner{background:var(--tir)}
+.marker-camper .marker-inner{background:var(--camper)}
+.marker-tourist .marker-inner{background:var(--tourist)}
+.marker-inner{
+  width:36px;height:36px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);
+  display:flex;align-items:center;justify-content:center;
+  border:3px solid rgba(255,255,255,.3);box-shadow:0 2px 8px rgba(0,0,0,.4);
+}
+.marker-inner span{transform:rotate(45deg);font-size:1rem}
+
+/* ── COUNTRY FILTER ── */
+.country-filter{display:flex;gap:.35rem;flex-wrap:wrap;padding:.5rem 1rem;
+  background:rgba(13,17,23,.9);border-bottom:1px solid var(--border);
+  position:fixed;top:56px;left:0;right:0;z-index:999;overflow-x:auto}
+.country-btn{padding:.2rem .55rem;border-radius:12px;font-size:.72rem;font-weight:600;
+  border:1px solid var(--border);background:var(--panel2);color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0}
+.country-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(245,158,11,.1)}
+
+/* ── MAP z country bar ── */
+.has-country #map{top:94px}
+.has-country .stats-bar{display:none}
+
+@media(max-width:480px){
+  .topbar{padding:.5rem .75rem}
+  .logo{font-size:.9rem}
+  .mode-btn{padding:.28rem .5rem;font-size:.72rem}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="logo">🚛 TruckSpot</div>
+  <div class="mode-btns">
+    <button class="mode-btn active-all" data-mode="" onclick="setMode(this,'')">🗺 Wszystkie</button>
+    <button class="mode-btn" data-mode="tir" onclick="setMode(this,'tir')">🚛 TIR</button>
+    <button class="mode-btn" data-mode="camper" onclick="setMode(this,'camper')">🚐 Camper</button>
+    <button class="mode-btn" data-mode="tourist" onclick="setMode(this,'tourist')">🧳 Turysta</button>
+  </div>
+</header>
+
+<!-- MAP -->
+<div id="map"></div>
+
+<!-- STATS BAR -->
+<div class="stats-bar" id="stats-bar">
+  <div class="stat-item"><span class="stat-val tir" id="cnt-tir">–</span><span>TIR</span></div>
+  <div class="stat-item"><span class="stat-val camper" id="cnt-camper">–</span><span>Camper</span></div>
+  <div class="stat-item"><span class="stat-val tourist" id="cnt-tourist">–</span><span>Turysta</span></div>
+  <div class="stat-item"><span class="stat-val" id="cnt-all">–</span><span>Razem</span></div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div class="detail-panel" id="detail-panel">
+  <div class="panel-handle"></div>
+  <button class="panel-close" onclick="closePanel()">✕</button>
+  <div id="panel-content"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ── MAP INIT ─────────────────────────────────────────────
+const map = L.map('map', {zoomControl:false}).setView([51.5, 12.0], 5);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+  attribution:'&copy; OpenStreetMap &copy; CARTO',maxZoom:19
+}).addTo(map);
+L.control.zoom({position:'bottomright'}).addTo(map);
+
+// ── STATE ─────────────────────────────────────────────────
+let currentMode = '';
+let allParkings = [];
+let markers = [];
+
+// ── ICONS ─────────────────────────────────────────────────
+const ICONS = {
+  tir:     {emoji:'🚛', cls:'marker-tir'},
+  camper:  {emoji:'🚐', cls:'marker-camper'},
+  tourist: {emoji:'🧳', cls:'marker-tourist'},
+  default: {emoji:'🅿️', cls:'marker-tir'},
+};
+
+function getIcon(parking){
+  const types = parking.type || [];
+  let key = 'default';
+  if (types.includes('tir'))     key = 'tir';
+  if (currentMode && types.includes(currentMode)) key = currentMode;
+  const ic = ICONS[key];
+  return L.divIcon({
+    className: ic.cls,
+    html: `<div class="marker-inner"><span>${ic.emoji}</span></div>`,
+    iconSize:[36,36],iconAnchor:[18,36],popupAnchor:[0,-36]
+  });
+}
+
+// ── LOAD PARKINGS ─────────────────────────────────────────
+function loadParkings(mode=''){
+  fetch(`/api/parkings?mode=${mode}`)
+    .then(r=>r.json())
+    .then(data=>{
+      allParkings = data;
+      renderMarkers(data);
+      updateStats(data);
+    });
+}
+
+function renderMarkers(parkings){
+  markers.forEach(m=>map.removeLayer(m));
+  markers = [];
+  parkings.forEach(p=>{
+    const m = L.marker([p.lat, p.lng], {icon: getIcon(p)})
+      .addTo(map)
+      .on('click', ()=>showDetail(p));
+    markers.push(m);
+  });
+}
+
+function updateStats(parkings){
+  const tirCount     = parkings.filter(p=>p.type.includes('tir')).length;
+  const camperCount  = parkings.filter(p=>p.type.includes('camper')).length;
+  const touristCount = parkings.filter(p=>p.type.includes('tourist')).length;
+  document.getElementById('cnt-tir').textContent     = tirCount;
+  document.getElementById('cnt-camper').textContent  = camperCount;
+  document.getElementById('cnt-tourist').textContent = touristCount;
+  document.getElementById('cnt-all').textContent     = parkings.length;
+}
+
+// ── MODE SWITCH ───────────────────────────────────────────
+function setMode(btn, mode){
+  currentMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.className='mode-btn');
+  const cls = mode ? `active-${mode}` : 'active-all';
+  btn.classList.add(cls);
+  loadParkings(mode);
+}
+
+// ── DETAIL PANEL ──────────────────────────────────────────
+const AMENITY_LABELS = {
+  shower:     '🚿 Prysznic',
+  restaurant: '🍴 Restauracja',
+  shop:       '🛒 Sklep',
+  wifi:       '📶 WiFi',
+  electricity:'⚡ Prąd',
+  water:      '🚰 Woda',
+  toilet:     '🚽 Toaleta',
+  truck_wash: '🧼 Myjnia TIR',
+  repair:     '🔧 Serwis',
+  pool:       '🏊 Basen',
+};
+
+const POI_ICONS = {
+  attraction: '🏛',
+  shop:       '🛒',
+  restaurant: '🍴',
+  nature:     '🌲',
+  fuel:       '⛽',
+  city:       '🏙',
+  default:    '📍',
+};
+
+function starsHtml(rating){
+  const full = Math.floor(rating);
+  const half = rating - full >= 0.5;
+  let s = '★'.repeat(full);
+  if(half) s += '½';
+  return s + ` ${rating.toFixed(1)}`;
+}
+
+function typeBadges(types){
+  return types.map(t=>`<span class="badge badge-${t}">${t==='tir'?'🚛 TIR':t==='camper'?'🚐 Camper':'🧳 Turysta'}</span>`).join('');
+}
+
+function showDetail(p){
+  const amenitiesHtml = (p.amenities||[]).map(a=>
+    `<span class="amenity">${AMENITY_LABELS[a]||a}</span>`
+  ).join('');
+
+  const poiHtml = (p.poi||[]).map(poi=>`
+    <div class="poi-item">
+      <span class="poi-icon">${POI_ICONS[poi.type]||POI_ICONS.default}</span>
+      <span class="poi-name">${poi.name}</span>
+      <span class="poi-dist">${poi.dist_km} km</span>
+    </div>
+  `).join('');
+
+  const spotsHtml = (p.spots_tir>0||p.spots_camper>0) ? `
+    <div class="spots-row">
+      ${p.spots_tir>0   ? `<div class="spot-box"><div class="spot-num tir">${p.spots_tir}</div><div class="spot-lbl">miejsc TIR</div></div>`:''}
+      ${p.spots_camper>0? `<div class="spot-box"><div class="spot-num camper">${p.spots_camper}</div><div class="spot-lbl">miejsc Camper</div></div>`:''}
+    </div>` : '';
+
+  const price = p.price_eur===0 ? 'Bezpłatny' : `${p.price_eur} €/noc`;
+
+  document.getElementById('panel-content').innerHTML = `
+    <div class="panel-name">${p.name}</div>
+    <div class="panel-city">📍 ${p.city}, ${p.country} · ${p.address}</div>
+    <div class="type-badges">${typeBadges(p.type)}</div>
+    <div class="rating-row">
+      <span class="stars">${starsHtml(p.rating)}</span>
+      <span class="price-tag">${price}</span>
+    </div>
+    ${spotsHtml}
+    <div class="amenities">${amenitiesHtml}</div>
+    ${poiHtml ? `<div class="poi-section"><h4>🗺 W pobliżu</h4><div class="poi-list">${poiHtml}</div></div>` : ''}
+    <button class="nav-btn" onclick="navigateTo(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')">
+      📍 Nawiguj — Google Maps
+    </button>
+  `;
+
+  document.getElementById('detail-panel').classList.add('open');
+  map.panTo([p.lat, p.lng]);
+}
+
+function closePanel(){
+  document.getElementById('detail-panel').classList.remove('open');
+}
+
+function navigateTo(lat, lng, name){
+  const q = encodeURIComponent(name);
+  window.open(`https://www.google.com/maps/search/?api=1&query=${q}&query_place_id=`, '_blank');
+}
+
+// Zamknij panel klikając mapę
+map.on('click', closePanel);
+
+// ── START ─────────────────────────────────────────────────
+loadParkings();
+
+// PWA Service Worker
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js');
+}
+</script>
+</body>
+</html>
