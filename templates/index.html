@@ -266,21 +266,84 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .fab-add.picking{background:linear-gradient(135deg,#ef4444,#f87171);animation:pulse-fab 1s infinite}
 @keyframes pulse-fab{0%,100%{box-shadow:0 4px 16px rgba(239,68,68,.5)}50%{box-shadow:0 4px 28px rgba(239,68,68,.8)}}
 
-/* ══ RADIO BAR ══ */
-.radio-bar{position:fixed;bottom:3.8rem;left:.8rem;right:.8rem;z-index:300;
-  background:var(--panel);border:1px solid var(--border);border-radius:14px;
-  padding:.5rem .8rem;display:none;align-items:center;gap:.55rem;box-shadow:0 4px 20px var(--shadow)}
-.radio-bar.visible{display:flex}
-.radio-btn{width:32px;height:32px;border-radius:50%;border:none;cursor:pointer;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;font-size:.9rem;
-  display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.radio-info{flex:1;min-width:0}
-.radio-name{font-size:.75rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.radio-status{font-size:.62rem;color:var(--muted)}
-.radio-prev,.radio-next{width:26px;height:26px;border-radius:50%;border:1px solid var(--border);
-  background:var(--panel2);cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;color:var(--muted)}
-.radio-vol{width:50px;accent-color:var(--accent)}
-.radio-close{width:24px;height:24px;border-radius:50%;border:none;background:none;color:var(--muted);cursor:pointer;font-size:.8rem;flex-shrink:0}
+/* ══ RADIO MINI BAR ══ */
+.radio-mini{position:fixed;bottom:3.6rem;left:.7rem;right:.7rem;z-index:300;
+  background:var(--panel);border:1px solid var(--border);border-radius:16px;
+  padding:.55rem .9rem;display:none;align-items:center;gap:.7rem;
+  box-shadow:0 4px 20px var(--shadow);cursor:pointer}
+.radio-mini.visible{display:flex}
+.radio-mini-info{flex:1;min-width:0;display:flex;align-items:center;gap:.55rem}
+.radio-mini-emoji{font-size:1.2rem;flex-shrink:0}
+.radio-mini-name{font-size:.78rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.radio-mini-status{font-size:.62rem;color:var(--muted)}
+.radio-mini-play{width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;flex-shrink:0;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;font-size:.95rem;
+  display:flex;align-items:center;justify-content:center}
+.radio-mini-close{width:26px;height:26px;border-radius:50%;border:none;background:none;
+  color:var(--muted);cursor:pointer;font-size:.85rem;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+
+/* vol popup */
+.vol-wrap{position:relative;flex-shrink:0}
+.vol-btn{width:30px;height:30px;border-radius:50%;border:1px solid var(--border);
+  background:var(--panel2);cursor:pointer;font-size:.85rem;
+  display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.vol-popup{position:absolute;bottom:40px;right:0;background:var(--panel);
+  border:1px solid var(--border);border-radius:14px;padding:.8rem .6rem;
+  box-shadow:0 4px 24px var(--shadow);display:none;flex-direction:column;align-items:center;gap:.4rem;z-index:350}
+.vol-popup.open{display:flex}
+.vol-vertical{writing-mode:vertical-lr;direction:rtl;height:90px;
+  accent-color:var(--accent);cursor:pointer;width:4px}
+.vol-pct{font-size:.65rem;color:var(--muted);font-weight:700}
+
+/* ══ RADIO FULL PANEL ══ */
+.radio-panel{position:fixed;bottom:0;left:0;right:0;z-index:950;
+  background:var(--panel);border-top:2px solid var(--accent);border-radius:20px 20px 0 0;
+  padding:.8rem 0 2rem;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  max-height:90vh;display:flex;flex-direction:column;box-shadow:0 -4px 32px var(--shadow)}
+.radio-panel.open{transform:translateY(0)}
+.radio-panel-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto .6rem}
+.radio-panel-top{display:flex;align-items:center;padding:0 1rem .8rem;gap:.7rem;border-bottom:1px solid var(--border)}
+.radio-panel-now{flex:1;min-width:0}
+.radio-panel-name{font-family:var(--font-head);font-size:.95rem;font-weight:800;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.radio-panel-status{font-size:.72rem;color:var(--muted);margin-top:.1rem}
+.radio-ctrl{display:flex;align-items:center;gap:.5rem;flex-shrink:0}
+.radio-big-play{width:42px;height:42px;border-radius:50%;border:none;cursor:pointer;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;font-size:1.1rem;
+  display:flex;align-items:center;justify-content:center}
+.radio-ctrl-btn{width:32px;height:32px;border-radius:50%;border:1px solid var(--border);
+  background:var(--panel2);cursor:pointer;font-size:.9rem;
+  display:flex;align-items:center;justify-content:center;color:var(--muted)}
+
+/* tabs */
+.radio-tabs{display:flex;gap:0;padding:0 1rem;margin:.7rem 0 0;flex-shrink:0}
+.rtab{flex:1;text-align:center;padding:.5rem .3rem;font-size:.78rem;font-weight:600;
+  color:var(--muted);border-bottom:2px solid transparent;cursor:pointer;transition:.15s;user-select:none}
+.rtab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+.radio-tab-content{flex:1;overflow-y:auto;padding:.8rem 1rem}
+
+/* station item */
+.r-station{display:flex;align-items:center;gap:.7rem;padding:.6rem .8rem;border-radius:12px;
+  cursor:pointer;transition:.12s;border:1px solid transparent}
+.r-station:active,.r-station.playing{background:var(--accent-bg);border-color:var(--accent)}
+.r-station-icon{font-size:1.3rem;flex-shrink:0;width:34px;text-align:center}
+.r-station-name{flex:1;font-size:.85rem;font-weight:600;color:var(--text)}
+.r-station-fav{background:none;border:none;font-size:1rem;cursor:pointer;color:var(--muted);padding:.2rem;flex-shrink:0}
+.r-station-fav.starred{color:#f59e0b}
+.r-station-play{width:28px;height:28px;border-radius:50%;border:none;flex-shrink:0;
+  background:var(--accent-bg);color:var(--accent);cursor:pointer;font-size:.75rem;
+  display:flex;align-items:center;justify-content:center}
+
+/* search tab */
+.radio-search-row{display:flex;gap:.5rem;margin-bottom:.8rem}
+.radio-search-input{flex:1;padding:.6rem .8rem;border:1.5px solid var(--border);border-radius:10px;
+  font-family:var(--font);font-size:.88rem;background:var(--input-bg);color:var(--text);outline:none}
+.radio-search-input:focus{border-color:var(--accent)}
+.radio-search-btn{padding:.6rem .9rem;border:none;border-radius:10px;background:var(--accent-bg);
+  color:var(--accent);cursor:pointer;font-size:.8rem;font-weight:700;white-space:nowrap}
+.radio-manual-row{display:flex;gap:.5rem;margin-top:.8rem}
+.radio-empty{text-align:center;color:var(--muted);font-size:.82rem;padding:2rem 0}
 
 /* ══ RANKING ══ */
 .rank-panel{position:fixed;inset:0;z-index:600;background:var(--bg);display:none;flex-direction:column}
@@ -666,17 +729,66 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
   <div id="route-results"></div>
 </div>
 
-<!-- RADIO BAR -->
-<div class="radio-bar" id="radio-bar">
-  <button class="radio-prev" onclick="radioPrev()">‹</button>
-  <button class="radio-btn" id="radio-play-btn" onclick="radioToggle()">▶</button>
-  <button class="radio-next" onclick="radioNext()">›</button>
-  <div class="radio-info">
-    <div class="radio-name" id="radio-name">Select station</div>
-    <div class="radio-status" id="radio-status">Press ▶</div>
+<!-- RADIO MINI BAR -->
+<div class="radio-mini" id="radio-mini">
+  <div class="radio-mini-info" onclick="openRadioPanel()">
+    <span class="radio-mini-emoji">📻</span>
+    <div style="flex:1;min-width:0">
+      <div class="radio-mini-name" id="radio-mini-name">Select station</div>
+      <div class="radio-mini-status" id="radio-mini-status">Tap to open</div>
+    </div>
   </div>
-  <input type="range" class="radio-vol" id="radio-vol" min="0" max="1" step="0.05" value="0.7" oninput="radioVolume(this.value)">
-  <button class="radio-close" onclick="toggleRadioBar()">✕</button>
+  <div class="vol-wrap">
+    <button class="vol-btn" id="vol-btn" onclick="toggleVolSlider(event)">🔊</button>
+    <div class="vol-popup" id="vol-popup">
+      <span class="vol-pct" id="vol-pct">70%</span>
+      <input type="range" class="vol-vertical" id="radio-vol" min="0" max="100" step="5" value="70"
+        oninput="radioVolume(this.value/100);document.getElementById('vol-pct').textContent=this.value+'%'">
+    </div>
+  </div>
+  <button class="radio-mini-play" id="radio-mini-play" onclick="radioToggle()">▶</button>
+  <button class="radio-mini-close" onclick="hideRadioMini()">✕</button>
+</div>
+
+<!-- RADIO FULL PANEL -->
+<div class="radio-panel" id="radio-panel">
+  <div class="radio-panel-handle" onclick="closeRadioPanel()"></div>
+  <div class="radio-panel-top">
+    <div class="radio-panel-now">
+      <div class="radio-panel-name" id="rp-name">📻 Select station</div>
+      <div class="radio-panel-status" id="rp-status">Choose a station below</div>
+    </div>
+    <div class="radio-ctrl">
+      <button class="radio-ctrl-btn" onclick="radioPrev()">‹</button>
+      <button class="radio-big-play" id="radio-big-play" onclick="radioToggle()">▶</button>
+      <button class="radio-ctrl-btn" onclick="radioNext()">›</button>
+    </div>
+    <button class="radio-mini-close" onclick="closeRadioPanel()">✕</button>
+  </div>
+  <div class="radio-tabs">
+    <div class="rtab active" onclick="radioTab(this,'stations')">📻 Stacje</div>
+    <div class="rtab" onclick="radioTab(this,'search')">🔍 Szukaj</div>
+    <div class="rtab" onclick="radioTab(this,'favs')">⭐ Ulubione</div>
+  </div>
+  <div class="radio-tab-content" id="rtab-stations">
+    <!-- rendered by JS -->
+  </div>
+  <div class="radio-tab-content" id="rtab-search" style="display:none">
+    <div class="radio-search-row">
+      <input class="radio-search-input" id="radio-search-q" placeholder="np. RMF, Rock, Jazz..." onkeydown="if(event.key==='Enter')radioSearch()">
+      <button class="radio-search-btn" onclick="radioSearch()">🔍 Szukaj</button>
+    </div>
+    <div id="radio-search-results"></div>
+    <div style="margin-top:1rem;font-size:.72rem;color:var(--muted);margin-bottom:.4rem">Lub wklej URL strumienia:</div>
+    <div class="radio-manual-row">
+      <input class="radio-search-input" id="radio-manual-url" placeholder="https://stream.radio...">
+      <input class="radio-search-input" id="radio-manual-name" placeholder="Nazwa" style="max-width:100px">
+      <button class="radio-search-btn" onclick="radioAddManual()">＋</button>
+    </div>
+  </div>
+  <div class="radio-tab-content" id="rtab-favs" style="display:none">
+    <div id="radio-favs-list"></div>
+  </div>
 </div>
 
 <!-- FAB -->
@@ -1285,36 +1397,194 @@ function showMySpots(){
 // ══════════════════════════════════════
 // RADIO
 // ══════════════════════════════════════
-const STATIONS=[
-  {name:'🇵🇱 RMF FM',       url:'https://rmf.fm/stream/rmf_fm_aac'},
-  {name:'🇵🇱 Radio ZET',     url:'https://n-22-14.dcs.redcdn.pl/sc/o2/Eurozet/live/audio.livx'},
-  {name:'🇵🇱 Eska Rock',     url:'https://ic1.smcdn.pl/2330-1.mp3'},
-  {name:'🇩🇪 Antenne Bayern', url:'https://s6-webradio.antenne.de/antenne'},
-  {name:'🇩🇪 Bayern 3',       url:'https://dispatcher.rndfnk.com/br/br3/live/mp3/low'},
-  {name:'🇩🇪 Radio Hamburg',  url:'https://stream.radiohamburg.de/rhh-live/mp3-128/radioplayer'},
-  {name:'🎸 Rock Classics',   url:'https://streams.radiobob.de/rock-classics/mp3-128/dirble'},
-  {name:'🌍 Truck Radio EU',  url:'https://stream.truckradio.eu/truckradio128'},
-  {name:'🎵 Energy Dance',    url:'https://stream.energy.de/200000'},
+const BUILT_IN_STATIONS=[
+  {name:'🇵🇱 RMF FM',        url:'https://rmf.fm/stream/rmf_fm_aac',           icon:'🎵'},
+  {name:'🇵🇱 Radio ZET',      url:'https://n-22-14.dcs.redcdn.pl/sc/o2/Eurozet/live/audio.livx', icon:'📻'},
+  {name:'🇵🇱 Eska Rock',      url:'https://ic1.smcdn.pl/2330-1.mp3',             icon:'🎸'},
+  {name:'🇵🇱 RMF Classic',    url:'https://rmf.fm/stream/rmf_classic',           icon:'🎻'},
+  {name:'🇩🇪 Antenne Bayern', url:'https://s6-webradio.antenne.de/antenne',      icon:'🎶'},
+  {name:'🇩🇪 Bayern 3',       url:'https://dispatcher.rndfnk.com/br/br3/live/mp3/low', icon:'🇩🇪'},
+  {name:'🇩🇪 Radio Hamburg',  url:'https://stream.radiohamburg.de/rhh-live/mp3-128/radioplayer', icon:'🎙'},
+  {name:'🎸 Rock Classics',   url:'https://streams.radiobob.de/rock-classics/mp3-128/dirble', icon:'🤘'},
+  {name:'🚛 Truck Radio EU',  url:'https://stream.truckradio.eu/truckradio128',  icon:'🚛'},
+  {name:'🎵 Energy Dance',    url:'https://stream.energy.de/200000',             icon:'⚡'},
+  {name:'🇫🇷 NRJ France',     url:'https://scdn.nrjaudio.fm/fr/30001/mp3_128.mp3', icon:'🇫🇷'},
+  {name:'🇪🇸 Cadena SER',     url:'https://playerservices.streamtheworld.com/api/livestream-redirect/CADENASER.mp3', icon:'🇪🇸'},
 ];
-let radioIdx=0,radioAudio=null,radioPlaying=false;
-function toggleRadioBar(){ document.getElementById('radio-bar').classList.toggle('visible'); if(!radioAudio) setEl('radio-name',STATIONS[0].name); }
+
+let radioIdx=0, radioAudio=null, radioPlaying=false, radioVolVal=0.7;
+let radioFavs = JSON.parse(localStorage.getItem('ts_radio_favs')||'[]');
+let radioCurrentStation = null;
+
+// ── Open/Close panel ──
+function openRadioPanel(){
+  document.getElementById('radio-panel').classList.add('open');
+  renderStationsTab();
+}
+function closeRadioPanel(){
+  document.getElementById('radio-panel').classList.remove('open');
+}
+function showRadioMini(){
+  document.getElementById('radio-mini').classList.add('visible');
+}
+function hideRadioMini(){
+  stopRadio();
+  document.getElementById('radio-mini').classList.remove('visible');
+}
+function toggleRadioBar(){
+  // legacy: called from drawer/nav
+  if(document.getElementById('radio-mini').classList.contains('visible')){
+    openRadioPanel();
+  } else {
+    showRadioMini();
+    openRadioPanel();
+  }
+}
+
+// ── Volume slider ──
+function toggleVolSlider(e){
+  e.stopPropagation();
+  document.getElementById('vol-popup').classList.toggle('open');
+}
+document.addEventListener('click', ()=>{ const p=document.getElementById('vol-popup'); if(p) p.classList.remove('open'); });
+
+function radioVolume(v){
+  radioVolVal = parseFloat(v);
+  if(radioAudio) radioAudio.volume = radioVolVal;
+}
+
+// ── Tabs ──
+function radioTab(el, tab){
+  document.querySelectorAll('.rtab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ['stations','search','favs'].forEach(t=>{
+    document.getElementById('rtab-'+t).style.display = t===tab?'block':'none';
+  });
+  if(tab==='favs') renderFavsTab();
+}
+
+// ── Render stations ──
+function renderStationsTab(){
+  const fIds = new Set(radioFavs.map(f=>f.url));
+  document.getElementById('rtab-stations').innerHTML = BUILT_IN_STATIONS.map((s,i)=>`
+    <div class="r-station ${radioCurrentStation&&radioCurrentStation.url===s.url?'playing':''}" onclick="radioLoadStation(${JSON.stringify(s).replace(/"/g,'&quot;')})">
+      <span class="r-station-icon">${s.icon}</span>
+      <span class="r-station-name">${s.name}</span>
+      <button class="r-station-fav ${fIds.has(s.url)?'starred':''}"
+        onclick="event.stopPropagation();toggleFav(${JSON.stringify(s).replace(/"/g,'&quot;')},this)">★</button>
+      <button class="r-station-play">${radioCurrentStation&&radioCurrentStation.url===s.url&&radioPlaying?'■':'▶'}</button>
+    </div>`).join('');
+}
+
+function renderFavsTab(){
+  if(!radioFavs.length){
+    document.getElementById('radio-favs-list').innerHTML='<div class="radio-empty">⭐ No favorites yet<br>Tap ★ on any station</div>';
+    return;
+  }
+  document.getElementById('radio-favs-list').innerHTML = radioFavs.map(s=>`
+    <div class="r-station ${radioCurrentStation&&radioCurrentStation.url===s.url?'playing':''}" onclick="radioLoadStation(${JSON.stringify(s).replace(/"/g,'&quot;')})">
+      <span class="r-station-icon">${s.icon||'⭐'}</span>
+      <span class="r-station-name">${s.name}</span>
+      <button class="r-station-fav starred" onclick="event.stopPropagation();toggleFav(${JSON.stringify(s).replace(/"/g,'&quot;')},this)">★</button>
+      <button class="r-station-play">${radioCurrentStation&&radioCurrentStation.url===s.url&&radioPlaying?'■':'▶'}</button>
+    </div>`).join('');
+}
+
+// ── Toggle favorite ──
+function toggleFav(s, btn){
+  const idx = radioFavs.findIndex(f=>f.url===s.url);
+  if(idx>=0){ radioFavs.splice(idx,1); btn.classList.remove('starred'); }
+  else { radioFavs.push(s); btn.classList.add('starred'); }
+  localStorage.setItem('ts_radio_favs', JSON.stringify(radioFavs));
+}
+
+// ── Play / Pause ──
 function radioToggle(){
-  if(!radioAudio){radioAudio=new Audio();radioAudio.volume=parseFloat(document.getElementById('radio-vol').value);}
-  if(radioPlaying){radioAudio.pause();radioAudio.src='';radioPlaying=false;setEl('radio-play-btn','▶');setEl('radio-status','Stopped');}
-  else radioLoad(radioIdx);
+  if(!radioAudio){ radioAudio=new Audio(); radioAudio.volume=radioVolVal; }
+  if(radioPlaying){ stopRadio(); }
+  else if(radioCurrentStation){ radioLoadStation(radioCurrentStation); }
+  else { openRadioPanel(); }
 }
-function radioLoad(idx){
-  if(!radioAudio) radioAudio=new Audio();
-  radioAudio.volume=parseFloat(document.getElementById('radio-vol').value);
-  const s=STATIONS[idx];
-  setEl('radio-name',s.name); setEl('radio-status','⏳ Connecting...'); setEl('radio-play-btn','■');
+
+function stopRadio(){
+  if(radioAudio){ radioAudio.pause(); radioAudio.src=''; }
+  radioPlaying=false;
+  updateRadioUI('■ Stopped');
+  setEl('radio-mini-play','▶');
+  setEl('radio-big-play','▶');
+}
+
+function radioLoadStation(s){
+  if(!radioAudio){ radioAudio=new Audio(); }
+  radioAudio.volume=radioVolVal;
+  radioCurrentStation=s;
   radioAudio.src=s.url;
-  radioAudio.play().then(()=>{radioPlaying=true;setEl('radio-status','▶ Live');})
-    .catch(()=>{setEl('radio-status','⚠ Try another');radioPlaying=false;setEl('radio-play-btn','▶');});
+  updateRadioUI('⏳ Connecting...');
+  setEl('radio-mini-play','■');
+  setEl('radio-big-play','■');
+  showRadioMini();
+  radioAudio.play()
+    .then(()=>{ radioPlaying=true; updateRadioUI('▶ Live'); renderStationsTab(); })
+    .catch(()=>{ updateRadioUI('⚠ Error — try another'); radioPlaying=false;
+      setEl('radio-mini-play','▶'); setEl('radio-big-play','▶'); });
 }
-function radioPrev(){radioIdx=(radioIdx-1+STATIONS.length)%STATIONS.length;radioLoad(radioIdx);}
-function radioNext(){radioIdx=(radioIdx+1)%STATIONS.length;radioLoad(radioIdx);}
-function radioVolume(v){if(radioAudio)radioAudio.volume=parseFloat(v);}
+
+function updateRadioUI(status){
+  const name = radioCurrentStation ? radioCurrentStation.name : '📻';
+  setEl('radio-mini-name', name);
+  setEl('radio-mini-status', status);
+  setEl('rp-name', name);
+  setEl('rp-status', status);
+}
+
+function radioPrev(){
+  radioIdx=(radioIdx-1+BUILT_IN_STATIONS.length)%BUILT_IN_STATIONS.length;
+  radioLoadStation(BUILT_IN_STATIONS[radioIdx]);
+}
+function radioNext(){
+  radioIdx=(radioIdx+1)%BUILT_IN_STATIONS.length;
+  radioLoadStation(BUILT_IN_STATIONS[radioIdx]);
+}
+
+// ── Search via Radio Browser API ──
+async function radioSearch(){
+  const q = document.getElementById('radio-search-q').value.trim();
+  if(!q) return;
+  const res = document.getElementById('radio-search-results');
+  res.innerHTML='<div class="radio-empty">🔄 Searching...</div>';
+  try {
+    const r = await fetch(`https://de1.api.radio-browser.info/json/stations/search?name=${encodeURIComponent(q)}&limit=20&hidebroken=true&order=clickcount&reverse=true`);
+    const data = await r.json();
+    if(!data.length){ res.innerHTML='<div class="radio-empty">No results</div>'; return; }
+    const fIds = new Set(radioFavs.map(f=>f.url));
+    res.innerHTML = data.map(st=>{
+      const s={name:st.name, url:st.url_resolved||st.url, icon:'📡', country:st.country};
+      const label=(st.country?'🌍 '+st.country+' · ':'')+st.name;
+      return `<div class="r-station" onclick="radioLoadStation(${JSON.stringify(s).replace(/"/g,'&quot;')})">
+        <span class="r-station-icon">📡</span>
+        <span class="r-station-name" style="font-size:.8rem">${label}</span>
+        <button class="r-station-fav ${fIds.has(s.url)?'starred':''}"
+          onclick="event.stopPropagation();toggleFav(${JSON.stringify(s).replace(/"/g,'&quot;')},this)">★</button>
+        <button class="r-station-play">▶</button>
+      </div>`;
+    }).join('');
+  } catch(e){ res.innerHTML='<div class="radio-empty">Search error</div>'; }
+}
+
+// ── Add manual URL ──
+function radioAddManual(){
+  const url = document.getElementById('radio-manual-url').value.trim();
+  const name = document.getElementById('radio-manual-name').value.trim() || 'My Station';
+  if(!url){ showAlert('⚠️','','Enter stream URL'); return; }
+  const s = {name, url, icon:'🎙'};
+  toggleFav(s, {classList:{add:()=>{},remove:()=>{},contains:()=>false}});
+  radioFavs.push(s);
+  localStorage.setItem('ts_radio_favs', JSON.stringify(radioFavs));
+  document.getElementById('radio-manual-url').value='';
+  document.getElementById('radio-manual-name').value='';
+  radioLoadStation(s);
+  showAlert('⭐','Added!',name);
+}
 
 // ══════════════════════════════════════
 // ALERT TOAST
