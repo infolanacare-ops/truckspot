@@ -169,16 +169,16 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
       <div class="mode-card-icon">🚛</div>
       <div class="mode-card-info">
         <div class="mode-card-title">Kierowca TIR</div>
-        <div class="mode-card-desc">Parkingi TIR · myjnie · serwisy · restauracje przy trasie</div>
+        <div class="mode-card-desc">Parkingi TIR · myjnie · serwisy · restauracje przy trasie · czas jazdy</div>
       </div>
       <div class="mode-card-arrow">›</div>
     </div>
 
-    <div class="mode-card camper" onclick="enterMode('camper')">
+    <div class="mode-card camper" onclick="enterMode('bus')">
       <div class="mode-card-icon">🚐</div>
       <div class="mode-card-info">
-        <div class="mode-card-title">Camper / Busiarz</div>
-        <div class="mode-card-desc">Stellplätze · prąd · woda · prysznice · natura w pobliżu</div>
+        <div class="mode-card-title">Busiarz / Van Life</div>
+        <div class="mode-card-desc">Stellplätze · prąd · woda · prysznice · parkingi nocne dla busa</div>
       </div>
       <div class="mode-card-arrow">›</div>
     </div>
@@ -186,8 +186,8 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
     <div class="mode-card tourist" onclick="enterMode('tourist')">
       <div class="mode-card-icon">🧳</div>
       <div class="mode-card-info">
-        <div class="mode-card-title">Turysta</div>
-        <div class="mode-card-desc">Parkingi przy atrakcjach · zabytki · restauracje · sklepy</div>
+        <div class="mode-card-title">Turysta / Camping</div>
+        <div class="mode-card-desc">Campingi · pola namiotowe · atrakcje · zabytki · restauracje</div>
       </div>
       <div class="mode-card-arrow">›</div>
     </div>
@@ -224,27 +224,27 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 const MODE_CONFIG = {
   tir: {
     icon: '🚛', label: 'TIR', color: '#f59e0b', color2: '#fbbf24',
-    title: 'TruckSpot — Kierowca TIR',
     statsLabel: ['parkingów TIR', 'bezpłatnych', 'z prysznicem'],
     amenityFilter: ['shower','restaurant','truck_wash','repair','shop','wifi','toilet'],
     poiFilter: ['restaurant','fuel','shop','repair'],
     markerEmoji: '🚛',
+    apiMode: 'tir',
   },
-  camper: {
-    icon: '🚐', label: 'Camper', color: '#10b981', color2: '#34d399',
-    title: 'TruckSpot — Camper / Busiarz',
+  bus: {
+    icon: '🚐', label: 'Bus / Van', color: '#10b981', color2: '#34d399',
     statsLabel: ['Stellplätze', 'bezpłatnych', 'z prądem'],
-    amenityFilter: ['electricity','water','shower','wifi','toilet','restaurant','pool'],
-    poiFilter: ['nature','attraction','shop','restaurant'],
+    amenityFilter: ['electricity','water','shower','wifi','toilet','restaurant'],
+    poiFilter: ['nature','shop','restaurant','attraction'],
     markerEmoji: '🚐',
+    apiMode: 'camper',
   },
   tourist: {
     icon: '🧳', label: 'Turysta', color: '#3b82f6', color2: '#60a5fa',
-    title: 'TruckSpot — Turysta',
-    statsLabel: ['parkingów', 'bezpłatnych', 'atrakcji blisko'],
-    amenityFilter: ['toilet','wifi','restaurant','shop','electricity','water'],
+    statsLabel: ['miejsc', 'campingów', 'atrakcji blisko'],
+    amenityFilter: ['toilet','wifi','restaurant','shop','electricity','water','pool','shower'],
     poiFilter: ['attraction','city','nature','restaurant','shop'],
     markerEmoji: '🧳',
+    apiMode: 'tourist',
   },
 };
 
@@ -311,7 +311,8 @@ function goBack(){
 
 // ── LOAD & RENDER ────────────────────────────────────────
 function loadParkings(mode){
-  fetch(`/api/parkings?mode=${mode}`)
+  const apiMode = MODE_CONFIG[mode].apiMode;
+  fetch(`/api/parkings?mode=${apiMode}`)
     .then(r=>r.json())
     .then(data=>{
       allParkings = data;
@@ -343,12 +344,13 @@ function updateStats(parkings){
   const shower  = parkings.filter(p=>(p.amenities||[]).includes('shower')).length;
   const electric= parkings.filter(p=>(p.amenities||[]).includes('electricity')).length;
   const attract = parkings.filter(p=>(p.poi||[]).some(x=>x.type==='attraction')).length;
+  const camping = parkings.filter(p=>(p.amenities||[]).includes('electricity')||(p.spots_camper||0)>0).length;
 
   document.getElementById('cnt-spots').textContent = parkings.length;
   document.getElementById('cnt-free').textContent  = free;
 
-  const thirdVal = currentMode==='camper' ? electric
-                 : currentMode==='tourist' ? attract
+  const thirdVal = currentMode==='bus'     ? electric
+                 : currentMode==='tourist' ? camping
                  : shower;
   document.getElementById('cnt-shower').textContent = thirdVal;
 
