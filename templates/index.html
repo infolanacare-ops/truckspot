@@ -650,6 +650,9 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .nav-stop-btn{padding:.55rem 1rem;border:none;border-radius:12px;cursor:pointer;
   background:#ef4444;color:#fff;font-family:var(--font-head);font-size:.85rem;font-weight:800;flex-shrink:0}
 .nav-reroute{font-size:.7rem;color:var(--muted);text-align:center;padding:.2rem 0}
+/* Ukryj zoom podczas nawigacji */
+.nav-overlay.active ~ * .leaflet-top.leaflet-left,
+body.navigating .leaflet-top.leaflet-left { display:none }
 /* ══ NAV POI STRIP ══ */
 .nav-pois-strip{background:var(--bg);border-bottom:1px solid var(--border);
   padding:.45rem .8rem;display:flex;gap:.5rem;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
@@ -1436,7 +1439,7 @@ function enterMode(mode){
     L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&hl=en&gl=EN&x={x}&y={y}&z={z}',{
       subdomains:'0123',attribution:'&copy; Google Maps',maxZoom:20
     }).addTo(map);
-    L.control.zoom({position:'bottomright'}).addTo(map);
+    L.control.zoom({position:'topleft'}).addTo(map);
     map.on('click', (e)=>{ onMapClickForMsg(e); onMapClick(e); });
     map.on('moveend', ()=>{ if(map.getZoom()>=8) loadOsmParkings(); });
   } else {
@@ -2393,6 +2396,7 @@ function startNavigation(){
   if(!routeSteps.length){ showAlert('⚠️','','Najpierw oblicz trasę'); return; }
   navActive=true; navStepIdx=0; navLastLat=null; navLastLng=null; navAnnouncedPois=new Set();
   document.getElementById('nav-overlay').classList.add('active');
+  document.body.classList.add('navigating');
   closeRoute();
   updateNavStep(0);
   setEl('nav-total-dist', fmtDist(routeTotalDist));
@@ -2407,45 +2411,67 @@ function startNavigation(){
 
 async function loadRoutePois(){
   if(!routeCoords.length) return;
-  const lats = routeCoords.map(c=>c[1]);
-  const lngs = routeCoords.map(c=>c[0]);
-  const south = Math.min(...lats)-0.1, north = Math.max(...lats)+0.1;
-  const west  = Math.min(...lngs)-0.1, east  = Math.max(...lngs)+0.1;
   const radius = 8; // km corridor
 
-  try {
-    const r = await fetch(`/api/route-pois?south=${south.toFixed(3)}&west=${west.toFixed(3)}&north=${north.toFixed(3)}&east=${east.toFixed(3)}`);
-    const pois = await r.json();
+  // Split route into ~80km segments to avoid Overpass timeouts
+  const SEG_KM = 80;
+  const segments = [];
+  let segStart = 0, segDist = 0;
+  for(let i=1; i<routeCoords.length; i++){
+    segDist += haversineKm(routeCoords[i][1],routeCoords[i][0],routeCoords[i-1][1],routeCoords[i-1][0]);
+    if(segDist >= SEG_KM || i === routeCoords.length-1){
+      const slice = routeCoords.slice(segStart, i+1);
+      const lats = slice.map(c=>c[1]), lngs = slice.map(c=>c[0]);
+      segments.push({
+        south:(Math.min(...lats)-0.15).toFixed(3), north:(Math.max(...lats)+0.15).toFixed(3),
+        west: (Math.min(...lngs)-0.15).toFixed(3), east: (Math.max(...lngs)+0.15).toFixed(3),
+      });
+      segStart = i; segDist = 0;
+    }
+  }
 
-    // Also add our parkings
-    const parkingPois = allParkings.map(p=>({
-      id: 'park_'+p.id, lat: p.lat, lng: p.lng,
-      name: p.name, type: 'parking', icon: '🅿️', hgv: true,
-    }));
+  // Add our parkings immediately
+  const parkingPois = allParkings.map(p=>({
+    id:'park_'+p.id, lat:p.lat, lng:p.lng,
+    name:p.name, type:'parking', icon:'🅿️', hgv:true,
+  }));
+  navRoutePois = parkingPois.filter(p => pointToRouteDistKm(p.lat, p.lng, routeCoords) <= radius);
+  renderNavPois(null, null);
 
-    const all = [...pois, ...parkingPois];
+  // Fetch each segment sequentially
+  const allPois = [];
+  for(const seg of segments){
+    try {
+      const r = await fetch(`/api/route-pois?south=${seg.south}&west=${seg.west}&north=${seg.north}&east=${seg.east}`);
+      const pois = await r.json();
+      if(Array.isArray(pois)) allPois.push(...pois);
+    } catch(e){ /* skip failed segment */ }
+  }
 
-    // Filter by corridor + sort by distance along route from start
-    navRoutePois = all
-      .filter(p => pointToRouteDistKm(p.lat, p.lng, routeCoords) <= radius)
-      .map(p => {
-        // Find closest point on route → approximate distance from start
-        let minIdx = 0, minD = Infinity;
-        for(let i=0; i<routeCoords.length; i++){
-          const d = haversineKm(p.lat, p.lng, routeCoords[i][1], routeCoords[i][0]);
-          if(d < minD){ minD=d; minIdx=i; }
-        }
-        // Distance from start = sum of segments up to minIdx
-        let distFromStart = 0;
-        for(let i=1; i<=minIdx; i++){
-          distFromStart += haversineKm(routeCoords[i][1],routeCoords[i][0],routeCoords[i-1][1],routeCoords[i-1][0]);
-        }
-        return {...p, distFromStart, distKm: minD};
-      })
-      .sort((a,b) => a.distFromStart - b.distFromStart);
+  // Merge all POI + parkings, deduplicate by id, filter corridor
+  const allCombined = [...allPois, ...parkingPois];
+  const seen = new Set();
+  navRoutePois = allCombined
+    .filter(p => {
+      if(seen.has(p.id)) return false;
+      seen.add(p.id);
+      return pointToRouteDistKm(p.lat, p.lng, routeCoords) <= radius;
+    })
+    .map(p => {
+      let minIdx = 0, minD = Infinity;
+      for(let i=0; i<routeCoords.length; i++){
+        const d = haversineKm(p.lat, p.lng, routeCoords[i][1], routeCoords[i][0]);
+        if(d < minD){ minD=d; minIdx=i; }
+      }
+      let distFromStart = 0;
+      for(let i=1; i<=minIdx; i++){
+        distFromStart += haversineKm(routeCoords[i][1],routeCoords[i][0],routeCoords[i-1][1],routeCoords[i-1][0]);
+      }
+      return {...p, distFromStart, distKm: minD};
+    })
+    .sort((a,b) => a.distFromStart - b.distFromStart);
 
-    renderNavPois(null);
-  } catch(e){ console.warn('POI load failed', e); }
+  renderNavPois(null, null);
 }
 
 function renderNavPois(currentLat, currentLng){
@@ -2560,6 +2586,7 @@ function stopNavigation(){
   navActive=false;
   if(navWatchId) navigator.geolocation.clearWatch(navWatchId);
   document.getElementById('nav-overlay').classList.remove('active');
+  document.body.classList.remove('navigating');
   showAlert('🏁','','Navigation stopped');
 }
 
