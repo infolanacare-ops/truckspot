@@ -154,6 +154,12 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
   background:var(--accent);}
 .mk span{transform:rotate(45deg);font-size:1.05rem;line-height:1}
 
+/* desktop — wyśrodkuj ekran powitalny */
+@media(min-width:600px){
+  #welcome{background:linear-gradient(160deg,#e8f0fe 0%,#f0f4f8 100%)}
+  .mode-cards{max-width:420px}
+  #app{max-width:480px;margin:0 auto;border-left:1px solid var(--border);border-right:1px solid var(--border)}
+}
 @media(max-width:380px){
   .mode-card{padding:.9rem 1rem}
   .mode-card-icon{font-size:2rem}
