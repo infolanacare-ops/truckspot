@@ -2308,6 +2308,11 @@ function clearRoute(){
 // IN-APP NAVIGATION
 // ══════════════════════════════════════
 let navActive=false, navWatchId=null, navStepIdx=0, navLastLat=null, navLastLng=null;
+let navSpeedKmh = 0;
+let navVoiceQueue = [];      // look-ahead announcements
+let navAnnouncedSteps = new Set(); // step indices already announced
+let navDistRemaining = 0;    // metres remaining along route
+let navRouteDistances = [];  // cumulative distances along routeCoords
 
 const MANEUVER_ARROWS = {
   'straight':'⬆️','turn left':'↰','turn right':'↱',
@@ -2392,21 +2397,52 @@ async function startDriving(){
   }
 }
 
+function buildRouteDistances(){
+  // Precompute cumulative distances along routeCoords (in metres)
+  navRouteDistances = [0];
+  for(let i=1; i<routeCoords.length; i++){
+    const d = haversineKm(routeCoords[i][1],routeCoords[i][0],routeCoords[i-1][1],routeCoords[i-1][0]) * 1000;
+    navRouteDistances.push(navRouteDistances[i-1] + d);
+  }
+  navDistRemaining = navRouteDistances[navRouteDistances.length-1];
+}
+
+// Closest point index on routeCoords to given lat/lng
+function closestRouteIdx(lat, lng){
+  let minIdx=0, minD=Infinity;
+  for(let i=0; i<routeCoords.length; i++){
+    const d = haversineKm(lat,lng,routeCoords[i][1],routeCoords[i][0]);
+    if(d<minD){ minD=d; minIdx=i; }
+  }
+  return minIdx;
+}
+
+function speakNav(txt, priority){
+  if(!('speechSynthesis' in window)) return;
+  if(priority) speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(txt);
+  utt.lang = currentLang==='pl'?'pl-PL':currentLang==='de'?'de-DE':currentLang==='es'?'es-ES':'en-US';
+  utt.rate = 1.05;
+  speechSynthesis.speak(utt);
+}
+
 function startNavigation(){
   if(!routeSteps.length){ showAlert('⚠️','','Najpierw oblicz trasę'); return; }
-  navActive=true; navStepIdx=0; navLastLat=null; navLastLng=null; navAnnouncedPois=new Set();
+  navActive=true; navStepIdx=0; navLastLat=null; navLastLng=null;
+  navAnnouncedPois=new Set(); navAnnouncedSteps=new Set(); navSpeedKmh=0;
   document.getElementById('nav-overlay').classList.add('active');
   document.body.classList.add('navigating');
   closeRoute();
+  buildRouteDistances();
   updateNavStep(0);
-  setEl('nav-total-dist', fmtDist(routeTotalDist));
+  setEl('nav-total-dist', fmtDist(navDistRemaining));
   setEl('nav-eta-time', 'ETA: '+fmtDur(routeTotalDur));
-
-  // Fetch POI along route
+  // Announce start
+  speakNav(stepInstruction(routeSteps[0]), true);
   loadRoutePois();
-
   navWatchId = navigator.geolocation.watchPosition(onNavPosition,
-    ()=>showAlert('⚠️','GPS Error',''), {enableHighAccuracy:true,maximumAge:3000,timeout:10000});
+    e=>{ if(e.code!==e.TIMEOUT) showAlert('⚠️','GPS Error',''); },
+    {enableHighAccuracy:true, maximumAge:2000, timeout:15000});
 }
 
 async function loadRoutePois(){
@@ -2515,67 +2551,106 @@ function updateNavStep(idx){
 }
 
 function onNavPosition(pos){
+  if(!navActive) return;
   const lat=pos.coords.latitude, lng=pos.coords.longitude;
-  const speed=pos.coords.speed;
-  setEl('nav-speed', speed!=null ? Math.round(speed*3.6)+' km/h' : '– km/h');
+  const rawSpeed = pos.coords.speed; // m/s or null
+  navSpeedKmh = rawSpeed != null ? Math.round(rawSpeed*3.6) : navSpeedKmh;
+  setEl('nav-speed', navSpeedKmh > 0 ? navSpeedKmh+' km/h' : '– km/h');
 
-  // Update GPS dot on map
+  // GPS dot
   if(!gpsMarker){
-    const dot=L.divIcon({className:'',html:'<div class="gps-dot"></div>',iconSize:[14,14],iconAnchor:[7,7]});
+    const dot=L.divIcon({className:'',html:'<div class="gps-dot"></div>',iconSize:[16,16],iconAnchor:[8,8]});
     gpsMarker=L.marker([lat,lng],{icon:dot,zIndexOffset:1000}).addTo(map);
   } else { gpsMarker.setLatLng([lat,lng]); }
-  map.setView([lat,lng], Math.max(map.getZoom(),13));
 
-  // Advance step when close to maneuver point
-  if(navStepIdx < routeSteps.length-1){
+  // Speed-adaptive zoom: slow city=15, motorway=13
+  const targetZoom = navSpeedKmh > 80 ? 13 : navSpeedKmh > 40 ? 14 : 15;
+  map.setView([lat,lng], targetZoom, {animate:true, duration:0.5});
+
+  // ── Remaining distance along route ──────────────────────────────────
+  const cIdx = closestRouteIdx(lat, lng);
+  navDistRemaining = navRouteDistances[navRouteDistances.length-1] - navRouteDistances[cIdx];
+  setEl('nav-total-dist', fmtDist(navDistRemaining));
+
+  // ETA: use real speed, fallback 80km/h
+  const speedForEta = navSpeedKmh > 5 ? navSpeedKmh : 80;
+  setEl('nav-eta-time', 'ETA ~'+fmtDur(navDistRemaining / (speedForEta/3.6)));
+
+  // ── Step management ─────────────────────────────────────────────────
+  // Advance past steps whose maneuver point we've already passed
+  while(navStepIdx < routeSteps.length-1){
     const step = routeSteps[navStepIdx];
-    const loc = step.maneuver?.location; // [lng,lat]
-    if(loc){
-      const d = haversineKm(lat,lng,loc[1],loc[0])*1000;
-      // Update distance to next maneuver
-      setEl('nav-dist-next', fmtDist(Math.max(0, (step.distance||0) - haversineKm(navLastLat||lat,navLastLng||lng,lat,lng)*1000*0)));
-      if(d < 30){
-        navStepIdx++;
-        updateNavStep(navStepIdx);
-        // Voice instruction
-        const txt = document.getElementById('nav-instruction')?.textContent;
-        if(txt && 'speechSynthesis' in window){
-          const utt=new SpeechSynthesisUtterance(txt);
-          utt.lang = currentLang==='pl'?'pl-PL':currentLang==='de'?'de-DE':currentLang==='es'?'es-ES':'en-US';
-          speechSynthesis.speak(utt);
+    const loc = step.maneuver?.location; // [lng, lat]
+    if(!loc) break;
+    const dToManeuver = haversineKm(lat, lng, loc[1], loc[0]) * 1000; // metres
+
+    // Threshold: 40m in city, 80m on motorway (GPS lag compensation)
+    const threshold = navSpeedKmh > 80 ? 80 : 40;
+    if(dToManeuver < threshold){
+      navStepIdx++;
+      updateNavStep(navStepIdx);
+      // Immediate voice for the new step
+      if(!navAnnouncedSteps.has(navStepIdx)){
+        navAnnouncedSteps.add(navStepIdx);
+        speakNav(stepInstruction(routeSteps[navStepIdx]), true);
+      }
+    } else {
+      // Show live distance to next maneuver
+      setEl('nav-dist-next', fmtDist(dToManeuver));
+
+      // Look-ahead voice: announce upcoming step at 500m and 200m
+      const announceAt = navSpeedKmh > 80 ? [1000, 300] : [500, 150];
+      for(const dist of announceAt){
+        const key = `${navStepIdx}_${dist}`;
+        if(!navAnnouncedSteps.has(key) && dToManeuver < dist && dToManeuver > dist*0.3){
+          navAnnouncedSteps.add(key);
+          const prefix = dist >= 500
+            ? (currentLang==='pl' ? `Za ${fmtDist(dToManeuver)}: ` : `In ${fmtDist(dToManeuver)}: `)
+            : (currentLang==='pl' ? 'Teraz: ' : 'Now: ');
+          speakNav(prefix + stepInstruction(routeSteps[navStepIdx]), false);
         }
       }
+      break;
     }
   }
 
-  // Remaining distance
-  if(routeCoords.length){
-    const dest = routeCoords[routeCoords.length-1];
-    const rem = haversineKm(lat,lng,dest[1],dest[0]);
-    setEl('nav-total-dist', fmtDist(rem*1000));
-    setEl('nav-eta-time', 'ETA ~'+fmtDur(rem/80*3600));
+  // ── Arrival detection ────────────────────────────────────────────────
+  if(navDistRemaining < 50 && navStepIdx >= routeSteps.length-1){
+    speakNav(currentLang==='pl'?'Dotarłeś na miejsce!':'You have arrived!', true);
+    setEl('nav-instruction','🏁 '+(currentLang==='pl'?'Dotarłeś na miejsce!':'You have arrived!'));
+    setEl('nav-dist-next','');
+    setTimeout(stopNavigation, 4000);
+    return;
   }
 
-  // Update POI strip
+  // ── Off-route detection ──────────────────────────────────────────────
+  const distFromRoute = haversineKm(lat, lng, routeCoords[cIdx][1], routeCoords[cIdx][0]) * 1000;
+  if(distFromRoute > 300 && navSpeedKmh > 10){
+    // Recalculate route
+    showAlert('🔄','Przeliczam trasę...','Zjechałeś z trasy');
+    const dest = routeCoords[routeCoords.length-1];
+    const toVal = document.getElementById('route-to').value.trim();
+    if(toVal){
+      document.getElementById('route-from').value = '';
+      routeFromLat = lat; routeFromLng = lng;
+      searchRoute(true).catch(()=>{});
+    }
+    return;
+  }
+
+  // ── POI strip + voice alerts ─────────────────────────────────────────
   renderNavPois(lat, lng);
 
-  // Voice alerts for nearby POI (within 2km, not yet announced)
+  const poiAlertDist = navSpeedKmh > 80 ? 4 : 2; // km
   for(const p of navRoutePois){
     if(navAnnouncedPois.has(p.id)) continue;
     const d = haversineKm(lat, lng, p.lat, p.lng);
-    if(d < 2){
+    if(d < poiAlertDist){
       navAnnouncedPois.add(p.id);
-      const dist = d < 1 ? Math.round(d*1000)+' metrów' : d.toFixed(1)+' kilometrów';
-      const txt = `Za ${dist}: ${p.name}`;
-      if('speechSynthesis' in window){
-        const utt = new SpeechSynthesisUtterance(txt);
-        utt.lang = currentLang==='pl'?'pl-PL':currentLang==='de'?'de-DE':'en-US';
-        utt.rate = 1.05;
-        speechSynthesis.speak(utt);
-      }
-      // Visual toast on POI strip
+      const dist = d < 1 ? Math.round(d*1000)+' metrów' : d.toFixed(1)+' km';
+      speakNav(`Za ${dist}: ${p.name}`, false);
       showAlert(p.icon, p.name, `Za ${dist}`);
-      break; // one at a time
+      break;
     }
   }
 
