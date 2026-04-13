@@ -105,6 +105,70 @@ def api_spots_post():
         json.dump(spots, f, ensure_ascii=False, indent=2)
     return jsonify({"ok": True, "id": new_id}), 201
 
+@app.route("/api/route-pois")
+def api_route_pois():
+    """POI wzdłuż trasy: stacje, MOP, restauracje, autohof — Overpass API."""
+    try:
+        south = float(request.args.get("south", 47))
+        west  = float(request.args.get("west",  8))
+        north = float(request.args.get("north", 55))
+        east  = float(request.args.get("east",  22))
+    except ValueError:
+        return jsonify({"error": "bad params"}), 400
+
+    if (north - south) > 10 or (east - west) > 14:
+        return jsonify([])
+
+    bbox = f"{south},{west},{north},{east}"
+    query = f"""
+    [out:json][timeout:20];
+    (
+      node["amenity"="fuel"]({bbox});
+      node["amenity"="fuel"]["hgv"="yes"]({bbox});
+      node["highway"="rest_area"]({bbox});
+      node["highway"="services"]({bbox});
+      node["amenity"="parking"]["hgv"="yes"]({bbox});
+      node["amenity"="parking"]["hgv"="designated"]({bbox});
+      node["amenity"="restaurant"]({bbox});
+      node["shop"="truck"]({bbox});
+      node["amenity"="truck_wash"]({bbox});
+      node["amenity"="shower"]({bbox});
+    );
+    out 120;
+    """
+    try:
+        resp = _requests.post("https://overpass-api.de/api/interpreter",
+                              data=query.strip(), timeout=22)
+        elements = resp.json().get("elements", [])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
+
+    POI_ICON = {
+        "fuel":        "⛽", "rest_area":   "🅿️", "services": "🛣️",
+        "parking":     "🅿️", "restaurant":  "🍽️", "truck_wash": "🚿",
+        "shower":      "🚿", "truck":       "🔧",
+    }
+    results = []
+    for el in elements:
+        tags = el.get("tags", {})
+        amenity = tags.get("amenity") or tags.get("highway") or tags.get("shop") or "poi"
+        icon = POI_ICON.get(amenity, "📍")
+        # Better label for fuel+hgv
+        if amenity == "fuel" and tags.get("hgv") in ("yes","designated"):
+            icon = "⛽🚛"
+        name = tags.get("name") or tags.get("operator") or tags.get("brand") or amenity.replace("_"," ").title()
+        results.append({
+            "id":   f"poi_{el['id']}",
+            "lat":  el.get("lat", 0),
+            "lng":  el.get("lon", 0),
+            "name": name,
+            "type": amenity,
+            "icon": icon,
+            "hgv":  tags.get("hgv","") in ("yes","designated"),
+        })
+    return jsonify(results)
+
+
 @app.route("/api/autobahn-parkings")
 def api_autobahn_parkings():
     """Pobiera parkingi TIR z oficjalnego API Autobahn GmbH (rząd DE, bezpłatne)."""

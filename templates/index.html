@@ -650,6 +650,27 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .nav-stop-btn{padding:.55rem 1rem;border:none;border-radius:12px;cursor:pointer;
   background:#ef4444;color:#fff;font-family:var(--font-head);font-size:.85rem;font-weight:800;flex-shrink:0}
 .nav-reroute{font-size:.7rem;color:var(--muted);text-align:center;padding:.2rem 0}
+/* ══ NAV POI STRIP ══ */
+.nav-pois-strip{background:var(--bg);border-bottom:1px solid var(--border);
+  padding:.45rem .8rem;display:flex;gap:.5rem;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
+.nav-pois-strip::-webkit-scrollbar{display:none}
+.nav-poi-chip{display:flex;flex-direction:column;align-items:center;gap:.15rem;
+  background:var(--panel);border:1px solid var(--border);border-radius:12px;
+  padding:.4rem .65rem;flex-shrink:0;cursor:pointer;transition:border-color .15s;min-width:64px}
+.nav-poi-chip:hover{border-color:var(--accent)}
+.nav-poi-chip.near{border-color:#22c55e;background:rgba(34,197,94,.1)}
+.nav-poi-chip-icon{font-size:1.1rem;line-height:1}
+.nav-poi-chip-name{font-size:.6rem;font-weight:700;color:var(--text);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;max-width:70px;text-align:center}
+.nav-poi-chip-dist{font-size:.6rem;color:var(--blue);font-weight:700}
+/* ══ JEDŹ BUTTON ══ */
+.jedz-btn{width:100%;padding:.9rem;border:none;border-radius:16px;cursor:pointer;
+  font-family:var(--font-head);font-size:1.1rem;font-weight:900;letter-spacing:.04em;
+  background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;
+  box-shadow:0 4px 20px rgba(34,197,94,.4);transition:transform .15s,box-shadow .15s;
+  display:flex;align-items:center;justify-content:center;gap:.5rem;margin-top:.5rem}
+.jedz-btn:active{transform:scale(.97);box-shadow:0 2px 8px rgba(34,197,94,.3)}
+.jedz-btn:disabled{background:#555;box-shadow:none;cursor:wait}
 
 /* ══ MARKET MARKERS ══ */
 .mk-market{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
@@ -1016,12 +1037,7 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
     <label class="form-label" data-i="route_to">Destination</label>
     <input class="form-input" id="route-to" placeholder="e.g. Munich, Frankfurt...">
   </div>
-  <div class="route-radius-row">
-    <span data-i="route_radius">Corridor:</span>
-    <input type="range" id="route-radius" min="5" max="50" value="15" oninput="document.getElementById('route-radius-val').textContent=this.value">
-    <strong id="route-radius-val">15</strong><span> km</span>
-  </div>
-  <button class="route-search-btn" onclick="searchRoute()" id="route-search-btn" data-i="route_btn">🔀 Find parkings on route</button>
+  <button class="jedz-btn" onclick="startDriving()" id="jedz-btn">🚛 JEDŹ</button>
   <div id="route-results"></div>
   <div id="route-history-section"></div>
 </div>
@@ -1031,9 +1047,12 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
   <div class="nav-top">
     <div class="nav-arrow" id="nav-arrow">⬆️</div>
     <div class="nav-instruction-wrap">
-      <div class="nav-instruction" id="nav-instruction">Calculating...</div>
+      <div class="nav-instruction" id="nav-instruction">Obliczanie trasy...</div>
       <div class="nav-dist-next" id="nav-dist-next"></div>
     </div>
+  </div>
+  <div class="nav-pois-strip" id="nav-pois-strip">
+    <div style="font-size:.72rem;color:var(--muted);align-self:center;white-space:nowrap">⏳ Ładowanie POI...</div>
   </div>
   <div style="flex:1"></div>
   <div class="nav-bottom">
@@ -2163,14 +2182,14 @@ function pointToSegmentDistKm(pLat,pLng,aLat,aLng,bLat,bLng){
   return haversineKm(pLat,pLng,aLat+t*dy,aLng+t*dx);
 }
 
-async function searchRoute(){
+async function searchRoute(navMode){
   const fromVal = document.getElementById('route-from').value.trim();
   const toVal   = document.getElementById('route-to').value.trim();
-  const radius  = parseInt(document.getElementById('route-radius').value);
-  const btn     = document.getElementById('route-search-btn');
+  const radius  = 15; // fixed corridor km
+  const btn     = document.getElementById('jedz-btn');
   const resultsDiv = document.getElementById('route-results');
-  if(!toVal){ showAlert('⚠️','','Enter destination'); return; }
-  btn.textContent = t('route_loading'); btn.disabled = true;
+  if(!toVal){ showAlert('⚠️','','Wpisz cel podróży'); return; }
+  if(btn){ btn.innerHTML='⏳ Obliczam...'; btn.disabled=true; }
   resultsDiv.innerHTML = '';
   try {
     // Resolve FROM
@@ -2258,16 +2277,21 @@ async function searchRoute(){
     const wpVals = [...document.querySelectorAll('#waypoints-list input')].map(i=>i.value.trim()).filter(Boolean);
     routeHistorySave(fromVal || '📡 GPS', toVal, wpVals);
 
-    resultsDiv.innerHTML = header + parkHtml +
-      `<div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.6rem">
-        <button class="route-clear-btn" onclick="clearRoute()">✕ Usuń trasę</button>
-        <button class="route-navigate-btn" onclick="startNavigation()">🧭 Nawiguj</button>
-      </div>`;
+    if(navMode){
+      // JEDŹ — od razu start nawigacji
+      startNavigation();
+    } else {
+      resultsDiv.innerHTML = header + parkHtml +
+        `<div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.6rem">
+          <button class="route-clear-btn" onclick="clearRoute()">✕ Usuń trasę</button>
+          <button class="jedz-btn" style="margin-top:0" onclick="startNavigation()">🚛 Nawiguj</button>
+        </div>`;
+    }
 
   } catch(err){
     showAlert('⚠️','Error', err.message||'Route error');
   } finally {
-    btn.textContent = t('route_btn'); btn.disabled = false;
+    if(btn){ btn.innerHTML='🚛 JEDŹ'; btn.disabled=false; }
   }
 }
 
@@ -2350,16 +2374,110 @@ function fmtDur(s){
   return m>=60 ? Math.floor(m/60)+'h '+(m%60)+'min' : m+' min';
 }
 
+let navRoutePois = [];     // POI wzdłuż trasy, posortowane po odległości od startu
+let navAnnouncedPois = new Set(); // ID już ogłoszonych
+
+async function startDriving(){
+  const btn = document.getElementById('jedz-btn');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Obliczam trasę...';
+  try {
+    await searchRoute(true); // true = nav mode
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🚛 JEDŹ';
+  }
+}
+
 function startNavigation(){
-  if(!routeSteps.length){ showAlert('⚠️','','Calculate route first'); return; }
-  navActive=true; navStepIdx=0; navLastLat=null; navLastLng=null;
+  if(!routeSteps.length){ showAlert('⚠️','','Najpierw oblicz trasę'); return; }
+  navActive=true; navStepIdx=0; navLastLat=null; navLastLng=null; navAnnouncedPois=new Set();
   document.getElementById('nav-overlay').classList.add('active');
   closeRoute();
   updateNavStep(0);
   setEl('nav-total-dist', fmtDist(routeTotalDist));
   setEl('nav-eta-time', 'ETA: '+fmtDur(routeTotalDur));
+
+  // Fetch POI along route
+  loadRoutePois();
+
   navWatchId = navigator.geolocation.watchPosition(onNavPosition,
     ()=>showAlert('⚠️','GPS Error',''), {enableHighAccuracy:true,maximumAge:3000,timeout:10000});
+}
+
+async function loadRoutePois(){
+  if(!routeCoords.length) return;
+  const lats = routeCoords.map(c=>c[1]);
+  const lngs = routeCoords.map(c=>c[0]);
+  const south = Math.min(...lats)-0.1, north = Math.max(...lats)+0.1;
+  const west  = Math.min(...lngs)-0.1, east  = Math.max(...lngs)+0.1;
+  const radius = 8; // km corridor
+
+  try {
+    const r = await fetch(`/api/route-pois?south=${south.toFixed(3)}&west=${west.toFixed(3)}&north=${north.toFixed(3)}&east=${east.toFixed(3)}`);
+    const pois = await r.json();
+
+    // Also add our parkings
+    const parkingPois = allParkings.map(p=>({
+      id: 'park_'+p.id, lat: p.lat, lng: p.lng,
+      name: p.name, type: 'parking', icon: '🅿️', hgv: true,
+    }));
+
+    const all = [...pois, ...parkingPois];
+
+    // Filter by corridor + sort by distance along route from start
+    navRoutePois = all
+      .filter(p => pointToRouteDistKm(p.lat, p.lng, routeCoords) <= radius)
+      .map(p => {
+        // Find closest point on route → approximate distance from start
+        let minIdx = 0, minD = Infinity;
+        for(let i=0; i<routeCoords.length; i++){
+          const d = haversineKm(p.lat, p.lng, routeCoords[i][1], routeCoords[i][0]);
+          if(d < minD){ minD=d; minIdx=i; }
+        }
+        // Distance from start = sum of segments up to minIdx
+        let distFromStart = 0;
+        for(let i=1; i<=minIdx; i++){
+          distFromStart += haversineKm(routeCoords[i][1],routeCoords[i][0],routeCoords[i-1][1],routeCoords[i-1][0]);
+        }
+        return {...p, distFromStart, distKm: minD};
+      })
+      .sort((a,b) => a.distFromStart - b.distFromStart);
+
+    renderNavPois(null);
+  } catch(e){ console.warn('POI load failed', e); }
+}
+
+function renderNavPois(currentLat, currentLng){
+  const strip = document.getElementById('nav-pois-strip');
+  if(!strip || !navRoutePois.length){
+    if(strip) strip.innerHTML = '<div style="font-size:.72rem;color:var(--muted);align-self:center;padding:.2rem">Brak POI na trasie</div>';
+    return;
+  }
+
+  // Sort by distance from current position if we have GPS
+  let pois = navRoutePois;
+  if(currentLat != null){
+    pois = navRoutePois.map(p=>({
+      ...p,
+      distFromMe: haversineKm(currentLat, currentLng, p.lat, p.lng)
+    })).filter(p=>p.distFromMe > 0.05) // skip already passed
+      .sort((a,b)=>a.distFromMe - b.distFromMe)
+      .slice(0, 12);
+  } else {
+    pois = pois.slice(0, 12);
+  }
+
+  strip.innerHTML = pois.map(p => {
+    const dist = currentLat != null ? p.distFromMe : p.distFromStart;
+    const distTxt = dist < 1 ? Math.round(dist*1000)+'m' : dist.toFixed(1)+'km';
+    const near = currentLat != null && dist < 2;
+    return `<div class="nav-poi-chip${near?' near':''}" onclick="map.setView([${p.lat},${p.lng}],15)" title="${p.name}">
+      <div class="nav-poi-chip-icon">${p.icon}</div>
+      <div class="nav-poi-chip-name">${p.name.substring(0,14)}</div>
+      <div class="nav-poi-chip-dist">${distTxt}</div>
+    </div>`;
+  }).join('') || '<div style="font-size:.72rem;color:var(--muted);align-self:center">Brak POI w pobliżu</div>';
 }
 
 function updateNavStep(idx){
@@ -2404,13 +2522,37 @@ function onNavPosition(pos){
     }
   }
 
-  // Remaining distance (rough: from current pos to destination)
+  // Remaining distance
   if(routeCoords.length){
     const dest = routeCoords[routeCoords.length-1];
     const rem = haversineKm(lat,lng,dest[1],dest[0]);
     setEl('nav-total-dist', fmtDist(rem*1000));
-    setEl('nav-eta-time', 'ETA ~'+fmtDur(rem/80*3600)); // ~80km/h avg
+    setEl('nav-eta-time', 'ETA ~'+fmtDur(rem/80*3600));
   }
+
+  // Update POI strip
+  renderNavPois(lat, lng);
+
+  // Voice alerts for nearby POI (within 2km, not yet announced)
+  for(const p of navRoutePois){
+    if(navAnnouncedPois.has(p.id)) continue;
+    const d = haversineKm(lat, lng, p.lat, p.lng);
+    if(d < 2){
+      navAnnouncedPois.add(p.id);
+      const dist = d < 1 ? Math.round(d*1000)+' metrów' : d.toFixed(1)+' kilometrów';
+      const txt = `Za ${dist}: ${p.name}`;
+      if('speechSynthesis' in window){
+        const utt = new SpeechSynthesisUtterance(txt);
+        utt.lang = currentLang==='pl'?'pl-PL':currentLang==='de'?'de-DE':'en-US';
+        utt.rate = 1.05;
+        speechSynthesis.speak(utt);
+      }
+      // Visual toast on POI strip
+      showAlert(p.icon, p.name, `Za ${dist}`);
+      break; // one at a time
+    }
+  }
+
   navLastLat=lat; navLastLng=lng;
 }
 
