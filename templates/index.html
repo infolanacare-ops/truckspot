@@ -5,162 +5,213 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="theme-color" content="#0d1117">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>TruckSpot — Parkingi dla kierowców i turystów</title>
+<title>TruckSpot</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#0d1117;--panel:#161b22;--panel2:#21262d;--border:#30363d;
   --text:#e6edf3;--muted:#7d8590;
-  --tir:#f59e0b;--camper:#10b981;--tourist:#3b82f6;
-  --accent:#f59e0b;--red:#ef4444;--green:#10b981;
   --font:'Inter',sans-serif;--font-head:'Montserrat',sans-serif;
+  /* mode colors — overridden by JS */
+  --accent:#f59e0b;--accent2:#fbbf24;--accent-bg:rgba(245,158,11,.12);
 }
 html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--text);overflow:hidden}
 
-/* ── TOPBAR ── */
+/* ══════════════════════════════════════
+   WELCOME SCREEN
+══════════════════════════════════════ */
+#welcome{
+  position:fixed;inset:0;z-index:2000;
+  background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:1.5rem;transition:opacity .4s ease;
+}
+#welcome.hiding{opacity:0;pointer-events:none}
+
+.welcome-logo{
+  font-family:var(--font-head);font-size:2rem;font-weight:900;
+  background:linear-gradient(135deg,#f59e0b,#fbbf24,#10b981);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:.25rem;letter-spacing:-.03em;
+}
+.welcome-sub{color:var(--muted);font-size:.85rem;margin-bottom:2.5rem;text-align:center}
+
+.mode-cards{display:flex;flex-direction:column;gap:.9rem;width:100%;max-width:360px}
+
+.mode-card{
+  display:flex;align-items:center;gap:1.1rem;
+  background:var(--panel);border:1.5px solid var(--border);
+  border-radius:18px;padding:1.1rem 1.2rem;cursor:pointer;
+  transition:transform .15s, border-color .15s, background .15s;
+  position:relative;overflow:hidden;
+}
+.mode-card::before{
+  content:'';position:absolute;inset:0;opacity:0;transition:opacity .2s;
+}
+.mode-card:active{transform:scale(.97)}
+
+.mode-card.tir    {--c:#f59e0b}
+.mode-card.camper {--c:#10b981}
+.mode-card.tourist{--c:#3b82f6}
+
+.mode-card:hover, .mode-card:active{border-color:var(--c);background:rgba(255,255,255,.04)}
+
+.mode-card-icon{font-size:2.4rem;flex-shrink:0;line-height:1}
+.mode-card-info{flex:1}
+.mode-card-title{font-family:var(--font-head);font-size:1.05rem;font-weight:800;color:var(--text);margin-bottom:.2rem}
+.mode-card-desc{font-size:.75rem;color:var(--muted);line-height:1.4}
+.mode-card-arrow{color:var(--c);font-size:1.2rem;flex-shrink:0}
+
+/* ══════════════════════════════════════
+   APP SHELL
+══════════════════════════════════════ */
+#app{display:none;flex-direction:column;height:100%}
+#app.visible{display:flex}
+
+/* TOPBAR */
 .topbar{
-  position:fixed;top:0;left:0;right:0;z-index:1000;
-  background:rgba(13,17,23,.95);backdrop-filter:blur(12px);
+  flex-shrink:0;
+  background:rgba(13,17,23,.96);backdrop-filter:blur(12px);
   border-bottom:1px solid var(--border);
-  padding:.6rem 1rem;display:flex;align-items:center;gap:.75rem;
+  padding:.55rem 1rem;
+  display:flex;align-items:center;gap:.75rem;
+  position:relative;z-index:100;
 }
-.logo{font-family:var(--font-head);font-size:1.05rem;font-weight:800;white-space:nowrap;
-  background:linear-gradient(90deg,var(--tir),#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.mode-btns{display:flex;gap:.4rem;flex:1;justify-content:center}
-.mode-btn{
-  display:flex;align-items:center;gap:.3rem;padding:.35rem .7rem;border-radius:20px;
-  font-size:.78rem;font-weight:600;border:1.5px solid var(--border);background:var(--panel2);
-  color:var(--muted);cursor:pointer;transition:.15s;white-space:nowrap;
+.topbar-icon{font-size:1.3rem;flex-shrink:0}
+.topbar-title{font-family:var(--font-head);font-size:.95rem;font-weight:800;flex:1}
+.topbar-mode{
+  font-size:.7rem;font-weight:700;padding:.2rem .55rem;border-radius:12px;
+  background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent);
+  flex-shrink:0;
 }
-.mode-btn.active-tir   {border-color:var(--tir);   color:var(--tir);   background:rgba(245,158,11,.1)}
-.mode-btn.active-camper{border-color:var(--camper);color:var(--camper);background:rgba(16,185,129,.1)}
-.mode-btn.active-tourist{border-color:var(--tourist);color:var(--tourist);background:rgba(59,130,246,.1)}
-.mode-btn.active-all   {border-color:var(--text);  color:var(--text);  background:rgba(255,255,255,.07)}
+.back-btn{
+  background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+  border-radius:8px;padding:.3rem .6rem;font-size:.75rem;cursor:pointer;flex-shrink:0;
+}
 
-/* ── MAP ── */
-#map{position:fixed;top:56px;left:0;right:0;bottom:0;z-index:1}
+/* MAP */
+#map{flex:1;min-height:0}
 
-/* ── STATS BAR ── */
+/* BOTTOM STATS */
 .stats-bar{
-  position:fixed;bottom:0;left:0;right:0;z-index:900;
-  background:rgba(13,17,23,.92);backdrop-filter:blur(10px);
+  flex-shrink:0;
+  background:rgba(13,17,23,.94);backdrop-filter:blur(10px);
   border-top:1px solid var(--border);
   display:flex;align-items:center;justify-content:space-around;
-  padding:.5rem 1rem;font-size:.75rem;color:var(--muted);
+  padding:.45rem .5rem;
 }
-.stat-item{display:flex;flex-direction:column;align-items:center;gap:.1rem}
-.stat-val{font-family:var(--font-head);font-size:1rem;font-weight:800;color:var(--text)}
-.stat-val.tir   {color:var(--tir)}
-.stat-val.camper{color:var(--camper)}
-.stat-val.tourist{color:var(--tourist)}
+.stat-item{display:flex;flex-direction:column;align-items:center;gap:.05rem}
+.stat-val{font-family:var(--font-head);font-size:.95rem;font-weight:800;color:var(--accent)}
+.stat-lbl{font-size:.62rem;color:var(--muted)}
 
-/* ── DETAIL PANEL ── */
+/* DETAIL PANEL */
 .detail-panel{
-  position:fixed;bottom:0;left:0;right:0;z-index:950;
-  background:var(--panel);border-top:1px solid var(--border);
+  position:fixed;bottom:0;left:0;right:0;z-index:500;
+  background:var(--panel);border-top:2px solid var(--accent);
   border-radius:20px 20px 0 0;
-  padding:1rem 1rem 1.5rem;
-  transform:translateY(100%);transition:transform .3s ease;
-  max-height:75vh;overflow-y:auto;
+  padding:1rem 1rem 1.8rem;
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  max-height:78vh;overflow-y:auto;
 }
 .detail-panel.open{transform:translateY(0)}
-.panel-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto .75rem}
-.panel-close{position:absolute;top:.75rem;right:1rem;background:var(--panel2);border:none;color:var(--muted);border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center}
+.panel-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto .8rem}
+.panel-close{position:absolute;top:.8rem;right:1rem;background:var(--panel2);border:1px solid var(--border);color:var(--muted);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center}
+
 .panel-name{font-family:var(--font-head);font-size:1.1rem;font-weight:800;margin-bottom:.2rem}
-.panel-city{color:var(--muted);font-size:.82rem;margin-bottom:.9rem}
+.panel-addr{color:var(--muted);font-size:.8rem;margin-bottom:.9rem;display:flex;align-items:center;gap:.3rem}
 
-.type-badges{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.8rem}
-.badge{padding:.2rem .6rem;border-radius:20px;font-size:.7rem;font-weight:700;border:1px solid}
-.badge-tir    {color:var(--tir);   border-color:var(--tir);   background:rgba(245,158,11,.1)}
-.badge-camper {color:var(--camper);border-color:var(--camper);background:rgba(16,185,129,.1)}
-.badge-tourist{color:var(--tourist);border-color:var(--tourist);background:rgba(59,130,246,.1)}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:.55rem;margin-bottom:.9rem}
+.info-box{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:.55rem .7rem;text-align:center}
+.info-box-val{font-family:var(--font-head);font-size:1.1rem;font-weight:800;color:var(--accent)}
+.info-box-lbl{font-size:.65rem;color:var(--muted);margin-top:.1rem}
 
-.amenities{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.9rem}
-.amenity{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:.25rem .55rem;font-size:.72rem;color:var(--text)}
+.amenities{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.9rem}
+.amenity{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:.2rem .5rem;font-size:.72rem}
 
-.spots-row{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.9rem}
-.spot-box{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:.6rem .8rem;text-align:center}
-.spot-num{font-family:var(--font-head);font-size:1.3rem;font-weight:800}
-.spot-lbl{font-size:.67rem;color:var(--muted);margin-top:.1rem}
-
-.rating-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.9rem;font-size:.82rem}
-.stars{color:#fbbf24;font-size:.9rem}
-.price-tag{margin-left:auto;font-weight:700;color:var(--green)}
-
-.poi-section h4{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:.5rem}
-.poi-list{display:flex;flex-direction:column;gap:.35rem}
-.poi-item{display:flex;align-items:center;gap:.6rem;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:.45rem .65rem;font-size:.8rem}
-.poi-icon{font-size:1rem;flex-shrink:0}
-.poi-name{flex:1;font-weight:500}
-.poi-dist{color:var(--muted);font-size:.72rem;white-space:nowrap}
+.poi-title{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:.45rem;font-weight:600}
+.poi-list{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.9rem}
+.poi-row{display:flex;align-items:center;gap:.55rem;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:.4rem .65rem;font-size:.8rem}
+.poi-dist{margin-left:auto;color:var(--muted);font-size:.7rem;flex-shrink:0}
 
 .nav-btn{
-  display:flex;align-items:center;justify-content:center;gap:.5rem;
-  margin-top:.9rem;width:100%;padding:.75rem;border:none;border-radius:12px;
-  font-family:var(--font-head);font-weight:800;font-size:.9rem;cursor:pointer;
-  background:linear-gradient(135deg,var(--tir),#fbbf24);color:#000;transition:.15s;
+  width:100%;padding:.75rem;border:none;border-radius:14px;cursor:pointer;
+  font-family:var(--font-head);font-size:.9rem;font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#000;transition:.15s;
 }
-.nav-btn:hover{opacity:.9}
+.nav-btn:active{opacity:.85}
 
-/* ── LEAFLET MARKER OVERRIDES ── */
-.marker-tir    .marker-inner{background:var(--tir)}
-.marker-camper .marker-inner{background:var(--camper)}
-.marker-tourist .marker-inner{background:var(--tourist)}
-.marker-inner{
-  width:36px;height:36px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);
+/* MARKERS */
+.mk{width:38px;height:38px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);
   display:flex;align-items:center;justify-content:center;
-  border:3px solid rgba(255,255,255,.3);box-shadow:0 2px 8px rgba(0,0,0,.4);
-}
-.marker-inner span{transform:rotate(45deg);font-size:1rem}
+  border:3px solid rgba(255,255,255,.25);box-shadow:0 3px 10px rgba(0,0,0,.5);
+  background:var(--accent);}
+.mk span{transform:rotate(45deg);font-size:1.05rem;line-height:1}
 
-/* ── COUNTRY FILTER ── */
-.country-filter{display:flex;gap:.35rem;flex-wrap:wrap;padding:.5rem 1rem;
-  background:rgba(13,17,23,.9);border-bottom:1px solid var(--border);
-  position:fixed;top:56px;left:0;right:0;z-index:999;overflow-x:auto}
-.country-btn{padding:.2rem .55rem;border-radius:12px;font-size:.72rem;font-weight:600;
-  border:1px solid var(--border);background:var(--panel2);color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0}
-.country-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(245,158,11,.1)}
-
-/* ── MAP z country bar ── */
-.has-country #map{top:94px}
-.has-country .stats-bar{display:none}
-
-@media(max-width:480px){
-  .topbar{padding:.5rem .75rem}
-  .logo{font-size:.9rem}
-  .mode-btn{padding:.28rem .5rem;font-size:.72rem}
+@media(max-width:380px){
+  .mode-card{padding:.9rem 1rem}
+  .mode-card-icon{font-size:2rem}
+  .mode-card-title{font-size:.95rem}
 }
 </style>
 </head>
 <body>
 
-<!-- TOPBAR -->
-<header class="topbar">
-  <div class="logo">🚛 TruckSpot</div>
-  <div class="mode-btns">
-    <button class="mode-btn active-all" data-mode="" onclick="setMode(this,'')">🗺 Wszystkie</button>
-    <button class="mode-btn" data-mode="tir" onclick="setMode(this,'tir')">🚛 TIR</button>
-    <button class="mode-btn" data-mode="camper" onclick="setMode(this,'camper')">🚐 Camper</button>
-    <button class="mode-btn" data-mode="tourist" onclick="setMode(this,'tourist')">🧳 Turysta</button>
+<!-- ══ WELCOME ══ -->
+<div id="welcome">
+  <div class="welcome-logo">🚛 TruckSpot</div>
+  <div class="welcome-sub">Parkingi i atrakcje w całej Europie<br>Wybierz swój tryb jazdy</div>
+  <div class="mode-cards">
+
+    <div class="mode-card tir" onclick="enterMode('tir')">
+      <div class="mode-card-icon">🚛</div>
+      <div class="mode-card-info">
+        <div class="mode-card-title">Kierowca TIR</div>
+        <div class="mode-card-desc">Parkingi TIR · myjnie · serwisy · restauracje przy trasie</div>
+      </div>
+      <div class="mode-card-arrow">›</div>
+    </div>
+
+    <div class="mode-card camper" onclick="enterMode('camper')">
+      <div class="mode-card-icon">🚐</div>
+      <div class="mode-card-info">
+        <div class="mode-card-title">Camper / Busiarz</div>
+        <div class="mode-card-desc">Stellplätze · prąd · woda · prysznice · natura w pobliżu</div>
+      </div>
+      <div class="mode-card-arrow">›</div>
+    </div>
+
+    <div class="mode-card tourist" onclick="enterMode('tourist')">
+      <div class="mode-card-icon">🧳</div>
+      <div class="mode-card-info">
+        <div class="mode-card-title">Turysta</div>
+        <div class="mode-card-desc">Parkingi przy atrakcjach · zabytki · restauracje · sklepy</div>
+      </div>
+      <div class="mode-card-arrow">›</div>
+    </div>
+
   </div>
-</header>
-
-<!-- MAP -->
-<div id="map"></div>
-
-<!-- STATS BAR -->
-<div class="stats-bar" id="stats-bar">
-  <div class="stat-item"><span class="stat-val tir" id="cnt-tir">–</span><span>TIR</span></div>
-  <div class="stat-item"><span class="stat-val camper" id="cnt-camper">–</span><span>Camper</span></div>
-  <div class="stat-item"><span class="stat-val tourist" id="cnt-tourist">–</span><span>Turysta</span></div>
-  <div class="stat-item"><span class="stat-val" id="cnt-all">–</span><span>Razem</span></div>
 </div>
 
-<!-- DETAIL PANEL -->
+<!-- ══ APP ══ -->
+<div id="app">
+  <div class="topbar">
+    <span class="topbar-icon" id="topbar-icon">🚛</span>
+    <span class="topbar-title" id="topbar-title">TruckSpot</span>
+    <span class="topbar-mode" id="topbar-mode">TIR</span>
+    <button class="back-btn" onclick="goBack()">← Zmień</button>
+  </div>
+  <div id="map"></div>
+  <div class="stats-bar" id="stats-bar">
+    <div class="stat-item"><span class="stat-val" id="cnt-spots">–</span><span class="stat-lbl">parkingów</span></div>
+    <div class="stat-item"><span class="stat-val" id="cnt-free">–</span><span class="stat-lbl">bezpłatnych</span></div>
+    <div class="stat-item"><span class="stat-val" id="cnt-shower">–</span><span class="stat-lbl">z prysznicem</span></div>
+  </div>
+</div>
+
+<!-- ══ DETAIL PANEL ══ -->
 <div class="detail-panel" id="detail-panel">
   <div class="panel-handle"></div>
   <button class="panel-close" onclick="closePanel()">✕</button>
@@ -169,41 +220,97 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// ── MAP INIT ─────────────────────────────────────────────
-const map = L.map('map', {zoomControl:false}).setView([51.5, 12.0], 5);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
-  attribution:'&copy; OpenStreetMap &copy; CARTO',maxZoom:19
-}).addTo(map);
-L.control.zoom({position:'bottomright'}).addTo(map);
-
-// ── STATE ─────────────────────────────────────────────────
-let currentMode = '';
-let allParkings = [];
-let markers = [];
-
-// ── ICONS ─────────────────────────────────────────────────
-const ICONS = {
-  tir:     {emoji:'🚛', cls:'marker-tir'},
-  camper:  {emoji:'🚐', cls:'marker-camper'},
-  tourist: {emoji:'🧳', cls:'marker-tourist'},
-  default: {emoji:'🅿️', cls:'marker-tir'},
+// ── CONFIG PER MODE ──────────────────────────────────────
+const MODE_CONFIG = {
+  tir: {
+    icon: '🚛', label: 'TIR', color: '#f59e0b', color2: '#fbbf24',
+    title: 'TruckSpot — Kierowca TIR',
+    statsLabel: ['parkingów TIR', 'bezpłatnych', 'z prysznicem'],
+    amenityFilter: ['shower','restaurant','truck_wash','repair','shop','wifi','toilet'],
+    poiFilter: ['restaurant','fuel','shop','repair'],
+    markerEmoji: '🚛',
+  },
+  camper: {
+    icon: '🚐', label: 'Camper', color: '#10b981', color2: '#34d399',
+    title: 'TruckSpot — Camper / Busiarz',
+    statsLabel: ['Stellplätze', 'bezpłatnych', 'z prądem'],
+    amenityFilter: ['electricity','water','shower','wifi','toilet','restaurant','pool'],
+    poiFilter: ['nature','attraction','shop','restaurant'],
+    markerEmoji: '🚐',
+  },
+  tourist: {
+    icon: '🧳', label: 'Turysta', color: '#3b82f6', color2: '#60a5fa',
+    title: 'TruckSpot — Turysta',
+    statsLabel: ['parkingów', 'bezpłatnych', 'atrakcji blisko'],
+    amenityFilter: ['toilet','wifi','restaurant','shop','electricity','water'],
+    poiFilter: ['attraction','city','nature','restaurant','shop'],
+    markerEmoji: '🧳',
+  },
 };
 
-function getIcon(parking){
-  const types = parking.type || [];
-  let key = 'default';
-  if (types.includes('tir'))     key = 'tir';
-  if (currentMode && types.includes(currentMode)) key = currentMode;
-  const ic = ICONS[key];
-  return L.divIcon({
-    className: ic.cls,
-    html: `<div class="marker-inner"><span>${ic.emoji}</span></div>`,
-    iconSize:[36,36],iconAnchor:[18,36],popupAnchor:[0,-36]
-  });
+const AMENITY_LABELS = {
+  shower:'🚿 Prysznic', restaurant:'🍴 Restauracja', shop:'🛒 Sklep',
+  wifi:'📶 WiFi', electricity:'⚡ Prąd', water:'🚰 Woda',
+  toilet:'🚽 Toaleta', truck_wash:'🧼 Myjnia TIR', repair:'🔧 Serwis', pool:'🏊 Basen',
+};
+const POI_ICONS = {
+  attraction:'🏛', shop:'🛒', restaurant:'🍴', nature:'🌲',
+  fuel:'⛽', city:'🏙', default:'📍',
+};
+
+// ── STATE ────────────────────────────────────────────────
+let currentMode = null;
+let map = null;
+let markers = [];
+let allParkings = [];
+
+// ── WELCOME → APP ────────────────────────────────────────
+function enterMode(mode){
+  currentMode = mode;
+  const cfg = MODE_CONFIG[mode];
+
+  // apply CSS vars
+  document.documentElement.style.setProperty('--accent',  cfg.color);
+  document.documentElement.style.setProperty('--accent2', cfg.color2);
+  document.documentElement.style.setProperty('--accent-bg', hexAlpha(cfg.color, .12));
+
+  // topbar
+  document.getElementById('topbar-icon').textContent  = cfg.icon;
+  document.getElementById('topbar-title').textContent = 'TruckSpot';
+  document.getElementById('topbar-mode').textContent  = cfg.label;
+
+  // hide welcome, show app
+  const welcome = document.getElementById('welcome');
+  welcome.classList.add('hiding');
+  setTimeout(()=>{ welcome.style.display='none'; }, 400);
+  document.getElementById('app').classList.add('visible');
+
+  // init map once
+  if(!map){
+    map = L.map('map',{zoomControl:false}).setView([51.5,12.0],5);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+      attribution:'&copy; OpenStreetMap &copy; CARTO',maxZoom:19
+    }).addTo(map);
+    L.control.zoom({position:'bottomright'}).addTo(map);
+    map.on('click', closePanel);
+  } else {
+    setTimeout(()=>map.invalidateSize(), 100);
+  }
+
+  loadParkings(mode);
+  localStorage.setItem('ts_mode', mode);
 }
 
-// ── LOAD PARKINGS ─────────────────────────────────────────
-function loadParkings(mode=''){
+function goBack(){
+  closePanel();
+  document.getElementById('app').classList.remove('visible');
+  const welcome = document.getElementById('welcome');
+  welcome.style.display = 'flex';
+  welcome.classList.remove('hiding');
+}
+
+// ── LOAD & RENDER ────────────────────────────────────────
+function loadParkings(mode){
   fetch(`/api/parkings?mode=${mode}`)
     .then(r=>r.json())
     .then(data=>{
@@ -216,129 +323,102 @@ function loadParkings(mode=''){
 function renderMarkers(parkings){
   markers.forEach(m=>map.removeLayer(m));
   markers = [];
+  const cfg = MODE_CONFIG[currentMode];
   parkings.forEach(p=>{
-    const m = L.marker([p.lat, p.lng], {icon: getIcon(p)})
+    const icon = L.divIcon({
+      className:'',
+      html:`<div class="mk" style="background:${cfg.color}"><span>${cfg.markerEmoji}</span></div>`,
+      iconSize:[38,38],iconAnchor:[19,38],popupAnchor:[0,-38]
+    });
+    const m = L.marker([p.lat,p.lng],{icon})
       .addTo(map)
-      .on('click', ()=>showDetail(p));
+      .on('click',()=>showDetail(p));
     markers.push(m);
   });
 }
 
 function updateStats(parkings){
-  const tirCount     = parkings.filter(p=>p.type.includes('tir')).length;
-  const camperCount  = parkings.filter(p=>p.type.includes('camper')).length;
-  const touristCount = parkings.filter(p=>p.type.includes('tourist')).length;
-  document.getElementById('cnt-tir').textContent     = tirCount;
-  document.getElementById('cnt-camper').textContent  = camperCount;
-  document.getElementById('cnt-tourist').textContent = touristCount;
-  document.getElementById('cnt-all').textContent     = parkings.length;
+  const cfg = MODE_CONFIG[currentMode];
+  const free    = parkings.filter(p=>p.price_eur===0).length;
+  const shower  = parkings.filter(p=>(p.amenities||[]).includes('shower')).length;
+  const electric= parkings.filter(p=>(p.amenities||[]).includes('electricity')).length;
+  const attract = parkings.filter(p=>(p.poi||[]).some(x=>x.type==='attraction')).length;
+
+  document.getElementById('cnt-spots').textContent = parkings.length;
+  document.getElementById('cnt-free').textContent  = free;
+
+  const thirdVal = currentMode==='camper' ? electric
+                 : currentMode==='tourist' ? attract
+                 : shower;
+  document.getElementById('cnt-shower').textContent = thirdVal;
+
+  const labels = cfg.statsLabel;
+  document.querySelectorAll('.stat-lbl')[0].textContent = labels[0];
+  document.querySelectorAll('.stat-lbl')[1].textContent = labels[1];
+  document.querySelectorAll('.stat-lbl')[2].textContent = labels[2];
 }
 
-// ── MODE SWITCH ───────────────────────────────────────────
-function setMode(btn, mode){
-  currentMode = mode;
-  document.querySelectorAll('.mode-btn').forEach(b=>b.className='mode-btn');
-  const cls = mode ? `active-${mode}` : 'active-all';
-  btn.classList.add(cls);
-  loadParkings(mode);
-}
-
-// ── DETAIL PANEL ──────────────────────────────────────────
-const AMENITY_LABELS = {
-  shower:     '🚿 Prysznic',
-  restaurant: '🍴 Restauracja',
-  shop:       '🛒 Sklep',
-  wifi:       '📶 WiFi',
-  electricity:'⚡ Prąd',
-  water:      '🚰 Woda',
-  toilet:     '🚽 Toaleta',
-  truck_wash: '🧼 Myjnia TIR',
-  repair:     '🔧 Serwis',
-  pool:       '🏊 Basen',
-};
-
-const POI_ICONS = {
-  attraction: '🏛',
-  shop:       '🛒',
-  restaurant: '🍴',
-  nature:     '🌲',
-  fuel:       '⛽',
-  city:       '🏙',
-  default:    '📍',
-};
-
-function starsHtml(rating){
-  const full = Math.floor(rating);
-  const half = rating - full >= 0.5;
-  let s = '★'.repeat(full);
-  if(half) s += '½';
-  return s + ` ${rating.toFixed(1)}`;
-}
-
-function typeBadges(types){
-  return types.map(t=>`<span class="badge badge-${t}">${t==='tir'?'🚛 TIR':t==='camper'?'🚐 Camper':'🧳 Turysta'}</span>`).join('');
-}
-
+// ── DETAIL PANEL ─────────────────────────────────────────
 function showDetail(p){
-  const amenitiesHtml = (p.amenities||[]).map(a=>
-    `<span class="amenity">${AMENITY_LABELS[a]||a}</span>`
-  ).join('');
+  const cfg = MODE_CONFIG[currentMode];
 
-  const poiHtml = (p.poi||[]).map(poi=>`
-    <div class="poi-item">
-      <span class="poi-icon">${POI_ICONS[poi.type]||POI_ICONS.default}</span>
-      <span class="poi-name">${poi.name}</span>
+  // amenities — filtruj po trybie
+  const amenities = (p.amenities||[]).filter(a=>cfg.amenityFilter.includes(a));
+  const amenHtml  = amenities.map(a=>`<span class="amenity">${AMENITY_LABELS[a]||a}</span>`).join('');
+
+  // POI — filtruj po trybie
+  const pois = (p.poi||[]).filter(poi=>cfg.poiFilter.includes(poi.type));
+  const poiHtml = pois.map(poi=>`
+    <div class="poi-row">
+      <span>${POI_ICONS[poi.type]||'📍'}</span>
+      <span style="flex:1">${poi.name}</span>
       <span class="poi-dist">${poi.dist_km} km</span>
-    </div>
-  `).join('');
+    </div>`).join('');
 
-  const spotsHtml = (p.spots_tir>0||p.spots_camper>0) ? `
-    <div class="spots-row">
-      ${p.spots_tir>0   ? `<div class="spot-box"><div class="spot-num tir">${p.spots_tir}</div><div class="spot-lbl">miejsc TIR</div></div>`:''}
-      ${p.spots_camper>0? `<div class="spot-box"><div class="spot-num camper">${p.spots_camper}</div><div class="spot-lbl">miejsc Camper</div></div>`:''}
-    </div>` : '';
-
-  const price = p.price_eur===0 ? 'Bezpłatny' : `${p.price_eur} €/noc`;
+  // spots
+  const spotsHtml = [
+    p.spots_tir>0    ? `<div class="info-box"><div class="info-box-val">${p.spots_tir}</div><div class="info-box-lbl">miejsc TIR</div></div>` : '',
+    p.spots_camper>0 ? `<div class="info-box"><div class="info-box-val">${p.spots_camper}</div><div class="info-box-lbl">miejsc Camper</div></div>` : '',
+    `<div class="info-box"><div class="info-box-val">${p.price_eur===0?'GRATIS':p.price_eur+'€'}</div><div class="info-box-lbl">cena/noc</div></div>`,
+    `<div class="info-box"><div class="info-box-val">★${p.rating}</div><div class="info-box-lbl">ocena</div></div>`,
+  ].filter(Boolean).join('');
 
   document.getElementById('panel-content').innerHTML = `
     <div class="panel-name">${p.name}</div>
-    <div class="panel-city">📍 ${p.city}, ${p.country} · ${p.address}</div>
-    <div class="type-badges">${typeBadges(p.type)}</div>
-    <div class="rating-row">
-      <span class="stars">${starsHtml(p.rating)}</span>
-      <span class="price-tag">${price}</span>
-    </div>
-    ${spotsHtml}
-    <div class="amenities">${amenitiesHtml}</div>
-    ${poiHtml ? `<div class="poi-section"><h4>🗺 W pobliżu</h4><div class="poi-list">${poiHtml}</div></div>` : ''}
+    <div class="panel-addr">📍 ${p.city}, ${p.country}</div>
+    <div class="info-grid">${spotsHtml}</div>
+    ${amenHtml ? `<div class="amenities">${amenHtml}</div>` : ''}
+    ${poiHtml  ? `<div class="poi-title">🗺 W pobliżu</div><div class="poi-list">${poiHtml}</div>` : ''}
     <button class="nav-btn" onclick="navigateTo(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')">
       📍 Nawiguj — Google Maps
     </button>
   `;
-
   document.getElementById('detail-panel').classList.add('open');
-  map.panTo([p.lat, p.lng]);
+  map.panTo([p.lat,p.lng]);
 }
 
 function closePanel(){
   document.getElementById('detail-panel').classList.remove('open');
 }
 
-function navigateTo(lat, lng, name){
-  const q = encodeURIComponent(name);
-  window.open(`https://www.google.com/maps/search/?api=1&query=${q}&query_place_id=`, '_blank');
+function navigateTo(lat,lng,name){
+  window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`, '_blank');
 }
 
-// Zamknij panel klikając mapę
-map.on('click', closePanel);
-
-// ── START ─────────────────────────────────────────────────
-loadParkings();
-
-// PWA Service Worker
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('/sw.js');
+// ── HELPER ───────────────────────────────────────────────
+function hexAlpha(hex, alpha){
+  const r=parseInt(hex.slice(1,3),16);
+  const g=parseInt(hex.slice(3,5),16);
+  const b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
 }
+
+// ── PWA ──────────────────────────────────────────────────
+if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+
+// przywróć tryb z ostatniej sesji
+const saved = localStorage.getItem('ts_mode');
+if(saved) enterMode(saved);
 </script>
 </body>
 </html>
