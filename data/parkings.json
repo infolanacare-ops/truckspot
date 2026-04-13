@@ -1,215 +1,43 @@
 [
-  {
-    "id": 1,
-    "name": "Autohof Geiselwind",
-    "lat": 49.7731, "lng": 10.4688,
-    "type": ["tir", "camper"],
-    "country": "DE", "city": "Geiselwind",
-    "address": "Scheinfelder Str. 1, 96160 Geiselwind",
-    "spots_tir": 80, "spots_camper": 20,
-    "amenities": ["shower", "restaurant", "shop", "wifi", "toilet"],
-    "price_eur": 0, "rating": 4.2, "status": "open",
-    "poi": [
-      {"name": "Erlebnispark Geiselwind", "type": "attraction", "dist_km": 0.3},
-      {"name": "Lidl Geiselwind", "type": "shop", "dist_km": 0.8},
-      {"name": "Autohof Restaurant", "type": "restaurant", "dist_km": 0.1}
-    ]
-  },
-  {
-    "id": 2,
-    "name": "Rasthof Dammer Berge",
-    "lat": 52.5338, "lng": 8.2167,
-    "type": ["tir", "camper"],
-    "country": "DE", "city": "Damme",
-    "address": "A1, 49401 Damme",
-    "spots_tir": 120, "spots_camper": 30,
-    "amenities": ["shower", "restaurant", "truck_wash", "toilet"],
-    "price_eur": 0, "rating": 3.9, "status": "open",
-    "poi": [
-      {"name": "Dammer Berge Naturpark", "type": "nature", "dist_km": 2.1},
-      {"name": "Aldi Damme", "type": "shop", "dist_km": 1.5},
-      {"name": "Tankstelle Shell", "type": "fuel", "dist_km": 0.1}
-    ]
-  },
-  {
-    "id": 3,
-    "name": "MOP Pruszków Wschód",
-    "lat": 52.1723, "lng": 20.8211,
-    "type": ["tir", "camper", "tourist"],
-    "country": "PL", "city": "Pruszków",
-    "address": "A2, Pruszków",
-    "spots_tir": 60, "spots_camper": 15,
-    "amenities": ["toilet", "restaurant", "shop"],
-    "price_eur": 0, "rating": 3.5, "status": "open",
-    "poi": [
-      {"name": "Muzeum Dulag 121", "type": "attraction", "dist_km": 3.2},
-      {"name": "Biedronka Pruszków", "type": "shop", "dist_km": 2.0},
-      {"name": "Warszawa centrum", "type": "city", "dist_km": 18.0}
-    ]
-  },
-  {
-    "id": 4,
-    "name": "Stellplatz Hamburg Elbe",
-    "lat": 53.5456, "lng": 9.9501,
-    "type": ["camper"],
-    "country": "DE", "city": "Hamburg",
-    "address": "Grosse Elbstrasse, Hamburg",
-    "spots_tir": 0, "spots_camper": 40,
-    "amenities": ["electricity", "water", "toilet", "wifi"],
-    "price_eur": 15, "rating": 4.7, "status": "open",
-    "poi": [
-      {"name": "Miniatur Wunderland", "type": "attraction", "dist_km": 1.2},
-      {"name": "Hamburger Fischmarkt", "type": "attraction", "dist_km": 0.5},
-      {"name": "Elbe Strand", "type": "nature", "dist_km": 0.2},
-      {"name": "Rewe Hamburg", "type": "shop", "dist_km": 0.4}
-    ]
-  },
-  {
-    "id": 5,
-    "name": "Camping Praha Džbán",
-    "lat": 50.1041, "lng": 14.3524,
-    "type": ["camper", "tourist"],
-    "country": "CZ", "city": "Praha",
-    "address": "Náměstí Před Bateriemi, Praha",
-    "spots_tir": 0, "spots_camper": 80,
-    "amenities": ["electricity", "shower", "wifi", "pool", "water", "toilet"],
-    "price_eur": 20, "rating": 4.4, "status": "open",
-    "poi": [
-      {"name": "Praga Stare Miasto", "type": "city", "dist_km": 6.0},
-      {"name": "Divoká Šárka rezerwat", "type": "nature", "dist_km": 0.5},
-      {"name": "Albert supermarket", "type": "shop", "dist_km": 0.8}
-    ]
-  },
-  {
-    "id": 6,
-    "name": "Autohof Wolfsburg Ost",
-    "lat": 52.4219, "lng": 10.8765,
-    "type": ["tir"],
-    "country": "DE", "city": "Wolfsburg",
-    "address": "A2, 38448 Wolfsburg",
-    "spots_tir": 200, "spots_camper": 0,
-    "amenities": ["shower", "restaurant", "truck_wash", "repair", "toilet"],
-    "price_eur": 0, "rating": 4.0, "status": "open",
-    "poi": [
-      {"name": "Autostadt Volkswagen", "type": "attraction", "dist_km": 4.5},
-      {"name": "Designer Outlet Wolfsburg", "type": "shop", "dist_km": 3.2},
-      {"name": "Lidl Wolfsburg", "type": "shop", "dist_km": 1.1}
-    ]
-  },
-  {
-    "id": 7,
-    "name": "Wohnmobilstellplatz München Thalkirchen",
-    "lat": 48.0893, "lng": 11.5588,
-    "type": ["camper"],
-    "country": "DE", "city": "München",
-    "address": "Zentralländstr. 49, 81379 München",
-    "spots_tir": 0, "spots_camper": 60,
-    "amenities": ["electricity", "water", "shower", "wifi", "toilet"],
-    "price_eur": 18, "rating": 4.6, "status": "open",
-    "poi": [
-      {"name": "Tierpark Hellabrunn", "type": "attraction", "dist_km": 0.8},
-      {"name": "Englischer Garten", "type": "nature", "dist_km": 4.0},
-      {"name": "Marienplatz München", "type": "city", "dist_km": 5.5},
-      {"name": "REWE München", "type": "shop", "dist_km": 0.5}
-    ]
-  },
-  {
-    "id": 8,
-    "name": "MOP Kleszczów",
-    "lat": 51.3156, "lng": 19.3812,
-    "type": ["tir", "camper"],
-    "country": "PL", "city": "Kleszczów",
-    "address": "A1, Kleszczów",
-    "spots_tir": 90, "spots_camper": 10,
-    "amenities": ["toilet", "restaurant"],
-    "price_eur": 0, "rating": 3.3, "status": "open",
-    "poi": [
-      {"name": "Pałac Bełchatów", "type": "attraction", "dist_km": 8.0},
-      {"name": "Lidl Bełchatów", "type": "shop", "dist_km": 7.5}
-    ]
-  },
-  {
-    "id": 9,
-    "name": "Camping Wacker Berlin",
-    "lat": 52.4872, "lng": 13.2788,
-    "type": ["tourist"],
-    "country": "DE", "city": "Berlin",
-    "address": "Kronprinzessinnenweg 111-113, 14129 Berlin",
-    "spots_tir": 0, "spots_camper": 100,
-    "amenities": ["electricity", "water", "shower", "wifi", "toilet", "restaurant"],
-    "price_eur": 25, "rating": 4.3, "status": "open",
-    "poi": [
-      {"name": "Berlin centrum", "type": "city", "dist_km": 12.0},
-      {"name": "Wannsee jezioro", "type": "nature", "dist_km": 3.0},
-      {"name": "Pfaueninsel — wyspa pawi", "type": "attraction", "dist_km": 4.0},
-      {"name": "Rewe Berlin", "type": "shop", "dist_km": 1.2}
-    ]
-  },
-  {
-    "id": 10,
-    "name": "Camping International Wien",
-    "lat": 48.2394, "lng": 16.3344,
-    "type": ["tourist"],
-    "country": "AT", "city": "Wien",
-    "address": "Breitenleer Str. 224, 1220 Wien",
-    "spots_tir": 0, "spots_camper": 120,
-    "amenities": ["electricity", "water", "shower", "wifi", "toilet", "pool"],
-    "price_eur": 28, "rating": 4.5, "status": "open",
-    "poi": [
-      {"name": "Wiedeń centrum", "type": "city", "dist_km": 8.0},
-      {"name": "Prater — Wesołe Miasteczko", "type": "attraction", "dist_km": 6.0},
-      {"name": "Donaupark", "type": "nature", "dist_km": 2.5},
-      {"name": "Billa supermarket", "type": "shop", "dist_km": 0.5}
-    ]
-  },
-  {
-    "id": 11,
-    "name": "Pole namiotowe Hel",
-    "lat": 54.6037, "lng": 18.8019,
-    "type": ["tourist"],
-    "country": "PL", "city": "Hel",
-    "address": "ul. Portowa, Hel",
-    "spots_tir": 0, "spots_camper": 50,
-    "amenities": ["electricity", "shower", "toilet", "wifi"],
-    "price_eur": 10, "rating": 4.6, "status": "open",
-    "poi": [
-      {"name": "Plaża Hel — Bałtyk", "type": "nature", "dist_km": 0.3},
-      {"name": "Fokarium Hel", "type": "attraction", "dist_km": 0.8},
-      {"name": "Latarnia morska Hel", "type": "attraction", "dist_km": 1.0},
-      {"name": "Biedronka Hel", "type": "shop", "dist_km": 0.5}
-    ]
-  },
-  {
-    "id": 12,
-    "name": "Autohof Nürnberg Nord",
-    "lat": 49.5231, "lng": 11.1098,
-    "type": ["tir"],
-    "country": "DE", "city": "Nürnberg",
-    "address": "A9, 90475 Nürnberg",
-    "spots_tir": 160, "spots_camper": 0,
-    "amenities": ["shower", "restaurant", "truck_wash", "repair", "shop", "wifi", "toilet"],
-    "price_eur": 0, "rating": 4.1, "status": "open",
-    "poi": [
-      {"name": "Tankstelle Aral", "type": "fuel", "dist_km": 0.1},
-      {"name": "McDonalds Nürnberg", "type": "restaurant", "dist_km": 0.2},
-      {"name": "Lidl Nürnberg", "type": "shop", "dist_km": 1.8}
-    ]
-  },
-  {
-    "id": 13,
-    "name": "Vanlife Spot — Rügen Ostsee",
-    "lat": 54.3858, "lng": 13.3713,
-    "type": ["camper"],
-    "country": "DE", "city": "Rügen",
-    "address": "Binz, Insel Rügen",
-    "spots_tir": 0, "spots_camper": 35,
-    "amenities": ["electricity", "water", "toilet", "shower"],
-    "price_eur": 12, "rating": 4.8, "status": "open",
-    "poi": [
-      {"name": "Plaża Binz — Bałtyk", "type": "nature", "dist_km": 0.4},
-      {"name": "Prora — historyczny budynek", "type": "attraction", "dist_km": 3.0},
-      {"name": "Jasmund — klify kredowe", "type": "nature", "dist_km": 12.0},
-      {"name": "Edeka Binz", "type": "shop", "dist_km": 0.6}
-    ]
-  }
+  {"id":1,"name":"Autohof Geiselwind","lat":49.7731,"lng":10.4688,"type":["tir","camper"],"country":"DE","city":"Geiselwind","address":"Scheinfelder Str. 1, 96160 Geiselwind","spots_tir":80,"spots_camper":20,"amenities":["shower","restaurant","shop","wifi","toilet"],"price_eur":0,"rating":4.2,"status":"open","poi":[{"name":"Erlebnispark Geiselwind","type":"attraction","dist_km":0.3},{"name":"Lidl Geiselwind","type":"shop","dist_km":0.8},{"name":"Autohof Restaurant","type":"restaurant","dist_km":0.1}]},
+  {"id":2,"name":"Rasthof Dammer Berge","lat":52.5338,"lng":8.2167,"type":["tir","camper"],"country":"DE","city":"Damme","address":"A1, 49401 Damme","spots_tir":120,"spots_camper":30,"amenities":["shower","restaurant","truck_wash","toilet"],"price_eur":0,"rating":3.9,"status":"open","poi":[{"name":"Dammer Berge Naturpark","type":"nature","dist_km":2.1},{"name":"Aldi Damme","type":"shop","dist_km":1.5},{"name":"Tankstelle Shell","type":"fuel","dist_km":0.1}]},
+  {"id":3,"name":"MOP Pruszków Wschód","lat":52.1723,"lng":20.8211,"type":["tir","camper","tourist"],"country":"PL","city":"Pruszków","address":"A2, Pruszków","spots_tir":60,"spots_camper":15,"amenities":["toilet","restaurant","shop"],"price_eur":0,"rating":3.5,"status":"open","poi":[{"name":"Muzeum Dulag 121","type":"attraction","dist_km":3.2},{"name":"Biedronka Pruszków","type":"shop","dist_km":2.0},{"name":"Warszawa centrum","type":"city","dist_km":18.0}]},
+  {"id":4,"name":"Stellplatz Hamburg Elbe","lat":53.5456,"lng":9.9501,"type":["camper"],"country":"DE","city":"Hamburg","address":"Grosse Elbstrasse, Hamburg","spots_tir":0,"spots_camper":40,"amenities":["electricity","water","toilet","wifi"],"price_eur":15,"rating":4.7,"status":"open","poi":[{"name":"Miniatur Wunderland","type":"attraction","dist_km":1.2},{"name":"Hamburger Fischmarkt","type":"attraction","dist_km":0.5},{"name":"Elbe Strand","type":"nature","dist_km":0.2},{"name":"Rewe Hamburg","type":"shop","dist_km":0.4}]},
+  {"id":5,"name":"Camping Praha Džbán","lat":50.1041,"lng":14.3524,"type":["camper","tourist"],"country":"CZ","city":"Praha","address":"Náměstí Před Bateriemi, Praha","spots_tir":0,"spots_camper":80,"amenities":["electricity","shower","wifi","pool","water","toilet"],"price_eur":20,"rating":4.4,"status":"open","poi":[{"name":"Praga Stare Miasto","type":"city","dist_km":6.0},{"name":"Divoká Šárka rezerwat","type":"nature","dist_km":0.5},{"name":"Albert supermarket","type":"shop","dist_km":0.8}]},
+  {"id":6,"name":"Autohof Wolfsburg Ost","lat":52.4219,"lng":10.8765,"type":["tir"],"country":"DE","city":"Wolfsburg","address":"A2, 38448 Wolfsburg","spots_tir":200,"spots_camper":0,"amenities":["shower","restaurant","truck_wash","repair","toilet"],"price_eur":0,"rating":4.0,"status":"open","poi":[{"name":"Autostadt Volkswagen","type":"attraction","dist_km":4.5},{"name":"Designer Outlet Wolfsburg","type":"shop","dist_km":3.2},{"name":"Lidl Wolfsburg","type":"shop","dist_km":1.1}]},
+  {"id":7,"name":"Wohnmobilstellplatz München Thalkirchen","lat":48.0893,"lng":11.5588,"type":["camper"],"country":"DE","city":"München","address":"Zentralländstr. 49, 81379 München","spots_tir":0,"spots_camper":60,"amenities":["electricity","water","shower","wifi","toilet"],"price_eur":18,"rating":4.6,"status":"open","poi":[{"name":"Tierpark Hellabrunn","type":"attraction","dist_km":0.8},{"name":"Englischer Garten","type":"nature","dist_km":4.0},{"name":"Marienplatz München","type":"city","dist_km":5.5},{"name":"REWE München","type":"shop","dist_km":0.5}]},
+  {"id":8,"name":"MOP Kleszczów","lat":51.3156,"lng":19.3812,"type":["tir","camper"],"country":"PL","city":"Kleszczów","address":"A1, Kleszczów","spots_tir":90,"spots_camper":10,"amenities":["toilet","restaurant"],"price_eur":0,"rating":3.3,"status":"open","poi":[{"name":"Pałac Bełchatów","type":"attraction","dist_km":8.0},{"name":"Lidl Bełchatów","type":"shop","dist_km":7.5}]},
+  {"id":9,"name":"Camping Wacker Berlin","lat":52.4872,"lng":13.2788,"type":["tourist"],"country":"DE","city":"Berlin","address":"Kronprinzessinnenweg 111-113, 14129 Berlin","spots_tir":0,"spots_camper":100,"amenities":["electricity","water","shower","wifi","toilet","restaurant"],"price_eur":25,"rating":4.3,"status":"open","poi":[{"name":"Berlin centrum","type":"city","dist_km":12.0},{"name":"Wannsee jezioro","type":"nature","dist_km":3.0},{"name":"Pfaueninsel","type":"attraction","dist_km":4.0},{"name":"Rewe Berlin","type":"shop","dist_km":1.2}]},
+  {"id":10,"name":"Camping International Wien","lat":48.2394,"lng":16.3344,"type":["tourist"],"country":"AT","city":"Wien","address":"Breitenleer Str. 224, 1220 Wien","spots_tir":0,"spots_camper":120,"amenities":["electricity","water","shower","wifi","toilet","pool"],"price_eur":28,"rating":4.5,"status":"open","poi":[{"name":"Wiedeń centrum","type":"city","dist_km":8.0},{"name":"Prater","type":"attraction","dist_km":6.0},{"name":"Donaupark","type":"nature","dist_km":2.5},{"name":"Billa supermarket","type":"shop","dist_km":0.5}]},
+  {"id":11,"name":"Pole namiotowe Hel","lat":54.6037,"lng":18.8019,"type":["tourist"],"country":"PL","city":"Hel","address":"ul. Portowa, Hel","spots_tir":0,"spots_camper":50,"amenities":["electricity","shower","toilet","wifi"],"price_eur":10,"rating":4.6,"status":"open","poi":[{"name":"Plaża Hel — Bałtyk","type":"nature","dist_km":0.3},{"name":"Fokarium Hel","type":"attraction","dist_km":0.8},{"name":"Latarnia morska Hel","type":"attraction","dist_km":1.0},{"name":"Biedronka Hel","type":"shop","dist_km":0.5}]},
+  {"id":12,"name":"Autohof Nürnberg Nord","lat":49.5231,"lng":11.1098,"type":["tir"],"country":"DE","city":"Nürnberg","address":"A9, 90475 Nürnberg","spots_tir":160,"spots_camper":0,"amenities":["shower","restaurant","truck_wash","repair","shop","wifi","toilet"],"price_eur":0,"rating":4.1,"status":"open","poi":[{"name":"Tankstelle Aral","type":"fuel","dist_km":0.1},{"name":"McDonalds Nürnberg","type":"restaurant","dist_km":0.2},{"name":"Lidl Nürnberg","type":"shop","dist_km":1.8}]},
+  {"id":13,"name":"Vanlife Spot Rügen","lat":54.3858,"lng":13.3713,"type":["camper"],"country":"DE","city":"Rügen","address":"Binz, Insel Rügen","spots_tir":0,"spots_camper":35,"amenities":["electricity","water","toilet","shower"],"price_eur":12,"rating":4.8,"status":"open","poi":[{"name":"Plaża Binz — Bałtyk","type":"nature","dist_km":0.4},{"name":"Prora","type":"attraction","dist_km":3.0},{"name":"Jasmund — klify kredowe","type":"nature","dist_km":12.0},{"name":"Edeka Binz","type":"shop","dist_km":0.6}]},
+
+  {"id":14,"name":"Autohof Köln West","lat":50.9333,"lng":6.8167,"type":["tir"],"country":"DE","city":"Köln","address":"A4, 50858 Köln","spots_tir":180,"spots_camper":0,"amenities":["shower","restaurant","truck_wash","repair","shop","toilet","wifi"],"price_eur":0,"rating":3.8,"status":"open","poi":[{"name":"Tankstelle BP","type":"fuel","dist_km":0.1},{"name":"Subway Köln","type":"restaurant","dist_km":0.1},{"name":"Aldi Köln","type":"shop","dist_km":1.2}]},
+  {"id":15,"name":"Parkplatz TIR Frankfurt Ost","lat":50.1109,"lng":8.7821,"type":["tir"],"country":"DE","city":"Frankfurt","address":"A66, Frankfurt am Main","spots_tir":140,"spots_camper":0,"amenities":["toilet","shower","restaurant"],"price_eur":0,"rating":3.6,"status":"open","poi":[{"name":"Frankfurt centrum","type":"city","dist_km":8.0},{"name":"Rewe Frankfurt","type":"shop","dist_km":2.1}]},
+  {"id":16,"name":"Autohof Dresden Süd","lat":51.0204,"lng":13.7383,"type":["tir","camper"],"country":"DE","city":"Dresden","address":"A17, Dresden","spots_tir":100,"spots_camper":15,"amenities":["shower","restaurant","truck_wash","toilet","shop"],"price_eur":0,"rating":4.0,"status":"open","poi":[{"name":"Drezno Stare Miasto","type":"city","dist_km":6.0},{"name":"Łaba — spacer","type":"nature","dist_km":4.0},{"name":"Lidl Dresden","type":"shop","dist_km":1.5}]},
+  {"id":17,"name":"MOP Stryków","lat":51.9107,"lng":19.5743,"type":["tir","camper"],"country":"PL","city":"Stryków","address":"A2/A1, Stryków","spots_tir":120,"spots_camper":10,"amenities":["shower","restaurant","shop","toilet"],"price_eur":0,"rating":3.7,"status":"open","poi":[{"name":"Łódź centrum","type":"city","dist_km":15.0},{"name":"Orlen stacja","type":"fuel","dist_km":0.2},{"name":"Lidl Stryków","type":"shop","dist_km":2.0}]},
+  {"id":18,"name":"MOP Gliwice Wschód","lat":50.2945,"lng":18.7214,"type":["tir","camper"],"country":"PL","city":"Gliwice","address":"A1, Gliwice","spots_tir":80,"spots_camper":8,"amenities":["toilet","restaurant","shop"],"price_eur":0,"rating":3.4,"status":"open","poi":[{"name":"Gliwice centrum","type":"city","dist_km":5.0},{"name":"Shell stacja","type":"fuel","dist_km":0.1},{"name":"Biedronka Gliwice","type":"shop","dist_km":1.8}]},
+  {"id":19,"name":"Odpočívadlo Brno","lat":49.1951,"lng":16.6068,"type":["tir","camper"],"country":"CZ","city":"Brno","address":"D1, Brno","spots_tir":90,"spots_camper":12,"amenities":["toilet","restaurant","shower"],"price_eur":0,"rating":3.5,"status":"open","poi":[{"name":"Brno centrum","type":"city","dist_km":4.0},{"name":"Hrad Špilberk","type":"attraction","dist_km":5.0},{"name":"Albert Brno","type":"shop","dist_km":2.0}]},
+  {"id":20,"name":"Pihenő Budapest M7","lat":47.4979,"lng":19.0402,"type":["tir","camper"],"country":"HU","city":"Budapest","address":"M7, Budapest","spots_tir":100,"spots_camper":20,"amenities":["toilet","restaurant","shop","shower"],"price_eur":0,"rating":3.6,"status":"open","poi":[{"name":"Budapest centrum","type":"city","dist_km":12.0},{"name":"Balaton jezioro","type":"nature","dist_km":80.0},{"name":"Tesco Budapest","type":"shop","dist_km":3.0}]},
+  {"id":21,"name":"Aire de Reims Champagne","lat":49.2583,"lng":4.0317,"type":["tir","camper"],"country":"FR","city":"Reims","address":"A4, 51100 Reims","spots_tir":150,"spots_camper":25,"amenities":["shower","restaurant","shop","toilet","wifi"],"price_eur":0,"rating":4.0,"status":"open","poi":[{"name":"Cathédrale de Reims","type":"attraction","dist_km":8.0},{"name":"Champagne winnice","type":"attraction","dist_km":5.0},{"name":"Intermarché Reims","type":"shop","dist_km":2.0}]},
+  {"id":22,"name":"Área de Servicio Zaragoza","lat":41.6488,"lng":-0.8891,"type":["tir","camper"],"country":"ES","city":"Zaragoza","address":"A2, Zaragoza","spots_tir":120,"spots_camper":20,"amenities":["shower","restaurant","truck_wash","toilet","shop"],"price_eur":0,"rating":3.9,"status":"open","poi":[{"name":"Zaragoza centrum","type":"city","dist_km":10.0},{"name":"Aljafería — zamek","type":"attraction","dist_km":9.0},{"name":"Mercadona Zaragoza","type":"shop","dist_km":3.0}]},
+  {"id":23,"name":"Autostrada sosta Milano Est","lat":45.4654,"lng":9.1859,"type":["tir"],"country":"IT","city":"Milano","address":"A4, Milano Est","spots_tir":200,"spots_camper":0,"amenities":["shower","restaurant","truck_wash","repair","shop","toilet"],"price_eur":0,"rating":3.7,"status":"open","poi":[{"name":"Mediolan centrum","type":"city","dist_km":10.0},{"name":"Autogrill Milano","type":"restaurant","dist_km":0.1},{"name":"Iper supermercato","type":"shop","dist_km":2.5}]},
+  {"id":24,"name":"Odpočívadlo Bratislava","lat":48.1486,"lng":17.1077,"type":["tir","camper"],"country":"SK","city":"Bratislava","address":"D1, Bratislava","spots_tir":70,"spots_camper":10,"amenities":["toilet","restaurant","shop"],"price_eur":0,"rating":3.4,"status":"open","poi":[{"name":"Bratysława Stare Miasto","type":"city","dist_km":6.0},{"name":"Hrad Bratislava","type":"attraction","dist_km":7.0},{"name":"Tesco Bratislava","type":"shop","dist_km":2.5}]},
+  {"id":25,"name":"Rastplatz Wien Süd","lat":48.1503,"lng":16.4017,"type":["tir"],"country":"AT","city":"Wien","address":"A2, Wien Süd","spots_tir":110,"spots_camper":0,"amenities":["shower","restaurant","truck_wash","toilet","shop"],"price_eur":0,"rating":3.8,"status":"open","poi":[{"name":"Wiedeń centrum","type":"city","dist_km":12.0},{"name":"Therme Wien","type":"attraction","dist_km":8.0},{"name":"Billa Wien","type":"shop","dist_km":1.5}]},
+  {"id":26,"name":"Parking TIR Gdańsk Południe","lat":54.3020,"lng":18.6466,"type":["tir"],"country":"PL","city":"Gdańsk","address":"S7, Gdańsk","spots_tir":100,"spots_camper":0,"amenities":["shower","restaurant","toilet","shop"],"price_eur":0,"rating":3.7,"status":"open","poi":[{"name":"Gdańsk Stare Miasto","type":"city","dist_km":8.0},{"name":"Orlen stacja","type":"fuel","dist_km":0.2},{"name":"Lidl Gdańsk","type":"shop","dist_km":2.0}]},
+  {"id":27,"name":"Stellplatz Berlin Mitte","lat":52.5200,"lng":13.4050,"type":["camper"],"country":"DE","city":"Berlin","address":"Karl-Marx-Allee, 10178 Berlin","spots_tir":0,"spots_camper":25,"amenities":["electricity","water","toilet","wifi"],"price_eur":20,"rating":4.5,"status":"open","poi":[{"name":"Brama Brandenburska","type":"attraction","dist_km":2.5},{"name":"Muzeum Pergamon","type":"attraction","dist_km":1.8},{"name":"Rewe Berlin Mitte","type":"shop","dist_km":0.3},{"name":"Tiergarten park","type":"nature","dist_km":2.0}]},
+  {"id":28,"name":"Camping Algarve Albufeira","lat":37.0904,"lng":-8.2536,"type":["tourist","camper"],"country":"PT","city":"Albufeira","address":"N395, Albufeira, Algarve","spots_tir":0,"spots_camper":200,"amenities":["electricity","water","shower","pool","wifi","toilet","restaurant"],"price_eur":22,"rating":4.7,"status":"open","poi":[{"name":"Plaża Algarve","type":"nature","dist_km":2.0},{"name":"Albufeira Stare Miasto","type":"city","dist_km":3.5},{"name":"Lidl Albufeira","type":"shop","dist_km":1.0}]},
+  {"id":29,"name":"Camping Koversada Vrsar","lat":45.1483,"lng":13.5956,"type":["tourist"],"country":"HR","city":"Vrsar","address":"Koversada, 52450 Vrsar, Istria","spots_tir":0,"spots_camper":300,"amenities":["electricity","water","shower","pool","wifi","toilet","restaurant"],"price_eur":30,"rating":4.8,"status":"open","poi":[{"name":"Adriatyk plaża","type":"nature","dist_km":0.1},{"name":"Vrsar Stare Miasto","type":"city","dist_km":1.5},{"name":"Poreč — bazylika","type":"attraction","dist_km":10.0},{"name":"Konzum supermarket","type":"shop","dist_km":1.8}]},
+  {"id":30,"name":"Camping Soline Biograd","lat":43.9384,"lng":15.4436,"type":["tourist"],"country":"HR","city":"Biograd","address":"Biograd na Moru, Dalmacja","spots_tir":0,"spots_camper":250,"amenities":["electricity","water","shower","pool","wifi","toilet"],"price_eur":28,"rating":4.6,"status":"open","poi":[{"name":"Morze Adriatyckie","type":"nature","dist_km":0.1},{"name":"Park Kornati","type":"attraction","dist_km":20.0},{"name":"Zadar centrum","type":"city","dist_km":25.0},{"name":"Lidl Biograd","type":"shop","dist_km":1.5}]},
+  {"id":31,"name":"Camping Złoty Potok Mazury","lat":53.8667,"lng":21.7167,"type":["tourist"],"country":"PL","city":"Mikołajki","address":"ul. Leśna, Mikołajki","spots_tir":0,"spots_camper":80,"amenities":["electricity","shower","toilet","wifi","water"],"price_eur":8,"rating":4.7,"status":"open","poi":[{"name":"Jezioro Śniardwy","type":"nature","dist_km":3.0},{"name":"Mikołajki centrum","type":"city","dist_km":1.5},{"name":"Kajaki wynajem","type":"attraction","dist_km":1.0},{"name":"Żabka Mikołajki","type":"shop","dist_km":1.5}]},
+  {"id":32,"name":"Camping Tatry Zakopane","lat":49.2992,"lng":19.9496,"type":["tourist"],"country":"PL","city":"Zakopane","address":"ul. Żeromskiego, Zakopane","spots_tir":0,"spots_camper":60,"amenities":["electricity","shower","toilet","wifi"],"price_eur":12,"rating":4.5,"status":"open","poi":[{"name":"Morskie Oko","type":"nature","dist_km":18.0},{"name":"Zakopane centrum — Krupówki","type":"city","dist_km":1.0},{"name":"Gubałówka — kolejka","type":"attraction","dist_km":2.0},{"name":"Biedronka Zakopane","type":"shop","dist_km":1.2}]},
+  {"id":33,"name":"Autohof Rostock Nord","lat":54.0887,"lng":12.1408,"type":["tir","camper"],"country":"DE","city":"Rostock","address":"A19, 18069 Rostock","spots_tir":130,"spots_camper":15,"amenities":["shower","restaurant","truck_wash","shop","toilet"],"price_eur":0,"rating":3.9,"status":"open","poi":[{"name":"Port Rostock — promy","type":"attraction","dist_km":5.0},{"name":"Warnemünde plaża","type":"nature","dist_km":8.0},{"name":"Lidl Rostock","type":"shop","dist_km":2.0}]},
+  {"id":34,"name":"Vanlife Spot Lago di Garda","lat":45.6183,"lng":10.7111,"type":["camper","tourist"],"country":"IT","city":"Sirmione","address":"Via Lago, Sirmione, Lago di Garda","spots_tir":0,"spots_camper":45,"amenities":["electricity","water","shower","wifi","toilet"],"price_eur":25,"rating":4.9,"status":"open","poi":[{"name":"Lago di Garda — jezioro","type":"nature","dist_km":0.2},{"name":"Zamek Sirmione","type":"attraction","dist_km":1.5},{"name":"Terme di Sirmione","type":"attraction","dist_km":1.0},{"name":"Conad supermarket","type":"shop","dist_km":0.8}]},
+  {"id":35,"name":"Camping Bruges De Memling","lat":51.2093,"lng":3.2247,"type":["tourist"],"country":"BE","city":"Brugge","address":"Veltemweg 109, 8200 Brugge","spots_tir":0,"spots_camper":70,"amenities":["electricity","water","shower","wifi","toilet"],"price_eur":22,"rating":4.4,"status":"open","poi":[{"name":"Brugge — kanały","type":"city","dist_km":2.0},{"name":"Rynek Grote Markt","type":"attraction","dist_km":2.5},{"name":"Colruyt supermarket","type":"shop","dist_km":0.6}]},
+  {"id":36,"name":"Aire de Bordeaux Lac","lat":44.8788,"lng":-0.5900,"type":["camper","tourist"],"country":"FR","city":"Bordeaux","address":"Lac de Bordeaux, 33300 Bordeaux","spots_tir":0,"spots_camper":55,"amenities":["electricity","water","shower","wifi","toilet"],"price_eur":16,"rating":4.3,"status":"open","poi":[{"name":"Bordeaux centrum","type":"city","dist_km":4.0},{"name":"Winnice Saint-Émilion","type":"attraction","dist_km":40.0},{"name":"Lac de Bordeaux","type":"nature","dist_km":0.3},{"name":"Carrefour Bordeaux","type":"shop","dist_km":1.5}]},
+  {"id":37,"name":"Rastplatz Salzburg West","lat":47.8095,"lng":13.0550,"type":["tir","camper"],"country":"AT","city":"Salzburg","address":"A1, 5020 Salzburg","spots_tir":90,"spots_camper":20,"amenities":["shower","restaurant","toilet","shop","wifi"],"price_eur":0,"rating":4.2,"status":"open","poi":[{"name":"Salzburg Stare Miasto","type":"city","dist_km":5.0},{"name":"Zamek Hohensalzburg","type":"attraction","dist_km":6.0},{"name":"Spar Salzburg","type":"shop","dist_km":1.5}]},
+  {"id":38,"name":"Parking TIR Warszawa Zachód","lat":52.2297,"lng":20.9611,"type":["tir"],"country":"PL","city":"Warszawa","address":"ul. Wolska, Warszawa","spots_tir":150,"spots_camper":0,"amenities":["shower","restaurant","toilet","shop","truck_wash"],"price_eur":0,"rating":3.5,"status":"open","poi":[{"name":"Warszawa centrum","type":"city","dist_km":6.0},{"name":"Orlen stacja","type":"fuel","dist_km":0.3},{"name":"Kaufland Warszawa","type":"shop","dist_km":1.0}]},
+  {"id":39,"name":"Camping Am Bodensee Konstanz","lat":47.6779,"lng":9.1732,"type":["camper","tourist"],"country":"DE","city":"Konstanz","address":"Bodenseestr., 78467 Konstanz","spots_tir":0,"spots_camper":90,"amenities":["electricity","water","shower","wifi","toilet","pool"],"price_eur":24,"rating":4.7,"status":"open","poi":[{"name":"Bodensee — jezioro","type":"nature","dist_km":0.1},{"name":"Konstanz Stare Miasto","type":"city","dist_km":2.0},{"name":"Insel Mainau — wyspa kwiatów","type":"attraction","dist_km":6.0},{"name":"Rewe Konstanz","type":"shop","dist_km":1.2}]},
+  {"id":40,"name":"Aire Autoroute Lyon Nord","lat":45.7640,"lng":4.8357,"type":["tir","camper"],"country":"FR","city":"Lyon","address":"A6, 69300 Lyon","spots_tir":140,"spots_camper":20,"amenities":["shower","restaurant","shop","toilet","truck_wash"],"price_eur":0,"rating":3.8,"status":"open","poi":[{"name":"Lyon Vieux Lyon","type":"city","dist_km":8.0},{"name":"Intermarché Lyon","type":"shop","dist_km":2.5},{"name":"Beaujolais winnice","type":"attraction","dist_km":30.0}]}
 ]
