@@ -534,8 +534,11 @@ def api_markets():
     with open(MARKETS_PATH, encoding="utf-8") as f:
         markets = json.load(f)
     country = request.args.get("country", "")
+    state   = request.args.get("state", "")
     if country:
-        markets = [m for m in markets if m.get("state","") or True]
+        markets = [m for m in markets if m.get("country", "DE") == country]
+    if state:
+        markets = [m for m in markets if m.get("state", "") == state]
     return jsonify(markets)
 
 
