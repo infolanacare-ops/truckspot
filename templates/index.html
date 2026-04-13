@@ -231,6 +231,33 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .nav-btn{width:100%;padding:.75rem;border:none;border-radius:14px;cursor:pointer;
   font-family:var(--font-head);font-size:.9rem;font-weight:800;
   background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000}
+/* ══ FAV BUTTON ══ */
+.fav-btn{border:none;background:none;cursor:pointer;font-size:1.3rem;line-height:1;padding:.2rem;transition:transform .15s}
+.fav-btn:active{transform:scale(1.3)}
+/* ══ SHARE BUTTON ══ */
+.share-btn{width:100%;padding:.6rem;border:1px solid var(--border);border-radius:14px;cursor:pointer;
+  font-size:.85rem;font-weight:700;background:var(--panel2);color:var(--text);margin-top:.45rem}
+/* ══ ROUTE HISTORY ══ */
+.route-history{margin-top:1rem;border-top:1px solid var(--border);padding-top:.8rem}
+.route-history-title{font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-bottom:.5rem}
+.rh-item{display:flex;align-items:center;gap:.5rem;padding:.5rem .6rem;border-radius:10px;background:var(--panel2);border:1px solid var(--border);cursor:pointer;margin-bottom:.35rem;transition:background .15s}
+.rh-item:hover{background:var(--border)}
+.rh-item-text{flex:1;min-width:0}
+.rh-from{font-size:.78rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rh-to{font-size:.7rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* ══ FAVORITES PANEL ══ */
+.favs-panel{position:fixed;bottom:0;left:0;right:0;z-index:960;background:var(--panel);border-top:2px solid var(--accent);
+  border-radius:20px 20px 0 0;padding:1rem 1rem 2.5rem;max-height:75vh;overflow-y:auto;
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:0 -4px 32px var(--shadow)}
+.favs-panel.open{transform:translateY(0)}
+.fav-item{display:flex;align-items:center;gap:.6rem;padding:.55rem .65rem;border-radius:10px;
+  background:var(--panel2);border:1px solid var(--border);cursor:pointer;margin-bottom:.4rem;transition:background .15s}
+.fav-item:hover{background:var(--border)}
+.fav-item-info{flex:1;min-width:0}
+.fav-item-name{font-size:.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fav-item-addr{font-size:.72rem;color:var(--muted)}
+.fav-item-del{border:none;background:none;color:var(--muted);font-size:1rem;cursor:pointer;padding:.2rem .4rem;border-radius:6px}
+.fav-item-del:hover{color:#ef4444}
 .nav-btn:active{opacity:.85}
 
 /* ══ ADD SPOT ══ */
@@ -728,6 +755,7 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
     <div class="menu-section" data-i="sec_community">Community</div>
     <div class="menu-item" onclick="drawerAction('add')"><div class="menu-icon" style="background:rgba(139,92,246,.12);border-color:#8b5cf6">＋</div><span class="menu-label" data-i="menu_add">Add a spot</span><span class="menu-badge">+10 pts</span></div>
     <div class="menu-item" onclick="drawerAction('myspots')"><div class="menu-icon">⭐</div><span class="menu-label" data-i="menu_myspots">My spots</span></div>
+    <div class="menu-item" onclick="drawerAction('favs')"><div class="menu-icon" style="background:rgba(245,158,11,.12);border-color:#f59e0b">❤️</div><span class="menu-label">Ulubione parkingi</span><span class="menu-badge" id="favs-count" style="display:none">0</span></div>
     <div class="menu-item" onclick="drawerAction('rank')"><div class="menu-icon" style="background:rgba(245,158,11,.12);border-color:#f59e0b">🏆</div><span class="menu-label" data-i="menu_rank">Ranking</span></div>
     <div class="menu-item" onclick="drawerAction('share')"><div class="menu-icon" style="background:rgba(16,185,129,.12);border-color:#10b981">📣</div><span class="menu-label" data-i="menu_share">Recommend TruckSpot</span><span class="menu-badge green">+50 pts</span></div>
     <div class="menu-sep"></div>
@@ -869,6 +897,14 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
   </div>
 </div>
 
+<!-- FAVORITES PANEL -->
+<div class="favs-panel" id="favs-panel">
+  <div class="panel-handle"></div>
+  <button class="panel-close" onclick="closeFavsPanel()">✕</button>
+  <h3 style="font-family:var(--font-head);font-size:1rem;font-weight:800;margin-bottom:1rem">❤️ Ulubione parkingi</h3>
+  <div id="favs-list"></div>
+</div>
+
 <!-- ROUTE PANEL -->
 <div class="route-panel" id="route-panel">
   <div class="panel-handle"></div>
@@ -895,6 +931,7 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
   </div>
   <button class="route-search-btn" onclick="searchRoute()" id="route-search-btn" data-i="route_btn">🔀 Find parkings on route</button>
   <div id="route-results"></div>
+  <div id="route-history-section"></div>
 </div>
 
 <!-- NAV OVERLAY -->
@@ -1328,6 +1365,7 @@ function drawerAction(action){
     else if(action==='route') openRoute();
     else if(action==='markets') toggleMarkets();
     else if(action==='autobahn') toggleAutobahn();
+    else if(action==='favs') openFavsPanel();
     else if(action==='all') map.setView([51.5,12.0],5);
     else if(action==='add') startAddMode();
     else if(action==='search') openSearch();
@@ -1359,11 +1397,14 @@ function bnav(el,action){
 // PARKINGS
 // ══════════════════════════════════════
 function loadParkings(mode){
+  updateFavsCount();
+  checkParkingDeeplink();
   fetch(`/api/parkings?mode=${MODE_CONFIG[mode].apiMode}`)
     .then(r=>r.json()).then(data=>{
       allParkings=data;
       if(activeFilters.size > 0) applyFilterToMarkers();
       else renderMarkers(data);
+      checkParkingDeeplink(); // retry after data loaded
     });
 }
 
@@ -1407,15 +1448,22 @@ async function showDetail(p){
   ].filter(Boolean).join('');
 
   // Render immediately without weather/comments
+  const isFav = favIsStored(p.id);
   document.getElementById('panel-content').innerHTML=`
-    <div class="panel-name">${p.name}</div>
-    <div class="panel-addr">📍 ${p.city}, ${p.country}</div>
+    <div style="display:flex;align-items:flex-start;gap:.4rem">
+      <div style="flex:1">
+        <div class="panel-name">${p.name}</div>
+        <div class="panel-addr">📍 ${p.city}, ${p.country}</div>
+      </div>
+      <button class="fav-btn" id="fav-btn-${p.id}" onclick="toggleFavParking(${JSON.stringify(p).replace(/"/g,'&quot;')})" title="Ulubione">${isFav?'❤️':'🤍'}</button>
+    </div>
     <div id="pd-weather"></div>
     ${fuelHtml(p.country)}
     <div class="info-grid">${boxes}</div>
     ${amenHtml?`<div class="amenities">${amenHtml}</div>`:''}
     ${poiHtml?`<div class="poi-title">🗺 Nearby</div><div class="poi-list">${poiHtml}</div>`:''}
     <button class="nav-btn" onclick="navigateTo(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')">📍 Navigate — Google Maps</button>
+    <button class="share-btn" onclick="shareParking(${p.id},'${p.name.replace(/'/g,"\\'")}')">🔗 Udostępnij parking</button>
     ${occWidgetHtml(p.id)}
     <div id="pd-comments"><div style="font-size:.78rem;color:var(--muted);padding:.8rem 0;text-align:center">⏳ Ładowanie opinii...</div></div>`;
   document.getElementById('detail-panel').classList.add('open');
@@ -1965,6 +2013,7 @@ let waypointCount = 0;
 
 function openRoute(){
   document.getElementById('route-panel').classList.add('open');
+  document.getElementById('route-history-section').innerHTML = routeHistoryHtml();
   closePanel();
 }
 function closeRoute(){
@@ -2110,6 +2159,10 @@ async function searchRoute(){
           <span class="route-result-dist">${dist<1?(dist*1000).toFixed(0)+' m':dist.toFixed(1)+' km'}</span>
         </div>`).join('')
       : `<div style="font-size:.82rem;color:var(--muted);padding:.5rem 0">${t('route_none')}</div>`;
+
+    // Zapisz do historii
+    const wpVals = [...document.querySelectorAll('#waypoints-list input')].map(i=>i.value.trim()).filter(Boolean);
+    routeHistorySave(fromVal || '📡 GPS', toVal, wpVals);
 
     resultsDiv.innerHTML = header + parkHtml +
       `<div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.6rem">
@@ -2275,6 +2328,152 @@ function stopNavigation(){
 }
 
 // ══════════════════════════════════════
+// ══════════════════════════════════════
+// ULUBIONE PARKINGI
+// ══════════════════════════════════════
+function favsLoad(){ try{ return JSON.parse(localStorage.getItem('ts_favs')||'[]'); }catch(e){ return []; } }
+function favsSave(arr){ localStorage.setItem('ts_favs', JSON.stringify(arr)); updateFavsCount(); }
+function favIsStored(id){ return favsLoad().some(f=>String(f.id)===String(id)); }
+
+function updateFavsCount(){
+  const n = favsLoad().length;
+  const el = document.getElementById('favs-count');
+  if(!el) return;
+  el.textContent = n;
+  el.style.display = n ? '' : 'none';
+}
+
+function toggleFavParking(p){
+  let favs = favsLoad();
+  const idx = favs.findIndex(f=>String(f.id)===String(p.id));
+  if(idx>=0){
+    favs.splice(idx,1);
+    showAlert('🤍','Usunięto z ulubionych','');
+  } else {
+    favs.unshift({id:p.id, name:p.name, city:p.city||'', country:p.country||'', lat:p.lat, lng:p.lng, ts:Date.now()});
+    showAlert('❤️','Dodano do ulubionych','');
+    addPts(2);
+  }
+  favsSave(favs);
+  const btn = document.getElementById(`fav-btn-${p.id}`);
+  if(btn) btn.textContent = favIsStored(p.id) ? '❤️' : '🤍';
+}
+
+function openFavsPanel(){
+  const favs = favsLoad();
+  const list = document.getElementById('favs-list');
+  if(!favs.length){
+    list.innerHTML = '<div style="font-size:.85rem;color:var(--muted);text-align:center;padding:1.5rem 0">Brak ulubionych.<br>Naciśnij 🤍 na dowolnym parkingu.</div>';
+  } else {
+    list.innerHTML = favs.map(f=>`
+      <div class="fav-item" onclick="goToFav(${f.id},${f.lat},${f.lng})">
+        <span style="font-size:1.3rem">❤️</span>
+        <div class="fav-item-info">
+          <div class="fav-item-name">${f.name}</div>
+          <div class="fav-item-addr">📍 ${f.city}${f.country?', '+f.country:''}</div>
+        </div>
+        <button class="fav-item-del" onclick="event.stopPropagation();removeFav('${f.id}')" title="Usuń">✕</button>
+      </div>`).join('');
+  }
+  document.getElementById('favs-panel').classList.add('open');
+}
+
+function closeFavsPanel(){
+  document.getElementById('favs-panel').classList.remove('open');
+}
+
+function goToFav(id, lat, lng){
+  closeFavsPanel();
+  map.flyTo([lat,lng],13);
+  const p = allParkings.find(x=>String(x.id)===String(id));
+  if(p) setTimeout(()=>showDetail(p), 600);
+}
+
+function removeFav(id){
+  let favs = favsLoad();
+  favs = favs.filter(f=>String(f.id)!==String(id));
+  favsSave(favs);
+  openFavsPanel(); // odśwież
+}
+
+// ══════════════════════════════════════
+// UDOSTĘPNIJ PARKING
+// ══════════════════════════════════════
+function shareParking(id, name){
+  const url = `${location.origin}${location.pathname}?parking=${id}`;
+  const text = `🅿️ ${name} — znajdź na TruckSpot`;
+  if(navigator.share){
+    navigator.share({title:'TruckSpot', text, url}).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(url).then(()=>showAlert('🔗','Link skopiowany!',url));
+  }
+}
+
+function checkParkingDeeplink(){
+  const params = new URLSearchParams(location.search);
+  const id = params.get('parking');
+  if(!id) return;
+  // Wait for parkings to load, then open
+  const tryOpen = ()=>{
+    const p = allParkings.find(x=>String(x.id)===String(id));
+    if(p){ map.flyTo([p.lat,p.lng],14); setTimeout(()=>showDetail(p),600); }
+  };
+  if(allParkings.length) tryOpen();
+  else setTimeout(tryOpen, 1500);
+}
+
+// ══════════════════════════════════════
+// HISTORIA TRAS
+// ══════════════════════════════════════
+function routeHistorySave(from, to, waypoints){
+  if(!to) return;
+  let hist = routeHistoryLoad();
+  // Usuń duplikat (ten sam from+to)
+  hist = hist.filter(h=>!(h.from===from && h.to===to));
+  hist.unshift({ from, to, waypoints: waypoints||[], ts: Date.now() });
+  hist = hist.slice(0,5); // max 5
+  localStorage.setItem('ts_route_hist', JSON.stringify(hist));
+}
+
+function routeHistoryLoad(){
+  try{ return JSON.parse(localStorage.getItem('ts_route_hist')||'[]'); }catch(e){ return []; }
+}
+
+function routeHistoryHtml(){
+  const hist = routeHistoryLoad();
+  if(!hist.length) return '';
+  const items = hist.map((h,i)=>`
+    <div class="rh-item" onclick="loadRouteHistory(${i})">
+      <span style="font-size:1.1rem">🕐</span>
+      <div class="rh-item-text">
+        <div class="rh-from">📍 ${h.from||'GPS'} → ${h.to}</div>
+        ${h.waypoints?.length ? `<div class="rh-to">przez: ${h.waypoints.join(', ')}</div>` : ''}
+      </div>
+      <span style="font-size:.68rem;color:var(--muted)">${timeSince(h.ts)}</span>
+    </div>`).join('');
+  return `<div class="route-history"><div class="route-history-title">🕐 Ostatnie trasy</div>${items}</div>`;
+}
+
+function loadRouteHistory(idx){
+  const h = routeHistoryLoad()[idx];
+  if(!h) return;
+  document.getElementById('route-from').value = h.from||'';
+  document.getElementById('route-to').value = h.to;
+  // Wstaw przystanki
+  document.getElementById('waypoints-list').innerHTML='';
+  waypointCount=0;
+  (h.waypoints||[]).forEach(w=>{ addWaypoint(); const inputs=document.querySelectorAll('#waypoints-list input'); inputs[inputs.length-1].value=w; });
+  document.getElementById('route-results').innerHTML='';
+}
+
+function timeSince(ts){
+  const min = Math.round((Date.now()-ts)/60000);
+  if(min<60) return min+'min temu';
+  const h = Math.floor(min/60);
+  if(h<24) return h+'h temu';
+  return Math.floor(h/24)+'d temu';
+}
+
 // AUTOBAHN DE
 // ══════════════════════════════════════
 let autobahnVisible = false;
