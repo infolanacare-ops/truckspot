@@ -346,7 +346,9 @@ const POI_ICONS = {
 let currentMode = null;
 let map = null;
 let markers = [];
+let osmMarkers = [];
 let allParkings = [];
+let osmLoading = false;
 
 // ── WELCOME → APP ────────────────────────────────────────
 function enterMode(mode){
@@ -377,6 +379,7 @@ function enterMode(mode){
     }).addTo(map);
     L.control.zoom({position:'bottomright'}).addTo(map);
     map.on('click', closePanel);
+    map.on('moveend', ()=>{ if(map.getZoom()>=8) loadOsmParkings(); });
   } else {
     setTimeout(()=>map.invalidateSize(), 100);
   }
@@ -420,6 +423,69 @@ function renderMarkers(parkings){
       .on('click',()=>showDetail(p));
     markers.push(m);
   });
+}
+
+// ── OSM LIVE PARKINGS ────────────────────────────────────
+function loadOsmParkings(){
+  if(osmLoading) return;
+  const b = map.getBounds();
+  const params = new URLSearchParams({
+    south: b.getSouth().toFixed(4),
+    west:  b.getWest().toFixed(4),
+    north: b.getNorth().toFixed(4),
+    east:  b.getEast().toFixed(4),
+    mode:  MODE_CONFIG[currentMode].apiMode,
+  });
+  osmLoading = true;
+  fetch(`/api/osm-parkings?${params}`)
+    .then(r=>r.json())
+    .then(data=>{
+      osmLoading = false;
+      if(!Array.isArray(data)) return;
+      // usuń stare OSM markery
+      osmMarkers.forEach(m=>map.removeLayer(m));
+      osmMarkers = [];
+      const cfg = MODE_CONFIG[currentMode];
+      data.forEach(p=>{
+        const icon = L.divIcon({
+          className:'',
+          html:`<div class="mk" style="background:${cfg.color};opacity:.75;width:28px;height:28px;border-radius:50%"><span style="font-size:.8rem">${cfg.markerEmoji}</span></div>`,
+          iconSize:[28,28],iconAnchor:[14,14]
+        });
+        const m = L.marker([p.lat,p.lng],{icon})
+          .addTo(map)
+          .on('click',()=>showOsmDetail(p));
+        osmMarkers.push(m);
+      });
+      if(data.length>0){
+        document.getElementById('cnt-spots').textContent = allParkings.length + '+' + data.length;
+      }
+    })
+    .catch(()=>{ osmLoading=false; });
+}
+
+function showOsmDetail(p){
+  const cfg = MODE_CONFIG[currentMode];
+  const amenHtml = (p.amenities||[]).map(a=>`<span class="amenity">${AMENITY_LABELS[a]||a}</span>`).join('');
+  const osmLink = p.osm_url ? `<a href="${p.osm_url}" target="_blank" rel="noopener" style="color:var(--accent);font-size:.75rem">📖 Otwórz w OSM</a>` : '';
+  document.getElementById('panel-content').innerHTML = `
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem">
+      <div class="panel-name" style="flex:1">${p.name}</div>
+      <span style="font-size:.65rem;background:#e8f5e9;color:#2e7d32;border-radius:8px;padding:.15rem .45rem;font-weight:700">OSM</span>
+    </div>
+    <div class="panel-addr">📍 ${p.city||'–'}, ${p.country||'–'}</div>
+    <div class="info-grid">
+      ${p.spots_tir>0?`<div class="info-box"><div class="info-box-val">${p.spots_tir}</div><div class="info-box-lbl">miejsc</div></div>`:''}
+      <div class="info-box"><div class="info-box-val">GRATIS</div><div class="info-box-lbl">cena</div></div>
+    </div>
+    ${amenHtml?`<div class="amenities">${amenHtml}</div>`:''}
+    <div style="margin-bottom:.7rem">${osmLink}</div>
+    <button class="nav-btn" onclick="navigateTo(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')">
+      📍 Nawiguj — Google Maps
+    </button>
+  `;
+  document.getElementById('detail-panel').classList.add('open');
+  map.panTo([p.lat,p.lng]);
 }
 
 function updateStats(parkings){
