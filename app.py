@@ -10,6 +10,7 @@ DATA_DIR       = os.path.join(os.path.dirname(__file__), "data")
 PARKINGS_PATH  = os.path.join(DATA_DIR, "parkings.json")
 SPOTS_PATH     = os.path.join(DATA_DIR, "spots.json")
 MARKETS_PATH   = os.path.join(DATA_DIR, "markets.json")
+COMMENTS_PATH  = os.path.join(DATA_DIR, "comments.json")
 
 os.makedirs(DATA_DIR, exist_ok=True)
 if not os.path.exists(SPOTS_PATH):
@@ -192,6 +193,41 @@ def _parse_osm_amenities(tags):
     if tags.get("drinking_water")=="yes":  amenities.append("water")
     return amenities
 
+
+@app.route("/api/comments")
+def api_comments_get():
+    parking_id = request.args.get("parking_id", "")
+    if not os.path.exists(COMMENTS_PATH):
+        return jsonify([])
+    with open(COMMENTS_PATH, encoding="utf-8") as f:
+        all_c = json.load(f)
+    if parking_id:
+        all_c = [c for c in all_c if str(c.get("parking_id")) == str(parking_id)]
+    return jsonify(sorted(all_c, key=lambda x: x.get("date",""), reverse=True))
+
+@app.route("/api/comments", methods=["POST"])
+def api_comments_post():
+    data = request.get_json(force=True)
+    for field in ["parking_id","text","stars","user"]:
+        if field not in data:
+            return jsonify({"error": f"Missing: {field}"}), 400
+    if not os.path.exists(COMMENTS_PATH):
+        with open(COMMENTS_PATH,"w",encoding="utf-8") as f: json.dump([],f)
+    with open(COMMENTS_PATH, encoding="utf-8") as f:
+        comments = json.load(f)
+    new_id = max((c.get("id",0) for c in comments), default=0) + 1
+    comment = {
+        "id":         new_id,
+        "parking_id": str(data["parking_id"]),
+        "user":       str(data["user"])[:30],
+        "text":       str(data["text"])[:300],
+        "stars":      max(1, min(5, int(data["stars"]))),
+        "date":       data.get("date",""),
+    }
+    comments.append(comment)
+    with open(COMMENTS_PATH,"w",encoding="utf-8") as f:
+        json.dump(comments, f, ensure_ascii=False, indent=2)
+    return jsonify({"ok":True,"id":new_id}), 201
 
 @app.route("/api/markets")
 def api_markets():

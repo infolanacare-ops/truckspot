@@ -385,6 +385,75 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
   #app{max-width:480px;margin:0 auto;border-left:1px solid var(--border);border-right:1px solid var(--border)}
 }
 
+/* ══ TACHOGRAF ══ */
+.tacho-panel{position:fixed;inset:0;z-index:700;background:var(--bg);display:none;flex-direction:column;overflow-y:auto}
+.tacho-panel.open{display:flex}
+.tacho-header{background:var(--panel);border-bottom:1px solid var(--border);padding:1rem;
+  display:flex;align-items:center;gap:.7rem;flex-shrink:0}
+.tacho-title{font-family:var(--font-head);font-size:1rem;font-weight:800;flex:1;color:var(--text)}
+.tacho-body{flex:1;display:flex;flex-direction:column;align-items:center;padding:1.5rem 1rem}
+.tacho-ring-wrap{position:relative;width:200px;height:200px;margin-bottom:1.2rem}
+.tacho-ring-wrap svg{transform:rotate(-90deg)}
+.tacho-ring-bg{fill:none;stroke:var(--border);stroke-width:12}
+.tacho-ring-fill{fill:none;stroke-width:12;stroke-linecap:round;transition:stroke-dashoffset .5s,stroke .3s}
+.tacho-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.tacho-time-big{font-family:var(--font-head);font-size:2.2rem;font-weight:900;color:var(--text);line-height:1}
+.tacho-state-lbl{font-size:.75rem;font-weight:700;margin-top:.2rem;letter-spacing:.06em;text-transform:uppercase}
+.tacho-state-lbl.driving{color:var(--accent)}
+.tacho-state-lbl.breaking{color:var(--green)}
+.tacho-limits{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;width:100%;max-width:320px;margin-bottom:1.2rem}
+.tacho-box{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:.8rem;text-align:center}
+.tacho-box-val{font-family:var(--font-head);font-size:1.2rem;font-weight:800}
+.tacho-box-lbl{font-size:.65rem;color:var(--muted);margin-top:.2rem}
+.tacho-toggle-btn{width:200px;padding:1rem;border:none;border-radius:20px;cursor:pointer;
+  font-family:var(--font-head);font-size:1rem;font-weight:900;letter-spacing:.04em;transition:.2s}
+.tacho-toggle-btn.driving{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000}
+.tacho-toggle-btn.breaking{background:linear-gradient(135deg,var(--green),#34d399);color:#000}
+.tacho-warning{background:rgba(239,68,68,.12);border:1px solid #ef4444;border-radius:12px;
+  padding:.7rem 1rem;font-size:.82rem;color:#ef4444;font-weight:600;
+  width:100%;max-width:320px;margin-top:1rem;text-align:center;display:none}
+.tacho-warning.show{display:block}
+.tacho-history{width:100%;max-width:320px;margin-top:1.2rem}
+.tacho-hist-title{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem;font-weight:700}
+.tacho-hist-item{display:flex;align-items:center;justify-content:space-between;
+  background:var(--panel);border-radius:8px;padding:.4rem .8rem;margin-bottom:.3rem;font-size:.78rem}
+
+/* ══ WEATHER WIDGET ══ */
+.weather-widget{display:flex;align-items:center;gap:.7rem;background:rgba(59,130,246,.08);
+  border:1px solid rgba(59,130,246,.25);border-radius:10px;padding:.5rem .8rem;margin-bottom:.8rem}
+.weather-icon{font-size:1.6rem;flex-shrink:0}
+.weather-temp{font-family:var(--font-head);font-size:1.1rem;font-weight:800;color:var(--text)}
+.weather-desc{font-size:.72rem;color:var(--muted)}
+.weather-wind{font-size:.7rem;color:var(--muted)}
+
+/* ══ FUEL PRICE ══ */
+.fuel-row{display:flex;align-items:center;gap:.5rem;background:rgba(245,158,11,.08);
+  border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:.45rem .8rem;margin-bottom:.8rem;font-size:.8rem}
+.fuel-row span{font-family:var(--font-head);font-weight:800;color:var(--accent)}
+
+/* ══ COMMENTS ══ */
+.comments-section{margin-top:.9rem;border-top:1px solid var(--border);padding-top:.9rem}
+.comments-title{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+  margin-bottom:.6rem;font-weight:700}
+.comment-item{background:var(--panel2);border:1px solid var(--border);border-radius:10px;
+  padding:.6rem .8rem;margin-bottom:.4rem}
+.comment-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem}
+.comment-user{font-size:.78rem;font-weight:700;color:var(--text)}
+.comment-stars{font-size:.75rem;color:#f59e0b}
+.comment-date{font-size:.65rem;color:var(--muted)}
+.comment-text{font-size:.8rem;color:var(--muted);line-height:1.45}
+.comment-form{margin-top:.7rem;display:flex;flex-direction:column;gap:.5rem}
+.comment-textarea{width:100%;padding:.6rem .8rem;border:1.5px solid var(--border);border-radius:10px;
+  font-family:var(--font);font-size:.85rem;background:var(--input-bg);color:var(--text);
+  outline:none;resize:none;min-height:60px;transition:.15s}
+.comment-textarea:focus{border-color:var(--accent)}
+.comment-stars-row{display:flex;gap:.3rem}
+.c-star{font-size:1.4rem;cursor:pointer;filter:grayscale(1);opacity:.3;transition:.1s}
+.c-star.active{filter:none;opacity:1}
+.comment-submit{padding:.6rem;border:none;border-radius:10px;cursor:pointer;
+  font-family:var(--font-head);font-size:.85rem;font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000}
+
 /* ══ FILTER PANEL ══ */
 .filter-btn{position:relative;width:36px;height:36px;border-radius:10px;background:var(--panel2);border:1px solid var(--border);
   display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;flex-shrink:0}
@@ -647,6 +716,7 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
     <div class="menu-item" onclick="drawerAction('share')"><div class="menu-icon" style="background:rgba(16,185,129,.12);border-color:#10b981">📣</div><span class="menu-label" data-i="menu_share">Recommend TruckSpot</span><span class="menu-badge green">+50 pts</span></div>
     <div class="menu-sep"></div>
     <div class="menu-section" data-i="sec_tools">Tools</div>
+    <div class="menu-item" onclick="drawerAction('tacho')"><div class="menu-icon" style="background:rgba(245,158,11,.12);border-color:#f59e0b">🕐</div><span class="menu-label">Tachograf EU</span><span class="menu-badge" id="tacho-badge" style="display:none">ON</span></div>
     <div class="menu-item" onclick="drawerAction('gps')"><div class="menu-icon">📡</div><span class="menu-label" data-i="menu_gps">GPS Alerts</span><span class="menu-badge" id="gps-badge" style="display:none">ON</span></div>
     <div class="menu-item" onclick="drawerAction('radio')"><div class="menu-icon">📻</div><span class="menu-label" data-i="menu_radio">Radio</span></div>
     <div class="menu-sep"></div>
@@ -720,6 +790,52 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
     <span class="rank-title" data-i="rank_title">🏆 Driver Ranking</span>
   </div>
   <div class="rank-list" id="rank-list"></div>
+</div>
+
+<!-- TACHOGRAF PANEL -->
+<div class="tacho-panel" id="tacho-panel">
+  <div class="tacho-header">
+    <button class="panel-close" style="position:static;width:32px;height:32px" onclick="closeTacho()">←</button>
+    <span class="tacho-title">🕐 Tachograf EU</span>
+    <button onclick="resetTacho()" style="font-size:.75rem;color:var(--muted);background:none;border:none;cursor:pointer">Reset</button>
+  </div>
+  <div class="tacho-body">
+    <div class="tacho-ring-wrap">
+      <svg width="200" height="200" viewBox="0 0 200 200">
+        <circle class="tacho-ring-bg" cx="100" cy="100" r="88"/>
+        <circle class="tacho-ring-fill" id="tacho-ring" cx="100" cy="100" r="88"
+          stroke="#f59e0b" stroke-dasharray="552.9" stroke-dashoffset="552.9"/>
+      </svg>
+      <div class="tacho-center">
+        <div class="tacho-time-big" id="tacho-disp">0:00</div>
+        <div class="tacho-state-lbl driving" id="tacho-lbl">STOP</div>
+      </div>
+    </div>
+    <div class="tacho-limits">
+      <div class="tacho-box">
+        <div class="tacho-box-val" id="tacho-remain" style="color:var(--green)">4:30</div>
+        <div class="tacho-box-lbl">Pozostało jazdy</div>
+      </div>
+      <div class="tacho-box">
+        <div class="tacho-box-val" id="tacho-today" style="color:var(--blue)">0:00</div>
+        <div class="tacho-box-lbl">Dziś razem</div>
+      </div>
+      <div class="tacho-box">
+        <div class="tacho-box-val" id="tacho-break-need" style="color:var(--accent)">45 min</div>
+        <div class="tacho-box-lbl">Wymagana przerwa</div>
+      </div>
+      <div class="tacho-box">
+        <div class="tacho-box-val" id="tacho-break-done" style="color:var(--muted)">0 min</div>
+        <div class="tacho-box-lbl">Przerwa dziś</div>
+      </div>
+    </div>
+    <button class="tacho-toggle-btn driving" id="tacho-btn" onclick="tachoToggle()">▶ JEDŹ</button>
+    <div class="tacho-warning" id="tacho-warning">⚠️ Zbliżasz się do limitu jazdy!</div>
+    <div class="tacho-history">
+      <div class="tacho-hist-title">Historia dziś</div>
+      <div id="tacho-hist-list"></div>
+    </div>
+  </div>
 </div>
 
 <!-- FILTER PANEL -->
@@ -1199,6 +1315,7 @@ function drawerAction(action){
     else if(action==='add') startAddMode();
     else if(action==='search') openSearch();
     else if(action==='rank') openRank();
+    else if(action==='tacho') openTacho();
     else if(action==='gps') toggleGps();
     else if(action==='radio') toggleRadioBar();
     else if(action==='share') shareApp();
@@ -1260,7 +1377,8 @@ function loadOsmParkings(){
 // ══════════════════════════════════════
 // DETAIL PANELS
 // ══════════════════════════════════════
-function showDetail(p){
+async function showDetail(p){
+  currentDetailParking = p;
   const cfg=MODE_CONFIG[currentMode];
   const amenHtml=(p.amenities||[]).filter(a=>cfg.amenityFilter.includes(a)).map(a=>`<span class="amenity">${AMENITY_LABELS[a]||a}</span>`).join('');
   const poiHtml=(p.poi||[]).filter(x=>cfg.poiFilter.includes(x.type)).map(x=>`<div class="poi-row"><span>${POI_ICONS[x.type]||'📍'}</span><span style="flex:1">${x.name}</span><span class="poi-dist">${x.dist_km} km</span></div>`).join('');
@@ -1270,15 +1388,30 @@ function showDetail(p){
     `<div class="info-box"><div class="info-box-val">${p.price_eur===0?'FREE':p.price_eur+'€'}</div><div class="info-box-lbl">price/night</div></div>`,
     `<div class="info-box"><div class="info-box-val">★${p.rating}</div><div class="info-box-lbl">rating</div></div>`,
   ].filter(Boolean).join('');
+
+  // Render immediately without weather/comments
   document.getElementById('panel-content').innerHTML=`
     <div class="panel-name">${p.name}</div>
     <div class="panel-addr">📍 ${p.city}, ${p.country}</div>
+    <div id="pd-weather"></div>
+    ${fuelHtml(p.country)}
     <div class="info-grid">${boxes}</div>
     ${amenHtml?`<div class="amenities">${amenHtml}</div>`:''}
     ${poiHtml?`<div class="poi-title">🗺 Nearby</div><div class="poi-list">${poiHtml}</div>`:''}
-    <button class="nav-btn" onclick="navigateTo(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')">📍 Navigate — Google Maps</button>`;
+    <button class="nav-btn" onclick="navigateTo(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')">📍 Navigate — Google Maps</button>
+    <div id="pd-comments"><div style="font-size:.78rem;color:var(--muted);padding:.8rem 0;text-align:center">⏳ Ładowanie opinii...</div></div>`;
   document.getElementById('detail-panel').classList.add('open');
   map.panTo([p.lat,p.lng]);
+
+  // Async: weather + comments
+  fetchWeather(p.lat, p.lng).then(w=>{
+    const el = document.getElementById('pd-weather');
+    if(el) el.innerHTML = weatherHtml(w);
+  });
+  loadComments(p.id).then(comments=>{
+    const el = document.getElementById('pd-comments');
+    if(el) el.innerHTML = commentsHtml(comments, p.id);
+  });
 }
 
 function showOsmDetail(p){
@@ -2185,6 +2318,270 @@ function showMarketDetail(m){
     <button class="nav-btn" onclick="navigateTo(${m.lat},${m.lng},'${m.name.replace(/'/g,"\\'")}')">📍 Navigate — Google Maps</button>`;
   document.getElementById('detail-panel').classList.add('open');
   map.panTo([m.lat, m.lng]);
+}
+
+// ══════════════════════════════════════
+// TACHOGRAF EU
+// ══════════════════════════════════════
+// EU rules: max 4.5h continuous driving → 45min break; daily max 9h
+const TACHO_LIMIT_S  = 4.5 * 3600;  // 4h30m in seconds
+const TACHO_DAY_S    = 9   * 3600;
+const TACHO_BREAK_S  = 45  * 60;
+
+let tachoState = JSON.parse(localStorage.getItem('ts_tacho') || JSON.stringify({
+  mode:'stopped', // 'driving' | 'breaking' | 'stopped'
+  segStart: null,
+  drivingTotal: 0,  // seconds driven since last long break
+  breakTotal: 0,
+  dayDriving: 0,
+  history: [],
+}));
+let tachoInterval = null;
+
+function openTacho(){
+  document.getElementById('tacho-panel').classList.add('open');
+  tachoRender();
+  if(tachoState.mode === 'driving') tachoStartTick();
+}
+function closeTacho(){
+  document.getElementById('tacho-panel').classList.remove('open');
+}
+
+function tachoToggle(){
+  const now = Date.now();
+  if(tachoState.mode === 'driving'){
+    // Switch to break
+    const elapsed = (now - tachoState.segStart) / 1000;
+    tachoState.drivingTotal += elapsed;
+    tachoState.dayDriving   += elapsed;
+    tachoState.history.push({type:'drive', dur: Math.round(elapsed), ts: now});
+    tachoState.mode = 'breaking';
+    tachoState.segStart = now;
+    stopTachoTick();
+    showAlert('☕','Przerwa','Jedź po przerwie 45 min');
+    if('speechSynthesis' in window){
+      const u=new SpeechSynthesisUtterance(currentLang==='pl'?'Przerwa. Odpoczywaj 45 minut.':'Break time. Rest for 45 minutes.');
+      u.lang=currentLang==='pl'?'pl-PL':'en-US'; speechSynthesis.speak(u);
+    }
+  } else if(tachoState.mode === 'breaking'){
+    // End break → drive
+    const elapsed = (now - tachoState.segStart) / 1000;
+    tachoState.breakTotal += elapsed;
+    tachoState.history.push({type:'break', dur: Math.round(elapsed), ts: now});
+    if(elapsed >= TACHO_BREAK_S) tachoState.drivingTotal = 0; // reset after proper break
+    tachoState.mode = 'driving';
+    tachoState.segStart = now;
+    tachoStartTick();
+    document.getElementById('tacho-badge').style.display='';
+  } else {
+    // Start driving
+    tachoState.mode = 'driving';
+    tachoState.segStart = now;
+    tachoStartTick();
+    document.getElementById('tacho-badge').style.display='';
+    showAlert('🚛','Tachograf','Jazda rozpoczęta');
+  }
+  saveTacho();
+  tachoRender();
+}
+
+function tachoStartTick(){
+  clearInterval(tachoInterval);
+  tachoInterval = setInterval(()=>{
+    tachoRender();
+    const driven = tachoState.drivingTotal + (tachoState.mode==='driving' ? (Date.now()-tachoState.segStart)/1000 : 0);
+    if(driven >= TACHO_LIMIT_S - 900 && driven < TACHO_LIMIT_S){ // 15min warning
+      document.getElementById('tacho-warning').classList.add('show');
+    }
+    if(driven >= TACHO_LIMIT_S){
+      clearInterval(tachoInterval);
+      showAlert('🛑','STOP — wymagana przerwa!','45 min odpoczynku');
+      if('speechSynthesis' in window){
+        const u=new SpeechSynthesisUtterance(currentLang==='pl'?'Uwaga! Wymagana przerwa 45 minut.':'Alert! Mandatory 45-minute break required.');
+        u.lang=currentLang==='pl'?'pl-PL':'en-US'; speechSynthesis.speak(u);
+      }
+    }
+  }, 1000);
+}
+function stopTachoTick(){ clearInterval(tachoInterval); }
+
+function tachoRender(){
+  const now = Date.now();
+  const curSeg = tachoState.segStart ? (now - tachoState.segStart)/1000 : 0;
+  const driven = tachoState.drivingTotal + (tachoState.mode==='driving' ? curSeg : 0);
+  const broken = tachoState.breakTotal  + (tachoState.mode==='breaking' ? curSeg : 0);
+  const remain = Math.max(0, TACHO_LIMIT_S - driven);
+  const dayDrv = tachoState.dayDriving  + (tachoState.mode==='driving' ? curSeg : 0);
+
+  // Ring progress
+  const circ = 2 * Math.PI * 88; // 552.9
+  const pct = Math.min(1, driven / TACHO_LIMIT_S);
+  const ring = document.getElementById('tacho-ring');
+  if(ring){
+    ring.style.strokeDashoffset = circ * (1 - pct);
+    ring.style.stroke = pct > 0.85 ? '#ef4444' : pct > 0.65 ? '#f59e0b' : '#10b981';
+  }
+
+  // Display current segment time
+  const dispSec = tachoState.mode==='driving' ? driven : (tachoState.mode==='breaking' ? broken : 0);
+  setEl('tacho-disp', fmtHM(dispSec));
+  const lbl = document.getElementById('tacho-lbl');
+  if(lbl){
+    lbl.textContent = tachoState.mode==='driving'?'JAZDA':tachoState.mode==='breaking'?'PRZERWA':'STOP';
+    lbl.className = 'tacho-state-lbl '+(tachoState.mode==='driving'?'driving':'breaking');
+  }
+
+  setEl('tacho-remain',  fmtHM(remain));
+  setEl('tacho-today',   fmtHM(dayDrv));
+  setEl('tacho-break-need', Math.max(0,Math.round((TACHO_BREAK_S - broken)/60))+' min');
+  setEl('tacho-break-done', Math.round(broken/60)+' min');
+
+  const btn = document.getElementById('tacho-btn');
+  if(btn){
+    btn.className = 'tacho-toggle-btn '+(tachoState.mode==='driving'?'breaking':'driving');
+    btn.textContent = tachoState.mode==='driving'?'⏸ PRZERWA':tachoState.mode==='breaking'?'▶ JEDŹ':'▶ JEDŹ';
+  }
+
+  // History
+  const hist = (tachoState.history||[]).slice(-8).reverse();
+  setEl('tacho-hist-list', hist.map(h=>`
+    <div class="tacho-hist-item">
+      <span>${h.type==='drive'?'🚛 Jazda':'☕ Przerwa'}</span>
+      <span style="color:var(--muted)">${fmtHM(h.dur)}</span>
+    </div>`).join('') || '<div style="font-size:.78rem;color:var(--muted)">Brak historii</div>');
+}
+
+function fmtHM(sec){
+  const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=Math.floor(sec%60);
+  if(h>0) return h+':'+(m<10?'0':'')+m;
+  return m+':'+(s<10?'0':'')+s;
+}
+function saveTacho(){ localStorage.setItem('ts_tacho', JSON.stringify(tachoState)); }
+function resetTacho(){
+  stopTachoTick();
+  tachoState={mode:'stopped',segStart:null,drivingTotal:0,breakTotal:0,dayDriving:0,history:[]};
+  saveTacho(); tachoRender();
+  document.getElementById('tacho-warning').classList.remove('show');
+  document.getElementById('tacho-badge').style.display='none';
+}
+
+// ══════════════════════════════════════
+// WEATHER (Open-Meteo — free, no key)
+// ══════════════════════════════════════
+const WMO_ICONS = {
+  0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',48:'🌫',
+  51:'🌦',53:'🌦',55:'🌧',61:'🌧',63:'🌧',65:'🌧',
+  71:'🌨',73:'🌨',75:'❄️',80:'🌦',81:'🌧',82:'⛈',
+  95:'⛈',96:'⛈',99:'⛈'
+};
+const WMO_DESC = {
+  0:'Bezchmurnie',1:'Przeważnie słonecznie',2:'Częściowo zachmurzenie',3:'Zachmurzenie',
+  45:'Mgła',48:'Mgła szronująca',51:'Mżawka',53:'Mżawka',55:'Intensywna mżawka',
+  61:'Deszcz',63:'Deszcz',65:'Intensywny deszcz',71:'Śnieg',73:'Śnieg',75:'Intensywny śnieg',
+  80:'Przelotny deszcz',81:'Przelotny deszcz',82:'Silne opady',95:'Burza',96:'Burza z gradem',99:'Burza z gradem'
+};
+
+async function fetchWeather(lat, lng){
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weathercode,windspeed_10m&timezone=auto`;
+    const r = await fetch(url);
+    const d = await r.json();
+    const c = d.current;
+    return {temp: Math.round(c.temperature_2m), code: c.weathercode, wind: Math.round(c.windspeed_10m)};
+  } catch(e){ return null; }
+}
+
+function weatherHtml(w){
+  if(!w) return '';
+  const icon = WMO_ICONS[w.code] || '🌡';
+  const desc = WMO_DESC[w.code] || '';
+  return `<div class="weather-widget">
+    <span class="weather-icon">${icon}</span>
+    <div>
+      <div class="weather-temp">${w.temp}°C</div>
+      <div class="weather-desc">${desc}</div>
+      <div class="weather-wind">💨 ${w.wind} km/h</div>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════
+// FUEL PRICES (country averages, EUR)
+// ══════════════════════════════════════
+const FUEL = {
+  DE:{d:1.55,p:1.68},PL:{d:1.34,p:1.42},FR:{d:1.64,p:1.74},ES:{d:1.38,p:1.52},
+  IT:{d:1.58,p:1.72},AT:{d:1.49,p:1.61},CZ:{d:1.37,p:1.44},HU:{d:1.41,p:1.50},
+  HR:{d:1.44,p:1.54},SK:{d:1.46,p:1.56},NL:{d:1.58,p:1.83},BE:{d:1.52,p:1.70},
+  LU:{d:1.33,p:1.46},DK:{d:1.53,p:1.63},SE:{d:1.64,p:1.73},PT:{d:1.53,p:1.66},
+  GR:{d:1.48,p:1.70},BG:{d:1.34,p:1.40},RO:{d:1.36,p:1.43},SI:{d:1.46,p:1.53},
+  LT:{d:1.38,p:1.48},LV:{d:1.40,p:1.50},EE:{d:1.43,p:1.53},IE:{d:1.58,p:1.73},
+};
+function fuelHtml(country){
+  const f = FUEL[country];
+  if(!f) return '';
+  return `<div class="fuel-row">⛽
+    <span>Diesel ~${f.d.toFixed(2)}€/L</span>
+    &nbsp;·&nbsp;
+    <span>Benzyna ~${f.p.toFixed(2)}€/L</span>
+    <span style="margin-left:auto;font-size:.65rem;color:var(--muted)">${country} avg</span>
+  </div>`;
+}
+
+// ══════════════════════════════════════
+// COMMENTS
+// ══════════════════════════════════════
+let commentStars = 5;
+let currentDetailParking = null;
+
+async function loadComments(parkingId){
+  try {
+    const r = await fetch(`/api/comments?parking_id=${parkingId}`);
+    return await r.json();
+  } catch(e){ return []; }
+}
+
+function commentsHtml(comments, parkingId){
+  const list = comments.length
+    ? comments.map(c=>`
+      <div class="comment-item">
+        <div class="comment-header">
+          <span class="comment-user">${c.user}</span>
+          <span class="comment-stars">${'⭐'.repeat(c.stars)}</span>
+          <span class="comment-date">${c.date ? c.date.slice(0,10) : ''}</span>
+        </div>
+        <div class="comment-text">${c.text}</div>
+      </div>`).join('')
+    : '<div style="font-size:.78rem;color:var(--muted);padding:.3rem 0">Brak opinii. Bądź pierwszy!</div>';
+
+  return `<div class="comments-section">
+    <div class="comments-title">💬 Opinie (${comments.length})</div>
+    ${list}
+    <div class="comment-form">
+      <div class="comment-stars-row" id="c-stars-row">
+        ${[1,2,3,4,5].map(v=>`<span class="c-star active" data-v="${v}" onclick="pickCommentStar(${v},${parkingId})">⭐</span>`).join('')}
+      </div>
+      <textarea class="comment-textarea" id="c-text-${parkingId}" placeholder="Twoja opinia..." rows="2"></textarea>
+      <button class="comment-submit" onclick="submitComment(${parkingId})">✅ Dodaj opinię (+5 pkt)</button>
+    </div>
+  </div>`;
+}
+
+function pickCommentStar(v, pid){
+  commentStars = v;
+  document.querySelectorAll('#c-stars-row .c-star').forEach(s=>s.classList.toggle('active', parseInt(s.dataset.v)<=v));
+}
+
+async function submitComment(parkingId){
+  const text = document.getElementById(`c-text-${parkingId}`)?.value.trim();
+  if(!text){ showAlert('⚠️','','Napisz coś o tym miejscu'); return; }
+  const payload = {parking_id: String(parkingId), user: profile.name||'Anonymous', text, stars: commentStars, date: new Date().toISOString()};
+  try {
+    await fetch('/api/comments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    addPts(5);
+    showAlert('✅','Dziękujemy!','Opinia dodana (+5 pkt)');
+    // Reload comments in panel
+    if(currentDetailParking) showDetail(currentDetailParking);
+  } catch(e){ showAlert('⚠️','Błąd','Nie udało się zapisać'); }
 }
 
 // ══════════════════════════════════════
