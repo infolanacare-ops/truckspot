@@ -231,6 +231,66 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .nav-btn{width:100%;padding:.75rem;border:none;border-radius:14px;cursor:pointer;
   font-family:var(--font-head);font-size:.9rem;font-weight:800;
   background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000}
+/* ══ MAP MESSAGES (CB RADIO) ══ */
+.msg-bubble{width:36px;height:36px;border-radius:50% 50% 50% 4px;display:flex;align-items:center;justify-content:center;
+  font-size:1rem;box-shadow:0 2px 8px rgba(0,0,0,.4);cursor:pointer;border:2px solid rgba(255,255,255,.35);
+  transition:transform .15s}
+.msg-bubble:hover{transform:scale(1.15)}
+.msg-bubble.mine{border-color:#fff}
+/* Floating add button */
+.msg-fab{position:fixed;bottom:80px;right:16px;z-index:800;width:48px;height:48px;border-radius:50%;
+  background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none;font-size:1.3rem;cursor:pointer;
+  box-shadow:0 4px 16px rgba(59,130,246,.5);color:#fff;display:flex;align-items:center;justify-content:center;
+  transition:transform .15s,opacity .2s}
+.msg-fab:active{transform:scale(.92)}
+.msg-fab.drop-mode{background:linear-gradient(135deg,#ef4444,#f97316);animation:pulse-fab 1s infinite}
+@keyframes pulse-fab{0%,100%{box-shadow:0 4px 16px rgba(239,68,68,.5)}50%{box-shadow:0 4px 28px rgba(239,68,68,.8)}}
+/* Drop hint */
+.msg-drop-hint{position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:900;
+  background:rgba(239,68,68,.92);color:#fff;padding:.5rem 1.1rem;border-radius:20px;
+  font-size:.82rem;font-weight:700;pointer-events:none;display:none;white-space:nowrap}
+.msg-drop-hint.show{display:block}
+/* Message form overlay */
+.msg-form-overlay{position:fixed;inset:0;z-index:1500;background:rgba(0,0,0,.6);
+  display:none;align-items:flex-end;justify-content:center}
+.msg-form-overlay.open{display:flex}
+.msg-form-sheet{background:var(--panel);border-radius:20px 20px 0 0;width:100%;max-width:500px;
+  padding:1.2rem 1rem 2.5rem;box-shadow:0 -4px 32px rgba(0,0,0,.4)}
+.msg-form-title{font-family:var(--font-head);font-size:1rem;font-weight:800;margin-bottom:1rem;text-align:center}
+.msg-cats{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.9rem;justify-content:center}
+.msg-cat-btn{border:2px solid transparent;border-radius:22px;padding:.35rem .7rem;font-size:.82rem;
+  font-weight:700;cursor:pointer;background:var(--panel2);color:var(--muted);transition:all .15s}
+.msg-cat-btn.active{color:#fff}
+.msg-textarea{width:100%;background:var(--input-bg);border:1px solid var(--border);border-radius:12px;
+  color:var(--text);font-family:var(--font);font-size:.88rem;padding:.7rem .9rem;resize:none;
+  min-height:80px;margin-bottom:.8rem;outline:none}
+.msg-textarea:focus{border-color:var(--blue)}
+.msg-submit-btn{width:100%;padding:.75rem;border:none;border-radius:14px;cursor:pointer;
+  font-family:var(--font-head);font-size:.9rem;font-weight:800;
+  background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff}
+/* Message popup in panel */
+.msg-popup-item{background:var(--panel2);border:1px solid var(--border);border-radius:12px;
+  padding:.7rem .85rem;margin-bottom:.5rem}
+.msg-popup-header{display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem}
+.msg-author-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:.7rem;flex-shrink:0}
+.msg-cat-badge{font-size:.65rem;font-weight:700;border-radius:8px;padding:.1rem .4rem;
+  background:var(--panel);margin-left:auto;white-space:nowrap}
+.msg-time{font-size:.65rem;color:var(--muted)}
+.msg-text{font-size:.82rem;line-height:1.45;margin-bottom:.4rem}
+.msg-reacts{display:flex;gap:.5rem}
+.msg-react-btn{border:1px solid var(--border);background:var(--panel);border-radius:8px;
+  padding:.2rem .55rem;font-size:.75rem;cursor:pointer;color:var(--muted);transition:all .15s}
+.msg-react-btn:hover{border-color:var(--accent);color:var(--text)}
+/* Map messages panel */
+.msgs-panel{position:fixed;bottom:0;left:0;right:0;z-index:960;background:var(--panel);
+  border-top:2px solid #3b82f6;border-radius:20px 20px 0 0;padding:1rem 1rem 2.5rem;
+  max-height:75vh;overflow-y:auto;transform:translateY(100%);
+  transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:0 -4px 32px var(--shadow)}
+.msgs-panel.open{transform:translateY(0)}
+.msgs-refresh-btn{width:100%;padding:.5rem;border:1px solid var(--border);border-radius:10px;
+  background:var(--panel2);color:var(--muted);font-size:.78rem;cursor:pointer;margin-bottom:.7rem}
+
 /* ══ FAV BUTTON ══ */
 .fav-btn{border:none;background:none;cursor:pointer;font-size:1.3rem;line-height:1;padding:.2rem;transition:transform .15s}
 .fav-btn:active{transform:scale(1.3)}
@@ -753,6 +813,7 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
     <div class="menu-item" onclick="drawerAction('autobahn')"><div class="menu-icon" style="background:rgba(0,100,200,.12);border-color:#0064c8">🇩🇪</div><span class="menu-label">Autobahn DE (oficjalne MOP)</span><span class="menu-badge" id="autobahn-badge" style="display:none">ON</span></div>
     <div class="menu-sep"></div>
     <div class="menu-section" data-i="sec_community">Community</div>
+    <div class="menu-item" onclick="drawerAction('cbradio')"><div class="menu-icon" style="background:rgba(59,130,246,.12);border-color:#3b82f6">📻</div><span class="menu-label">CB Radio — mapa wiadomości</span><span class="menu-badge" id="msgs-count-badge" style="display:none">0</span></div>
     <div class="menu-item" onclick="drawerAction('add')"><div class="menu-icon" style="background:rgba(139,92,246,.12);border-color:#8b5cf6">＋</div><span class="menu-label" data-i="menu_add">Add a spot</span><span class="menu-badge">+10 pts</span></div>
     <div class="menu-item" onclick="drawerAction('myspots')"><div class="menu-icon">⭐</div><span class="menu-label" data-i="menu_myspots">My spots</span></div>
     <div class="menu-item" onclick="drawerAction('favs')"><div class="menu-icon" style="background:rgba(245,158,11,.12);border-color:#f59e0b">❤️</div><span class="menu-label">Ulubione parkingi</span><span class="menu-badge" id="favs-count" style="display:none">0</span></div>
@@ -895,6 +956,35 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
     <button class="filter-reset" onclick="resetFilters()" data-i="filter_reset">Resetuj</button>
     <button class="filter-apply" onclick="applyFilters()" data-i="filter_apply">Zastosuj</button>
   </div>
+</div>
+
+<!-- MAP MESSAGES FAB -->
+<button class="msg-fab" id="msg-fab" onclick="toggleDropMode()" title="Napisz wiadomość na mapie">📢</button>
+<div class="msg-drop-hint" id="msg-drop-hint">Kliknij na mapę żeby zostawić wiadomość</div>
+
+<!-- MESSAGE FORM OVERLAY -->
+<div class="msg-form-overlay" id="msg-form-overlay" onclick="closeMsgForm(event)">
+  <div class="msg-form-sheet" onclick="event.stopPropagation()">
+    <div class="msg-form-title">📢 Zostaw wiadomość kierowcom</div>
+    <div class="msg-cats" id="msg-cats">
+      <button class="msg-cat-btn active" data-cat="info" onclick="pickMsgCat(this)" style="border-color:#3b82f6;background:#3b82f6;color:#fff">💬 Info</button>
+      <button class="msg-cat-btn" data-cat="police" onclick="pickMsgCat(this)">🚔 Policja</button>
+      <button class="msg-cat-btn" data-cat="warning" onclick="pickMsgCat(this)">⚠️ Uwaga</button>
+      <button class="msg-cat-btn" data-cat="help" onclick="pickMsgCat(this)">🆘 Pomoc</button>
+      <button class="msg-cat-btn" data-cat="ok" onclick="pickMsgCat(this)">✅ Polecam</button>
+    </div>
+    <textarea class="msg-textarea" id="msg-textarea" placeholder="Co widzisz? Max 200 znaków..." maxlength="200"></textarea>
+    <button class="msg-submit-btn" onclick="submitMapMessage()">📢 Wyślij wszystkim kierowcom</button>
+  </div>
+</div>
+
+<!-- MESSAGES PANEL -->
+<div class="msgs-panel" id="msgs-panel">
+  <div class="panel-handle"></div>
+  <button class="panel-close" onclick="closeMsgsPanel()">✕</button>
+  <h3 style="font-family:var(--font-head);font-size:1rem;font-weight:800;margin-bottom:.7rem">📻 CB Radio — wiadomości na mapie</h3>
+  <button class="msgs-refresh-btn" onclick="loadMapMessages(true)">🔄 Odśwież wiadomości</button>
+  <div id="msgs-list"><div style="text-align:center;color:var(--muted);font-size:.85rem;padding:1rem">Ładowanie...</div></div>
 </div>
 
 <!-- FAVORITES PANEL -->
@@ -1326,7 +1416,7 @@ function enterMode(mode){
       subdomains:'0123',attribution:'&copy; Google Maps',maxZoom:20
     }).addTo(map);
     L.control.zoom({position:'bottomright'}).addTo(map);
-    map.on('click', onMapClick);
+    map.on('click', (e)=>{ onMapClickForMsg(e); onMapClick(e); });
     map.on('moveend', ()=>{ if(map.getZoom()>=8) loadOsmParkings(); });
   } else {
     setTimeout(()=>map.invalidateSize(),100);
@@ -1366,6 +1456,7 @@ function drawerAction(action){
     else if(action==='markets') toggleMarkets();
     else if(action==='autobahn') toggleAutobahn();
     else if(action==='favs') openFavsPanel();
+    else if(action==='cbradio') openMsgsPanel();
     else if(action==='all') map.setView([51.5,12.0],5);
     else if(action==='add') startAddMode();
     else if(action==='search') openSearch();
@@ -1399,6 +1490,7 @@ function bnav(el,action){
 function loadParkings(mode){
   updateFavsCount();
   checkParkingDeeplink();
+  startMsgRefresh();
   fetch(`/api/parkings?mode=${MODE_CONFIG[mode].apiMode}`)
     .then(r=>r.json()).then(data=>{
       allParkings=data;
@@ -2472,6 +2564,227 @@ function timeSince(ts){
   const h = Math.floor(min/60);
   if(h<24) return h+'h temu';
   return Math.floor(h/24)+'d temu';
+}
+
+// ══════════════════════════════════════
+// CB RADIO — MAPA WIADOMOŚCI
+// ══════════════════════════════════════
+const MSG_CATS = {
+  info:    { icon:'💬', color:'#3b82f6', label:'Informacja' },
+  police:  { icon:'🚔', color:'#ef4444', label:'Policja/kontrola' },
+  warning: { icon:'⚠️', color:'#f97316', label:'Uwaga/problem' },
+  help:    { icon:'🆘', color:'#8b5cf6', label:'Potrzebuję pomocy' },
+  ok:      { icon:'✅', color:'#22c55e', label:'Polecam miejsce' },
+};
+
+let msgMarkers = [];
+let msgDropMode = false;
+let msgDropLat = null, msgDropLng = null;
+let msgSelectedCat = 'info';
+let msgRefreshTimer = null;
+
+function getChatAuthor(){
+  let a = localStorage.getItem('ts_chat_author');
+  if(!a){
+    const colors = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6','#ec4899','#06b6d4'];
+    const emojis = ['🚛','🚚','🚐','🚌','🚑','🚒'];
+    a = JSON.stringify({
+      color: colors[Math.floor(Math.random()*colors.length)],
+      emoji: emojis[Math.floor(Math.random()*emojis.length)],
+    });
+    localStorage.setItem('ts_chat_author', a);
+  }
+  return JSON.parse(a);
+}
+
+function toggleDropMode(){
+  msgDropMode = !msgDropMode;
+  const fab  = document.getElementById('msg-fab');
+  const hint = document.getElementById('msg-drop-hint');
+  if(msgDropMode){
+    fab.classList.add('drop-mode');
+    hint.classList.add('show');
+    map.getContainer().style.cursor = 'crosshair';
+  } else {
+    fab.classList.remove('drop-mode');
+    hint.classList.remove('show');
+    map.getContainer().style.cursor = '';
+  }
+}
+
+// Map click handler for drop mode
+function onMapClickForMsg(e){
+  if(!msgDropMode) return;
+  msgDropLat = e.latlng.lat;
+  msgDropLng = e.latlng.lng;
+  toggleDropMode(); // exit drop mode
+  openMsgForm();
+}
+
+function openMsgForm(){
+  document.getElementById('msg-textarea').value = '';
+  document.getElementById('msg-form-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('msg-textarea').focus(), 300);
+}
+
+function closeMsgForm(e){
+  if(e && e.target !== document.getElementById('msg-form-overlay')) return;
+  document.getElementById('msg-form-overlay').classList.remove('open');
+}
+
+function pickMsgCat(btn){
+  msgSelectedCat = btn.dataset.cat;
+  const cat = MSG_CATS[msgSelectedCat];
+  document.querySelectorAll('.msg-cat-btn').forEach(b=>{
+    b.classList.remove('active');
+    b.style.background = '';
+    b.style.borderColor = '';
+    b.style.color = '';
+  });
+  btn.classList.add('active');
+  btn.style.background = cat.color;
+  btn.style.borderColor = cat.color;
+  btn.style.color = '#fff';
+}
+
+async function submitMapMessage(){
+  const text = document.getElementById('msg-textarea').value.trim();
+  if(!text){ document.getElementById('msg-textarea').focus(); return; }
+
+  // Use drop coords or map center
+  const lat = msgDropLat || map.getCenter().lat;
+  const lng = msgDropLng || map.getCenter().lng;
+  msgDropLat = null; msgDropLng = null;
+
+  const author = getChatAuthor();
+  try {
+    await fetch('/api/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ lat, lng, text, cat: msgSelectedCat, color: author.color, emoji: author.emoji })
+    });
+    document.getElementById('msg-form-overlay').classList.remove('open');
+    showAlert('📢','Wysłano!','Twoja wiadomość jest widoczna dla innych kierowców');
+    loadMapMessages(true);
+  } catch(e){ showAlert('⚠️','Błąd','Nie udało się wysłać'); }
+}
+
+function msgTimeSince(ts){
+  const min = Math.round((Date.now()/1000 - ts)/60);
+  if(min < 1)  return 'przed chwilą';
+  if(min < 60) return `${min} min temu`;
+  const h = Math.floor(min/60);
+  if(h < 24)   return `${h}h temu`;
+  return `${Math.floor(h/24)}d temu`;
+}
+
+function renderMsgMarker(m){
+  const cat = MSG_CATS[m.cat] || MSG_CATS.info;
+  const author = getChatAuthor();
+  const isMine = m.color === author.color && m.emoji === author.emoji;
+  const icon = L.divIcon({
+    className:'',
+    html:`<div class="msg-bubble${isMine?' mine':''}" style="background:${cat.color}" title="${cat.label}: ${m.text.substring(0,40)}…">${cat.icon}</div>`,
+    iconSize:[36,36], iconAnchor:[18,36],
+  });
+  const mk = L.marker([m.lat, m.lng], {icon, zIndexOffset:200})
+    .addTo(map)
+    .on('click', ()=>showMsgDetail(m));
+  msgMarkers.push(mk);
+}
+
+function showMsgDetail(m){
+  const cat = MSG_CATS[m.cat] || MSG_CATS.info;
+  document.getElementById('panel-content').innerHTML = `
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.9rem">
+      <div class="msg-author-dot" style="background:${m.color}">${m.emoji}</div>
+      <span class="msg-cat-badge" style="background:${cat.color}20;color:${cat.color}">${cat.icon} ${cat.label}</span>
+      <span class="msg-time" style="margin-left:auto">${msgTimeSince(m.ts)}</span>
+    </div>
+    <div style="font-size:1rem;line-height:1.5;margin-bottom:1rem">${m.text}</div>
+    <div style="display:flex;gap:.6rem">
+      <button class="msg-react-btn" id="react-like-${m.id}" onclick="reactMsg(${m.id},'like',this)">👍 ${m.likes||0}</button>
+      <button class="msg-react-btn" id="react-dis-${m.id}"  onclick="reactMsg(${m.id},'dislike',this)">👎 ${m.dislikes||0}</button>
+    </div>`;
+  document.getElementById('detail-panel').classList.add('open');
+}
+
+async function reactMsg(id, reaction, btn){
+  const reactedKey = `ts_reacted_${id}`;
+  if(localStorage.getItem(reactedKey)){ showAlert('ℹ️','','Już zagłosowałeś'); return; }
+  try {
+    await fetch(`/api/messages/${id}/react`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({reaction})
+    });
+    localStorage.setItem(reactedKey, '1');
+    const num = parseInt(btn.textContent.match(/\d+/)?.[0]||'0') + 1;
+    btn.textContent = btn.textContent.replace(/\d+/, num);
+    btn.style.borderColor = reaction==='like' ? '#22c55e' : '#ef4444';
+  } catch(e){}
+}
+
+async function loadMapMessages(forceRefresh){
+  const b = map.getBounds();
+  const params = new URLSearchParams({
+    south: b.getSouth().toFixed(3), west: b.getWest().toFixed(3),
+    north: b.getNorth().toFixed(3), east: b.getEast().toFixed(3),
+  });
+  try {
+    const r = await fetch('/api/messages?'+params);
+    const msgs = await r.json();
+
+    // Clear old markers
+    msgMarkers.forEach(m=>map.removeLayer(m)); msgMarkers=[];
+
+    msgs.forEach(renderMsgMarker);
+
+    // Update badge
+    const badge = document.getElementById('msgs-count-badge');
+    if(badge){
+      badge.textContent = msgs.length;
+      badge.style.display = msgs.length ? '' : 'none';
+    }
+
+    // Update panel list if open
+    const listEl = document.getElementById('msgs-list');
+    if(listEl){
+      if(!msgs.length){
+        listEl.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:.85rem;padding:1.5rem">Brak wiadomości w tym obszarze.<br>Bądź pierwszy! Naciśnij 📢</div>';
+      } else {
+        listEl.innerHTML = msgs.map(m=>{
+          const cat = MSG_CATS[m.cat]||MSG_CATS.info;
+          return `<div class="msg-popup-item" onclick="map.flyTo([${m.lat},${m.lng}],14);closeMsgsPanel()">
+            <div class="msg-popup-header">
+              <div class="msg-author-dot" style="background:${m.color}">${m.emoji}</div>
+              <span class="msg-cat-badge" style="background:${cat.color}20;color:${cat.color}">${cat.icon} ${cat.label}</span>
+              <span class="msg-time" style="margin-left:auto">${msgTimeSince(m.ts)}</span>
+            </div>
+            <div class="msg-text">${m.text}</div>
+            <div class="msg-reacts">
+              <button class="msg-react-btn" onclick="event.stopPropagation();reactMsg(${m.id},'like',this)">👍 ${m.likes||0}</button>
+              <button class="msg-react-btn" onclick="event.stopPropagation();reactMsg(${m.id},'dislike',this)">👎 ${m.dislikes||0}</button>
+            </div>
+          </div>`;
+        }).join('');
+      }
+    }
+  } catch(e){}
+}
+
+function openMsgsPanel(){
+  document.getElementById('msgs-panel').classList.add('open');
+  loadMapMessages(true);
+}
+
+function closeMsgsPanel(){
+  document.getElementById('msgs-panel').classList.remove('open');
+}
+
+function startMsgRefresh(){
+  if(msgRefreshTimer) clearInterval(msgRefreshTimer);
+  msgRefreshTimer = setInterval(()=>loadMapMessages(false), 60000); // co 60s
+  loadMapMessages(false);
 }
 
 // AUTOBAHN DE

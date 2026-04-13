@@ -12,6 +12,7 @@ SPOTS_PATH      = os.path.join(DATA_DIR, "spots.json")
 MARKETS_PATH    = os.path.join(DATA_DIR, "markets.json")
 COMMENTS_PATH   = os.path.join(DATA_DIR, "comments.json")
 OCCUPANCY_PATH  = os.path.join(DATA_DIR, "occupancy.json")
+MESSAGES_PATH   = os.path.join(DATA_DIR, "messages.json")
 
 # ── Autobahn GmbH cache (in-memory, TTL=10 min) ──────────────────────────────
 _AUTOBAHN_CACHE = {}          # road_id -> (timestamp, data)
@@ -370,6 +371,94 @@ def api_occupancy_post():
     })
     with open(OCCUPANCY_PATH, "w", encoding="utf-8") as f:
         json.dump(votes, f, ensure_ascii=False, indent=2)
+    return jsonify({"ok": True})
+
+
+MSG_TTL = 24 * 3600  # 24h
+
+@app.route("/api/messages")
+def api_messages_get():
+    try:
+        south = float(request.args.get("south", -90))
+        west  = float(request.args.get("west",  -180))
+        north = float(request.args.get("north",  90))
+        east  = float(request.args.get("east",   180))
+    except ValueError:
+        return jsonify({"error": "bad params"}), 400
+
+    if not os.path.exists(MESSAGES_PATH):
+        return jsonify([])
+    with open(MESSAGES_PATH, encoding="utf-8") as f:
+        msgs = json.load(f)
+
+    now = time.time()
+    result = []
+    for m in msgs:
+        if now - m.get("ts", 0) > MSG_TTL:
+            continue
+        lat, lng = m.get("lat", 0), m.get("lng", 0)
+        if south <= lat <= north and west <= lng <= east:
+            result.append(m)
+    return jsonify(sorted(result, key=lambda x: x.get("ts", 0), reverse=True))
+
+
+@app.route("/api/messages", methods=["POST"])
+def api_messages_post():
+    data = request.get_json(force=True)
+    for field in ["lat", "lng", "text", "cat"]:
+        if field not in data:
+            return jsonify({"error": f"Missing: {field}"}), 400
+
+    if not os.path.exists(MESSAGES_PATH):
+        with open(MESSAGES_PATH, "w", encoding="utf-8") as f:
+            json.dump([], f)
+    with open(MESSAGES_PATH, encoding="utf-8") as f:
+        msgs = json.load(f)
+
+    # Purge expired
+    now = time.time()
+    msgs = [m for m in msgs if now - m.get("ts", 0) < MSG_TTL]
+
+    new_id = max((m.get("id", 0) for m in msgs), default=0) + 1
+    msg = {
+        "id":     new_id,
+        "lat":    float(data["lat"]),
+        "lng":    float(data["lng"]),
+        "text":   str(data["text"])[:200],
+        "cat":    str(data["cat"])[:20],
+        "color":  str(data.get("color", "#3b82f6"))[:10],
+        "emoji":  str(data.get("emoji", "🚛"))[:4],
+        "ts":     now,
+        "likes":  0,
+        "dislikes": 0,
+    }
+    msgs.append(msg)
+    with open(MESSAGES_PATH, "w", encoding="utf-8") as f:
+        json.dump(msgs, f, ensure_ascii=False, indent=2)
+    return jsonify({"ok": True, "id": new_id}), 201
+
+
+@app.route("/api/messages/<int:msg_id>/react", methods=["POST"])
+def api_messages_react(msg_id):
+    data = request.get_json(force=True)
+    reaction = data.get("reaction")  # "like" or "dislike"
+    if reaction not in ("like", "dislike"):
+        return jsonify({"error": "bad reaction"}), 400
+    if not os.path.exists(MESSAGES_PATH):
+        return jsonify({"error": "not found"}), 404
+    with open(MESSAGES_PATH, encoding="utf-8") as f:
+        msgs = json.load(f)
+    for m in msgs:
+        if m.get("id") == msg_id:
+            if reaction == "like":
+                m["likes"] = m.get("likes", 0) + 1
+            else:
+                m["dislikes"] = m.get("dislikes", 0) + 1
+            break
+    else:
+        return jsonify({"error": "not found"}), 404
+    with open(MESSAGES_PATH, "w", encoding="utf-8") as f:
+        json.dump(msgs, f, ensure_ascii=False, indent=2)
     return jsonify({"ok": True})
 
 
