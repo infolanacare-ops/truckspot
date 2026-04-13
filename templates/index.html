@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -10,52 +10,109 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
+
+/* ══ DARK THEME (default) ══ */
 :root{
   --bg:#1a1f2e;--panel:#242938;--panel2:#2d3347;--border:#363d54;
   --text:#e8eaf6;--muted:#8890a8;--shadow:rgba(0,0,0,.35);
+  --card-bg:#242938;--input-bg:#2d3347;
   --font:'Inter',sans-serif;--font-head:'Montserrat',sans-serif;
   --accent:#f59e0b;--accent2:#fbbf24;--accent-bg:rgba(245,158,11,.15);
   --green:#10b981;--blue:#3b82f6;--purple:#8b5cf6;
 }
-html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--text);overflow:hidden}
+
+/* ══ LIGHT THEME ══ */
+body.light{
+  --bg:#f0f4f8;--panel:#ffffff;--panel2:#f1f5f9;--border:#e2e8f0;
+  --text:#1a202c;--muted:#718096;--shadow:rgba(0,0,0,.10);
+  --card-bg:#ffffff;--input-bg:#f8fafc;
+}
+
+html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--text);overflow:hidden;transition:background .3s,color .3s}
 
 /* ══════════════════════════════════════
-   WELCOME SCREEN
+   ONBOARDING WRAPPER
 ══════════════════════════════════════ */
-#welcome{
+#onboarding{
   position:fixed;inset:0;z-index:3000;
   background:var(--bg);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:2rem 1.5rem;transition:opacity .4s ease;
+  display:flex;flex-direction:column;
+  transition:opacity .4s;
 }
-#welcome.hiding{opacity:0;pointer-events:none}
+#onboarding.hiding{opacity:0;pointer-events:none}
 
-.welcome-logo{
-  font-family:var(--font-head);font-size:2.2rem;font-weight:900;
+/* step pages */
+.ob-step{
+  flex:1;display:none;flex-direction:column;align-items:center;justify-content:center;
+  padding:2rem 1.5rem;overflow-y:auto;
+}
+.ob-step.active{display:flex}
+
+/* shared header inside steps */
+.ob-logo{font-family:var(--font-head);font-size:2rem;font-weight:900;
   background:linear-gradient(135deg,#f59e0b,#fbbf24);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  margin-bottom:.3rem;letter-spacing:-.03em;
-}
-.welcome-tagline{color:var(--muted);font-size:.88rem;margin-bottom:2.5rem;text-align:center;line-height:1.5}
+  margin-bottom:.25rem;letter-spacing:-.03em}
+.ob-sub{color:var(--muted);font-size:.85rem;margin-bottom:2rem;text-align:center;line-height:1.5}
+.ob-cards{display:flex;flex-direction:column;gap:.8rem;width:100%;max-width:340px}
 
-.mode-cards{display:flex;flex-direction:column;gap:.85rem;width:100%;max-width:340px}
-.mode-card{
+/* generic card */
+.ob-card{
   display:flex;align-items:center;gap:1rem;
   background:var(--panel);border:1.5px solid var(--border);
   border-radius:16px;padding:1rem 1.1rem;cursor:pointer;
   transition:transform .15s,border-color .2s,box-shadow .2s;
-  box-shadow:0 4px 16px rgba(0,0,0,.25);
+  box-shadow:0 3px 14px var(--shadow);
 }
+.ob-card:active{transform:scale(.97)}
+.ob-card-icon{font-size:2rem;flex-shrink:0}
+.ob-card-body{flex:1}
+.ob-card-title{font-family:var(--font-head);font-size:.98rem;font-weight:800;color:var(--text);margin-bottom:.15rem}
+.ob-card-desc{font-size:.73rem;color:var(--muted);line-height:1.4}
+.ob-card-arrow{color:var(--muted);font-size:1.2rem;flex-shrink:0}
+.ob-card:hover{border-color:var(--accent);box-shadow:0 6px 22px var(--shadow)}
+
+/* ── STEP 1: Language ── */
+.lang-card.active-lang{border-color:var(--accent);background:var(--accent-bg)}
+.lang-card .ob-card-icon{font-size:1.6rem}
+
+/* ── STEP 2: Login ── */
+.login-card-google{border-color:#4285f4}
+.login-card-google:hover{background:rgba(66,133,244,.08)}
+.login-card-guest{border-color:var(--green)}
+.login-card-guest:hover{background:rgba(16,185,129,.08)}
+.guest-input-wrap{width:100%;max-width:340px;margin-top:.5rem}
+.guest-input{
+  width:100%;padding:.65rem .9rem;border:1.5px solid var(--border);border-radius:12px;
+  font-family:var(--font);font-size:.9rem;background:var(--input-bg);color:var(--text);outline:none;
+  transition:.15s;
+}
+.guest-input:focus{border-color:var(--green)}
+.guest-go-btn{
+  width:100%;margin-top:.6rem;padding:.75rem;border:none;border-radius:12px;cursor:pointer;
+  font-family:var(--font-head);font-size:.9rem;font-weight:800;
+  background:linear-gradient(135deg,var(--green),#34d399);color:#fff;
+}
+
+/* ── STEP 3: Mode ── */
 .mode-card.tir    {--c:#f59e0b}
 .mode-card.camper {--c:#10b981}
 .mode-card.tourist{--c:#3b82f6}
-.mode-card:hover  {border-color:var(--c);box-shadow:0 6px 24px rgba(0,0,0,.4)}
-.mode-card:active {transform:scale(.97)}
-.mode-card-icon{font-size:2.2rem;flex-shrink:0}
-.mode-card-info{flex:1}
-.mode-card-title{font-family:var(--font-head);font-size:1rem;font-weight:800;color:var(--text);margin-bottom:.2rem}
-.mode-card-desc{font-size:.73rem;color:var(--muted);line-height:1.4}
-.mode-card-arrow{color:var(--c);font-size:1.3rem;flex-shrink:0;font-weight:700}
+.mode-card:hover  {border-color:var(--c)}
+.mode-card .ob-card-icon{font-size:2.2rem}
+
+/* theme toggle on onboarding */
+.ob-theme-toggle{
+  position:absolute;top:1rem;right:1rem;
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:20px;padding:.3rem .7rem;cursor:pointer;
+  font-size:.8rem;color:var(--muted);display:flex;align-items:center;gap:.3rem;
+}
+
+/* progress dots */
+.ob-dots{display:flex;gap:.5rem;margin-bottom:1.5rem}
+.ob-dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:.3s}
+.ob-dot.active{background:var(--accent);width:20px;border-radius:4px}
 
 /* ══════════════════════════════════════
    APP SHELL
@@ -63,139 +120,102 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 #app{display:none;flex-direction:column;height:100%;position:relative}
 #app.visible{display:flex}
 
-/* TOPBAR */
 .topbar{
-  flex-shrink:0;z-index:200;
-  background:var(--panel);
-  border-bottom:1px solid var(--border);
-  padding:.55rem 1rem;
-  display:flex;align-items:center;gap:.7rem;
-  box-shadow:0 2px 12px var(--shadow);
+  flex-shrink:0;z-index:200;background:var(--panel);
+  border-bottom:1px solid var(--border);padding:.55rem 1rem;
+  display:flex;align-items:center;gap:.7rem;box-shadow:0 2px 12px var(--shadow);
 }
 .burger{width:36px;height:36px;border-radius:10px;background:var(--panel2);border:1px solid var(--border);
   display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;flex-shrink:0}
 .topbar-logo{font-family:var(--font-head);font-size:1rem;font-weight:900;
   background:linear-gradient(90deg,var(--accent),var(--accent2));
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;flex:1}
-.topbar-mode-badge{
-  font-size:.68rem;font-weight:700;padding:.22rem .55rem;border-radius:20px;
-  background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent);flex-shrink:0;
-}
+.topbar-mode-badge{font-size:.68rem;font-weight:700;padding:.22rem .55rem;border-radius:20px;
+  background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent);flex-shrink:0}
 .topbar-pts{font-size:.72rem;font-weight:700;color:var(--accent);flex-shrink:0}
 .topbar-search{width:32px;height:32px;border-radius:10px;background:var(--panel2);border:1px solid var(--border);
   display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.95rem;flex-shrink:0}
 
-/* MAP */
 #map{flex:1;min-height:0}
 
-/* BOTTOM NAV */
 .bottom-nav{
   flex-shrink:0;background:var(--panel);border-top:1px solid var(--border);
   display:flex;align-items:center;justify-content:space-around;
   padding:.4rem 0 .5rem;box-shadow:0 -2px 12px var(--shadow);
 }
-.bnav-item{display:flex;flex-direction:column;align-items:center;gap:.15rem;cursor:pointer;padding:.3rem .6rem;border-radius:10px;transition:.15s;min-width:56px}
-.bnav-item.active .bnav-icon{color:var(--accent)}
-.bnav-item.active .bnav-lbl{color:var(--accent)}
+.bnav-item{display:flex;flex-direction:column;align-items:center;gap:.15rem;cursor:pointer;
+  padding:.3rem .6rem;border-radius:10px;transition:.15s;min-width:56px}
+.bnav-item.active .bnav-icon,.bnav-item.active .bnav-lbl{color:var(--accent)}
 .bnav-icon{font-size:1.2rem;color:var(--muted)}
 .bnav-lbl{font-size:.58rem;color:var(--muted);font-weight:600;white-space:nowrap}
 
-/* ══════════════════════════════════════
-   SIDE DRAWER
-══════════════════════════════════════ */
-.drawer-overlay{
-  position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.6);
-  opacity:0;pointer-events:none;transition:opacity .3s;
-}
+/* ══ DRAWER ══ */
+.drawer-overlay{position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:opacity .3s}
 .drawer-overlay.open{opacity:1;pointer-events:auto}
-
-.drawer{
-  position:fixed;left:0;top:0;bottom:0;z-index:901;
-  width:min(300px,85vw);background:var(--panel);
-  display:flex;flex-direction:column;
+.drawer{position:fixed;left:0;top:0;bottom:0;z-index:901;width:min(300px,85vw);
+  background:var(--panel);display:flex;flex-direction:column;
   transform:translateX(-100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
-  box-shadow:4px 0 32px rgba(0,0,0,.5);
-}
+  box-shadow:4px 0 32px rgba(0,0,0,.5)}
 .drawer.open{transform:translateX(0)}
 
-/* drawer header — profile */
-.drawer-header{
-  background:linear-gradient(135deg,#1a1f2e 0%,#242938 100%);
-  padding:2rem 1.2rem 1.2rem;position:relative;overflow:hidden;
-  border-bottom:1px solid var(--border);
-}
-.drawer-header::before{
-  content:'';position:absolute;top:-40px;right:-40px;
-  width:120px;height:120px;border-radius:50%;
-  background:radial-gradient(circle,rgba(245,158,11,.15) 0%,transparent 70%);
-}
+.drawer-header{background:var(--panel2);padding:2rem 1.2rem 1.2rem;
+  border-bottom:1px solid var(--border);position:relative;overflow:hidden}
+.drawer-header::before{content:'';position:absolute;top:-40px;right:-40px;width:120px;height:120px;
+  border-radius:50%;background:radial-gradient(circle,rgba(245,158,11,.12) 0%,transparent 70%)}
 .profile-row{display:flex;align-items:center;gap:.9rem;margin-bottom:.9rem}
-.avatar{
-  width:52px;height:52px;border-radius:50%;
+.avatar{width:52px;height:52px;border-radius:50%;
   background:linear-gradient(135deg,var(--accent),var(--accent2));
   display:flex;align-items:center;justify-content:center;
   font-family:var(--font-head);font-size:1.3rem;font-weight:900;color:#000;
-  flex-shrink:0;box-shadow:0 4px 12px rgba(245,158,11,.4);
-}
-.profile-info{flex:1}
+  flex-shrink:0;box-shadow:0 4px 12px rgba(245,158,11,.3)}
 .profile-name{font-family:var(--font-head);font-size:1rem;font-weight:800;color:var(--text)}
 .profile-sub{font-size:.72rem;color:var(--muted);margin-top:.15rem}
-
 .stats-row{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
-.stat-box{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;padding:.5rem .8rem;text-align:center}
+.stat-box{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:.5rem .8rem;text-align:center}
 .stat-box-val{font-family:var(--font-head);font-size:1.1rem;font-weight:800;color:var(--accent)}
 .stat-box-lbl{font-size:.62rem;color:var(--muted);margin-top:.1rem}
 
-/* drawer menu */
 .drawer-menu{flex:1;overflow-y:auto;padding:.5rem 0}
 .menu-section{padding:.5rem 1rem .2rem;font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
-.menu-item{
-  display:flex;align-items:center;gap:.85rem;padding:.75rem 1.2rem;cursor:pointer;
-  transition:background .15s;position:relative;
-}
-.menu-item:hover,.menu-item:active{background:rgba(255,255,255,.05)}
-.menu-icon{
-  width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;
-  font-size:1.1rem;flex-shrink:0;background:rgba(255,255,255,.06);border:1px solid var(--border);
-}
+.menu-item{display:flex;align-items:center;gap:.85rem;padding:.75rem 1.2rem;cursor:pointer;transition:background .15s}
+.menu-item:hover,.menu-item:active{background:rgba(255,255,255,.04)}
+body.light .menu-item:hover{background:rgba(0,0,0,.04)}
+.menu-icon{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;flex-shrink:0;background:rgba(255,255,255,.06);border:1px solid var(--border)}
+body.light .menu-icon{background:rgba(0,0,0,.04)}
 .menu-label{font-size:.88rem;font-weight:600;flex:1;color:var(--text)}
-.menu-badge{
-  font-size:.65rem;font-weight:800;padding:.15rem .45rem;border-radius:20px;
-  background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent);
-}
+.menu-badge{font-size:.65rem;font-weight:800;padding:.15rem .45rem;border-radius:20px;
+  background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent)}
 .menu-badge.green{background:rgba(16,185,129,.15);color:#10b981;border-color:#10b981}
 .menu-sep{height:1px;background:var(--border);margin:.4rem 1.2rem}
 
-/* ══════════════════════════════════════
-   SEARCH BAR (slide in)
-══════════════════════════════════════ */
-.search-overlay{
-  position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.7);
-  opacity:0;pointer-events:none;transition:opacity .2s;display:flex;align-items:flex-start;padding:1rem;
-}
-.search-overlay.open{opacity:1;pointer-events:auto}
-.search-box{
-  width:100%;background:var(--panel);border-radius:14px;
-  border:1.5px solid var(--accent);padding:.7rem 1rem;
-  font-family:var(--font);font-size:.95rem;color:var(--text);outline:none;
-  box-shadow:0 8px 32px rgba(0,0,0,.5);
-}
+/* theme toggle in drawer */
+.theme-toggle-row{display:flex;align-items:center;gap:.85rem;padding:.6rem 1.2rem}
+.toggle-track{width:44px;height:24px;border-radius:12px;background:var(--border);position:relative;cursor:pointer;transition:.3s;flex-shrink:0}
+.toggle-track.on{background:var(--accent)}
+.toggle-thumb{width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.25s;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.toggle-track.on .toggle-thumb{left:23px}
 
-/* ══════════════════════════════════════
-   DETAIL PANEL
-══════════════════════════════════════ */
-.detail-panel{
+/* ══ SEARCH ══ */
+.search-overlay{position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.7);opacity:0;pointer-events:none;transition:opacity .2s;display:flex;align-items:flex-start;padding:1rem}
+.search-overlay.open{opacity:1;pointer-events:auto}
+.search-box{width:100%;background:var(--panel);border-radius:14px;border:1.5px solid var(--accent);
+  padding:.7rem 1rem;font-family:var(--font);font-size:.95rem;color:var(--text);outline:none;
+  box-shadow:0 8px 32px rgba(0,0,0,.5)}
+
+/* ══ PANELS ══ */
+.bottom-panel{
   position:fixed;bottom:0;left:0;right:0;z-index:500;
   background:var(--panel);border-top:2px solid var(--accent);
-  border-radius:20px 20px 0 0;
-  padding:1rem 1rem 2rem;
+  border-radius:20px 20px 0 0;padding:1rem 1rem 2rem;
   transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
-  max-height:78vh;overflow-y:auto;
-  box-shadow:0 -4px 32px rgba(0,0,0,.5);
+  max-height:78vh;overflow-y:auto;box-shadow:0 -4px 32px var(--shadow);
 }
-.detail-panel.open{transform:translateY(0)}
+.bottom-panel.open{transform:translateY(0)}
 .panel-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto .9rem}
-.panel-close{position:absolute;top:.9rem;right:1rem;background:var(--panel2);border:1px solid var(--border);color:var(--muted);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center}
+.panel-close{position:absolute;top:.9rem;right:1rem;background:var(--panel2);border:1px solid var(--border);
+  color:var(--muted);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:.85rem;
+  display:flex;align-items:center;justify-content:center}
 .panel-name{font-family:var(--font-head);font-size:1.1rem;font-weight:800;margin-bottom:.2rem;color:var(--text)}
 .panel-addr{color:var(--muted);font-size:.8rem;margin-bottom:.9rem}
 .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:.55rem;margin-bottom:.9rem}
@@ -208,296 +228,346 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 .poi-list{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.9rem}
 .poi-row{display:flex;align-items:center;gap:.55rem;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:.4rem .65rem;font-size:.8rem;color:var(--text)}
 .poi-dist{margin-left:auto;color:var(--muted);font-size:.7rem;flex-shrink:0}
-.nav-btn{
-  width:100%;padding:.75rem;border:none;border-radius:14px;cursor:pointer;
+.nav-btn{width:100%;padding:.75rem;border:none;border-radius:14px;cursor:pointer;
   font-family:var(--font-head);font-size:.9rem;font-weight:800;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;
-}
+  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000}
 .nav-btn:active{opacity:.85}
 
-/* ══════════════════════════════════════
-   ADD SPOT PANEL
-══════════════════════════════════════ */
-.add-panel{
-  position:fixed;bottom:0;left:0;right:0;z-index:950;
-  background:var(--panel);border-top:2px solid var(--purple);
-  border-radius:20px 20px 0 0;padding:1rem 1rem 2.5rem;
-  transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
-  max-height:88vh;overflow-y:auto;
-  box-shadow:0 -4px 32px rgba(0,0,0,.5);
-}
+/* ══ ADD SPOT ══ */
+.add-panel{position:fixed;bottom:0;left:0;right:0;z-index:950;
+  background:var(--panel);border-top:2px solid var(--purple);border-radius:20px 20px 0 0;
+  padding:1rem 1rem 2.5rem;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  max-height:88vh;overflow-y:auto;box-shadow:0 -4px 32px var(--shadow)}
 .add-panel.open{transform:translateY(0)}
 .add-panel h3{font-family:var(--font-head);font-size:1rem;font-weight:800;margin-bottom:1rem;color:var(--text)}
 .form-group{margin-bottom:.85rem}
 .form-label{font-size:.72rem;font-weight:600;color:var(--muted);margin-bottom:.3rem;display:block;text-transform:uppercase;letter-spacing:.04em}
-.form-input{width:100%;padding:.6rem .8rem;border:1.5px solid var(--border);border-radius:10px;font-family:var(--font);font-size:.88rem;background:var(--panel2);color:var(--text);outline:none;transition:.15s}
+.form-input{width:100%;padding:.6rem .8rem;border:1.5px solid var(--border);border-radius:10px;
+  font-family:var(--font);font-size:.88rem;background:var(--input-bg);color:var(--text);outline:none;transition:.15s}
 .form-input:focus{border-color:var(--purple)}
 .form-textarea{resize:vertical;min-height:70px}
 .cat-btns{display:flex;flex-wrap:wrap;gap:.4rem}
-.cat-btn{padding:.3rem .65rem;border-radius:20px;border:1.5px solid var(--border);background:var(--panel2);font-size:.78rem;cursor:pointer;font-weight:600;color:var(--muted);transition:.15s}
+.cat-btn{padding:.3rem .65rem;border-radius:20px;border:1.5px solid var(--border);background:var(--panel2);
+  font-size:.78rem;cursor:pointer;font-weight:600;color:var(--muted);transition:.15s}
 .cat-btn.active{border-color:var(--purple);background:rgba(139,92,246,.15);color:var(--purple)}
 .star-row{display:flex;gap:.3rem}
 .star-btn{font-size:1.6rem;cursor:pointer;line-height:1;filter:grayscale(1);opacity:.35;transition:.1s}
 .star-btn.active{filter:none;opacity:1}
-.submit-btn{width:100%;padding:.8rem;border:none;border-radius:14px;cursor:pointer;font-family:var(--font-head);font-size:.95rem;font-weight:800;background:linear-gradient(135deg,var(--purple),#a78bfa);color:#fff;margin-top:.5rem}
+.submit-btn{width:100%;padding:.8rem;border:none;border-radius:14px;cursor:pointer;
+  font-family:var(--font-head);font-size:.95rem;font-weight:800;
+  background:linear-gradient(135deg,var(--purple),#a78bfa);color:#fff;margin-top:.5rem}
 
-/* ══════════════════════════════════════
-   FAB
-══════════════════════════════════════ */
-.fab-add{
-  position:fixed;right:1rem;bottom:4.5rem;z-index:400;
+/* ══ FAB ══ */
+.fab-add{position:fixed;right:1rem;bottom:4.5rem;z-index:400;
   width:50px;height:50px;border-radius:50%;border:none;cursor:pointer;
   background:linear-gradient(135deg,var(--purple),#a78bfa);
   box-shadow:0 4px 16px rgba(139,92,246,.5);
-  font-size:1.4rem;display:flex;align-items:center;justify-content:center;color:#fff;
-  transition:.2s;
-}
+  font-size:1.4rem;display:flex;align-items:center;justify-content:center;color:#fff;transition:.2s}
 .fab-add.picking{background:linear-gradient(135deg,#ef4444,#f87171);animation:pulse-fab 1s infinite}
 @keyframes pulse-fab{0%,100%{box-shadow:0 4px 16px rgba(239,68,68,.5)}50%{box-shadow:0 4px 28px rgba(239,68,68,.8)}}
 
-/* ══════════════════════════════════════
-   RADIO BAR
-══════════════════════════════════════ */
-.radio-bar{
-  position:fixed;bottom:3.8rem;left:.8rem;right:.8rem;z-index:300;
-  background:var(--panel);border:1px solid var(--border);
-  border-radius:14px;padding:.5rem .8rem;
-  display:none;align-items:center;gap:.55rem;
-  box-shadow:0 4px 20px rgba(0,0,0,.4);
-}
+/* ══ RADIO BAR ══ */
+.radio-bar{position:fixed;bottom:3.8rem;left:.8rem;right:.8rem;z-index:300;
+  background:var(--panel);border:1px solid var(--border);border-radius:14px;
+  padding:.5rem .8rem;display:none;align-items:center;gap:.55rem;box-shadow:0 4px 20px var(--shadow)}
 .radio-bar.visible{display:flex}
-.radio-btn{width:32px;height:32px;border-radius:50%;border:none;cursor:pointer;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;font-size:.9rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.radio-btn{width:32px;height:32px;border-radius:50%;border:none;cursor:pointer;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;font-size:.9rem;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .radio-info{flex:1;min-width:0}
 .radio-name{font-size:.75rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .radio-status{font-size:.62rem;color:var(--muted)}
-.radio-prev,.radio-next{width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:var(--panel2);cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.radio-prev,.radio-next{width:26px;height:26px;border-radius:50%;border:1px solid var(--border);
+  background:var(--panel2);cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;color:var(--muted)}
 .radio-vol{width:50px;accent-color:var(--accent)}
 .radio-close{width:24px;height:24px;border-radius:50%;border:none;background:none;color:var(--muted);cursor:pointer;font-size:.8rem;flex-shrink:0}
 
-/* ══════════════════════════════════════
-   ALERT TOAST
-══════════════════════════════════════ */
-.alert-toast{
-  position:fixed;top:65px;left:50%;transform:translateX(-50%) translateY(-140px);
-  z-index:1500;background:var(--panel);border-left:4px solid var(--accent);
-  border-radius:14px;padding:.7rem 1rem;
-  box-shadow:0 8px 32px rgba(0,0,0,.5);
-  display:flex;align-items:center;gap:.7rem;
-  max-width:320px;width:90%;
-  transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none;
-}
-.alert-toast.show{transform:translateX(-50%) translateY(0);pointer-events:auto}
-.alert-icon{font-size:1.6rem;flex-shrink:0}
-.alert-text{flex:1;min-width:0}
-.alert-title{font-size:.8rem;font-weight:700;color:var(--text)}
-.alert-desc{font-size:.72rem;color:var(--muted);margin-top:.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.alert-close{background:none;border:none;color:var(--muted);font-size:1rem;cursor:pointer;flex-shrink:0}
-
-/* GPS dot */
-.gps-dot{width:14px;height:14px;background:#3b82f6;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 4px rgba(59,130,246,.3);animation:pulse-gps 2s infinite}
-@keyframes pulse-gps{0%,100%{box-shadow:0 0 0 4px rgba(59,130,246,.3)}50%{box-shadow:0 0 0 10px rgba(59,130,246,.08)}}
-
-/* user spot marker */
-.mk-user{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--purple);border:3px solid #fff;box-shadow:0 3px 10px rgba(139,92,246,.5);font-size:.95rem}
-
-/* map markers */
-.mk{width:38px;height:38px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;border:3px solid rgba(255,255,255,.8);box-shadow:0 3px 10px rgba(0,0,0,.4);background:var(--accent)}
-.mk span{transform:rotate(45deg);font-size:1.05rem;line-height:1}
-
-/* ranking */
+/* ══ RANKING ══ */
 .rank-panel{position:fixed;inset:0;z-index:600;background:var(--bg);display:none;flex-direction:column}
 .rank-panel.open{display:flex}
 .rank-header{background:var(--panel);border-bottom:1px solid var(--border);padding:1rem;display:flex;align-items:center;gap:.7rem}
-.rank-title{font-family:var(--font-head);font-size:1rem;font-weight:800;flex:1}
+.rank-title{font-family:var(--font-head);font-size:1rem;font-weight:800;flex:1;color:var(--text)}
 .rank-list{flex:1;overflow-y:auto;padding:1rem}
 .rank-item{display:flex;align-items:center;gap:.8rem;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:.7rem 1rem;margin-bottom:.5rem}
 .rank-pos{font-family:var(--font-head);font-size:1rem;font-weight:900;width:24px;text-align:center;color:var(--muted)}
-.rank-pos.gold{color:#f59e0b}
-.rank-pos.silver{color:#94a3b8}
-.rank-pos.bronze{color:#cd7c40}
+.rank-pos.gold{color:#f59e0b}.rank-pos.silver{color:#94a3b8}.rank-pos.bronze{color:#cd7c40}
 .rank-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.9rem;color:#000;flex-shrink:0}
-.rank-name{flex:1;font-weight:600;font-size:.88rem}
+.rank-name{flex:1;font-weight:600;font-size:.88rem;color:var(--text)}
 .rank-pts{font-family:var(--font-head);font-size:.9rem;font-weight:800;color:var(--accent)}
 
+/* ══ ALERT TOAST ══ */
+.alert-toast{position:fixed;top:65px;left:50%;transform:translateX(-50%) translateY(-140px);z-index:1500;
+  background:var(--panel);border-left:4px solid var(--accent);border-radius:14px;padding:.7rem 1rem;
+  box-shadow:0 8px 32px var(--shadow);display:flex;align-items:center;gap:.7rem;
+  max-width:320px;width:90%;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+.alert-toast.show{transform:translateX(-50%) translateY(0);pointer-events:auto}
+.alert-icon{font-size:1.5rem;flex-shrink:0}
+.alert-text{flex:1;min-width:0}
+.alert-title{font-size:.8rem;font-weight:700;color:var(--text)}
+.alert-desc{font-size:.72rem;color:var(--muted);margin-top:.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.alert-close{background:none;border:none;color:var(--muted);font-size:1rem;cursor:pointer;flex-shrink:0}
+
+/* markers */
+.mk{width:38px;height:38px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);
+  display:flex;align-items:center;justify-content:center;
+  border:3px solid rgba(255,255,255,.8);box-shadow:0 3px 10px rgba(0,0,0,.4)}
+.mk span{transform:rotate(45deg);font-size:1.05rem;line-height:1}
+.gps-dot{width:14px;height:14px;background:#3b82f6;border-radius:50%;border:3px solid #fff;
+  box-shadow:0 0 0 4px rgba(59,130,246,.3);animation:pulse-gps 2s infinite}
+@keyframes pulse-gps{0%,100%{box-shadow:0 0 0 4px rgba(59,130,246,.3)}50%{box-shadow:0 0 0 10px rgba(59,130,246,.06)}}
+.mk-user{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:var(--purple);border:3px solid #fff;box-shadow:0 3px 10px rgba(139,92,246,.5);font-size:.95rem}
+
 @media(min-width:600px){
-  .drawer{max-width:320px}
   #app{max-width:480px;margin:0 auto;border-left:1px solid var(--border);border-right:1px solid var(--border)}
 }
+
+/* ══ ROUTE PANEL ══ */
+.route-panel{position:fixed;bottom:0;left:0;right:0;z-index:950;
+  background:var(--panel);border-top:2px solid var(--blue);border-radius:20px 20px 0 0;
+  padding:1rem 1rem 2.5rem;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  max-height:88vh;overflow-y:auto;box-shadow:0 -4px 32px var(--shadow)}
+.route-panel.open{transform:translateY(0)}
+.route-panel h3{font-family:var(--font-head);font-size:1rem;font-weight:800;margin-bottom:1rem;color:var(--text)}
+.route-input-row{display:flex;gap:.4rem;align-items:center}
+.route-input-row .form-input{flex:1}
+.gps-fill-btn{width:38px;height:38px;flex-shrink:0;border:1.5px solid var(--border);border-radius:10px;
+  background:var(--input-bg);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center}
+.route-radius-row{display:flex;align-items:center;gap:.6rem;margin-bottom:.9rem;font-size:.8rem;color:var(--muted)}
+.route-radius-row input[type=range]{flex:1;accent-color:var(--blue)}
+.route-search-btn{width:100%;padding:.8rem;border:none;border-radius:14px;cursor:pointer;
+  font-family:var(--font-head);font-size:.95rem;font-weight:800;
+  background:linear-gradient(135deg,var(--blue),#60a5fa);color:#fff;margin-top:.3rem}
+.route-result-item{display:flex;align-items:center;gap:.7rem;background:var(--panel2);border:1px solid var(--border);
+  border-radius:10px;padding:.6rem .9rem;margin-bottom:.4rem;cursor:pointer}
+.route-result-item:active{opacity:.8}
+.route-result-dist{font-size:.7rem;color:var(--blue);font-weight:700;flex-shrink:0}
+.route-clear-btn{width:100%;padding:.55rem;border:1px solid var(--border);border-radius:10px;background:none;
+  color:var(--muted);cursor:pointer;font-size:.82rem;margin-top:.6rem}
+
+/* ══ MARKET MARKERS ══ */
+.mk-market{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:#f97316;border:3px solid #fff;box-shadow:0 3px 10px rgba(249,115,22,.5);font-size:.95rem}
 </style>
 </head>
 <body>
 
-<!-- ══ WELCOME ══ -->
-<div id="welcome">
-  <div style="font-size:3rem;margin-bottom:.5rem">🚛</div>
-  <div class="welcome-logo">TruckSpot</div>
-  <div class="welcome-tagline">Centrum dowodzenia dla kierowców<br>i podróżników po Europie</div>
-  <div class="mode-cards">
-    <div class="mode-card tir" onclick="enterMode('tir')">
-      <div class="mode-card-icon">🚛</div>
-      <div class="mode-card-info">
-        <div class="mode-card-title">Kierowca TIR</div>
-        <div class="mode-card-desc">Parkingi TIR · myjnie · serwisy · restauracje przy trasie</div>
-      </div>
-      <div class="mode-card-arrow">›</div>
+<!-- ══════════════════════════════════════
+     ONBOARDING (3 steps)
+══════════════════════════════════════ -->
+<div id="onboarding">
+  <!-- theme toggle always visible -->
+  <button class="ob-theme-toggle" id="ob-theme-btn" onclick="toggleTheme()">🌙 Dark</button>
+
+  <!-- STEP 1 — Language -->
+  <div class="ob-step active" id="step-lang">
+    <div style="font-size:2.8rem;margin-bottom:.5rem">🚛</div>
+    <div class="ob-logo">TruckSpot</div>
+    <div class="ob-sub" id="ob-sub-lang">Choose your language</div>
+    <div class="ob-dots">
+      <div class="ob-dot active"></div><div class="ob-dot"></div><div class="ob-dot"></div>
     </div>
-    <div class="mode-card camper" onclick="enterMode('bus')">
-      <div class="mode-card-icon">🚐</div>
-      <div class="mode-card-info">
-        <div class="mode-card-title">Busiarz / Van Life</div>
-        <div class="mode-card-desc">Stellplätze · prąd · woda · prysznice · parkingi nocne</div>
+    <div class="ob-cards">
+      <div class="ob-card lang-card" onclick="setLang('en')">
+        <div class="ob-card-icon">🇬🇧</div>
+        <div class="ob-card-body"><div class="ob-card-title">English</div></div>
+        <div class="ob-card-arrow">›</div>
       </div>
-      <div class="mode-card-arrow">›</div>
+      <div class="ob-card lang-card" onclick="setLang('pl')">
+        <div class="ob-card-icon">🇵🇱</div>
+        <div class="ob-card-body"><div class="ob-card-title">Polski</div></div>
+        <div class="ob-card-arrow">›</div>
+      </div>
+      <div class="ob-card lang-card" onclick="setLang('de')">
+        <div class="ob-card-icon">🇩🇪</div>
+        <div class="ob-card-body"><div class="ob-card-title">Deutsch</div></div>
+        <div class="ob-card-arrow">›</div>
+      </div>
+      <div class="ob-card lang-card" onclick="setLang('es')">
+        <div class="ob-card-icon">🇪🇸</div>
+        <div class="ob-card-body"><div class="ob-card-title">Español</div></div>
+        <div class="ob-card-arrow">›</div>
+      </div>
     </div>
-    <div class="mode-card tourist" onclick="enterMode('tourist')">
-      <div class="mode-card-icon">🧳</div>
-      <div class="mode-card-info">
-        <div class="mode-card-title">Turysta / Camping</div>
-        <div class="mode-card-desc">Campingi · pola namiotowe · atrakcje · zabytki</div>
+  </div>
+
+  <!-- STEP 2 — Login -->
+  <div class="ob-step" id="step-login">
+    <div style="font-size:2.8rem;margin-bottom:.5rem">👋</div>
+    <div class="ob-logo">TruckSpot</div>
+    <div class="ob-sub" id="ob-sub-login">Sign in to save your spots & points</div>
+    <div class="ob-dots">
+      <div class="ob-dot"></div><div class="ob-dot active"></div><div class="ob-dot"></div>
+    </div>
+    <div class="ob-cards">
+      <div class="ob-card login-card-google" onclick="loginGoogle()">
+        <div class="ob-card-icon" style="font-size:1.5rem">🔵</div>
+        <div class="ob-card-body">
+          <div class="ob-card-title" id="lbl-google">Continue with Google</div>
+          <div class="ob-card-desc" id="lbl-google-sub">Sync across devices</div>
+        </div>
+        <div class="ob-card-arrow">›</div>
       </div>
-      <div class="mode-card-arrow">›</div>
+      <div class="ob-card login-card-guest" onclick="showGuestInput()">
+        <div class="ob-card-icon" style="font-size:1.5rem">👤</div>
+        <div class="ob-card-body">
+          <div class="ob-card-title" id="lbl-guest">Continue as Guest</div>
+          <div class="ob-card-desc" id="lbl-guest-sub">No account needed</div>
+        </div>
+        <div class="ob-card-arrow">›</div>
+      </div>
+    </div>
+    <div class="guest-input-wrap" id="guest-input-wrap" style="display:none">
+      <input class="guest-input" id="guest-name-input" placeholder="Your nickname" maxlength="30">
+      <button class="guest-go-btn" id="guest-go-btn" onclick="loginGuest()">Let's go →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3 — Mode -->
+  <div class="ob-step" id="step-mode">
+    <div class="ob-logo">TruckSpot</div>
+    <div class="ob-sub" id="ob-sub-mode">Choose your travel mode</div>
+    <div class="ob-dots">
+      <div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot active"></div>
+    </div>
+    <div class="ob-cards">
+      <div class="ob-card mode-card tir" onclick="enterMode('tir')">
+        <div class="ob-card-icon">🚛</div>
+        <div class="ob-card-body">
+          <div class="ob-card-title" id="lbl-tir-title">Truck Driver</div>
+          <div class="ob-card-desc" id="lbl-tir-desc">TIR parkings · washes · services · restaurants</div>
+        </div>
+        <div class="ob-card-arrow" style="color:#f59e0b">›</div>
+      </div>
+      <div class="ob-card mode-card camper" onclick="enterMode('bus')">
+        <div class="ob-card-icon">🚐</div>
+        <div class="ob-card-body">
+          <div class="ob-card-title" id="lbl-bus-title">Vanlifer / Busiarz</div>
+          <div class="ob-card-desc" id="lbl-bus-desc">Stellplätze · electricity · water · showers</div>
+        </div>
+        <div class="ob-card-arrow" style="color:#10b981">›</div>
+      </div>
+      <div class="ob-card mode-card tourist" onclick="enterMode('tourist')">
+        <div class="ob-card-icon">🧳</div>
+        <div class="ob-card-body">
+          <div class="ob-card-title" id="lbl-tourist-title">Tourist / Camping</div>
+          <div class="ob-card-desc" id="lbl-tourist-desc">Campings · tent fields · attractions · landmarks</div>
+        </div>
+        <div class="ob-card-arrow" style="color:#3b82f6">›</div>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- ══ APP ══ -->
+<!-- ══════════════════════════════════════
+     APP
+══════════════════════════════════════ -->
 <div id="app">
   <div class="topbar">
     <div class="burger" onclick="openDrawer()">☰</div>
     <div class="topbar-logo">TruckSpot</div>
     <span class="topbar-mode-badge" id="topbar-mode">TIR</span>
-    <span class="topbar-pts" id="topbar-pts">0 pkt</span>
+    <span class="topbar-pts" id="topbar-pts">0 pts</span>
     <div class="topbar-search" onclick="openSearch()">🔍</div>
   </div>
   <div id="map"></div>
   <div class="bottom-nav">
-    <div class="bnav-item active" onclick="bnav(this,'map')"><span class="bnav-icon">🗺</span><span class="bnav-lbl">Mapa</span></div>
-    <div class="bnav-item" onclick="bnav(this,'nearby')"><span class="bnav-icon">📍</span><span class="bnav-lbl">Blisko mnie</span></div>
-    <div class="bnav-item" onclick="bnav(this,'add')"><span class="bnav-icon">＋</span><span class="bnav-lbl">Dodaj</span></div>
-    <div class="bnav-item" onclick="bnav(this,'radio')"><span class="bnav-icon">📻</span><span class="bnav-lbl">Radio</span></div>
-    <div class="bnav-item" onclick="bnav(this,'rank')"><span class="bnav-icon">🏆</span><span class="bnav-lbl">Ranking</span></div>
+    <div class="bnav-item active" onclick="bnav(this,'map')"><span class="bnav-icon">🗺</span><span class="bnav-lbl" data-i="nav_map">Map</span></div>
+    <div class="bnav-item" onclick="bnav(this,'route')"><span class="bnav-icon">🔀</span><span class="bnav-lbl" data-i="nav_route">Route</span></div>
+    <div class="bnav-item" onclick="bnav(this,'add')"><span class="bnav-icon">＋</span><span class="bnav-lbl" data-i="nav_add">Add</span></div>
+    <div class="bnav-item" onclick="bnav(this,'radio')"><span class="bnav-icon">📻</span><span class="bnav-lbl" data-i="nav_radio">Radio</span></div>
+    <div class="bnav-item" onclick="bnav(this,'rank')"><span class="bnav-icon">🏆</span><span class="bnav-lbl" data-i="nav_rank">Ranking</span></div>
   </div>
 </div>
 
-<!-- ══ DRAWER OVERLAY ══ -->
+<!-- DRAWER OVERLAY -->
 <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
 
-<!-- ══ SIDE DRAWER ══ -->
+<!-- SIDE DRAWER -->
 <div class="drawer" id="drawer">
   <div class="drawer-header">
     <div class="profile-row">
       <div class="avatar" id="drawer-avatar">T</div>
-      <div class="profile-info">
+      <div>
         <div class="profile-name" id="drawer-name">TRUCKER</div>
-        <div class="profile-sub" id="drawer-mode-sub">Tryb: TIR</div>
+        <div class="profile-sub" id="drawer-mode-sub">Mode: TIR</div>
       </div>
     </div>
     <div class="stats-row">
-      <div class="stat-box">
-        <div class="stat-box-val" id="drawer-pts">0</div>
-        <div class="stat-box-lbl">punktów</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-box-val" id="drawer-spots">0</div>
-        <div class="stat-box-lbl">miejsc dodanych</div>
-      </div>
+      <div class="stat-box"><div class="stat-box-val" id="drawer-pts">0</div><div class="stat-box-lbl" data-i="pts">points</div></div>
+      <div class="stat-box"><div class="stat-box-val" id="drawer-spots">0</div><div class="stat-box-lbl" data-i="spots_added">spots added</div></div>
     </div>
   </div>
-
   <div class="drawer-menu">
-    <div class="menu-section">Nawigacja</div>
-    <div class="menu-item" onclick="drawerAction('nearby')">
-      <div class="menu-icon" style="background:rgba(59,130,246,.15);border-color:#3b82f6">📍</div>
-      <span class="menu-label">Najbliższe parkingi</span>
-    </div>
-    <div class="menu-item" onclick="drawerAction('all')">
-      <div class="menu-icon">🗺</div>
-      <span class="menu-label">Wszystkie parkingi</span>
-    </div>
-    <div class="menu-item" onclick="drawerAction('search')">
-      <div class="menu-icon">🔍</div>
-      <span class="menu-label">Szukaj miejsca</span>
-    </div>
-
+    <div class="menu-section" data-i="sec_nav">Navigation</div>
+    <div class="menu-item" onclick="drawerAction('route')"><div class="menu-icon" style="background:rgba(59,130,246,.12);border-color:#3b82f6">🔀</div><span class="menu-label" data-i="menu_route">Plan route</span></div>
+    <div class="menu-item" onclick="drawerAction('nearby')"><div class="menu-icon">📍</div><span class="menu-label" data-i="menu_near">Nearest parkings</span></div>
+    <div class="menu-item" onclick="drawerAction('all')"><div class="menu-icon">🗺</div><span class="menu-label" data-i="menu_all">All parkings</span></div>
+    <div class="menu-item" onclick="drawerAction('search')"><div class="menu-icon">🔍</div><span class="menu-label" data-i="menu_search">Search</span></div>
+    <div class="menu-item" onclick="drawerAction('markets')"><div class="menu-icon" style="background:rgba(249,115,22,.12);border-color:#f97316">🛍</div><span class="menu-label" data-i="menu_markets">Flohmarkt / Markets</span><span class="menu-badge" id="markets-badge" style="display:none">ON</span></div>
     <div class="menu-sep"></div>
-    <div class="menu-section">Społeczność</div>
-    <div class="menu-item" onclick="drawerAction('add')">
-      <div class="menu-icon" style="background:rgba(139,92,246,.15);border-color:#8b5cf6">＋</div>
-      <span class="menu-label">Dodaj miejsce</span>
-      <span class="menu-badge">+10 pkt</span>
-    </div>
-    <div class="menu-item" onclick="drawerAction('myspots')">
-      <div class="menu-icon">⭐</div>
-      <span class="menu-label">Moje miejsca</span>
-    </div>
-    <div class="menu-item" onclick="drawerAction('rank')">
-      <div class="menu-icon" style="background:rgba(245,158,11,.15);border-color:#f59e0b">🏆</div>
-      <span class="menu-label">Ranking</span>
-    </div>
-    <div class="menu-item" onclick="drawerAction('share')">
-      <div class="menu-icon" style="background:rgba(16,185,129,.15);border-color:#10b981">📣</div>
-      <span class="menu-label">Poleć TruckSpot</span>
-      <span class="menu-badge green">+50 pkt</span>
-    </div>
-
+    <div class="menu-section" data-i="sec_community">Community</div>
+    <div class="menu-item" onclick="drawerAction('add')"><div class="menu-icon" style="background:rgba(139,92,246,.12);border-color:#8b5cf6">＋</div><span class="menu-label" data-i="menu_add">Add a spot</span><span class="menu-badge">+10 pts</span></div>
+    <div class="menu-item" onclick="drawerAction('myspots')"><div class="menu-icon">⭐</div><span class="menu-label" data-i="menu_myspots">My spots</span></div>
+    <div class="menu-item" onclick="drawerAction('rank')"><div class="menu-icon" style="background:rgba(245,158,11,.12);border-color:#f59e0b">🏆</div><span class="menu-label" data-i="menu_rank">Ranking</span></div>
+    <div class="menu-item" onclick="drawerAction('share')"><div class="menu-icon" style="background:rgba(16,185,129,.12);border-color:#10b981">📣</div><span class="menu-label" data-i="menu_share">Recommend TruckSpot</span><span class="menu-badge green">+50 pts</span></div>
     <div class="menu-sep"></div>
-    <div class="menu-section">Narzędzia</div>
-    <div class="menu-item" onclick="drawerAction('gps')">
-      <div class="menu-icon">📡</div>
-      <span class="menu-label">Alerty GPS</span>
-      <span class="menu-badge" id="gps-badge" style="display:none">ON</span>
+    <div class="menu-section" data-i="sec_tools">Tools</div>
+    <div class="menu-item" onclick="drawerAction('gps')"><div class="menu-icon">📡</div><span class="menu-label" data-i="menu_gps">GPS Alerts</span><span class="menu-badge" id="gps-badge" style="display:none">ON</span></div>
+    <div class="menu-item" onclick="drawerAction('radio')"><div class="menu-icon">📻</div><span class="menu-label" data-i="menu_radio">Radio</span></div>
+    <div class="menu-sep"></div>
+    <div class="menu-section" data-i="sec_settings">Settings</div>
+    <!-- Theme toggle -->
+    <div class="theme-toggle-row">
+      <div class="menu-icon">🎨</div>
+      <span class="menu-label" data-i="menu_theme">Dark mode</span>
+      <div class="toggle-track on" id="theme-track" onclick="toggleTheme()"><div class="toggle-thumb"></div></div>
     </div>
-    <div class="menu-item" onclick="drawerAction('radio')">
-      <div class="menu-icon">📻</div>
-      <span class="menu-label">Radio</span>
-    </div>
-    <div class="menu-item" onclick="drawerAction('mode')">
-      <div class="menu-icon">🔄</div>
-      <span class="menu-label">Zmień tryb jazdy</span>
-    </div>
+    <div class="menu-item" onclick="drawerAction('lang')"><div class="menu-icon">🌐</div><span class="menu-label" data-i="menu_lang">Language</span></div>
+    <div class="menu-item" onclick="drawerAction('mode')"><div class="menu-icon">🔄</div><span class="menu-label" data-i="menu_mode">Change mode</span></div>
   </div>
 </div>
 
-<!-- ══ SEARCH ══ -->
+<!-- SEARCH -->
 <div class="search-overlay" id="search-overlay" onclick="closeSearch(event)">
-  <input class="search-box" id="search-input" placeholder="🔍 Szukaj miasta lub parkingu..." oninput="onSearch(this.value)" onkeydown="if(event.key==='Escape')closeSearch()">
+  <input class="search-box" id="search-input" placeholder="🔍 Search city or parking..." oninput="onSearch(this.value)" onkeydown="if(event.key==='Escape')closeSearch()">
 </div>
 
-<!-- ══ DETAIL PANEL ══ -->
-<div class="detail-panel" id="detail-panel">
+<!-- DETAIL PANEL -->
+<div class="bottom-panel" id="detail-panel">
   <div class="panel-handle"></div>
   <button class="panel-close" onclick="closePanel()">✕</button>
   <div id="panel-content"></div>
 </div>
 
-<!-- ══ ADD SPOT PANEL ══ -->
+<!-- ADD SPOT PANEL -->
 <div class="add-panel" id="add-panel">
   <div class="panel-handle"></div>
   <button class="panel-close" onclick="closeAddPanel()">✕</button>
-  <h3>📍 Zaproponuj miejsce</h3>
+  <h3 data-i="add_title">📍 Add a spot</h3>
   <div class="form-group">
-    <label class="form-label">Nazwa miejsca</label>
-    <input class="form-input" id="spot-name" placeholder="np. Piękny widok na Alpy" maxlength="80">
+    <label class="form-label" data-i="add_name_lbl">Name</label>
+    <input class="form-input" id="spot-name" maxlength="80">
   </div>
   <div class="form-group">
-    <label class="form-label">Kategoria</label>
-    <div class="cat-btns" id="cat-btns">
+    <label class="form-label" data-i="add_cat_lbl">Category</label>
+    <div class="cat-btns">
       <button class="cat-btn active" data-cat="parking" onclick="pickCat(this)">🅿️ Parking</button>
-      <button class="cat-btn" data-cat="scenic" onclick="pickCat(this)">🌅 Widok</button>
-      <button class="cat-btn" data-cat="restaurant" onclick="pickCat(this)">🍴 Jedzenie</button>
-      <button class="cat-btn" data-cat="fuel" onclick="pickCat(this)">⛽ Paliwo</button>
-      <button class="cat-btn" data-cat="shower" onclick="pickCat(this)">🚿 Prysznic</button>
-      <button class="cat-btn" data-cat="warning" onclick="pickCat(this)">⚠️ Uwaga</button>
-      <button class="cat-btn" data-cat="other" onclick="pickCat(this)">📌 Inne</button>
+      <button class="cat-btn" data-cat="scenic" onclick="pickCat(this)">🌅 View</button>
+      <button class="cat-btn" data-cat="restaurant" onclick="pickCat(this)">🍴 Food</button>
+      <button class="cat-btn" data-cat="fuel" onclick="pickCat(this)">⛽ Fuel</button>
+      <button class="cat-btn" data-cat="shower" onclick="pickCat(this)">🚿 Shower</button>
+      <button class="cat-btn" data-cat="warning" onclick="pickCat(this)">⚠️ Warning</button>
+      <button class="cat-btn" data-cat="other" onclick="pickCat(this)">📌 Other</button>
     </div>
   </div>
   <div class="form-group">
-    <label class="form-label">Opis</label>
-    <textarea class="form-input form-textarea" id="spot-desc" placeholder="Opisz miejsce — co tu znajdziesz, dlaczego warto..."></textarea>
+    <label class="form-label" data-i="add_desc_lbl">Description</label>
+    <textarea class="form-input form-textarea" id="spot-desc"></textarea>
   </div>
   <div class="form-group">
-    <label class="form-label">Ocena</label>
-    <div class="star-row" id="star-row">
+    <label class="form-label" data-i="add_rating_lbl">Rating</label>
+    <div class="star-row">
       <span class="star-btn active" data-v="1" onclick="pickStar(1)">⭐</span>
       <span class="star-btn" data-v="2" onclick="pickStar(2)">⭐</span>
       <span class="star-btn" data-v="3" onclick="pickStar(3)">⭐</span>
@@ -505,40 +575,65 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
       <span class="star-btn" data-v="5" onclick="pickStar(5)">⭐</span>
     </div>
   </div>
-  <div style="font-size:.78rem;color:var(--muted);margin-bottom:.8rem" id="spot-coords-info">📍 Stuknij w mapę żeby wybrać lokalizację</div>
-  <button class="submit-btn" onclick="submitSpot()">✅ Zapisz miejsce (+10 pkt)</button>
+  <div style="font-size:.78rem;color:var(--muted);margin-bottom:.8rem" id="spot-coords-info">📍 Tap the map to select location</div>
+  <button class="submit-btn" onclick="submitSpot()" data-i="add_save_btn">✅ Save spot (+10 pts)</button>
 </div>
 
-<!-- ══ RANKING PANEL ══ -->
+<!-- RANKING PANEL -->
 <div class="rank-panel" id="rank-panel">
   <div class="rank-header">
     <button class="panel-close" style="position:static;width:32px;height:32px" onclick="closeRank()">←</button>
-    <span class="rank-title">🏆 Ranking kierowców</span>
+    <span class="rank-title" data-i="rank_title">🏆 Driver Ranking</span>
   </div>
   <div class="rank-list" id="rank-list"></div>
 </div>
 
-<!-- ══ RADIO BAR ══ -->
+<!-- ROUTE PANEL -->
+<div class="route-panel" id="route-panel">
+  <div class="panel-handle"></div>
+  <button class="panel-close" onclick="closeRoute()">✕</button>
+  <h3 data-i="route_title">🔀 Plan your route</h3>
+  <div class="form-group">
+    <label class="form-label" data-i="route_from">From</label>
+    <div class="route-input-row">
+      <input class="form-input" id="route-from" placeholder="My location">
+      <button class="gps-fill-btn" onclick="useGpsForRoute()" title="Use GPS">📡</button>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="form-label" data-i="route_to">Destination</label>
+    <input class="form-input" id="route-to" placeholder="e.g. Munich, Frankfurt...">
+  </div>
+  <div class="route-radius-row">
+    <span data-i="route_radius">Corridor:</span>
+    <input type="range" id="route-radius" min="5" max="50" value="15" oninput="document.getElementById('route-radius-val').textContent=this.value">
+    <strong id="route-radius-val">15</strong><span> km</span>
+  </div>
+  <button class="route-search-btn" onclick="searchRoute()" id="route-search-btn" data-i="route_btn">🔀 Find parkings on route</button>
+  <div id="route-results"></div>
+</div>
+
+<!-- RADIO BAR -->
 <div class="radio-bar" id="radio-bar">
   <button class="radio-prev" onclick="radioPrev()">‹</button>
   <button class="radio-btn" id="radio-play-btn" onclick="radioToggle()">▶</button>
   <button class="radio-next" onclick="radioNext()">›</button>
   <div class="radio-info">
-    <div class="radio-name" id="radio-name">Wybierz stację</div>
-    <div class="radio-status" id="radio-status">Naciśnij ▶</div>
+    <div class="radio-name" id="radio-name">Select station</div>
+    <div class="radio-status" id="radio-status">Press ▶</div>
   </div>
   <input type="range" class="radio-vol" id="radio-vol" min="0" max="1" step="0.05" value="0.7" oninput="radioVolume(this.value)">
   <button class="radio-close" onclick="toggleRadioBar()">✕</button>
 </div>
 
-<!-- ══ FAB ══ -->
-<button class="fab-add" id="fab-add" onclick="togglePicking()" style="display:none" title="Dodaj miejsce">＋</button>
+<!-- FAB -->
+<button class="fab-add" id="fab-add" onclick="togglePicking()" style="display:none">＋</button>
 
-<!-- ══ ALERT TOAST ══ -->
+<!-- ALERT TOAST -->
 <div class="alert-toast" id="alert-toast">
   <div class="alert-icon" id="alert-icon">📍</div>
   <div class="alert-text">
-    <div class="alert-title" id="alert-title">Miejsce w pobliżu!</div>
+    <div class="alert-title" id="alert-title">Nearby spot!</div>
     <div class="alert-desc" id="alert-desc">–</div>
   </div>
   <button class="alert-close" onclick="closeAlert()">✕</button>
@@ -546,68 +641,289 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// ── CONFIG ───────────────────────────────────────────────
+// ══════════════════════════════════════
+// TRANSLATIONS
+// ══════════════════════════════════════
+const I18N = {
+  en:{
+    tagline:'Command center for drivers & travelers in Europe',
+    login_title:'Sign in to save your spots & points',
+    google:'Continue with Google', google_sub:'Sync across devices',
+    guest:'Continue as Guest',     guest_sub:'No account needed',
+    mode_title:'Choose your travel mode',
+    tir_title:'Truck Driver',   tir_desc:'TIR parkings · washes · services · restaurants',
+    bus_title:'Vanlifer / Bus', bus_desc:'Stellplätze · electricity · water · showers',
+    tou_title:'Tourist / Camping', tou_desc:'Campings · tent fields · attractions · landmarks',
+    nav_map:'Map', nav_near:'Nearby', nav_route:'Route', nav_add:'Add', nav_radio:'Radio', nav_rank:'Ranking',
+    pts:'points', spots_added:'spots added',
+    sec_nav:'Navigation', sec_community:'Community', sec_tools:'Tools', sec_settings:'Settings',
+    menu_route:'Plan route', menu_near:'Nearest parkings', menu_all:'All parkings', menu_search:'Search',
+    menu_markets:'Flohmarkt / Markets',
+    route_title:'🔀 Plan your route', route_from:'From', route_to:'Destination',
+    route_radius:'Corridor:', route_btn:'🔀 Find parkings on route',
+    route_loading:'🔄 Calculating route...', route_found:'parkings on route',
+    route_none:'No parkings found within this corridor',
+    menu_add:'Add a spot', menu_myspots:'My spots', menu_rank:'Ranking',
+    menu_share:'Recommend TruckSpot', menu_gps:'GPS Alerts', menu_radio:'Radio',
+    menu_theme:'Dark mode', menu_lang:'Language', menu_mode:'Change mode',
+    add_title:'📍 Add a spot', add_name_lbl:'Name', add_cat_lbl:'Category',
+    add_desc_lbl:'Description', add_rating_lbl:'Rating', add_save_btn:'✅ Save spot (+10 pts)',
+    rank_title:'🏆 Driver Ranking',
+    tap_map:'Tap the map to select location',
+    mode_label:'Mode', nearby_label:'Nearby',
+  },
+  pl:{
+    tagline:'Centrum dowodzenia dla kierowców i podróżników',
+    login_title:'Zaloguj się aby zapisywać miejsca i punkty',
+    google:'Kontynuuj z Google',   google_sub:'Synchronizacja między urządzeniami',
+    guest:'Kontynuuj jako gość',   guest_sub:'Bez konta',
+    mode_title:'Wybierz tryb jazdy',
+    tir_title:'Kierowca TIR', tir_desc:'Parkingi TIR · myjnie · serwisy · restauracje',
+    bus_title:'Busiarz / Van Life', bus_desc:'Stellplätze · prąd · woda · prysznice',
+    tou_title:'Turysta / Camping', tou_desc:'Campingi · pola namiotowe · atrakcje · zabytki',
+    nav_map:'Mapa', nav_near:'Blisko', nav_route:'Trasa', nav_add:'Dodaj', nav_radio:'Radio', nav_rank:'Ranking',
+    pts:'punktów', spots_added:'dodanych miejsc',
+    sec_nav:'Nawigacja', sec_community:'Społeczność', sec_tools:'Narzędzia', sec_settings:'Ustawienia',
+    menu_route:'Zaplanuj trasę', menu_near:'Najbliższe parkingi', menu_all:'Wszystkie parkingi', menu_search:'Szukaj',
+    menu_markets:'Flohmarkt / Targi',
+    route_title:'🔀 Zaplanuj trasę', route_from:'Skąd', route_to:'Dokąd',
+    route_radius:'Korytarz:', route_btn:'🔀 Szukaj parkingów na trasie',
+    route_loading:'🔄 Obliczam trasę...', route_found:'parkingów na trasie',
+    route_none:'Brak parkingów w tym korytarzu',
+    menu_add:'Dodaj miejsce', menu_myspots:'Moje miejsca', menu_rank:'Ranking',
+    menu_share:'Poleć TruckSpot', menu_gps:'Alerty GPS', menu_radio:'Radio',
+    menu_theme:'Ciemny motyw', menu_lang:'Język', menu_mode:'Zmień tryb',
+    add_title:'📍 Dodaj miejsce', add_name_lbl:'Nazwa', add_cat_lbl:'Kategoria',
+    add_desc_lbl:'Opis', add_rating_lbl:'Ocena', add_save_btn:'✅ Zapisz (+10 pkt)',
+    rank_title:'🏆 Ranking kierowców',
+    tap_map:'Stuknij w mapę aby wybrać lokalizację',
+    mode_label:'Tryb', nearby_label:'Blisko mnie',
+  },
+  de:{
+    tagline:'Kommandozentrale für Fahrer und Reisende in Europa',
+    login_title:'Melde dich an um Orte & Punkte zu speichern',
+    google:'Mit Google fortfahren', google_sub:'Geräteübergreifend synchronisieren',
+    guest:'Als Gast fortfahren',   guest_sub:'Kein Konto erforderlich',
+    mode_title:'Wähle deinen Fahrmodus',
+    tir_title:'LKW-Fahrer', tir_desc:'LKW-Parkplätze · Waschanlagen · Werkstätten · Restaurants',
+    bus_title:'Vanlifer / Bus', bus_desc:'Stellplätze · Strom · Wasser · Duschen',
+    tou_title:'Tourist / Camping', tou_desc:'Campingplätze · Zeltplätze · Sehenswürdigkeiten',
+    nav_map:'Karte', nav_near:'In der Nähe', nav_route:'Route', nav_add:'Hinzufügen', nav_radio:'Radio', nav_rank:'Ranking',
+    pts:'Punkte', spots_added:'Orte hinzugefügt',
+    sec_nav:'Navigation', sec_community:'Community', sec_tools:'Werkzeuge', sec_settings:'Einstellungen',
+    menu_route:'Route planen', menu_near:'Nächste Parkplätze', menu_all:'Alle Parkplätze', menu_search:'Suchen',
+    menu_markets:'Flohmarkt / Märkte',
+    route_title:'🔀 Route planen', route_from:'Von', route_to:'Ziel',
+    route_radius:'Korridor:', route_btn:'🔀 Parkplätze auf Route finden',
+    route_loading:'🔄 Route berechnen...', route_found:'Parkplätze auf Route',
+    route_none:'Keine Parkplätze im Korridor gefunden',
+    menu_add:'Ort hinzufügen', menu_myspots:'Meine Orte', menu_rank:'Ranking',
+    menu_share:'TruckSpot empfehlen', menu_gps:'GPS-Alarme', menu_radio:'Radio',
+    menu_theme:'Dunkler Modus', menu_lang:'Sprache', menu_mode:'Modus ändern',
+    add_title:'📍 Ort hinzufügen', add_name_lbl:'Name', add_cat_lbl:'Kategorie',
+    add_desc_lbl:'Beschreibung', add_rating_lbl:'Bewertung', add_save_btn:'✅ Speichern (+10 Pkt)',
+    rank_title:'🏆 Fahrer-Ranking',
+    tap_map:'Tippe auf die Karte um einen Ort auszuwählen',
+    mode_label:'Modus', nearby_label:'In der Nähe',
+  },
+  es:{
+    tagline:'Centro de mando para conductores y viajeros en Europa',
+    login_title:'Inicia sesión para guardar tus lugares y puntos',
+    google:'Continuar con Google',  google_sub:'Sincronizar entre dispositivos',
+    guest:'Continuar como invitado', guest_sub:'Sin cuenta necesaria',
+    mode_title:'Elige tu modo de viaje',
+    tir_title:'Conductor de camión', tir_desc:'Aparcamientos TIR · lavados · talleres · restaurantes',
+    bus_title:'Van Life / Autobus', bus_desc:'Áreas de descanso · electricidad · agua · duchas',
+    tou_title:'Turista / Camping', tou_desc:'Campings · campos de tiendas · atracciones · monumentos',
+    nav_map:'Mapa', nav_near:'Cercano', nav_route:'Ruta', nav_add:'Añadir', nav_radio:'Radio', nav_rank:'Ranking',
+    pts:'puntos', spots_added:'lugares añadidos',
+    sec_nav:'Navegación', sec_community:'Comunidad', sec_tools:'Herramientas', sec_settings:'Ajustes',
+    menu_route:'Planificar ruta', menu_near:'Aparcamientos más cercanos', menu_all:'Todos los aparcamientos', menu_search:'Buscar',
+    menu_markets:'Flohmarkt / Mercados',
+    route_title:'🔀 Planificar ruta', route_from:'Desde', route_to:'Destino',
+    route_radius:'Corredor:', route_btn:'🔀 Buscar aparcamientos en ruta',
+    route_loading:'🔄 Calculando ruta...', route_found:'aparcamientos en ruta',
+    route_none:'No se encontraron aparcamientos en el corredor',
+    menu_add:'Añadir lugar', menu_myspots:'Mis lugares', menu_rank:'Ranking',
+    menu_share:'Recomendar TruckSpot', menu_gps:'Alertas GPS', menu_radio:'Radio',
+    menu_theme:'Modo oscuro', menu_lang:'Idioma', menu_mode:'Cambiar modo',
+    add_title:'📍 Añadir lugar', add_name_lbl:'Nombre', add_cat_lbl:'Categoría',
+    add_desc_lbl:'Descripción', add_rating_lbl:'Puntuación', add_save_btn:'✅ Guardar (+10 pts)',
+    rank_title:'🏆 Clasificación de conductores',
+    tap_map:'Toca el mapa para seleccionar ubicación',
+    mode_label:'Modo', nearby_label:'Cerca',
+  },
+};
+
+// ══════════════════════════════════════
+// THEME
+// ══════════════════════════════════════
+let isDark = localStorage.getItem('ts_theme') !== 'light';
+
+function applyTheme(){
+  document.body.classList.toggle('light', !isDark);
+  const track = document.getElementById('theme-track');
+  if(track) track.classList.toggle('on', isDark);
+  const btn = document.getElementById('ob-theme-btn');
+  if(btn) btn.textContent = isDark ? '🌙 Dark' : '☀️ Light';
+}
+
+function toggleTheme(){
+  isDark = !isDark;
+  localStorage.setItem('ts_theme', isDark ? 'dark' : 'light');
+  applyTheme();
+}
+
+// ══════════════════════════════════════
+// LANGUAGE
+// ══════════════════════════════════════
+let currentLang = localStorage.getItem('ts_lang') || 'en';
+
+function t(key){ return (I18N[currentLang]||I18N.en)[key] || key; }
+
+function applyLang(){
+  document.querySelectorAll('[data-i]').forEach(el=>{
+    const key = el.dataset.i;
+    const val = t(key);
+    if(val) el.textContent = val;
+  });
+  // onboarding dynamic text
+  const sub = document.getElementById('ob-sub-lang');
+  if(sub) sub.textContent = t('tagline');
+  const loginSub = document.getElementById('ob-sub-login');
+  if(loginSub) loginSub.textContent = t('login_title');
+  const modeSub = document.getElementById('ob-sub-mode');
+  if(modeSub) modeSub.textContent = t('mode_title');
+  // login labels
+  setEl('lbl-google', t('google'));
+  setEl('lbl-google-sub', t('google_sub'));
+  setEl('lbl-guest', t('guest'));
+  setEl('lbl-guest-sub', t('guest_sub'));
+  // mode labels
+  setEl('lbl-tir-title', t('tir_title')); setEl('lbl-tir-desc', t('tir_desc'));
+  setEl('lbl-bus-title', t('bus_title')); setEl('lbl-bus-desc', t('bus_desc'));
+  setEl('lbl-tourist-title', t('tou_title')); setEl('lbl-tourist-desc', t('tou_desc'));
+  // form placeholders
+  const sn = document.getElementById('spot-name');
+  if(sn) sn.placeholder = t('tir_title'); // reuse
+  const sd = document.getElementById('spot-desc');
+  if(sd) sd.placeholder = '...';
+  const sc = document.getElementById('spot-coords-info');
+  if(sc) sc.textContent = '📍 ' + t('tap_map');
+  const si = document.getElementById('search-input');
+  if(si) si.placeholder = '🔍 ' + t('menu_search') + '...';
+  // topbar pts
+  updateProfileUI();
+}
+
+function setEl(id, val){ const el=document.getElementById(id); if(el) el.textContent=val; }
+
+function setLang(lang){
+  currentLang = lang;
+  localStorage.setItem('ts_lang', lang);
+  applyLang();
+  goToStep('step-login');
+}
+
+// ══════════════════════════════════════
+// ONBOARDING STEPS
+// ══════════════════════════════════════
+function goToStep(stepId){
+  document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));
+  document.getElementById(stepId).classList.add('active');
+}
+
+function showGuestInput(){
+  const w = document.getElementById('guest-input-wrap');
+  w.style.display = 'block';
+  document.getElementById('guest-name-input').focus();
+}
+
+function loginGoogle(){
+  // Google Sign-In — requires Google Client ID configured
+  // For now: show as guest with "Google" prefix
+  const name = 'TruckDriver';
+  profile.name = name;
+  profile.loginType = 'google';
+  saveProfile();
+  goToStep('step-mode');
+}
+
+function loginGuest(){
+  const name = document.getElementById('guest-name-input').value.trim() || 'TRUCKER';
+  profile.name = name.toUpperCase();
+  profile.loginType = 'guest';
+  saveProfile();
+  goToStep('step-mode');
+}
+
+// ══════════════════════════════════════
+// APP CONFIG
+// ══════════════════════════════════════
 const MODE_CONFIG = {
   tir:     {icon:'🚛',label:'TIR',    color:'#f59e0b',color2:'#fbbf24',apiMode:'tir',   markerEmoji:'🚛',
              amenityFilter:['shower','restaurant','truck_wash','repair','shop','wifi','toilet'],
-             poiFilter:['restaurant','fuel','shop','repair'],
-             statsLabel:['parkingów TIR','bezpłatnych','z prysznicem']},
+             poiFilter:['restaurant','fuel','shop','repair']},
   bus:     {icon:'🚐',label:'Bus/Van',color:'#10b981',color2:'#34d399',apiMode:'camper',markerEmoji:'🚐',
              amenityFilter:['electricity','water','shower','wifi','toilet','restaurant'],
-             poiFilter:['nature','shop','restaurant','attraction'],
-             statsLabel:['Stellplätze','bezpłatnych','z prądem']},
-  tourist: {icon:'🧳',label:'Turysta',color:'#3b82f6',color2:'#60a5fa',apiMode:'tourist',markerEmoji:'🧳',
+             poiFilter:['nature','shop','restaurant','attraction']},
+  tourist: {icon:'🧳',label:t('tou_title'),color:'#3b82f6',color2:'#60a5fa',apiMode:'tourist',markerEmoji:'🧳',
              amenityFilter:['toilet','wifi','restaurant','shop','electricity','water','pool','shower'],
-             poiFilter:['attraction','city','nature','restaurant','shop'],
-             statsLabel:['miejsc','campingów','atrakcji blisko']},
+             poiFilter:['attraction','city','nature','restaurant','shop']},
 };
-const AMENITY_LABELS = {shower:'🚿 Prysznic',restaurant:'🍴 Restauracja',shop:'🛒 Sklep',wifi:'📶 WiFi',electricity:'⚡ Prąd',water:'🚰 Woda',toilet:'🚽 Toaleta',truck_wash:'🧼 Myjnia TIR',repair:'🔧 Serwis',pool:'🏊 Basen'};
+const AMENITY_LABELS = {shower:'🚿 Shower',restaurant:'🍴 Restaurant',shop:'🛒 Shop',wifi:'📶 WiFi',
+  electricity:'⚡ Power',water:'🚰 Water',toilet:'🚽 Toilet',truck_wash:'🧼 Truck Wash',repair:'🔧 Repair',pool:'🏊 Pool'};
 const POI_ICONS = {attraction:'🏛',shop:'🛒',restaurant:'🍴',nature:'🌲',fuel:'⛽',city:'🏙',default:'📍'};
 const CAT_ICONS = {parking:'🅿️',scenic:'🌅',restaurant:'🍴',fuel:'⛽',shower:'🚿',warning:'⚠️',other:'📌'};
 
-// ── STATE ────────────────────────────────────────────────
+// ══════════════════════════════════════
+// STATE
+// ══════════════════════════════════════
 let currentMode = null;
 let map = null;
-let markers = [], osmMarkers = [], userSpotMarkers = [];
-let allParkings = [], userSpots = [];
-let osmLoading = false;
-let pickingMode = false, spotLat = null, spotLng = null;
-let spotStars = 1, spotCat = 'parking', spotTempMarker = null;
-let gpsActive = false, gpsWatchId = null, gpsMarker = null;
-let alertedIds = new Set();
+let markers=[], osmMarkers=[], userSpotMarkers=[];
+let allParkings=[], userSpots=[];
+let osmLoading=false;
+let pickingMode=false, spotLat=null, spotLng=null;
+let spotStars=1, spotCat='parking', spotTempMarker=null;
+let gpsActive=false, gpsWatchId=null, gpsMarker=null;
+let alertedIds=new Set();
 
-// ── PROFILE / POINTS ─────────────────────────────────────
-let profile = JSON.parse(localStorage.getItem('ts_profile') || '{"name":"TRUCKER","pts":0,"spots":0}');
+// ══════════════════════════════════════
+// PROFILE
+// ══════════════════════════════════════
+let profile = JSON.parse(localStorage.getItem('ts_profile')||'{"name":"TRUCKER","pts":0,"spots":0,"loginType":"guest"}');
 
 function saveProfile(){ localStorage.setItem('ts_profile', JSON.stringify(profile)); }
+
 function addPts(n){
-  profile.pts += n;
-  saveProfile();
-  updateProfileUI();
-  showAlert('🎉', `+${n} punktów!`, `Masz teraz ${profile.pts} pkt`);
-}
-function updateProfileUI(){
-  document.getElementById('topbar-pts').textContent = profile.pts + ' pkt';
-  document.getElementById('drawer-pts').textContent = profile.pts;
-  document.getElementById('drawer-spots').textContent = profile.spots;
-  const letter = (profile.name||'T')[0].toUpperCase();
-  document.getElementById('drawer-avatar').textContent = letter;
-  document.getElementById('drawer-name').textContent = profile.name;
+  profile.pts += n; saveProfile(); updateProfileUI();
+  showAlert('🎉', `+${n} ${t('pts')}!`, profile.pts + ' ' + t('pts'));
 }
 
-// ── ENTER MODE ───────────────────────────────────────────
+function updateProfileUI(){
+  setEl('topbar-pts', profile.pts + ' ' + t('pts'));
+  setEl('drawer-pts', profile.pts);
+  setEl('drawer-spots', profile.spots);
+  setEl('drawer-avatar', (profile.name||'T')[0].toUpperCase());
+  setEl('drawer-name', profile.name||'TRUCKER');
+}
+
+// ══════════════════════════════════════
+// ENTER MODE
+// ══════════════════════════════════════
 function enterMode(mode){
   currentMode = mode;
   const cfg = MODE_CONFIG[mode];
   document.documentElement.style.setProperty('--accent',  cfg.color);
   document.documentElement.style.setProperty('--accent2', cfg.color2);
   document.documentElement.style.setProperty('--accent-bg', hexAlpha(cfg.color,.15));
-  document.getElementById('topbar-mode').textContent = cfg.label;
-  document.getElementById('drawer-mode-sub').textContent = 'Tryb: ' + cfg.label;
+  setEl('topbar-mode', cfg.label);
+  setEl('drawer-mode-sub', t('mode_label') + ': ' + cfg.label);
 
-  const welcome = document.getElementById('welcome');
-  welcome.classList.add('hiding');
-  setTimeout(()=>{ welcome.style.display='none'; }, 400);
+  const ob = document.getElementById('onboarding');
+  ob.classList.add('hiding');
+  setTimeout(()=>{ ob.style.display='none'; }, 400);
   document.getElementById('app').classList.add('visible');
 
   if(!map){
@@ -625,392 +941,565 @@ function enterMode(mode){
   loadParkings(mode);
   loadUserSpots();
   updateProfileUI();
+  applyLang();
   localStorage.setItem('ts_mode', mode);
 }
 
 function onMapClick(e){
   if(pickingMode){
-    pickingMode = false;
+    pickingMode=false;
     document.getElementById('fab-add').classList.remove('picking');
-    document.getElementById('fab-add').textContent = '＋';
-    spotLat = e.latlng.lat; spotLng = e.latlng.lng;
+    document.getElementById('fab-add').textContent='＋';
+    spotLat=e.latlng.lat; spotLng=e.latlng.lng;
     if(spotTempMarker) map.removeLayer(spotTempMarker);
-    spotTempMarker = L.marker([spotLat,spotLng],{icon:L.divIcon({className:'',html:'<div class="mk-user">📍</div>',iconSize:[34,34],iconAnchor:[17,17]})}).addTo(map);
-    document.getElementById('spot-coords-info').textContent = `📍 ${spotLat.toFixed(5)}, ${spotLng.toFixed(5)}`;
+    spotTempMarker=L.marker([spotLat,spotLng],{icon:L.divIcon({className:'',html:'<div class="mk-user">📍</div>',iconSize:[34,34],iconAnchor:[17,17]})}).addTo(map);
+    setEl('spot-coords-info','📍 '+spotLat.toFixed(5)+', '+spotLng.toFixed(5));
     document.getElementById('add-panel').classList.add('open');
-  } else {
-    closePanel();
-  }
+  } else { closePanel(); }
 }
 
-// ── DRAWER ───────────────────────────────────────────────
-function openDrawer(){
-  document.getElementById('drawer').classList.add('open');
-  document.getElementById('drawer-overlay').classList.add('open');
-}
-function closeDrawer(){
-  document.getElementById('drawer').classList.remove('open');
-  document.getElementById('drawer-overlay').classList.remove('open');
-}
+// ══════════════════════════════════════
+// DRAWER
+// ══════════════════════════════════════
+function openDrawer(){ document.getElementById('drawer').classList.add('open'); document.getElementById('drawer-overlay').classList.add('open'); }
+function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); document.getElementById('drawer-overlay').classList.remove('open'); }
+
 function drawerAction(action){
   closeDrawer();
   setTimeout(()=>{
     if(action==='nearby') findNearest();
+    else if(action==='route') openRoute();
+    else if(action==='markets') toggleMarkets();
     else if(action==='all') map.setView([51.5,12.0],5);
     else if(action==='add') startAddMode();
     else if(action==='search') openSearch();
     else if(action==='rank') openRank();
     else if(action==='gps') toggleGps();
     else if(action==='radio') toggleRadioBar();
-    else if(action==='mode'){ document.getElementById('welcome').style.display='flex'; document.getElementById('welcome').classList.remove('hiding'); document.getElementById('app').classList.remove('visible'); }
     else if(action==='share') shareApp();
     else if(action==='myspots') showMySpots();
-  }, 300);
+    else if(action==='lang'){ document.getElementById('onboarding').style.display='flex'; document.getElementById('onboarding').classList.remove('hiding'); document.getElementById('app').classList.remove('visible'); goToStep('step-lang'); }
+    else if(action==='mode'){ document.getElementById('onboarding').style.display='flex'; document.getElementById('onboarding').classList.remove('hiding'); document.getElementById('app').classList.remove('visible'); goToStep('step-mode'); }
+  },300);
 }
 
-// ── BOTTOM NAV ───────────────────────────────────────────
-function bnav(el, action){
+// ══════════════════════════════════════
+// BOTTOM NAV
+// ══════════════════════════════════════
+function bnav(el,action){
   document.querySelectorAll('.bnav-item').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
-  if(action==='map') { /* already on map */ }
-  else if(action==='nearby') findNearest();
+  if(action==='nearby') findNearest();
+  else if(action==='route') openRoute();
   else if(action==='add') startAddMode();
   else if(action==='radio') toggleRadioBar();
   else if(action==='rank') openRank();
 }
 
-// ── LOAD PARKINGS ────────────────────────────────────────
+// ══════════════════════════════════════
+// PARKINGS
+// ══════════════════════════════════════
 function loadParkings(mode){
-  const apiMode = MODE_CONFIG[mode].apiMode;
-  fetch(`/api/parkings?mode=${apiMode}`)
-    .then(r=>r.json())
-    .then(data=>{ allParkings=data; renderMarkers(data); });
+  fetch(`/api/parkings?mode=${MODE_CONFIG[mode].apiMode}`)
+    .then(r=>r.json()).then(data=>{ allParkings=data; renderMarkers(data); });
 }
 
 function renderMarkers(parkings){
-  markers.forEach(m=>map.removeLayer(m));
-  markers = [];
-  const cfg = MODE_CONFIG[currentMode];
+  markers.forEach(m=>map.removeLayer(m)); markers=[];
+  const cfg=MODE_CONFIG[currentMode];
   parkings.forEach(p=>{
-    const icon = L.divIcon({className:'',html:`<div class="mk" style="background:${cfg.color}"><span>${cfg.markerEmoji}</span></div>`,iconSize:[38,38],iconAnchor:[19,38]});
-    const m = L.marker([p.lat,p.lng],{icon}).addTo(map).on('click',()=>showDetail(p));
-    markers.push(m);
+    const icon=L.divIcon({className:'',html:`<div class="mk" style="background:${cfg.color}"><span>${cfg.markerEmoji}</span></div>`,iconSize:[38,38],iconAnchor:[19,38]});
+    markers.push(L.marker([p.lat,p.lng],{icon}).addTo(map).on('click',()=>showDetail(p)));
   });
 }
 
-// ── OSM PARKINGS ─────────────────────────────────────────
 function loadOsmParkings(){
-  if(osmLoading) return;
-  const b = map.getBounds();
-  const params = new URLSearchParams({south:b.getSouth().toFixed(4),west:b.getWest().toFixed(4),north:b.getNorth().toFixed(4),east:b.getEast().toFixed(4),mode:MODE_CONFIG[currentMode].apiMode});
-  osmLoading = true;
+  if(osmLoading) return; osmLoading=true;
+  const b=map.getBounds();
+  const params=new URLSearchParams({south:b.getSouth().toFixed(4),west:b.getWest().toFixed(4),north:b.getNorth().toFixed(4),east:b.getEast().toFixed(4),mode:MODE_CONFIG[currentMode].apiMode});
   fetch(`/api/osm-parkings?${params}`).then(r=>r.json()).then(data=>{
-    osmLoading = false;
-    if(!Array.isArray(data)) return;
-    osmMarkers.forEach(m=>map.removeLayer(m));
-    osmMarkers = [];
-    const cfg = MODE_CONFIG[currentMode];
+    osmLoading=false; if(!Array.isArray(data)) return;
+    osmMarkers.forEach(m=>map.removeLayer(m)); osmMarkers=[];
+    const cfg=MODE_CONFIG[currentMode];
     data.forEach(p=>{
-      const icon = L.divIcon({className:'',html:`<div class="mk" style="background:${cfg.color};opacity:.7;width:28px;height:28px;border-radius:50%"><span style="font-size:.8rem">${cfg.markerEmoji}</span></div>`,iconSize:[28,28],iconAnchor:[14,14]});
-      const m = L.marker([p.lat,p.lng],{icon}).addTo(map).on('click',()=>showOsmDetail(p));
-      osmMarkers.push(m);
+      const icon=L.divIcon({className:'',html:`<div class="mk" style="background:${cfg.color};opacity:.7;width:28px;height:28px;border-radius:50%"><span style="font-size:.8rem">${cfg.markerEmoji}</span></div>`,iconSize:[28,28],iconAnchor:[14,14]});
+      osmMarkers.push(L.marker([p.lat,p.lng],{icon}).addTo(map).on('click',()=>showOsmDetail(p)));
     });
   }).catch(()=>{ osmLoading=false; });
 }
 
-// ── DETAIL PANELS ────────────────────────────────────────
+// ══════════════════════════════════════
+// DETAIL PANELS
+// ══════════════════════════════════════
 function showDetail(p){
-  const cfg = MODE_CONFIG[currentMode];
-  const amenHtml = (p.amenities||[]).filter(a=>cfg.amenityFilter.includes(a)).map(a=>`<span class="amenity">${AMENITY_LABELS[a]||a}</span>`).join('');
-  const poiHtml  = (p.poi||[]).filter(poi=>cfg.poiFilter.includes(poi.type)).map(poi=>`<div class="poi-row"><span>${POI_ICONS[poi.type]||'📍'}</span><span style="flex:1">${poi.name}</span><span class="poi-dist">${poi.dist_km} km</span></div>`).join('');
-  const spots = [
-    p.spots_tir>0?`<div class="info-box"><div class="info-box-val">${p.spots_tir}</div><div class="info-box-lbl">miejsc TIR</div></div>`:'',
-    p.spots_camper>0?`<div class="info-box"><div class="info-box-val">${p.spots_camper}</div><div class="info-box-lbl">miejsc Camper</div></div>`:'',
-    `<div class="info-box"><div class="info-box-val">${p.price_eur===0?'GRATIS':p.price_eur+'€'}</div><div class="info-box-lbl">cena/noc</div></div>`,
-    `<div class="info-box"><div class="info-box-val">★${p.rating}</div><div class="info-box-lbl">ocena</div></div>`,
+  const cfg=MODE_CONFIG[currentMode];
+  const amenHtml=(p.amenities||[]).filter(a=>cfg.amenityFilter.includes(a)).map(a=>`<span class="amenity">${AMENITY_LABELS[a]||a}</span>`).join('');
+  const poiHtml=(p.poi||[]).filter(x=>cfg.poiFilter.includes(x.type)).map(x=>`<div class="poi-row"><span>${POI_ICONS[x.type]||'📍'}</span><span style="flex:1">${x.name}</span><span class="poi-dist">${x.dist_km} km</span></div>`).join('');
+  const boxes=[
+    p.spots_tir>0?`<div class="info-box"><div class="info-box-val">${p.spots_tir}</div><div class="info-box-lbl">TIR spots</div></div>`:'',
+    p.spots_camper>0?`<div class="info-box"><div class="info-box-val">${p.spots_camper}</div><div class="info-box-lbl">Camper spots</div></div>`:'',
+    `<div class="info-box"><div class="info-box-val">${p.price_eur===0?'FREE':p.price_eur+'€'}</div><div class="info-box-lbl">price/night</div></div>`,
+    `<div class="info-box"><div class="info-box-val">★${p.rating}</div><div class="info-box-lbl">rating</div></div>`,
   ].filter(Boolean).join('');
-  document.getElementById('panel-content').innerHTML = `
+  document.getElementById('panel-content').innerHTML=`
     <div class="panel-name">${p.name}</div>
     <div class="panel-addr">📍 ${p.city}, ${p.country}</div>
-    <div class="info-grid">${spots}</div>
+    <div class="info-grid">${boxes}</div>
     ${amenHtml?`<div class="amenities">${amenHtml}</div>`:''}
-    ${poiHtml?`<div class="poi-title">🗺 W pobliżu</div><div class="poi-list">${poiHtml}</div>`:''}
-    <button class="nav-btn" onclick="navigateTo(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')">📍 Nawiguj — Google Maps</button>`;
+    ${poiHtml?`<div class="poi-title">🗺 Nearby</div><div class="poi-list">${poiHtml}</div>`:''}
+    <button class="nav-btn" onclick="navigateTo(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')">📍 Navigate — Google Maps</button>`;
   document.getElementById('detail-panel').classList.add('open');
   map.panTo([p.lat,p.lng]);
 }
 
 function showOsmDetail(p){
-  const amenHtml = (p.amenities||[]).map(a=>`<span class="amenity">${AMENITY_LABELS[a]||a}</span>`).join('');
-  document.getElementById('panel-content').innerHTML = `
+  const amenHtml=(p.amenities||[]).map(a=>`<span class="amenity">${AMENITY_LABELS[a]||a}</span>`).join('');
+  document.getElementById('panel-content').innerHTML=`
     <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem">
       <div class="panel-name" style="flex:1">${p.name}</div>
       <span style="font-size:.65rem;background:rgba(16,185,129,.15);color:#10b981;border-radius:8px;padding:.15rem .45rem;font-weight:700">OSM</span>
     </div>
     <div class="panel-addr">📍 ${p.city||'–'}, ${p.country||'–'}</div>
     <div class="info-grid">
-      ${p.spots_tir>0?`<div class="info-box"><div class="info-box-val">${p.spots_tir}</div><div class="info-box-lbl">miejsc</div></div>`:''}
-      <div class="info-box"><div class="info-box-val">GRATIS</div><div class="info-box-lbl">cena</div></div>
+      ${p.spots_tir>0?`<div class="info-box"><div class="info-box-val">${p.spots_tir}</div><div class="info-box-lbl">spots</div></div>`:''}
+      <div class="info-box"><div class="info-box-val">FREE</div><div class="info-box-lbl">price</div></div>
     </div>
     ${amenHtml?`<div class="amenities">${amenHtml}</div>`:''}
-    <button class="nav-btn" onclick="navigateTo(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')">📍 Nawiguj — Google Maps</button>`;
+    <button class="nav-btn" onclick="navigateTo(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')">📍 Navigate — Google Maps</button>`;
   document.getElementById('detail-panel').classList.add('open');
   map.panTo([p.lat,p.lng]);
 }
 
 function showUserSpotDetail(spot){
-  const stars = '⭐'.repeat(spot.stars||0);
-  document.getElementById('panel-content').innerHTML = `
+  const stars='⭐'.repeat(spot.stars||0);
+  document.getElementById('panel-content').innerHTML=`
     <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem">
       <div class="panel-name" style="flex:1">${CAT_ICONS[spot.cat]||'📌'} ${spot.name}</div>
-      <span style="font-size:.65rem;background:rgba(139,92,246,.15);color:#a78bfa;border-radius:8px;padding:.15rem .45rem;font-weight:700">Społeczność</span>
+      <span style="font-size:.65rem;background:rgba(139,92,246,.15);color:#a78bfa;border-radius:8px;padding:.15rem .45rem;font-weight:700">Community</span>
     </div>
     <div style="font-size:1.1rem;margin-bottom:.5rem">${stars}</div>
     ${spot.desc?`<div style="font-size:.85rem;color:var(--muted);margin-bottom:.9rem;line-height:1.5">${spot.desc}</div>`:''}
-    <div style="font-size:.7rem;color:var(--muted);margin-bottom:.9rem">Dodano: ${new Date(spot.added).toLocaleDateString('pl-PL')}</div>
-    <button class="nav-btn" onclick="navigateTo(${spot.lat},${spot.lng},'${spot.name.replace(/'/g,"\\'")}')">📍 Nawiguj — Google Maps</button>`;
+    <button class="nav-btn" onclick="navigateTo(${spot.lat},${spot.lng},'${spot.name.replace(/'/g,"\\'")}')">📍 Navigate — Google Maps</button>`;
   document.getElementById('detail-panel').classList.add('open');
   map.panTo([spot.lat,spot.lng]);
 }
 
 function closePanel(){ document.getElementById('detail-panel').classList.remove('open'); }
 
-// ── ADD SPOT ─────────────────────────────────────────────
+// ══════════════════════════════════════
+// ADD SPOT
+// ══════════════════════════════════════
 function startAddMode(){
-  closeDrawer();
-  document.getElementById('fab-add').style.display = 'flex';
-  showAlert('📍','Dodaj miejsce','Naciśnij ＋ i stuknij w mapę');
+  document.getElementById('fab-add').style.display='flex';
+  showAlert('📍', t('add_title'), t('tap_map'));
 }
-
 function togglePicking(){
   if(pickingMode){ cancelPicking(); }
-  else {
-    pickingMode = true;
-    document.getElementById('fab-add').classList.add('picking');
-    document.getElementById('fab-add').textContent = '✕';
-    showAlert('📍','Stuknij w mapę','Zaznacz miejsce które chcesz dodać');
-  }
+  else { pickingMode=true; document.getElementById('fab-add').classList.add('picking'); document.getElementById('fab-add').textContent='✕'; showAlert('📍','',t('tap_map')); }
 }
-function cancelPicking(){
-  pickingMode = false;
-  document.getElementById('fab-add').classList.remove('picking');
-  document.getElementById('fab-add').textContent = '＋';
-  if(spotTempMarker){ map.removeLayer(spotTempMarker); spotTempMarker=null; }
-}
-function closeAddPanel(){
-  document.getElementById('add-panel').classList.remove('open');
-  cancelPicking();
-}
-function pickCat(btn){
-  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  spotCat = btn.dataset.cat;
-}
-function pickStar(v){
-  spotStars = v;
-  document.querySelectorAll('.star-btn').forEach(b=>b.classList.toggle('active', parseInt(b.dataset.v)<=v));
-}
+function cancelPicking(){ pickingMode=false; document.getElementById('fab-add').classList.remove('picking'); document.getElementById('fab-add').textContent='＋'; if(spotTempMarker){map.removeLayer(spotTempMarker);spotTempMarker=null;} }
+function closeAddPanel(){ document.getElementById('add-panel').classList.remove('open'); cancelPicking(); }
+function pickCat(btn){ document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); spotCat=btn.dataset.cat; }
+function pickStar(v){ spotStars=v; document.querySelectorAll('.star-btn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.v)<=v)); }
+
 function submitSpot(){
-  const name = document.getElementById('spot-name').value.trim();
+  const name=document.getElementById('spot-name').value.trim();
   if(!name){ document.getElementById('spot-name').focus(); return; }
-  if(!spotLat){ showAlert('⚠️','Błąd','Stuknij w mapę żeby wybrać lokalizację'); return; }
-  const spot = {name,lat:spotLat,lng:spotLng,cat:spotCat,desc:document.getElementById('spot-desc').value.trim(),stars:spotStars,added:new Date().toISOString()};
+  if(!spotLat){ showAlert('⚠️','','Pick location on map first'); return; }
+  const spot={name,lat:spotLat,lng:spotLng,cat:spotCat,desc:document.getElementById('spot-desc').value.trim(),stars:spotStars,added:new Date().toISOString()};
   fetch('/api/spots',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(spot)})
     .then(r=>r.json()).then(res=>{
-      spot.id = res.id;
-      userSpots.push(spot);
-      addUserSpotMarker(spot);
-      if(spotTempMarker){ map.removeLayer(spotTempMarker); spotTempMarker=null; }
+      spot.id=res.id; userSpots.push(spot); addUserSpotMarker(spot);
+      if(spotTempMarker){map.removeLayer(spotTempMarker);spotTempMarker=null;}
       document.getElementById('add-panel').classList.remove('open');
-      document.getElementById('fab-add').style.display = 'none';
-      document.getElementById('spot-name').value = '';
-      document.getElementById('spot-desc').value = '';
-      pickStar(1);
-      profile.spots++;
-      addPts(10);
-    }).catch(()=>showAlert('⚠️','Błąd','Nie udało się zapisać'));
+      document.getElementById('fab-add').style.display='none';
+      document.getElementById('spot-name').value='';
+      document.getElementById('spot-desc').value='';
+      pickStar(1); profile.spots++; addPts(10);
+    }).catch(()=>showAlert('⚠️','Error','Could not save'));
 }
 
 function loadUserSpots(){
   fetch('/api/spots').then(r=>r.json()).then(data=>{
-    userSpots = data;
-    userSpotMarkers.forEach(m=>map.removeLayer(m));
-    userSpotMarkers = [];
+    userSpots=data; userSpotMarkers.forEach(m=>map.removeLayer(m)); userSpotMarkers=[];
     data.forEach(addUserSpotMarker);
   });
 }
 function addUserSpotMarker(spot){
-  const icon = L.divIcon({className:'',html:`<div class="mk-user">${CAT_ICONS[spot.cat]||'📌'}</div>`,iconSize:[34,34],iconAnchor:[17,17]});
-  const m = L.marker([spot.lat,spot.lng],{icon}).addTo(map).on('click',()=>showUserSpotDetail(spot));
-  userSpotMarkers.push(m);
+  const icon=L.divIcon({className:'',html:`<div class="mk-user">${CAT_ICONS[spot.cat]||'📌'}</div>`,iconSize:[34,34],iconAnchor:[17,17]});
+  userSpotMarkers.push(L.marker([spot.lat,spot.lng],{icon}).addTo(map).on('click',()=>showUserSpotDetail(spot)));
 }
 
-// ── SEARCH ───────────────────────────────────────────────
-function openSearch(){
-  document.getElementById('search-overlay').classList.add('open');
-  setTimeout(()=>document.getElementById('search-input').focus(), 100);
-}
-function closeSearch(e){
-  if(!e || e.target===document.getElementById('search-overlay'))
-    document.getElementById('search-overlay').classList.remove('open');
-}
+// ══════════════════════════════════════
+// SEARCH
+// ══════════════════════════════════════
+function openSearch(){ document.getElementById('search-overlay').classList.add('open'); setTimeout(()=>document.getElementById('search-input').focus(),100); }
+function closeSearch(e){ if(!e||e.target===document.getElementById('search-overlay')) document.getElementById('search-overlay').classList.remove('open'); }
 function onSearch(q){
-  if(q.length < 3) return;
-  const ql = q.toLowerCase();
-  const found = allParkings.filter(p=>(p.name+p.city+p.country).toLowerCase().includes(ql));
-  if(found.length > 0){
-    map.flyTo([found[0].lat,found[0].lng],12);
-    document.getElementById('search-overlay').classList.remove('open');
-    showDetail(found[0]);
-  }
+  if(q.length<3) return;
+  const ql=q.toLowerCase();
+  const found=allParkings.filter(p=>(p.name+p.city+p.country).toLowerCase().includes(ql));
+  if(found.length){ map.flyTo([found[0].lat,found[0].lng],12); document.getElementById('search-overlay').classList.remove('open'); showDetail(found[0]); }
 }
 
-// ── NEARBY ───────────────────────────────────────────────
+// ══════════════════════════════════════
+// NEARBY
+// ══════════════════════════════════════
 function findNearest(){
-  if(!navigator.geolocation){ showAlert('⚠️','GPS niedostępny',''); return; }
-  showAlert('📍','Szukam...','Pobieram Twoją lokalizację');
+  if(!navigator.geolocation){ showAlert('⚠️','GPS','Not available'); return; }
   navigator.geolocation.getCurrentPosition(pos=>{
-    const {latitude:lat,longitude:lng} = pos.coords;
-    const sorted = [...allParkings].sort((a,b)=>haversineKm(lat,lng,a.lat,a.lng)-haversineKm(lat,lng,b.lat,b.lng));
-    if(sorted.length){
-      map.flyTo([sorted[0].lat,sorted[0].lng],12);
-      showDetail(sorted[0]);
-    }
-  }, ()=>showAlert('⚠️','Błąd GPS',''));
+    const {latitude:lat,longitude:lng}=pos.coords;
+    const sorted=[...allParkings].sort((a,b)=>haversineKm(lat,lng,a.lat,a.lng)-haversineKm(lat,lng,b.lat,b.lng));
+    if(sorted.length){ map.flyTo([sorted[0].lat,sorted[0].lng],12); showDetail(sorted[0]); }
+  },()=>showAlert('⚠️','GPS Error',''));
 }
 
-// ── GPS ALERTY ────────────────────────────────────────────
-function toggleGps(){
-  if(gpsActive){ stopGps(); } else { startGps(); }
-}
+// ══════════════════════════════════════
+// GPS ALERTS
+// ══════════════════════════════════════
+function toggleGps(){ if(gpsActive) stopGps(); else startGps(); }
 function startGps(){
-  if(!navigator.geolocation){ showAlert('❌','GPS niedostępny',''); return; }
-  gpsActive = true;
-  document.getElementById('gps-badge').style.display = '';
-  gpsWatchId = navigator.geolocation.watchPosition(pos=>{
-    const {latitude:lat,longitude:lng} = pos.coords;
-    const dotIcon = L.divIcon({className:'',html:'<div class="gps-dot"></div>',iconSize:[14,14],iconAnchor:[7,7]});
-    if(!gpsMarker) gpsMarker = L.marker([lat,lng],{icon:dotIcon,zIndexOffset:1000}).addTo(map);
+  if(!navigator.geolocation){ showAlert('❌','GPS','Not available'); return; }
+  gpsActive=true; setEl('gps-badge','ON'); document.getElementById('gps-badge').style.display='';
+  gpsWatchId=navigator.geolocation.watchPosition(pos=>{
+    const {latitude:lat,longitude:lng}=pos.coords;
+    const dot=L.divIcon({className:'',html:'<div class="gps-dot"></div>',iconSize:[14,14],iconAnchor:[7,7]});
+    if(!gpsMarker) gpsMarker=L.marker([lat,lng],{icon:dot,zIndexOffset:1000}).addTo(map);
     else gpsMarker.setLatLng([lat,lng]);
     allParkings.forEach(p=>{
-      const dist = haversineKm(lat,lng,p.lat,p.lng);
-      if(dist<=5 && !alertedIds.has(p.id)){
+      const d=haversineKm(lat,lng,p.lat,p.lng);
+      if(d<=5&&!alertedIds.has(p.id)){
         alertedIds.add(p.id);
-        const d = dist<1?`${Math.round(dist*1000)} m`:`${dist.toFixed(1)} km`;
-        showAlert(MODE_CONFIG[currentMode].markerEmoji, p.name, `${d} od Ciebie · ${p.city}`, p);
+        const ds=d<1?Math.round(d*1000)+' m':d.toFixed(1)+' km';
+        showAlert(MODE_CONFIG[currentMode].markerEmoji, p.name, ds+' · '+p.city, p);
       }
     });
-  }, ()=>{}, {enableHighAccuracy:true,maximumAge:10000,timeout:15000});
-  showAlert('📡','GPS aktywny','Powiadomimy Cię o miejscach w pobliżu');
+  },()=>{},{enableHighAccuracy:true,maximumAge:10000,timeout:15000});
+  showAlert('📡','GPS','Alerts active');
 }
 function stopGps(){
-  gpsActive = false;
-  document.getElementById('gps-badge').style.display = 'none';
+  gpsActive=false; document.getElementById('gps-badge').style.display='none';
   if(gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
-  if(gpsMarker){ map.removeLayer(gpsMarker); gpsMarker=null; }
+  if(gpsMarker){map.removeLayer(gpsMarker);gpsMarker=null;}
   alertedIds.clear();
 }
 
-// ── RANKING ───────────────────────────────────────────────
-const FAKE_RANK = [
+// ══════════════════════════════════════
+// RANKING
+// ══════════════════════════════════════
+const FAKE_RANK=[
   {name:'KrzysztofTIR',pts:1240,spots:8},{name:'MagdaVanLife',pts:980,spots:6},
   {name:'PawełBus',pts:760,spots:5},{name:'AnnaC',pts:540,spots:3},
-  {name:'RobertoIT',pts:390,spots:2},{name:'TRUCKER',pts:profile.pts,spots:profile.spots},
+  {name:'RobertoIT',pts:390,spots:2},
 ];
 function openRank(){
-  FAKE_RANK[5].pts = profile.pts; FAKE_RANK[5].spots = profile.spots;
-  FAKE_RANK[5].name = profile.name;
-  const sorted = [...FAKE_RANK].sort((a,b)=>b.pts-a.pts);
-  const medals = ['gold','silver','bronze'];
-  document.getElementById('rank-list').innerHTML = sorted.map((r,i)=>`
+  const all=[...FAKE_RANK,{name:profile.name,pts:profile.pts,spots:profile.spots}]
+    .sort((a,b)=>b.pts-a.pts);
+  const medals=['gold','silver','bronze'];
+  document.getElementById('rank-list').innerHTML=all.map((r,i)=>`
     <div class="rank-item">
       <div class="rank-pos ${medals[i]||''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</div>
       <div class="rank-avatar">${r.name[0]}</div>
-      <div class="rank-name">${r.name}<br><span style="font-size:.7rem;color:var(--muted)">${r.spots} miejsc dodanych</span></div>
-      <div class="rank-pts">${r.pts} pkt</div>
+      <div class="rank-name">${r.name}<br><span style="font-size:.7rem;color:var(--muted)">${r.spots} ${t('spots_added')}</span></div>
+      <div class="rank-pts">${r.pts}</div>
     </div>`).join('');
   document.getElementById('rank-panel').classList.add('open');
 }
 function closeRank(){ document.getElementById('rank-panel').classList.remove('open'); }
 
-// ── SHARE ────────────────────────────────────────────────
+// ══════════════════════════════════════
+// SHARE
+// ══════════════════════════════════════
 function shareApp(){
-  const txt = '🚛 TruckSpot — najlepsza apka dla kierowców i podróżników! truckspot.onrender.com';
+  const txt='🚛 TruckSpot — command center for drivers & travelers! truckspot.onrender.com';
   if(navigator.share) navigator.share({title:'TruckSpot',text:txt,url:'https://truckspot.onrender.com'}).then(()=>addPts(50)).catch(()=>{});
-  else { navigator.clipboard.writeText(txt); addPts(50); showAlert('📣','Skopiowano!','Link skopiowany do schowka'); }
+  else { navigator.clipboard.writeText(txt); addPts(50); showAlert('📣','Copied!','Link copied to clipboard'); }
 }
 function showMySpots(){
-  const mine = userSpots.slice(-5);
-  if(!mine.length){ showAlert('⭐','Brak miejsc','Nie dodałeś jeszcze żadnego miejsca'); return; }
-  map.flyTo([mine[mine.length-1].lat, mine[mine.length-1].lng], 12);
+  if(!userSpots.length){ showAlert('⭐','','No spots added yet'); return; }
+  const last=userSpots[userSpots.length-1];
+  map.flyTo([last.lat,last.lng],12);
 }
 
-// ── RADIO ─────────────────────────────────────────────────
-const STATIONS = [
-  {name:'🇵🇱 RMF FM',        url:'https://rmf.fm/stream/rmf_fm_aac'},
-  {name:'🇵🇱 Radio ZET',      url:'https://n-22-14.dcs.redcdn.pl/sc/o2/Eurozet/live/audio.livx'},
-  {name:'🇵🇱 Eska Rock',      url:'https://ic1.smcdn.pl/2330-1.mp3'},
-  {name:'🇩🇪 Antenne Bayern',  url:'https://s6-webradio.antenne.de/antenne'},
-  {name:'🇩🇪 Bayern 3',        url:'https://dispatcher.rndfnk.com/br/br3/live/mp3/low'},
-  {name:'🇩🇪 Radio Hamburg',   url:'https://stream.radiohamburg.de/rhh-live/mp3-128/radioplayer'},
-  {name:'🎸 Rock Classics',    url:'https://streams.radiobob.de/rock-classics/mp3-128/dirble'},
-  {name:'🌍 Truck Radio EU',   url:'https://stream.truckradio.eu/truckradio128'},
-  {name:'🎵 Energy Dance',     url:'https://stream.energy.de/200000'},
+// ══════════════════════════════════════
+// RADIO
+// ══════════════════════════════════════
+const STATIONS=[
+  {name:'🇵🇱 RMF FM',       url:'https://rmf.fm/stream/rmf_fm_aac'},
+  {name:'🇵🇱 Radio ZET',     url:'https://n-22-14.dcs.redcdn.pl/sc/o2/Eurozet/live/audio.livx'},
+  {name:'🇵🇱 Eska Rock',     url:'https://ic1.smcdn.pl/2330-1.mp3'},
+  {name:'🇩🇪 Antenne Bayern', url:'https://s6-webradio.antenne.de/antenne'},
+  {name:'🇩🇪 Bayern 3',       url:'https://dispatcher.rndfnk.com/br/br3/live/mp3/low'},
+  {name:'🇩🇪 Radio Hamburg',  url:'https://stream.radiohamburg.de/rhh-live/mp3-128/radioplayer'},
+  {name:'🎸 Rock Classics',   url:'https://streams.radiobob.de/rock-classics/mp3-128/dirble'},
+  {name:'🌍 Truck Radio EU',  url:'https://stream.truckradio.eu/truckradio128'},
+  {name:'🎵 Energy Dance',    url:'https://stream.energy.de/200000'},
 ];
-let radioIdx=0, radioAudio=null, radioPlaying=false;
-function toggleRadioBar(){
-  const bar = document.getElementById('radio-bar');
-  bar.classList.toggle('visible');
-  if(!radioAudio) document.getElementById('radio-name').textContent = STATIONS[0].name;
-}
+let radioIdx=0,radioAudio=null,radioPlaying=false;
+function toggleRadioBar(){ document.getElementById('radio-bar').classList.toggle('visible'); if(!radioAudio) setEl('radio-name',STATIONS[0].name); }
 function radioToggle(){
-  if(!radioAudio){ radioAudio=new Audio(); radioAudio.volume=parseFloat(document.getElementById('radio-vol').value); }
-  if(radioPlaying){
-    radioAudio.pause(); radioAudio.src=''; radioPlaying=false;
-    document.getElementById('radio-play-btn').textContent='▶';
-    document.getElementById('radio-status').textContent='Zatrzymano';
-  } else { radioLoad(radioIdx); }
+  if(!radioAudio){radioAudio=new Audio();radioAudio.volume=parseFloat(document.getElementById('radio-vol').value);}
+  if(radioPlaying){radioAudio.pause();radioAudio.src='';radioPlaying=false;setEl('radio-play-btn','▶');setEl('radio-status','Stopped');}
+  else radioLoad(radioIdx);
 }
 function radioLoad(idx){
   if(!radioAudio) radioAudio=new Audio();
   radioAudio.volume=parseFloat(document.getElementById('radio-vol').value);
   const s=STATIONS[idx];
-  document.getElementById('radio-name').textContent=s.name;
-  document.getElementById('radio-status').textContent='⏳ Łączenie...';
-  document.getElementById('radio-play-btn').textContent='■';
+  setEl('radio-name',s.name); setEl('radio-status','⏳ Connecting...'); setEl('radio-play-btn','■');
   radioAudio.src=s.url;
-  radioAudio.play().then(()=>{ radioPlaying=true; document.getElementById('radio-status').textContent='▶ Na żywo'; }).catch(()=>{ document.getElementById('radio-status').textContent='⚠ Spróbuj innej'; radioPlaying=false; document.getElementById('radio-play-btn').textContent='▶'; });
+  radioAudio.play().then(()=>{radioPlaying=true;setEl('radio-status','▶ Live');})
+    .catch(()=>{setEl('radio-status','⚠ Try another');radioPlaying=false;setEl('radio-play-btn','▶');});
 }
-function radioPrev(){ radioIdx=(radioIdx-1+STATIONS.length)%STATIONS.length; radioLoad(radioIdx); }
-function radioNext(){ radioIdx=(radioIdx+1)%STATIONS.length; radioLoad(radioIdx); }
-function radioVolume(v){ if(radioAudio) radioAudio.volume=parseFloat(v); }
+function radioPrev(){radioIdx=(radioIdx-1+STATIONS.length)%STATIONS.length;radioLoad(radioIdx);}
+function radioNext(){radioIdx=(radioIdx+1)%STATIONS.length;radioLoad(radioIdx);}
+function radioVolume(v){if(radioAudio)radioAudio.volume=parseFloat(v);}
 
-// ── ALERT TOAST ───────────────────────────────────────────
-let alertTimer=null, alertParking=null;
+// ══════════════════════════════════════
+// ALERT TOAST
+// ══════════════════════════════════════
+let alertTimer=null,alertParking=null;
 function showAlert(icon,title,desc,parking=null){
   alertParking=parking;
-  document.getElementById('alert-icon').textContent=icon;
-  document.getElementById('alert-title').textContent=title;
-  document.getElementById('alert-desc').textContent=desc;
-  const t=document.getElementById('alert-toast');
-  t.classList.add('show');
-  t.onclick=(e)=>{ if(e.target.className==='alert-close') return; if(alertParking) showDetail(alertParking); closeAlert(); };
-  clearTimeout(alertTimer);
-  alertTimer=setTimeout(closeAlert,6000);
+  setEl('alert-icon',icon); setEl('alert-title',title); setEl('alert-desc',desc);
+  const t2=document.getElementById('alert-toast');
+  t2.classList.add('show');
+  t2.onclick=(e)=>{if(e.target.className==='alert-close')return;if(alertParking)showDetail(alertParking);closeAlert();};
+  clearTimeout(alertTimer); alertTimer=setTimeout(closeAlert,6000);
 }
-function closeAlert(){ document.getElementById('alert-toast').classList.remove('show'); }
+function closeAlert(){document.getElementById('alert-toast').classList.remove('show');}
 
-// ── NAVIGATE ──────────────────────────────────────────────
-function navigateTo(lat,lng,name){ window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`,'_blank'); }
+// ══════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════
+function navigateTo(lat,lng,name){window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`,'_blank');}
+function hexAlpha(hex,a){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return `rgba(${r},${g},${b},${a})`;}
+function haversineKm(lat1,lon1,lat2,lon2){const R=6371,dL=(lat2-lat1)*Math.PI/180,dl=(lon2-lon1)*Math.PI/180,a=Math.sin(dL/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dl/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
 
-// ── HELPERS ───────────────────────────────────────────────
-function hexAlpha(hex,alpha){ const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return `rgba(${r},${g},${b},${alpha})`; }
-function haversineKm(lat1,lon1,lat2,lon2){ const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180,a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2; return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)); }
+// ══════════════════════════════════════
+// ROUTE PLANNING
+// ══════════════════════════════════════
+let routeLayer = null;
+let routeFromLat = null, routeFromLng = null;
 
-// ── PWA + START ───────────────────────────────────────────
+function openRoute(){
+  document.getElementById('route-panel').classList.add('open');
+  closePanel();
+}
+function closeRoute(){
+  document.getElementById('route-panel').classList.remove('open');
+}
+
+function useGpsForRoute(){
+  if(!navigator.geolocation){ showAlert('⚠️','GPS','Not available'); return; }
+  navigator.geolocation.getCurrentPosition(pos=>{
+    routeFromLat = pos.coords.latitude;
+    routeFromLng = pos.coords.longitude;
+    document.getElementById('route-from').value = routeFromLat.toFixed(4)+', '+routeFromLng.toFixed(4);
+  }, ()=>showAlert('⚠️','GPS Error',''));
+}
+
+async function geocodePlace(query){
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
+  const r = await fetch(url, {headers:{'Accept-Language':'en'}});
+  const data = await r.json();
+  if(!data.length) return null;
+  return {lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), name: data[0].display_name};
+}
+
+// Minimum distance from point to polyline (array of [lng,lat])
+function pointToRouteDistKm(pLat, pLng, coords){
+  let minD = Infinity;
+  for(let i=0; i<coords.length-1; i++){
+    const aLat=coords[i][1], aLng=coords[i][0];
+    const bLat=coords[i+1][1], bLng=coords[i+1][0];
+    const d = pointToSegmentDistKm(pLat, pLng, aLat, aLng, bLat, bLng);
+    if(d < minD) minD = d;
+  }
+  return minD;
+}
+
+function pointToSegmentDistKm(pLat,pLng, aLat,aLng, bLat,bLng){
+  const dx = bLng-aLng, dy = bLat-aLat;
+  if(dx===0 && dy===0) return haversineKm(pLat,pLng,aLat,aLng);
+  const t = Math.max(0, Math.min(1, ((pLng-aLng)*dx+(pLat-aLat)*dy)/(dx*dx+dy*dy)));
+  return haversineKm(pLat,pLng, aLat+t*dy, aLng+t*dx);
+}
+
+async function searchRoute(){
+  const fromVal = document.getElementById('route-from').value.trim();
+  const toVal = document.getElementById('route-to').value.trim();
+  const radius = parseInt(document.getElementById('route-radius').value);
+  const btn = document.getElementById('route-search-btn');
+  const resultsDiv = document.getElementById('route-results');
+
+  if(!toVal){ showAlert('⚠️','','Enter destination'); return; }
+
+  btn.textContent = t('route_loading');
+  btn.disabled = true;
+  resultsDiv.innerHTML = '';
+
+  try {
+    // Geocode FROM
+    let fromLat = routeFromLat, fromLng = routeFromLng;
+    if(!fromLat && fromVal){
+      const fromGeo = await geocodePlace(fromVal);
+      if(!fromGeo){ showAlert('⚠️','','Could not find start location'); return; }
+      fromLat = fromGeo.lat; fromLng = fromGeo.lng;
+    }
+    if(!fromLat){
+      // try GPS
+      await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(pos=>{
+        fromLat=pos.coords.latitude; fromLng=pos.coords.longitude; res();
+      }, rej, {timeout:5000})).catch(()=>{});
+    }
+    if(!fromLat){ showAlert('⚠️','','Enable GPS or type start location'); return; }
+
+    // Geocode TO
+    const toGeo = await geocodePlace(toVal);
+    if(!toGeo){ showAlert('⚠️','','Destination not found'); return; }
+
+    // OSRM routing
+    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toGeo.lng},${toGeo.lat}?overview=full&geometries=geojson`;
+    const routeResp = await fetch(osrmUrl);
+    const routeData = await routeResp.json();
+    if(!routeData.routes || !routeData.routes.length){ showAlert('⚠️','','Route not found'); return; }
+
+    const coords = routeData.routes[0].geometry.coordinates; // [[lng,lat],...]
+    const distKm = Math.round(routeData.routes[0].distance/1000);
+    const durMin = Math.round(routeData.routes[0].duration/60);
+
+    // Draw route on map
+    if(routeLayer) map.removeLayer(routeLayer);
+    const latlngs = coords.map(c=>[c[1],c[0]]);
+    routeLayer = L.polyline(latlngs, {color:'#3b82f6',weight:5,opacity:.8}).addTo(map);
+    map.fitBounds(routeLayer.getBounds(), {padding:[40,40]});
+
+    // Filter parkings on route
+    const allP = [...allParkings];
+    const onRoute = allP
+      .map(p=>({p, dist: pointToRouteDistKm(p.lat, p.lng, coords)}))
+      .filter(x=>x.dist<=radius)
+      .sort((a,b)=>a.dist-b.dist);
+
+    // Results
+    const header = `<div style="font-size:.8rem;color:var(--muted);margin:.7rem 0 .5rem;font-weight:600">
+      📍 ${distKm} km · ⏱ ${durMin} min ·
+      <span style="color:var(--blue)">${onRoute.length} ${t('route_found')}</span>
+    </div>`;
+
+    if(!onRoute.length){
+      resultsDiv.innerHTML = header + `<div style="font-size:.82rem;color:var(--muted);padding:.6rem 0">${t('route_none')}</div>`;
+    } else {
+      resultsDiv.innerHTML = header + onRoute.map(({p,dist})=>`
+        <div class="route-result-item" onclick="closeRoute();showDetail(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+          <span style="font-size:1.2rem">${MODE_CONFIG[currentMode].markerEmoji}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
+            <div style="font-size:.72rem;color:var(--muted)">${p.city}, ${p.country}</div>
+          </div>
+          <span class="route-result-dist">${dist<1?(dist*1000).toFixed(0)+' m':dist.toFixed(1)+' km'} off</span>
+        </div>`).join('');
+      resultsDiv.innerHTML += `<button class="route-clear-btn" onclick="clearRoute()">✕ Clear route</button>`;
+    }
+
+  } catch(err){
+    showAlert('⚠️','Error', err.message||'Route error');
+  } finally {
+    btn.textContent = t('route_btn');
+    btn.disabled = false;
+  }
+}
+
+function clearRoute(){
+  if(routeLayer){ map.removeLayer(routeLayer); routeLayer=null; }
+  document.getElementById('route-results').innerHTML='';
+}
+
+// ══════════════════════════════════════
+// MARKETS (FLOHMARKT)
+// ══════════════════════════════════════
+let marketsVisible = false;
+let marketsData = [];
+let marketMarkers = [];
+
+function toggleMarkets(){
+  if(marketsVisible){ hideMarkets(); }
+  else { loadAndShowMarkets(); }
+}
+
+function loadAndShowMarkets(){
+  if(marketsData.length){ showMarkets(); return; }
+  fetch('/api/markets').then(r=>r.json()).then(data=>{
+    marketsData = data;
+    showMarkets();
+  }).catch(()=>showAlert('⚠️','','Could not load markets'));
+}
+
+function showMarkets(){
+  marketsVisible = true;
+  document.getElementById('markets-badge').style.display='';
+  setEl('markets-badge','ON');
+  marketMarkers.forEach(m=>map.removeLayer(m)); marketMarkers=[];
+  marketsData.forEach(m=>{
+    if(!m.lat || !m.lng) return;
+    const icon = L.divIcon({className:'',html:'<div class="mk-market">🛍</div>',iconSize:[34,34],iconAnchor:[17,17]});
+    const typeLabel = m.type==='flohmarkt'?'Flohmarkt':m.type==='antikmarkt'?'Antikmarkt':'Trödelmarkt';
+    const mk = L.marker([m.lat,m.lng],{icon}).addTo(map).on('click',()=>showMarketDetail(m));
+    marketMarkers.push(mk);
+  });
+  showAlert('🛍','Markets', marketsData.length+' markets loaded');
+}
+
+function hideMarkets(){
+  marketsVisible = false;
+  document.getElementById('markets-badge').style.display='none';
+  marketMarkers.forEach(m=>map.removeLayer(m)); marketMarkers=[];
+}
+
+function showMarketDetail(m){
+  const typeLabel = m.type==='flohmarkt'?'Flohmarkt':m.type==='antikmarkt'?'Antikmarkt':'Trödelmarkt';
+  const entryTxt = m.free_entry ? '🆓 Free entry' : '💶 Paid entry';
+  const parkingTxt = m.parking ? '🅿️ Parking available' : '';
+  document.getElementById('panel-content').innerHTML=`
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem">
+      <div class="panel-name" style="flex:1">🛍 ${m.name}</div>
+      <span style="font-size:.65rem;background:rgba(249,115,22,.15);color:#f97316;border-radius:8px;padding:.15rem .45rem;font-weight:700">${typeLabel}</span>
+    </div>
+    <div class="panel-addr">📍 ${m.city}${m.state?', '+m.state:''}</div>
+    <div style="font-size:.8rem;color:var(--text);margin-bottom:.5rem">📅 ${m.schedule||'–'} · ⏰ ${m.time_from||''}–${m.time_to||''}</div>
+    <div class="amenities" style="margin-bottom:.7rem">
+      <span class="amenity">${entryTxt}</span>
+      ${parkingTxt?'<span class="amenity">'+parkingTxt+'</span>':''}
+      ${m.indoor?'<span class="amenity">🏠 Indoor</span>':''}
+      ${m.address?'<span class="amenity">📮 '+m.address+'</span>':''}
+    </div>
+    ${m.description?`<div style="font-size:.82rem;color:var(--muted);line-height:1.5;margin-bottom:.9rem">${m.description}</div>`:''}
+    ${m.website?`<a href="${m.website}" target="_blank" style="display:block;text-align:center;padding:.6rem;border-radius:10px;background:rgba(249,115,22,.12);color:#f97316;font-size:.82rem;font-weight:700;text-decoration:none;margin-bottom:.6rem">🌐 Website</a>`:''}
+    <button class="nav-btn" onclick="navigateTo(${m.lat},${m.lng},'${m.name.replace(/'/g,"\\'")}')">📍 Navigate — Google Maps</button>`;
+  document.getElementById('detail-panel').classList.add('open');
+  map.panTo([m.lat, m.lng]);
+}
+
+// ══════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════
+applyTheme();
+applyLang();
 if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
-const saved = localStorage.getItem('ts_mode');
-if(saved) enterMode(saved);
+
+// resume session if already set up
+const savedMode = localStorage.getItem('ts_mode');
+const savedLang = localStorage.getItem('ts_lang');
+const savedProfile = localStorage.getItem('ts_profile');
+if(savedMode && savedProfile){
+  // skip onboarding, go directly to app
+  document.getElementById('onboarding').style.display='none';
+  enterMode(savedMode);
+} else if(savedLang){
+  // lang set, skip to login
+  goToStep('step-login');
+}
 </script>
 </body>
 </html>

@@ -9,6 +9,7 @@ app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(32))
 DATA_DIR       = os.path.join(os.path.dirname(__file__), "data")
 PARKINGS_PATH  = os.path.join(DATA_DIR, "parkings.json")
 SPOTS_PATH     = os.path.join(DATA_DIR, "spots.json")
+MARKETS_PATH   = os.path.join(DATA_DIR, "markets.json")
 
 os.makedirs(DATA_DIR, exist_ok=True)
 if not os.path.exists(SPOTS_PATH):
@@ -190,6 +191,19 @@ def _parse_osm_amenities(tags):
     if tags.get("repair") == "yes":        amenities.append("repair")
     if tags.get("drinking_water")=="yes":  amenities.append("water")
     return amenities
+
+
+@app.route("/api/markets")
+def api_markets():
+    """Zwraca targi/flohmarkt z bazy danych."""
+    if not os.path.exists(MARKETS_PATH):
+        return jsonify([])
+    with open(MARKETS_PATH, encoding="utf-8") as f:
+        markets = json.load(f)
+    country = request.args.get("country", "")
+    if country:
+        markets = [m for m in markets if m.get("state","") or True]
+    return jsonify(markets)
 
 
 if __name__ == "__main__":
