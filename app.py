@@ -8,8 +8,12 @@ app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(32))
 
 DATA_DIR       = os.path.join(os.path.dirname(__file__), "data")
 PARKINGS_PATH  = os.path.join(DATA_DIR, "parkings.json")
+SPOTS_PATH     = os.path.join(DATA_DIR, "spots.json")
 
 os.makedirs(DATA_DIR, exist_ok=True)
+if not os.path.exists(SPOTS_PATH):
+    with open(SPOTS_PATH, "w", encoding="utf-8") as _f:
+        import json as _j; _j.dump([], _f)
 
 def load_parkings():
     if not os.path.exists(PARKINGS_PATH):
@@ -51,6 +55,40 @@ def api_parking_detail(parking_id):
         if p["id"] == parking_id:
             return jsonify(p)
     return jsonify({"error": "Not found"}), 404
+
+@app.route("/api/spots", methods=["GET"])
+def api_spots_get():
+    if not os.path.exists(SPOTS_PATH):
+        return jsonify([])
+    with open(SPOTS_PATH, encoding="utf-8") as f:
+        return jsonify(json.load(f))
+
+@app.route("/api/spots", methods=["POST"])
+def api_spots_post():
+    data = request.get_json(force=True)
+    required = ["name","lat","lng","cat","stars"]
+    for field in required:
+        if field not in data:
+            return jsonify({"error": f"Missing: {field}"}), 400
+
+    with open(SPOTS_PATH, encoding="utf-8") as f:
+        spots = json.load(f)
+
+    new_id = max((s.get("id",0) for s in spots), default=0) + 1
+    spot = {
+        "id":    new_id,
+        "name":  str(data["name"])[:100],
+        "lat":   float(data["lat"]),
+        "lng":   float(data["lng"]),
+        "cat":   str(data["cat"])[:30],
+        "desc":  str(data.get("desc",""))[:500],
+        "stars": int(data["stars"]),
+        "added": data.get("added",""),
+    }
+    spots.append(spot)
+    with open(SPOTS_PATH, "w", encoding="utf-8") as f:
+        json.dump(spots, f, ensure_ascii=False, indent=2)
+    return jsonify({"ok": True, "id": new_id}), 201
 
 @app.route("/api/osm-parkings")
 def api_osm_parkings():

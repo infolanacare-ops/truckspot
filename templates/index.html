@@ -150,9 +150,65 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 /* MARKERS */
 .mk{width:38px;height:38px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);
   display:flex;align-items:center;justify-content:center;
-  border:3px solid rgba(255,255,255,.25);box-shadow:0 3px 10px rgba(0,0,0,.5);
+  border:3px solid rgba(255,255,255,.9);box-shadow:0 3px 10px rgba(0,0,0,.35);
   background:var(--accent);}
 .mk span{transform:rotate(45deg);font-size:1.05rem;line-height:1}
+
+/* ── FAB DODAJ MIEJSCE ── */
+.fab-add{
+  position:fixed;right:1rem;bottom:8rem;z-index:800;
+  width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  box-shadow:0 4px 16px rgba(0,0,0,.25);
+  font-size:1.4rem;display:flex;align-items:center;justify-content:center;
+  transition:.2s;
+}
+.fab-add:active{transform:scale(.92)}
+.fab-add.picking{background:linear-gradient(135deg,#ef4444,#f87171);animation:pulse-fab 1s infinite}
+@keyframes pulse-fab{0%,100%{box-shadow:0 4px 16px rgba(239,68,68,.4)}50%{box-shadow:0 4px 24px rgba(239,68,68,.7)}}
+
+/* ── ADD SPOT FORM ── */
+.add-panel{
+  position:fixed;bottom:0;left:0;right:0;z-index:950;
+  background:#fff;border-top:3px solid var(--accent);
+  border-radius:20px 20px 0 0;
+  padding:1rem 1rem 2rem;
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  max-height:85vh;overflow-y:auto;
+  box-shadow:0 -4px 32px rgba(0,0,0,.15);
+}
+.add-panel.open{transform:translateY(0)}
+.add-panel h3{font-family:var(--font-head);font-size:1rem;font-weight:800;margin-bottom:1rem}
+
+.form-group{margin-bottom:.85rem}
+.form-label{font-size:.75rem;font-weight:600;color:var(--muted);margin-bottom:.3rem;display:block;text-transform:uppercase;letter-spacing:.04em}
+.form-input{width:100%;padding:.6rem .8rem;border:1.5px solid var(--border);border-radius:10px;font-family:var(--font);font-size:.88rem;background:var(--panel2);color:var(--text);outline:none;transition:.15s}
+.form-input:focus{border-color:var(--accent)}
+.form-textarea{resize:vertical;min-height:70px}
+
+.cat-btns{display:flex;flex-wrap:wrap;gap:.4rem}
+.cat-btn{padding:.3rem .7rem;border-radius:20px;border:1.5px solid var(--border);background:var(--panel2);font-size:.78rem;cursor:pointer;font-weight:600;transition:.15s}
+.cat-btn.active{border-color:var(--accent);background:var(--accent-bg);color:var(--accent)}
+
+.star-row{display:flex;gap:.3rem}
+.star-btn{font-size:1.6rem;cursor:pointer;line-height:1;transition:.1s;filter:grayscale(1);opacity:.4}
+.star-btn.active{filter:none;opacity:1}
+
+.submit-btn{
+  width:100%;padding:.8rem;border:none;border-radius:14px;cursor:pointer;
+  font-family:var(--font-head);font-size:.95rem;font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#000;margin-top:.5rem;
+}
+.submit-btn:active{opacity:.85}
+
+/* user spot marker */
+.mk-user{
+  width:34px;height:34px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:#8b5cf6;border:3px solid #fff;
+  box-shadow:0 3px 10px rgba(139,92,246,.5);font-size:.95rem;
+}
 
 /* ── RADIO PLAYER ── */
 .radio-bar{
@@ -285,6 +341,54 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
   </div>
 </div>
 
+<!-- ══ FAB DODAJ MIEJSCE ══ -->
+<button class="fab-add" id="fab-add" onclick="togglePicking()" title="Dodaj miejsce">＋</button>
+
+<!-- ══ ADD SPOT PANEL ══ -->
+<div class="add-panel" id="add-panel">
+  <div class="panel-handle"></div>
+  <button class="panel-close" onclick="closeAddPanel()">✕</button>
+  <h3>📍 Dodaj super miejsce</h3>
+
+  <div class="form-group">
+    <label class="form-label">Nazwa miejsca</label>
+    <input class="form-input" id="spot-name" placeholder="np. Piękny widok na Alpy" maxlength="80">
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Kategoria</label>
+    <div class="cat-btns" id="cat-btns">
+      <button class="cat-btn active" data-cat="parking" onclick="pickCat(this)">🅿️ Parking</button>
+      <button class="cat-btn" data-cat="scenic" onclick="pickCat(this)">🌅 Widok</button>
+      <button class="cat-btn" data-cat="restaurant" onclick="pickCat(this)">🍴 Jedzenie</button>
+      <button class="cat-btn" data-cat="fuel" onclick="pickCat(this)">⛽ Paliwo</button>
+      <button class="cat-btn" data-cat="shower" onclick="pickCat(this)">🚿 Prysznic</button>
+      <button class="cat-btn" data-cat="warning" onclick="pickCat(this)">⚠️ Uwaga</button>
+      <button class="cat-btn" data-cat="other" onclick="pickCat(this)">📌 Inne</button>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Opis (opcjonalnie)</label>
+    <textarea class="form-input form-textarea" id="spot-desc" placeholder="Opisz to miejsce — co tu znajdziesz, dlaczego warto..."></textarea>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Ocena</label>
+    <div class="star-row" id="star-row">
+      <span class="star-btn active" data-v="1" onclick="pickStar(1)">⭐</span>
+      <span class="star-btn" data-v="2" onclick="pickStar(2)">⭐</span>
+      <span class="star-btn" data-v="3" onclick="pickStar(3)">⭐</span>
+      <span class="star-btn" data-v="4" onclick="pickStar(4)">⭐</span>
+      <span class="star-btn" data-v="5" onclick="pickStar(5)">⭐</span>
+    </div>
+  </div>
+
+  <div style="font-size:.78rem;color:var(--muted);margin-bottom:.8rem" id="spot-coords-info">📍 Lokalizacja nie wybrana</div>
+
+  <button class="submit-btn" onclick="submitSpot()">✅ Zapisz miejsce</button>
+</div>
+
 <!-- ══ ALERT TOAST ══ -->
 <div class="alert-toast" id="alert-toast">
   <div class="alert-icon" id="alert-icon">📍</div>
@@ -374,8 +478,8 @@ function enterMode(mode){
   // init map once
   if(!map){
     map = L.map('map',{zoomControl:false}).setView([51.5,12.0],5);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
-      attribution:'&copy; OpenStreetMap &copy; CARTO',maxZoom:19
+    L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{
+      subdomains:'0123', attribution:'&copy; Google Maps', maxZoom:20
     }).addTo(map);
     L.control.zoom({position:'bottomright'}).addTo(map);
     map.on('click', closePanel);
@@ -385,6 +489,7 @@ function enterMode(mode){
   }
 
   loadParkings(mode);
+  loadUserSpots();
   localStorage.setItem('ts_mode', mode);
 }
 
@@ -569,6 +674,146 @@ function haversineKm(lat1,lon1,lat2,lon2){
   const R=6371, dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
   const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+// ── DODAJ MIEJSCE ────────────────────────────────────────
+const CAT_ICONS = {parking:'🅿️',scenic:'🌅',restaurant:'🍴',fuel:'⛽',shower:'🚿',warning:'⚠️',other:'📌'};
+let pickingMode = false;
+let spotLat = null, spotLng = null;
+let spotStars = 1;
+let spotCat = 'parking';
+let spotTempMarker = null;
+let userSpots = [];
+let userSpotMarkers = [];
+
+function togglePicking(){
+  if(pickingMode){
+    cancelPicking();
+  } else {
+    pickingMode = true;
+    document.getElementById('fab-add').classList.add('picking');
+    document.getElementById('fab-add').textContent = '✕';
+    showAlert('📍','Dotknij mapę','Stuknij w miejsce które chcesz dodać');
+    map.once('click', onMapPickSpot);
+  }
+}
+
+function cancelPicking(){
+  pickingMode = false;
+  document.getElementById('fab-add').classList.remove('picking');
+  document.getElementById('fab-add').textContent = '＋';
+  if(spotTempMarker){ map.removeLayer(spotTempMarker); spotTempMarker=null; }
+  map.off('click', onMapPickSpot);
+}
+
+function onMapPickSpot(e){
+  pickingMode = false;
+  document.getElementById('fab-add').classList.remove('picking');
+  document.getElementById('fab-add').textContent = '＋';
+  spotLat = e.latlng.lat;
+  spotLng = e.latlng.lng;
+
+  // tymczasowy marker
+  if(spotTempMarker) map.removeLayer(spotTempMarker);
+  spotTempMarker = L.marker([spotLat,spotLng],{
+    icon: L.divIcon({className:'',html:'<div class="mk-user">📍</div>',iconSize:[34,34],iconAnchor:[17,17]})
+  }).addTo(map);
+
+  document.getElementById('spot-coords-info').textContent =
+    `📍 ${spotLat.toFixed(5)}, ${spotLng.toFixed(5)}`;
+  document.getElementById('add-panel').classList.add('open');
+}
+
+function closeAddPanel(){
+  document.getElementById('add-panel').classList.remove('open');
+  cancelPicking();
+}
+
+function pickCat(btn){
+  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  spotCat = btn.dataset.cat;
+}
+
+function pickStar(v){
+  spotStars = v;
+  document.querySelectorAll('.star-btn').forEach(b=>{
+    b.classList.toggle('active', parseInt(b.dataset.v) <= v);
+  });
+}
+
+function submitSpot(){
+  const name = document.getElementById('spot-name').value.trim();
+  if(!name){ document.getElementById('spot-name').focus(); return; }
+  if(!spotLat){ showAlert('⚠️','Błąd','Najpierw zaznacz miejsce na mapie'); return; }
+
+  const spot = {
+    name, lat:spotLat, lng:spotLng,
+    cat: spotCat,
+    desc: document.getElementById('spot-desc').value.trim(),
+    stars: spotStars,
+    added: new Date().toISOString(),
+  };
+
+  fetch('/api/spots', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(spot),
+  })
+  .then(r=>r.json())
+  .then(res=>{
+    spot.id = res.id;
+    userSpots.push(spot);
+    addUserSpotMarker(spot);
+    if(spotTempMarker){ map.removeLayer(spotTempMarker); spotTempMarker=null; }
+    document.getElementById('add-panel').classList.remove('open');
+    document.getElementById('spot-name').value = '';
+    document.getElementById('spot-desc').value = '';
+    pickStar(1);
+    showAlert('✅','Dodano!',`"${name}" jest teraz na mapie`);
+  })
+  .catch(()=>{ showAlert('⚠️','Błąd','Nie udało się zapisać'); });
+}
+
+function addUserSpotMarker(spot){
+  const icon = L.divIcon({
+    className:'',
+    html:`<div class="mk-user">${CAT_ICONS[spot.cat]||'📌'}</div>`,
+    iconSize:[34,34],iconAnchor:[17,17]
+  });
+  const m = L.marker([spot.lat,spot.lng],{icon})
+    .addTo(map)
+    .on('click',()=>showUserSpotDetail(spot));
+  userSpotMarkers.push(m);
+}
+
+function showUserSpotDetail(spot){
+  const stars = '⭐'.repeat(spot.stars||0);
+  document.getElementById('panel-content').innerHTML = `
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem">
+      <div class="panel-name" style="flex:1">${CAT_ICONS[spot.cat]||'📌'} ${spot.name}</div>
+      <span style="font-size:.65rem;background:#ede9fe;color:#7c3aed;border-radius:8px;padding:.15rem .45rem;font-weight:700">Społeczność</span>
+    </div>
+    <div style="font-size:1.1rem;margin-bottom:.6rem">${stars}</div>
+    ${spot.desc?`<div style="font-size:.85rem;color:var(--muted);margin-bottom:.9rem;line-height:1.5">${spot.desc}</div>`:''}
+    <div style="font-size:.72rem;color:var(--muted);margin-bottom:.9rem">Dodano: ${new Date(spot.added).toLocaleDateString('pl-PL')}</div>
+    <button class="nav-btn" onclick="navigateTo(${spot.lat},${spot.lng},'${spot.name.replace(/'/g,"\\'")}')">
+      📍 Nawiguj — Google Maps
+    </button>
+  `;
+  document.getElementById('detail-panel').classList.add('open');
+  map.panTo([spot.lat,spot.lng]);
+}
+
+function loadUserSpots(){
+  fetch('/api/spots')
+    .then(r=>r.json())
+    .then(data=>{
+      userSpots = data;
+      userSpotMarkers.forEach(m=>map.removeLayer(m));
+      userSpotMarkers = [];
+      data.forEach(addUserSpotMarker);
+    });
 }
 
 // ── RADIO ────────────────────────────────────────────────
