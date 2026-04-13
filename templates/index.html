@@ -2482,28 +2482,37 @@ const MANEUVER_PL = {
 };
 
 function stepInstruction(step){
-  const m = step.maneuver;
-  const name = step.name ? ' → '+step.name : '';
-  const type = m.type||'default';
-  const mod  = m.modifier||'straight';
-  if(currentLang==='pl'){
-    if(type==='depart') return '🚀 Start'+name;
-    if(type==='arrive') return '🏁 Dotarłeś na miejsce!';
+  // Returns clean text (no emoji) — used for both display labels and TTS
+  const m = step.maneuver || {};
+  const name = step.name ? ' ' + step.name : '';
+  const type = m.type || 'default';
+  const mod  = m.modifier || 'straight';
+  if(currentLang === 'pl'){
+    if(type === 'depart') return 'Start' + name;
+    if(type === 'arrive') return 'Dotarłeś na miejsce';
     const typeMap = MANEUVER_PL[type];
-    const txt = typeof typeMap==='object' ? (typeMap[mod]||typeMap['straight']||'Kontynuuj') : (typeMap||'Kontynuuj');
-    return txt+name;
+    const txt = typeof typeMap === 'object'
+      ? (typeMap[mod] || typeMap['straight'] || 'Kontynuuj')
+      : (typeMap || 'Kontynuuj');
+    return txt + name;
   }
-  if(type==='depart') return '🚀 Depart'+name;
-  if(type==='arrive') return '🏁 You have arrived!';
-  if(type==='turn'||type==='continue'||type==='end of road'){
-    const verbs={left:'Turn left',right:'Turn right',straight:'Go straight','slight left':'Keep left','slight right':'Keep right','sharp left':'Sharp left','sharp right':'Sharp right'};
-    return (verbs[mod]||'Turn')+name;
+  if(type === 'depart') return 'Depart' + name;
+  if(type === 'arrive') return 'You have arrived';
+  if(type === 'turn' || type === 'continue' || type === 'end of road'){
+    const verbs = {left:'Turn left',right:'Turn right',straight:'Continue straight',
+      'slight left':'Keep left','slight right':'Keep right',
+      'sharp left':'Sharp left','sharp right':'Sharp right'};
+    return (verbs[mod] || 'Turn') + name;
   }
-  if(type==='roundabout') return 'Enter roundabout'+name;
-  if(type==='merge') return 'Merge'+name;
-  if(type==='on ramp') return 'Take on-ramp'+name;
-  if(type==='off ramp') return 'Take exit'+name;
-  return 'Continue'+name;
+  if(type === 'roundabout' || type === 'rotary') return 'Enter roundabout' + name;
+  if(type === 'merge') return 'Merge' + name;
+  if(type === 'on ramp')  return 'Take on-ramp' + name;
+  if(type === 'off ramp') return 'Take exit' + name;
+  if(type === 'fork'){
+    const side = mod.includes('left') ? (currentLang==='pl'?'lewą':'left') : (currentLang==='pl'?'prawą':'right');
+    return (currentLang==='pl' ? 'Trzymaj się ' : 'Keep ') + side + name;
+  }
+  return (currentLang === 'pl' ? 'Kontynuuj' : 'Continue') + name;
 }
 
 function stepArrow(step){
@@ -2563,12 +2572,26 @@ function closestRouteIdx(lat, lng){
   return minIdx;
 }
 
+function stripForTts(txt){
+  // Remove emojis, arrows, special chars — only plain text for speech
+  return txt
+    .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')  // emoji range
+    .replace(/[\u{2600}-\u{27BF}]/gu, '')     // misc symbols
+    .replace(/[\u{1F300}-\u{1F9FF}]/gu, '')   // more emoji
+    .replace(/→|←|↑|↓|↗|↖|↘|↙|⬆|⬇|⬅|➡|🔄|🚀|🏁/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function speakNav(txt, priority){
   if(!('speechSynthesis' in window)) return;
+  const clean = stripForTts(txt);
+  if(!clean) return;
   if(priority) speechSynthesis.cancel();
-  const utt = new SpeechSynthesisUtterance(txt);
+  const utt = new SpeechSynthesisUtterance(clean);
   utt.lang = currentLang==='pl'?'pl-PL':currentLang==='de'?'de-DE':currentLang==='es'?'es-ES':'en-US';
   utt.rate = 1.05;
+  utt.volume = 1.0;
   speechSynthesis.speak(utt);
 }
 
@@ -2707,8 +2730,10 @@ function updateNavStep(idx){
   const streetName = step.name || (type==='arrive' ? (currentLang==='pl'?'Cel podróży':'Destination') : '');
   setEl('nav-street-name', streetName);
 
-  // Maneuver label
-  setEl('nav-maneuver-label', stepInstruction(step).replace(streetName,'').trim().replace('→','').trim());
+  // Maneuver label — verb only, no street name
+  const fullInstr = stepInstruction(step);
+  const verbOnly = streetName ? fullInstr.replace(streetName,'').trim() : fullInstr;
+  setEl('nav-maneuver-label', verbOnly);
 
   // Distance — shown live via onNavPosition, init here
   const dist = step.distance||0;
