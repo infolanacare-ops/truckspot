@@ -1398,18 +1398,40 @@ function showMySpots(){
 // RADIO
 // ══════════════════════════════════════
 const BUILT_IN_STATIONS=[
-  {name:'🇵🇱 RMF FM',        url:'https://rmf.fm/stream/rmf_fm_aac',           icon:'🎵'},
-  {name:'🇵🇱 Radio ZET',      url:'https://n-22-14.dcs.redcdn.pl/sc/o2/Eurozet/live/audio.livx', icon:'📻'},
-  {name:'🇵🇱 Eska Rock',      url:'https://ic1.smcdn.pl/2330-1.mp3',             icon:'🎸'},
-  {name:'🇵🇱 RMF Classic',    url:'https://rmf.fm/stream/rmf_classic',           icon:'🎻'},
-  {name:'🇩🇪 Antenne Bayern', url:'https://s6-webradio.antenne.de/antenne',      icon:'🎶'},
-  {name:'🇩🇪 Bayern 3',       url:'https://dispatcher.rndfnk.com/br/br3/live/mp3/low', icon:'🇩🇪'},
-  {name:'🇩🇪 Radio Hamburg',  url:'https://stream.radiohamburg.de/rhh-live/mp3-128/radioplayer', icon:'🎙'},
-  {name:'🎸 Rock Classics',   url:'https://streams.radiobob.de/rock-classics/mp3-128/dirble', icon:'🤘'},
-  {name:'🚛 Truck Radio EU',  url:'https://stream.truckradio.eu/truckradio128',  icon:'🚛'},
-  {name:'🎵 Energy Dance',    url:'https://stream.energy.de/200000',             icon:'⚡'},
-  {name:'🇫🇷 NRJ France',     url:'https://scdn.nrjaudio.fm/fr/30001/mp3_128.mp3', icon:'🇫🇷'},
-  {name:'🇪🇸 Cadena SER',     url:'https://playerservices.streamtheworld.com/api/livestream-redirect/CADENASER.mp3', icon:'🇪🇸'},
+  // ─ Popularne ─
+  {genre:'🎵 Popularne',  name:'🇵🇱 RMF FM',         url:'https://rmf.fm/stream/rmf_fm_aac',           icon:'🎵'},
+  {genre:'🎵 Popularne',  name:'🇵🇱 Radio ZET',       url:'https://n-22-14.dcs.redcdn.pl/sc/o2/Eurozet/live/audio.livx', icon:'📻'},
+  {genre:'🎵 Popularne',  name:'🇩🇪 Antenne Bayern',  url:'https://s6-webradio.antenne.de/antenne',     icon:'🇩🇪'},
+  {genre:'🎵 Popularne',  name:'🚛 Truck Radio EU',   url:'https://stream.truckradio.eu/truckradio128', icon:'🚛'},
+  {genre:'🎵 Popularne',  name:'🇫🇷 NRJ France',      url:'https://scdn.nrjaudio.fm/fr/30001/mp3_128.mp3', icon:'🇫🇷'},
+  {genre:'🎵 Popularne',  name:'🇪🇸 Cadena SER',      url:'https://playerservices.streamtheworld.com/api/livestream-redirect/CADENASER.mp3', icon:'🇪🇸'},
+  // ─ Klasyczne ─
+  {genre:'🎻 Klasyczne',  name:'🎻 RMF Classic',      url:'https://rmf.fm/stream/rmf_classic',          icon:'🎻'},
+  {genre:'🎻 Klasyczne',  name:'🎻 Klassik Radio DE',  url:'https://stream.klassikradio.de/live/mp3-128/stream.klassikradio.de/', icon:'🎻'},
+  {genre:'🎻 Klasyczne',  name:'🎻 France Musique',   url:'https://icecast.radiofrance.fr/francemusique-midfi.mp3', icon:'🎼'},
+  {genre:'🎻 Klasyczne',  name:'🎻 Chopin Radio PL',  url:'https://stream5.nadaje.com/klasika',          icon:'🎹'},
+  // ─ Trance ─
+  {genre:'🎧 Trance',     name:'🎧 Trance FM',        url:'https://stream.laut.fm/trance',              icon:'🎧'},
+  {genre:'🎧 Trance',     name:'🎧 A State of Trance', url:'https://listen.181fm.com/181-trance_128k.mp3', icon:'🔮'},
+  {genre:'🎧 Trance',     name:'🎧 Trance Mission',   url:'https://streams.ilovemusic.de/iloveradio17.mp3', icon:'🌀'},
+  // ─ House ─
+  {genre:'🏠 House',      name:'🏠 House Nation',     url:'https://stream.laut.fm/house',               icon:'🏠'},
+  {genre:'🏠 House',      name:'🏠 Ibiza Global',     url:'https://ibizaglobalradio.streaming-pro.com:7002/;stream/1', icon:'🌅'},
+  {genre:'🏠 House',      name:'🏠 Deep House',       url:'https://streams.ilovemusic.de/iloveradio2.mp3', icon:'🎛'},
+  // ─ Rock ─
+  {genre:'🤘 Rock',       name:'🤘 Radio BOB DE',     url:'https://streams.radiobob.de/bob-live/mp3-128/dirble', icon:'🤘'},
+  {genre:'🤘 Rock',       name:'🤘 Rock Classics',    url:'https://streams.radiobob.de/rock-classics/mp3-128/dirble', icon:'🎸'},
+  {genre:'🤘 Rock',       name:'🤘 Rock Antenne',     url:'https://s6-webradio.antenne.de/rock-antenne', icon:'🎙'},
+  {genre:'🤘 Rock',       name:'🤘 Eska Rock PL',     url:'https://ic1.smcdn.pl/2330-1.mp3',            icon:'🎸'},
+  // ─ Pop ─
+  {genre:'🎤 Pop',        name:'🎤 Eska PL',          url:'https://ic1.smcdn.pl/1750-1.mp3',            icon:'🎤'},
+  {genre:'🎤 Pop',        name:'🎤 Hit Radio FFH',    url:'https://streams.ffh.de/ffhpop.mp3',          icon:'💃'},
+  {genre:'🎤 Pop',        name:'🎤 Radio Nostalgia',  url:'https://stream.rcs.revma.com/an1ugyygzk8uv', icon:'💿'},
+  // ─ Top Hity ─
+  {genre:'🔥 Top Hity',   name:'🔥 RMF MAXXX PL',    url:'https://rmf.fm/stream/rmf_maxxx',            icon:'🔥'},
+  {genre:'🔥 Top Hity',   name:'🔥 Energy Top 40',   url:'https://stream.energy.de/100000',            icon:'⚡'},
+  {genre:'🔥 Top Hity',   name:'🔥 Radio 357 PL',    url:'https://n-22.dcs.redcdn.pl/sc/o2/Eurozet/live/radio357.livx', icon:'🌟'},
+  {genre:'🔥 Top Hity',   name:'🔥 NRJ Hits',        url:'https://scdn.nrjaudio.fm/fr/30001/aac_64.mp3', icon:'🎯'},
 ];
 
 let radioIdx=0, radioAudio=null, radioPlaying=false, radioVolVal=0.7;
@@ -1466,14 +1488,28 @@ function radioTab(el, tab){
 // ── Render stations ──
 function renderStationsTab(){
   const fIds = new Set(radioFavs.map(f=>f.url));
-  document.getElementById('rtab-stations').innerHTML = BUILT_IN_STATIONS.map((s,i)=>`
-    <div class="r-station ${radioCurrentStation&&radioCurrentStation.url===s.url?'playing':''}" onclick="radioLoadStation(${JSON.stringify(s).replace(/"/g,'&quot;')})">
-      <span class="r-station-icon">${s.icon}</span>
-      <span class="r-station-name">${s.name}</span>
-      <button class="r-station-fav ${fIds.has(s.url)?'starred':''}"
-        onclick="event.stopPropagation();toggleFav(${JSON.stringify(s).replace(/"/g,'&quot;')},this)">★</button>
-      <button class="r-station-play">${radioCurrentStation&&radioCurrentStation.url===s.url&&radioPlaying?'■':'▶'}</button>
-    </div>`).join('');
+  // group by genre
+  const groups = {};
+  BUILT_IN_STATIONS.forEach(s=>{
+    if(!groups[s.genre]) groups[s.genre]=[];
+    groups[s.genre].push(s);
+  });
+  let html='';
+  for(const [genre, stations] of Object.entries(groups)){
+    html+=`<div style="font-family:var(--font-head);font-size:.72rem;font-weight:800;color:var(--muted);
+      text-transform:uppercase;letter-spacing:.06em;padding:.6rem 0 .3rem;border-bottom:1px solid var(--border);margin-bottom:.3rem">${genre}</div>`;
+    html+=stations.map(s=>`
+      <div class="r-station ${radioCurrentStation&&radioCurrentStation.url===s.url?'playing':''}"
+        onclick="radioLoadStation(${JSON.stringify(s).replace(/"/g,'&quot;')})">
+        <span class="r-station-icon">${s.icon}</span>
+        <span class="r-station-name">${s.name.replace(/^[^\s]+\s/,'')}</span>
+        <button class="r-station-fav ${fIds.has(s.url)?'starred':''}"
+          onclick="event.stopPropagation();toggleFav(${JSON.stringify(s).replace(/"/g,'&quot;')},this)">★</button>
+        <button class="r-station-play">${radioCurrentStation&&radioCurrentStation.url===s.url&&radioPlaying?'■':'▶'}</button>
+      </div>`).join('');
+    html+='<div style="height:.5rem"></div>';
+  }
+  document.getElementById('rtab-stations').innerHTML = html;
 }
 
 function renderFavsTab(){
