@@ -127,7 +127,8 @@ def api_autobahn_parkings():
                 )
                 if r.status_code != 200:
                     continue
-                road_data = r.json().get("parking", [])
+                rd = r.json()
+                road_data = rd.get("parking_lorry", rd.get("parking", []))
                 _AUTOBAHN_CACHE[road] = (now, road_data)
             except Exception:
                 continue
@@ -142,9 +143,12 @@ def api_autobahn_parkings():
             if not (south <= lat <= north and west <= lng <= east):
                 continue
 
-            # Parse capacity/occupancy from description array
-            desc_texts = [d.get("value","") for d in p.get("description",[]) if d.get("type")=="default"]
-            desc_html  = " ".join(desc_texts)
+            # description is a list of strings
+            raw_desc = p.get("description", [])
+            desc_html = " · ".join(
+                d if isinstance(d, str) else d.get("value","")
+                for d in raw_desc if d
+            )
 
             # Feature icons → amenities
             icons = [i.get("icon","") for i in p.get("lorryParkingFeatureIcons",[])]
