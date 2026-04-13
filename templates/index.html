@@ -1419,11 +1419,12 @@ async function showDetail(p){
   document.getElementById('detail-panel').classList.add('open');
   map.panTo([p.lat,p.lng]);
 
-  // Async: weather + comments
+  // Async: weather + occupancy + comments
   fetchWeather(p.lat, p.lng).then(w=>{
     const el = document.getElementById('pd-weather');
     if(el) el.innerHTML = weatherHtml(w);
   });
+  loadOccupancy(p.id);
   loadComments(p.id).then(comments=>{
     const el = document.getElementById('pd-comments');
     if(el) el.innerHTML = commentsHtml(comments, p.id);
@@ -2557,56 +2558,30 @@ async function loadComments(parkingId){
 }
 
 // ══ OCCUPANCY ══
-const OCC_TTL = 2 * 3600 * 1000; // 2h
-
-function occKey(id){ return `ts_occ_${id}`; }
-
-function occLoad(id){
-  try {
-    const raw = localStorage.getItem(occKey(id));
-    const votes = raw ? JSON.parse(raw) : [];
-    const now = Date.now();
-    return votes.filter(v => now - v.ts < OCC_TTL);
-  } catch(e){ return []; }
+// voter_id — trwały losowy identyfikator (nie IP), trzymany w localStorage
+function getVoterId(){
+  let vid = localStorage.getItem('ts_voter_id');
+  if(!vid){ vid = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2); localStorage.setItem('ts_voter_id', vid); }
+  return vid;
 }
 
-function occSave(id, votes){
-  localStorage.setItem(occKey(id), JSON.stringify(votes));
-}
-
-function voteOccupancy(id, level){
-  let votes = occLoad(id);
-  const userKey = `ts_occ_user_${id}`;
-  const prev = localStorage.getItem(userKey);
-  // Remove previous user vote
-  votes = votes.filter(v => v.uid !== 'me');
-  votes.push({ uid:'me', level, ts: Date.now() });
-  occSave(id, votes);
-  localStorage.setItem(userKey, level);
-  // Re-render widget
-  const el = document.getElementById('occ-widget');
-  if(el) el.outerHTML = occWidgetHtml(id);
-}
-
-function occWidgetHtml(id){
-  const votes = occLoad(id);
-  const myVote = localStorage.getItem(`ts_occ_user_${id}`) || '';
-  const cnt = { free:0, busy:0, full:0 };
-  votes.forEach(v => { if(cnt[v.level]!==undefined) cnt[v.level]++; });
+function occBarHtml(cnt){
   const total = cnt.free + cnt.busy + cnt.full || 1;
   const pct = l => Math.round(cnt[l]/total*100);
+  return [
+    cnt.free ? `<div class="occ-seg" style="width:${pct('free')}%;background:#10b981"></div>` : '',
+    cnt.busy ? `<div class="occ-seg" style="width:${pct('busy')}%;background:#f59e0b"></div>` : '',
+    cnt.full ? `<div class="occ-seg" style="width:${pct('full')}%;background:#ef4444"></div>` : '',
+  ].join('') || '<div class="occ-seg" style="width:100%;background:var(--border)"></div>';
+}
 
-  const segs = [
-    cnt.free  ? `<div class="occ-seg" style="width:${pct('free')}%;background:#10b981"></div>` : '',
-    cnt.busy  ? `<div class="occ-seg" style="width:${pct('busy')}%;background:#f59e0b"></div>` : '',
-    cnt.full  ? `<div class="occ-seg" style="width:${pct('full')}%;background:#ef4444"></div>` : '',
-  ].join('');
-
-  const metaTotal = cnt.free+cnt.busy+cnt.full;
+function occWidgetHtml(id, cnt, myVote){
+  cnt = cnt || {free:0,busy:0,full:0,total:0};
+  myVote = myVote || localStorage.getItem(`ts_occ_vote_${id}`) || '';
+  const metaTotal = cnt.free + cnt.busy + cnt.full;
   const meta = metaTotal
-    ? `${cnt.free} wolne · ${cnt.busy} zajęte · ${cnt.full} pełne (${metaTotal} głosy)`
+    ? `🟢 ${cnt.free} · 🟡 ${cnt.busy} · 🔴 ${cnt.full} &nbsp;<span style="color:var(--muted)">(${metaTotal} głosów, ostatnie 2h)</span>`
     : 'Brak głosów — bądź pierwszy!';
-
   return `<div class="occ-widget" id="occ-widget">
     <div class="occ-title">🅿️ Zajętość teraz</div>
     <div class="occ-btns">
@@ -2614,9 +2589,34 @@ function occWidgetHtml(id){
       <button class="occ-btn busy${myVote==='busy'?' active':''}" onclick="voteOccupancy(${id},'busy')">🟡 Zajęte</button>
       <button class="occ-btn full${myVote==='full'?' active':''}" onclick="voteOccupancy(${id},'full')">🔴 Pełne</button>
     </div>
-    <div class="occ-bar-wrap">${segs || '<div class="occ-seg" style="width:100%;background:var(--border)"></div>'}</div>
+    <div class="occ-bar-wrap">${occBarHtml(cnt)}</div>
     <div class="occ-meta">${meta}</div>
   </div>`;
+}
+
+async function loadOccupancy(id){
+  try {
+    const r = await fetch(`/api/occupancy?parking_id=${id}`);
+    const cnt = await r.json();
+    const el = document.getElementById('occ-widget');
+    const myVote = localStorage.getItem(`ts_occ_vote_${id}`) || '';
+    if(el) el.outerHTML = occWidgetHtml(id, cnt, myVote);
+  } catch(e){}
+}
+
+async function voteOccupancy(id, level){
+  localStorage.setItem(`ts_occ_vote_${id}`, level);
+  // Optimistic update
+  const el = document.getElementById('occ-widget');
+  if(el) el.outerHTML = occWidgetHtml(id, null, level);
+  try {
+    await fetch('/api/occupancy', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ parking_id: id, level, voter_id: getVoterId() })
+    });
+    await loadOccupancy(id); // refresh with real counts
+  } catch(e){}
 }
 
 function commentsHtml(comments, parkingId){

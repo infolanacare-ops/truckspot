@@ -6,11 +6,12 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(32))
 
-DATA_DIR       = os.path.join(os.path.dirname(__file__), "data")
-PARKINGS_PATH  = os.path.join(DATA_DIR, "parkings.json")
-SPOTS_PATH     = os.path.join(DATA_DIR, "spots.json")
-MARKETS_PATH   = os.path.join(DATA_DIR, "markets.json")
-COMMENTS_PATH  = os.path.join(DATA_DIR, "comments.json")
+DATA_DIR        = os.path.join(os.path.dirname(__file__), "data")
+PARKINGS_PATH   = os.path.join(DATA_DIR, "parkings.json")
+SPOTS_PATH      = os.path.join(DATA_DIR, "spots.json")
+MARKETS_PATH    = os.path.join(DATA_DIR, "markets.json")
+COMMENTS_PATH   = os.path.join(DATA_DIR, "comments.json")
+OCCUPANCY_PATH  = os.path.join(DATA_DIR, "occupancy.json")
 
 os.makedirs(DATA_DIR, exist_ok=True)
 if not os.path.exists(SPOTS_PATH):
@@ -228,6 +229,61 @@ def api_comments_post():
     with open(COMMENTS_PATH,"w",encoding="utf-8") as f:
         json.dump(comments, f, ensure_ascii=False, indent=2)
     return jsonify({"ok":True,"id":new_id}), 201
+
+OCC_TTL = 2 * 3600  # seconds
+
+@app.route("/api/occupancy")
+def api_occupancy_get():
+    parking_id = request.args.get("parking_id", "")
+    if not parking_id:
+        return jsonify({"error": "missing parking_id"}), 400
+    if not os.path.exists(OCCUPANCY_PATH):
+        return jsonify({"free": 0, "busy": 0, "full": 0, "total": 0})
+    with open(OCCUPANCY_PATH, encoding="utf-8") as f:
+        all_votes = json.load(f)
+    import time
+    now = time.time()
+    # Filter this parking, last 2h, deduplicate by ip (keep latest)
+    relevant = [v for v in all_votes
+                if str(v.get("parking_id")) == str(parking_id)
+                and now - v.get("ts", 0) < OCC_TTL]
+    # Deduplicate by voter_id (keep latest per voter)
+    by_voter = {}
+    for v in sorted(relevant, key=lambda x: x.get("ts", 0)):
+        by_voter[v.get("voter_id", v.get("ts"))] = v["level"]
+    cnt = {"free": 0, "busy": 0, "full": 0}
+    for level in by_voter.values():
+        if level in cnt:
+            cnt[level] += 1
+    cnt["total"] = cnt["free"] + cnt["busy"] + cnt["full"]
+    return jsonify(cnt)
+
+@app.route("/api/occupancy", methods=["POST"])
+def api_occupancy_post():
+    import time
+    data = request.get_json(force=True)
+    if not data.get("parking_id") or data.get("level") not in ("free", "busy", "full"):
+        return jsonify({"error": "bad params"}), 400
+    if not os.path.exists(OCCUPANCY_PATH):
+        with open(OCCUPANCY_PATH, "w", encoding="utf-8") as f:
+            json.dump([], f)
+    with open(OCCUPANCY_PATH, encoding="utf-8") as f:
+        votes = json.load(f)
+    now = time.time()
+    # Purge old votes (>2h) to keep file small
+    votes = [v for v in votes if now - v.get("ts", 0) < OCC_TTL]
+    # voter_id from client (random uuid stored in localStorage)
+    voter_id = str(data.get("voter_id", request.remote_addr))[:64]
+    votes.append({
+        "parking_id": str(data["parking_id"]),
+        "level":      data["level"],
+        "voter_id":   voter_id,
+        "ts":         now,
+    })
+    with open(OCCUPANCY_PATH, "w", encoding="utf-8") as f:
+        json.dump(votes, f, ensure_ascii=False, indent=2)
+    return jsonify({"ok": True})
+
 
 @app.route("/api/markets")
 def api_markets():
