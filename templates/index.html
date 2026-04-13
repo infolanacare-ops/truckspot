@@ -629,30 +629,110 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .route-clear-btn{width:100%;padding:.55rem;border:1px solid var(--border);border-radius:10px;background:none;
   color:var(--muted);cursor:pointer;font-size:.82rem;margin-top:.6rem}
 
-/* ══ NAV OVERLAY ══ */
+/* ══════════════════════════════════════
+   NAWIGACJA — TomTom style
+══════════════════════════════════════ */
 .nav-overlay{position:fixed;inset:0;z-index:1200;pointer-events:none;display:none;flex-direction:column}
 .nav-overlay.active{display:flex;pointer-events:auto}
-.nav-top{background:var(--panel);border-bottom:1px solid var(--border);
-  padding:.7rem 1rem;display:flex;align-items:center;gap:.8rem;
-  box-shadow:0 2px 16px var(--shadow)}
-.nav-arrow{font-size:2rem;flex-shrink:0;width:48px;text-align:center;transition:.3s}
-.nav-instruction-wrap{flex:1;min-width:0}
-.nav-instruction{font-family:var(--font-head);font-size:.95rem;font-weight:800;color:var(--text);line-height:1.3}
-.nav-dist-next{font-size:.78rem;color:var(--blue);font-weight:700;margin-top:.1rem}
-.nav-bottom{position:fixed;bottom:0;left:0;right:0;z-index:1201;
-  background:var(--panel);border-top:1px solid var(--border);
-  padding:.65rem 1rem calc(.65rem + env(safe-area-inset-bottom));
-  display:flex;align-items:center;gap:.7rem;box-shadow:0 -2px 16px var(--shadow)}
-.nav-eta{flex:1;min-width:0}
-.nav-total-dist{font-family:var(--font-head);font-size:1rem;font-weight:800;color:var(--text)}
-.nav-eta-time{font-size:.72rem;color:var(--muted);margin-top:.1rem}
-.nav-speed{font-family:var(--font-head);font-size:1rem;font-weight:800;color:var(--accent);text-align:center;min-width:50px}
-.nav-stop-btn{padding:.55rem 1rem;border:none;border-radius:12px;cursor:pointer;
+
+/* — Główna karta manewru (góra) — */
+.nav-maneuver-card{
+  background:#1c6ef3;
+  padding:.75rem 1rem .65rem;
+  display:flex;align-items:center;gap:.85rem;
+  box-shadow:0 4px 24px rgba(0,0,0,.45);
+  flex-shrink:0;
+}
+.nav-svg-arrow{
+  width:62px;height:62px;flex-shrink:0;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.3));
+  transition:all .25s ease;
+}
+.nav-maneuver-text{flex:1;min-width:0}
+.nav-dist-big{
+  font-family:var(--font-head);font-size:1.95rem;font-weight:900;
+  color:#fff;line-height:1;letter-spacing:-.03em
+}
+.nav-dist-unit{font-size:.85rem;font-weight:700;color:rgba(255,255,255,.75);margin-left:.15rem}
+.nav-street-name{
+  font-size:.88rem;font-weight:700;color:rgba(255,255,255,.95);
+  margin-top:.2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.nav-maneuver-label{
+  font-size:.72rem;font-weight:600;color:rgba(255,255,255,.65);
+  margin-top:.1rem;text-transform:uppercase;letter-spacing:.05em
+}
+
+/* — Następny manewr (mini pasek pod głównym) — */
+.nav-next-strip{
+  background:#1557cc;
+  padding:.4rem 1rem .4rem 1.1rem;
+  display:flex;align-items:center;gap:.6rem;
+  flex-shrink:0;
+}
+.nav-next-svg{width:22px;height:22px;opacity:.85;flex-shrink:0}
+.nav-next-label{font-size:.75rem;color:rgba(255,255,255,.75);font-weight:600;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-next-dist{font-size:.75rem;color:#fff;font-weight:800;flex-shrink:0;margin-left:auto}
+
+/* — Pasek ulicy (nazwa bieżącej drogi) — */
+.nav-road-strip{
+  background:rgba(20,24,40,.82);backdrop-filter:blur(6px);
+  padding:.35rem 1rem;
+  display:flex;align-items:center;gap:.6rem;
+  flex-shrink:0;
+}
+.nav-road-name{font-size:.8rem;color:#fff;font-weight:600;flex:1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-speed-limit{
+  width:32px;height:32px;border-radius:50%;background:#fff;
+  border:3px solid #e53;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-head);font-size:.72rem;font-weight:900;color:#111;
+  flex-shrink:0;display:none
+}
+.nav-speed-limit.visible{display:flex}
+
+/* — Pasek POI — */
+.nav-pois-strip{
+  background:rgba(15,18,30,.78);backdrop-filter:blur(4px);
+  padding:.4rem .8rem;display:flex;gap:.5rem;
+  overflow-x:auto;scrollbar-width:none;flex-shrink:0
+}
+.nav-pois-strip::-webkit-scrollbar{display:none}
+.nav-poi-chip{display:flex;flex-direction:column;align-items:center;gap:.12rem;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:12px;
+  padding:.38rem .6rem;flex-shrink:0;cursor:pointer;transition:background .15s;min-width:60px}
+.nav-poi-chip:hover,.nav-poi-chip.near{background:rgba(34,197,94,.22);border-color:#22c55e}
+.nav-poi-chip-icon{font-size:1.05rem;line-height:1}
+.nav-poi-chip-name{font-size:.58rem;font-weight:700;color:#fff;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;max-width:68px;text-align:center}
+.nav-poi-chip-dist{font-size:.6rem;color:#60a5fa;font-weight:700}
+
+/* — Dół (prędkość + ETA + stop) — */
+.nav-bottom{
+  position:fixed;bottom:0;left:0;right:0;z-index:1201;
+  background:rgba(20,24,40,.95);backdrop-filter:blur(8px);
+  border-top:1px solid rgba(255,255,255,.08);
+  padding:.7rem 1rem calc(.7rem + env(safe-area-inset-bottom));
+  display:flex;align-items:center;gap:.8rem;
+}
+.nav-speedometer{
+  width:52px;height:52px;border-radius:50%;
+  background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.15);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0
+}
+.nav-speed-val{font-family:var(--font-head);font-size:1.05rem;font-weight:900;color:#fff;line-height:1}
+.nav-speed-unit{font-size:.5rem;color:rgba(255,255,255,.5);text-transform:uppercase;font-weight:600}
+.nav-speedometer.speeding{border-color:#ef4444;background:rgba(239,68,68,.15)}
+.nav-speedometer.speeding .nav-speed-val{color:#ef4444}
+.nav-eta-block{flex:1;min-width:0}
+.nav-eta-dist{font-family:var(--font-head);font-size:1.1rem;font-weight:800;color:#fff}
+.nav-eta-time{font-size:.72rem;color:rgba(255,255,255,.55);margin-top:.1rem}
+.nav-stop-btn{padding:.6rem 1.1rem;border:none;border-radius:12px;cursor:pointer;
   background:#ef4444;color:#fff;font-family:var(--font-head);font-size:.85rem;font-weight:800;flex-shrink:0}
-.nav-reroute{font-size:.7rem;color:var(--muted);text-align:center;padding:.2rem 0}
+
 /* Ukryj zoom podczas nawigacji */
-.nav-overlay.active ~ * .leaflet-top.leaflet-left,
-body.navigating .leaflet-top.leaflet-left { display:none }
+body.navigating .leaflet-top.leaflet-left{display:none}
 /* ══ NAV POI STRIP ══ */
 .nav-pois-strip{background:var(--bg);border-bottom:1px solid var(--border);
   padding:.45rem .8rem;display:flex;gap:.5rem;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
@@ -1045,25 +1125,57 @@ body.navigating .leaflet-top.leaflet-left { display:none }
   <div id="route-history-section"></div>
 </div>
 
-<!-- NAV OVERLAY -->
+<!-- NAV OVERLAY — TomTom style -->
 <div class="nav-overlay" id="nav-overlay">
-  <div class="nav-top">
-    <div class="nav-arrow" id="nav-arrow">⬆️</div>
-    <div class="nav-instruction-wrap">
-      <div class="nav-instruction" id="nav-instruction">Obliczanie trasy...</div>
-      <div class="nav-dist-next" id="nav-dist-next"></div>
+
+  <!-- Główna karta manewru -->
+  <div class="nav-maneuver-card" id="nav-maneuver-card">
+    <svg class="nav-svg-arrow" id="nav-svg-arrow" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path id="nav-arrow-path" d="M32 8 L32 48 M32 8 L20 22 M32 8 L44 22" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="nav-maneuver-text">
+      <div id="nav-dist-row">
+        <span class="nav-dist-big" id="nav-dist-big">–</span>
+        <span class="nav-dist-unit" id="nav-dist-unit">km</span>
+      </div>
+      <div class="nav-street-name" id="nav-street-name">Obliczanie trasy...</div>
+      <div class="nav-maneuver-label" id="nav-maneuver-label"></div>
     </div>
   </div>
-  <div class="nav-pois-strip" id="nav-pois-strip">
-    <div style="font-size:.72rem;color:var(--muted);align-self:center;white-space:nowrap">⏳ Ładowanie POI...</div>
+
+  <!-- Następny manewr -->
+  <div class="nav-next-strip" id="nav-next-strip" style="display:none">
+    <svg class="nav-next-svg" id="nav-next-svg" viewBox="0 0 64 64" fill="none">
+      <path id="nav-next-path" d="M32 8 L32 48 M32 8 L20 22 M32 8 L44 22" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span class="nav-next-label" id="nav-next-label"></span>
+    <span class="nav-next-dist" id="nav-next-dist"></span>
   </div>
-  <div style="flex:1"></div>
+
+  <!-- Bieżąca droga + ograniczenie prędkości -->
+  <div class="nav-road-strip" id="nav-road-strip">
+    <span class="nav-road-name" id="nav-road-name">–</span>
+    <div class="nav-speed-limit" id="nav-speed-limit">–</div>
+  </div>
+
+  <!-- POI strip -->
+  <div class="nav-pois-strip" id="nav-pois-strip">
+    <div style="font-size:.68rem;color:rgba(255,255,255,.4);align-self:center;white-space:nowrap;padding:.2rem">⏳ Ładowanie POI...</div>
+  </div>
+
+  <!-- Mapa wypełnia środek -->
+  <div style="flex:1;pointer-events:none"></div>
+
+  <!-- Dół: prędkość + ETA + stop -->
   <div class="nav-bottom">
-    <div class="nav-eta">
-      <div class="nav-total-dist" id="nav-total-dist">–</div>
+    <div class="nav-speedometer" id="nav-speedometer">
+      <div class="nav-speed-val" id="nav-speed-val">–</div>
+      <div class="nav-speed-unit">km/h</div>
+    </div>
+    <div class="nav-eta-block">
+      <div class="nav-eta-dist" id="nav-total-dist">–</div>
       <div class="nav-eta-time" id="nav-eta-time">–</div>
     </div>
-    <div class="nav-speed" id="nav-speed">– km/h</div>
     <button class="nav-stop-btn" onclick="stopNavigation()">✕ Stop</button>
   </div>
 </div>
@@ -2309,16 +2421,50 @@ function clearRoute(){
 // ══════════════════════════════════════
 let navActive=false, navWatchId=null, navStepIdx=0, navLastLat=null, navLastLng=null;
 let navSpeedKmh = 0;
+let navCurrentSpeedLimit = 0;
 let navVoiceQueue = [];      // look-ahead announcements
 let navAnnouncedSteps = new Set(); // step indices already announced
 let navDistRemaining = 0;    // metres remaining along route
 let navRouteDistances = [];  // cumulative distances along routeCoords
 
-const MANEUVER_ARROWS = {
-  'straight':'⬆️','turn left':'↰','turn right':'↱',
-  'slight left':'↖️','slight right':'↗️','sharp left':'⬅️','sharp right':'➡️',
-  'roundabout':'🔄','depart':'🚀','arrive':'🏁','default':'⬆️'
+// SVG paths for TomTom-style arrows
+const NAV_SVG_PATHS = {
+  straight:      'M32 52 L32 12 M32 12 L20 26 M32 12 L44 26',
+  'turn left':   'M48 52 L48 32 Q48 12 28 12 M28 12 L40 24 M28 12 L16 24',
+  'turn right':  'M16 52 L16 32 Q16 12 36 12 M36 12 L24 24 M36 12 L48 24',
+  'slight left': 'M40 52 L24 20 M24 20 L36 20 M24 20 L24 32',
+  'slight right':'M24 52 L40 20 M40 20 L28 20 M40 20 L40 32',
+  'sharp left':  'M48 52 L48 32 L16 32 M16 32 L28 20 M16 32 L28 44',
+  'sharp right': 'M16 52 L16 32 L48 32 M48 32 L36 20 M48 32 L36 44',
+  roundabout:    'M32 12 A20 20 0 1 1 12 32 M12 32 L20 24 M12 32 L4 24',
+  uturn:         'M20 52 L20 24 Q20 8 44 8 Q56 8 56 24 L56 32 M56 32 L44 20 M56 32 L44 44',
+  depart:        'M32 52 L32 12 M32 12 L20 26 M32 12 L44 26',
+  arrive:        'M32 12 L32 40 M20 28 L32 40 L44 28 M16 50 L48 50',
+  default:       'M32 52 L32 12 M32 12 L20 26 M32 12 L44 26',
 };
+
+// Card background colours
+const NAV_COLORS = {
+  straight:'#1c6ef3', 'turn left':'#1c6ef3', 'turn right':'#1c6ef3',
+  'slight left':'#1c6ef3','slight right':'#1c6ef3',
+  'sharp left':'#1c6ef3','sharp right':'#1c6ef3',
+  roundabout:'#1c6ef3', uturn:'#dc7716',
+  depart:'#16a34a', arrive:'#16a34a', default:'#1c6ef3',
+};
+
+function navSvgPath(type, mod){
+  if(type==='arrive') return NAV_SVG_PATHS.arrive;
+  if(type==='depart') return NAV_SVG_PATHS.depart;
+  if(type==='roundabout'||type==='rotary') return NAV_SVG_PATHS.roundabout;
+  if(type==='on ramp') return NAV_SVG_PATHS['slight right'];
+  if(type==='off ramp') return NAV_SVG_PATHS['slight right'];
+  return NAV_SVG_PATHS[mod] || NAV_SVG_PATHS[type] || NAV_SVG_PATHS.straight;
+}
+
+function navCardColor(type, mod){
+  if(type==='arrive'||type==='depart') return NAV_COLORS[type];
+  return NAV_COLORS.default;
+}
 const MANEUVER_PL = {
   'depart':'Start',
   'arrive':'Dotarłeś na miejsce!',
@@ -2545,9 +2691,70 @@ function renderNavPois(currentLat, currentLng){
 function updateNavStep(idx){
   if(!routeSteps[idx]) return;
   const step = routeSteps[idx];
-  setEl('nav-instruction', stepInstruction(step));
-  setEl('nav-dist-next', fmtDist(step.distance||0));
-  setEl('nav-arrow', stepArrow(step));
+  const m = step.maneuver||{};
+  const type = m.type||'default';
+  const mod  = m.modifier||'straight';
+
+  // SVG arrow
+  const path = navSvgPath(type, mod);
+  const color = navCardColor(type, mod);
+  const arrowEl = document.getElementById('nav-arrow-path');
+  if(arrowEl) arrowEl.setAttribute('d', path);
+  const card = document.getElementById('nav-maneuver-card');
+  if(card) card.style.background = color;
+
+  // Street name
+  const streetName = step.name || (type==='arrive' ? (currentLang==='pl'?'Cel podróży':'Destination') : '');
+  setEl('nav-street-name', streetName);
+
+  // Maneuver label
+  setEl('nav-maneuver-label', stepInstruction(step).replace(streetName,'').trim().replace('→','').trim());
+
+  // Distance — shown live via onNavPosition, init here
+  const dist = step.distance||0;
+  if(dist >= 1000){
+    setEl('nav-dist-big', (dist/1000).toFixed(1));
+    setEl('nav-dist-unit', 'km');
+  } else {
+    setEl('nav-dist-big', Math.round(dist));
+    setEl('nav-dist-unit', 'm');
+  }
+
+  // Next step preview
+  const next = routeSteps[idx+1];
+  const nextStrip = document.getElementById('nav-next-strip');
+  if(next && nextStrip){
+    const nm = next.maneuver||{};
+    const np = navSvgPath(nm.type||'default', nm.modifier||'straight');
+    const nextPathEl = document.getElementById('nav-next-path');
+    if(nextPathEl) nextPathEl.setAttribute('d', np);
+    setEl('nav-next-label', (currentLang==='pl'?'Potem: ':'Then: ') + stepInstruction(next));
+    setEl('nav-next-dist', fmtDist(next.distance||0));
+    nextStrip.style.display = 'flex';
+  } else if(nextStrip){
+    nextStrip.style.display = 'none';
+  }
+
+  // Current road name (from step)
+  setEl('nav-road-name', step.name || step.ref || '');
+}
+
+function updateNavDistDisplay(metres){
+  if(metres >= 1000){
+    setEl('nav-dist-big', (metres/1000).toFixed(metres>=10000?0:1));
+    setEl('nav-dist-unit', 'km');
+  } else {
+    setEl('nav-dist-big', Math.round(metres/10)*10 || '<10');
+    setEl('nav-dist-unit', 'm');
+  }
+}
+
+function setNavSpeed(kmh, limitKmh){
+  const el = document.getElementById('nav-speedometer');
+  setEl('nav-speed-val', kmh > 0 ? kmh : '–');
+  if(el){
+    el.classList.toggle('speeding', limitKmh > 0 && kmh > limitKmh + 5);
+  }
 }
 
 function onNavPosition(pos){
@@ -2555,7 +2762,7 @@ function onNavPosition(pos){
   const lat=pos.coords.latitude, lng=pos.coords.longitude;
   const rawSpeed = pos.coords.speed; // m/s or null
   navSpeedKmh = rawSpeed != null ? Math.round(rawSpeed*3.6) : navSpeedKmh;
-  setEl('nav-speed', navSpeedKmh > 0 ? navSpeedKmh+' km/h' : '– km/h');
+  setNavSpeed(navSpeedKmh, navCurrentSpeedLimit);
 
   // GPS dot
   if(!gpsMarker){
@@ -2589,14 +2796,14 @@ function onNavPosition(pos){
     if(dToManeuver < threshold){
       navStepIdx++;
       updateNavStep(navStepIdx);
-      // Immediate voice for the new step
       if(!navAnnouncedSteps.has(navStepIdx)){
         navAnnouncedSteps.add(navStepIdx);
         speakNav(stepInstruction(routeSteps[navStepIdx]), true);
       }
     } else {
-      // Show live distance to next maneuver
-      setEl('nav-dist-next', fmtDist(dToManeuver));
+      updateNavDistDisplay(dToManeuver);
+      const cStep = routeSteps[navStepIdx];
+      if(cStep) setEl('nav-road-name', cStep.name||cStep.ref||'');
 
       // Look-ahead voice: announce upcoming step at 500m and 200m
       const announceAt = navSpeedKmh > 80 ? [1000, 300] : [500, 150];
@@ -2616,9 +2823,15 @@ function onNavPosition(pos){
 
   // ── Arrival detection ────────────────────────────────────────────────
   if(navDistRemaining < 50 && navStepIdx >= routeSteps.length-1){
-    speakNav(currentLang==='pl'?'Dotarłeś na miejsce!':'You have arrived!', true);
-    setEl('nav-instruction','🏁 '+(currentLang==='pl'?'Dotarłeś na miejsce!':'You have arrived!'));
-    setEl('nav-dist-next','');
+    const arrText = currentLang==='pl'?'Dotarłeś na miejsce!':'You have arrived!';
+    speakNav(arrText, true);
+    const card = document.getElementById('nav-maneuver-card');
+    if(card) card.style.background = '#16a34a';
+    const ap = document.getElementById('nav-arrow-path');
+    if(ap) ap.setAttribute('d', NAV_SVG_PATHS.arrive);
+    setEl('nav-street-name', arrText);
+    setEl('nav-dist-big','🏁'); setEl('nav-dist-unit','');
+    document.getElementById('nav-next-strip').style.display='none';
     setTimeout(stopNavigation, 4000);
     return;
   }
