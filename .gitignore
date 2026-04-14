@@ -3,3 +3,5 @@ __pycache__/
 .env
 .gradio/
 trackspot_data.json
+# Splash screeny są za duże do repo (>2MB każdy)
+static/splash-*.png
