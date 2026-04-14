@@ -3860,6 +3860,15 @@ function toggleNavMute(){
   if(btn){ btn.classList.toggle('muted', navMuted); btn.textContent = navMuted ? '🔇' : '🔊'; }
 }
 
+function stripForTts(txt){
+  // Usuń emoji i symbole graficzne, zachowaj tekst czytelny dla TTS
+  return (txt||'')
+    .replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}]/gu, '')
+    .replace(/[⚠️🔄↩🏁·•]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function speakNav(txt, priority){
   if(navMuted) return;
   if(!('speechSynthesis' in window)) return;
