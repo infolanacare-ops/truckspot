@@ -2598,6 +2598,7 @@ async function navigateTo(lat, lng, name){
     routeTotalDist  = route.distance;
     routeTotalDur   = route.duration;
     routeSteps      = route.legs.flatMap(l=>l.steps||[]);
+    navDestLat = lat; navDestLng = lng; // zapamiętaj cel do reroutingu
 
     // rysuj trasę na mapie
     clearRouteLayer();
@@ -2976,6 +2977,8 @@ let navVoiceQueue = [];      // look-ahead announcements
 let navAnnouncedSteps = new Set(); // step indices already announced
 let navDistRemaining = 0;    // metres remaining along route
 let navRouteDistances = [];  // cumulative distances along routeCoords
+let navDestLat = null, navDestLng = null; // cel nawigacji (do reroutingu)
+let navRerouteTs = 0;        // timestamp ostatniego reroutingu (cooldown)
 
 // SVG paths for TomTom-style arrows
 const NAV_SVG_PATHS = {
@@ -3411,17 +3414,14 @@ function onNavPosition(pos){
 
   // ── Off-route detection ──────────────────────────────────────────────
   const distFromRoute = haversineKm(lat, lng, routeCoords[cIdx][1], routeCoords[cIdx][0]) * 1000;
-  if(distFromRoute > 300 && navSpeedKmh > 10){
-    // Recalculate route
-    showAlert('🔄','Przeliczam trasę...','Zjechałeś z trasy');
-    const dest = routeCoords[routeCoords.length-1];
-    const toVal = document.getElementById('route-to').value.trim();
-    if(toVal){
-      document.getElementById('route-from').value = '';
-      routeFromLat = lat; routeFromLng = lng;
-      searchRoute(true).catch(()=>{});
+  const rerouteCooldown = 20000; // 20 sekund między reroutingami
+  if(distFromRoute > 80 && navSpeedKmh > 5 && navDestLat !== null){
+    const now = Date.now();
+    if(now - navRerouteTs > rerouteCooldown){
+      navRerouteTs = now;
+      rerouteNavigation(lat, lng);
+      return;
     }
-    return;
   }
 
   // ── POI strip + voice alerts ─────────────────────────────────────────
@@ -3441,6 +3441,48 @@ function onNavPosition(pos){
   }
 
   navLastLat=lat; navLastLng=lng;
+}
+
+async function rerouteNavigation(fromLat, fromLng){
+  const txt = currentLang==='pl' ? 'Przeliczam trasę...' : 'Recalculating...';
+  speakNav(txt, true);
+  setEl('nav-street-name', '🔄 ' + txt);
+
+  try {
+    const mbUrl = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${fromLng},${fromLat};${navDestLng},${navDestLat}?geometries=geojson&steps=true&voice_instructions=true&banner_instructions=true&overview=full&access_token=${MAPBOX_TOKEN}`;
+    const r = await fetch(mbUrl);
+    const data = await r.json();
+    if(!data.routes?.length) return;
+
+    const route = data.routes[0];
+    routeCoords    = route.geometry.coordinates;
+    routeTotalDist = route.distance;
+    routeTotalDur  = route.duration;
+    routeSteps     = route.legs.flatMap(l=>l.steps||[]);
+
+    // Reset stanu nawigacji
+    navStepIdx = 0;
+    navAnnouncedSteps = new Set();
+    navAnnouncedPois  = new Set();
+
+    // Przelicz dystanse wzdłuż trasy
+    buildRouteDistances();
+
+    // Odrysuj trasę
+    clearRouteLayer();
+    drawRoute(routeCoords);
+
+    // Zaktualizuj UI
+    updateNavStep(0);
+    const distKm = Math.round(routeTotalDist/1000);
+    const durMin = Math.round(routeTotalDur/60);
+    const durTxt = durMin>=60 ? Math.floor(durMin/60)+'h '+(durMin%60)+'min' : durMin+' min';
+    setEl('nav-total-dist', distKm+' km');
+    setEl('nav-eta-time', 'ETA ~'+durTxt);
+
+  } catch(e) {
+    console.warn('[Nav] Reroute failed:', e);
+  }
 }
 
 function stopNavigation(){
