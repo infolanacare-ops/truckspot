@@ -19,7 +19,8 @@
     "description": "Einer der bekanntesten Flohmärkte Berlins mit Tausenden von Ständen.",
     "indoor": false,
     "free_entry": true,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 2,
@@ -41,7 +42,8 @@
     "description": "Großer Trödelmarkt am Ostbahnhof mit Antiquitäten und Kuriositäten.",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 3,
@@ -63,7 +65,8 @@
     "description": "Wöchentlicher Antik- und Trödelmarkt im Herzen Münchens.",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 4,
@@ -100,7 +103,8 @@
     "description": "Exklusiver Antikmarkt in der noblen Maximilianstraße.",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 5,
@@ -135,7 +139,8 @@
     "description": "Hamburgs größtes Volksfest mit großem Flohmarkt an den Aufbautagen.",
     "indoor": false,
     "free_entry": true,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 6,
@@ -157,7 +162,8 @@
     "description": "Familienfreundlicher Flohmarkt am Hagenbeck Tierpark.",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 7,
@@ -179,7 +185,8 @@
     "description": "Beliebter Flohmarkt im Kölner Norden mit gemischtem Angebot.",
     "indoor": false,
     "free_entry": true,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 8,
@@ -211,7 +218,8 @@
     "description": "Monatlicher Antiquitätenmarkt gegenüber dem Kölner Dom.",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 9,
@@ -246,7 +254,8 @@
     "description": "Traditionsreicher Flohmarkt auf dem Festplatz am Ratsweg.",
     "indoor": false,
     "free_entry": true,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 10,
@@ -268,7 +277,8 @@
     "description": "Samstags am schönen Sachsenhäuser Ufer des Mains.",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 11,
@@ -290,7 +300,8 @@
     "description": "Zentraler Flohmarkt in der Stuttgarter Innenstadt.",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 12,
@@ -319,7 +330,8 @@
     "description": "Große Antik- und Kunstmesse in der Stuttgarter Messe.",
     "indoor": true,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 13,
@@ -341,7 +353,8 @@
     "description": "Charmanter Antikmarkt in der Düsseldorfer Altstadt.",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 14,
@@ -363,7 +376,8 @@
     "description": "Einer der größten Flohmärkte im Ruhrgebiet.",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 15,
@@ -402,7 +416,8 @@
     "description": "Großer Antikmarkt südlich von Leipzig mit Händlern aus ganz Deutschland.",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 16,
@@ -450,7 +465,8 @@
     "description": "Saisonaler Flohmarkt am Elbufer mit malerischer Kulisse.",
     "indoor": false,
     "free_entry": true,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 17,
@@ -482,7 +498,8 @@
     "description": "Monatlicher Großflohmarkt auf dem Nürnberger Messezentrum.",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 18,
@@ -504,7 +521,8 @@
     "description": "Einer der größten Flohmärkte Niedersachsens auf dem ehemaligen Expo-Gelände.",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 19,
@@ -526,7 +544,8 @@
     "description": "Traditioneller Trödelmarkt auf der Bremer Bürgerweide.",
     "indoor": false,
     "free_entry": true,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 20,
@@ -548,7 +567,8 @@
     "description": "Großer Sonntags-Flohmarkt in Mannheim.",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 21,
@@ -580,7 +600,8 @@
     "description": "Monatlicher Antikmarkt auf dem historischen Marktplatz.",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 22,
@@ -602,7 +623,8 @@
     "description": "Wochenmarkt mit Trödelbereich am Freiburger Münster.",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 23,
@@ -632,7 +654,8 @@
     "description": "Antikmarkt am historischen Augsburger Dom.",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 24,
@@ -654,7 +677,8 @@
     "description": "Wöchentlicher Flohmarkt in der Kieler Innenstadt.",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 25,
@@ -676,7 +700,8 @@
     "description": "Beliebter Sonntags-Flohmarkt im Rostocker IGA-Park.",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 26,
@@ -698,7 +723,8 @@
     "description": "Großer Flohmarkt auf dem Erfurter Messegelände.",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 27,
@@ -720,7 +746,8 @@
     "description": "Samstagsmarkt mit Antiquitäten und Trödelwaren.",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 28,
@@ -742,7 +769,8 @@
     "description": "Flohmarkt im schönen Elbauenpark mit Blick auf die Elbe.",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 29,
@@ -764,7 +792,8 @@
     "description": "Schöner Trödelmarkt nahe der Potsdamer Innenstadt.",
     "indoor": false,
     "free_entry": true,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 30,
@@ -795,7 +824,8 @@
     "description": "Monatlicher Antik- und Kunstmarkt auf dem historischen Schillerplatz.",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 31,
@@ -834,7 +864,8 @@
     "description": "Regelmäßiger Antikmarkt in der hessischen Landeshauptstadt.",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 32,
@@ -887,7 +918,8 @@
     "description": "Bedeutende Kunstausstellung Berlins mit zeitgenössischer Kunst.",
     "indoor": true,
     "free_entry": false,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 33,
@@ -914,7 +946,8 @@
     "description": "Internationale Kunstmesse im Düsseldorfer Raum.",
     "indoor": true,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 34,
@@ -936,7 +969,8 @@
     "description": "Wöchentlicher Antikmarkt nahe des Sendlinger Tors.",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 35,
@@ -958,7 +992,8 @@
     "description": "Beliebter Samstagflohmarkt am Bonner Rheinufer.",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 36,
@@ -980,7 +1015,8 @@
     "description": "Großer Sonntags-Flohmarkt im Grugapark.",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 37,
@@ -1002,7 +1038,8 @@
     "description": "Bekannter Antikmarkt in der Hamburger Innenstadt.",
     "indoor": true,
     "free_entry": false,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 38,
@@ -1033,7 +1070,8 @@
     "description": "Monatlicher Flohmarkt auf dem Ingolstädter Messegelände.",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 39,
@@ -1080,7 +1118,8 @@
     "description": "Saisonaler Flohmarkt an der Donau in der UNESCO-Altstadt.",
     "indoor": false,
     "free_entry": true,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 40,
@@ -1102,7 +1141,8 @@
     "description": "Beliebter Samstagsmarkt in der Universitätsstadt Heidelberg.",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 41,
@@ -1124,7 +1164,8 @@
     "description": "",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 42,
@@ -1146,7 +1187,8 @@
     "description": "",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 43,
@@ -1168,7 +1210,8 @@
     "description": "",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 44,
@@ -1190,7 +1233,8 @@
     "description": "",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 45,
@@ -1212,7 +1256,8 @@
     "description": "",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 46,
@@ -1234,7 +1279,8 @@
     "description": "",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 47,
@@ -1256,7 +1302,8 @@
     "description": "",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 48,
@@ -1278,7 +1325,8 @@
     "description": "",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 49,
@@ -1300,7 +1348,8 @@
     "description": "",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 50,
@@ -1329,7 +1378,8 @@
     "description": "",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 51,
@@ -1351,7 +1401,8 @@
     "description": "",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 52,
@@ -1373,7 +1424,8 @@
     "description": "",
     "indoor": true,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 53,
@@ -1395,7 +1447,8 @@
     "description": "",
     "indoor": true,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 54,
@@ -1417,7 +1470,8 @@
     "description": "",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 55,
@@ -1439,7 +1493,8 @@
     "description": "",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 56,
@@ -1461,7 +1516,8 @@
     "description": "",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 57,
@@ -1483,7 +1539,8 @@
     "description": "",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 58,
@@ -1505,7 +1562,8 @@
     "description": "",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 59,
@@ -1527,7 +1585,8 @@
     "description": "",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 60,
@@ -1549,7 +1608,8 @@
     "description": "",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 61,
@@ -1571,7 +1631,8 @@
     "description": "",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 62,
@@ -1593,7 +1654,8 @@
     "description": "",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 63,
@@ -1615,7 +1677,8 @@
     "description": "",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 64,
@@ -1637,7 +1700,8 @@
     "description": "",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 65,
@@ -1659,7 +1723,8 @@
     "description": "",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 66,
@@ -1681,7 +1746,8 @@
     "description": "",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 67,
@@ -1703,7 +1769,8 @@
     "description": "",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 68,
@@ -1725,7 +1792,8 @@
     "description": "",
     "indoor": true,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 69,
@@ -1747,7 +1815,8 @@
     "description": "",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 70,
@@ -1769,7 +1838,8 @@
     "description": "",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 71,
@@ -1791,7 +1861,8 @@
     "description": "",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 72,
@@ -1813,7 +1884,8 @@
     "description": "",
     "indoor": false,
     "free_entry": true,
-    "parking": false
+    "parking": false,
+    "country": "DE"
   },
   {
     "id": 73,
@@ -1835,7 +1907,8 @@
     "description": "",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 74,
@@ -1857,7 +1930,8 @@
     "description": "",
     "indoor": false,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 75,
@@ -1879,7 +1953,8 @@
     "description": "",
     "indoor": true,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
   },
   {
     "id": 76,
@@ -1901,6 +1976,824 @@
     "description": "",
     "indoor": true,
     "free_entry": false,
-    "parking": true
+    "parking": true,
+    "country": "DE"
+  },
+  {
+    "name": "Marche aux Puces de Saint-Ouen (Les Puces de Paris)",
+    "city": "Saint-Ouen-sur-Seine",
+    "country": "FR",
+    "state": "Ile-de-France",
+    "address": "Rue des Rosiers, 93400 Saint-Ouen",
+    "lat": 48.901,
+    "lng": 2.344,
+    "type": "flohmarkt",
+    "schedule": "Sam-Lun 10:00-18:00",
+    "time_from": "10:00",
+    "time_to": "18:00",
+    "website": "https://www.pucesdeparissaintouen.com",
+    "description": "Największy na świecie kompleks targów staroci — 14 podtargów, 2000+ sprzedawców, 7 ha. Najlepsze okazje wczesnym rankiem w sobotę.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": true,
+    "recurring": true,
+    "recurring_day": -1,
+    "dates": [],
+    "id": 77
+  },
+  {
+    "name": "Marche aux Puces de la Porte de Vanves",
+    "city": "Paris",
+    "country": "FR",
+    "state": "Ile-de-France",
+    "address": "Av. Marc Sangnier / Av. G. Lafenestre, 75014 Paris",
+    "lat": 48.8275,
+    "lng": 2.305,
+    "type": "antikmarkt",
+    "schedule": "Co weekend, Sob-Niedz 07:00-13:00",
+    "time_from": "07:00",
+    "time_to": "13:00",
+    "website": "https://pucesdevanves.com",
+    "description": "380 profesjonalnych stoisk z antykami, secesją, srebrem, vintage. Metro l.13 Porte de Vanves.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": false,
+    "recurring": true,
+    "recurring_day": -1,
+    "dates": [],
+    "id": 78
+  },
+  {
+    "name": "Marche aux Puces de Montreuil Paris",
+    "city": "Paris",
+    "country": "FR",
+    "state": "Ile-de-France",
+    "address": "Av. du Professeur Andre Lemierre, 75020 Paris",
+    "lat": 48.851,
+    "lng": 2.412,
+    "type": "flohmarkt",
+    "schedule": "Sob-Niedz-Pn 07:00-18:30",
+    "time_from": "07:00",
+    "time_to": "18:30",
+    "website": "https://www.lespuces-portedemontreuil.com",
+    "description": "Najstarszy targ staroci w okolicach Paryża (od 1860). Tanie ubrania, vintage, bibeloty. Metro l.9 Porte de Montreuil.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": false,
+    "recurring": true,
+    "recurring_day": -1,
+    "dates": [],
+    "id": 79
+  },
+  {
+    "name": "Brocante Quais de Saone Lyon",
+    "city": "Lyon",
+    "country": "FR",
+    "state": "Auvergne-Rhone-Alpes",
+    "address": "Quai Fulchiron, 69005 Lyon",
+    "lat": 45.764,
+    "lng": 4.823,
+    "type": "flohmarkt",
+    "schedule": "Co niedziela 07:00-13:00",
+    "time_from": "07:00",
+    "time_to": "13:00",
+    "website": "",
+    "description": "Jeden z najlepszych prowincjonalnych targów staroci we Francji, malowniczo nad rzeką Saône.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": false,
+    "recurring": true,
+    "recurring_day": 0,
+    "dates": [],
+    "id": 80
+  },
+  {
+    "name": "Braderie de Lille",
+    "city": "Lille",
+    "country": "FR",
+    "state": "Hauts-de-France",
+    "address": "Centre-ville Lille, 59000 Lille",
+    "lat": 50.6292,
+    "lng": 3.0573,
+    "type": "flohmarkt",
+    "schedule": "Pierwszy weekend września (Sob 14:00 - Niedz 24:00)",
+    "time_from": "14:00",
+    "time_to": "24:00",
+    "website": "https://www.braderie-de-lille.fr",
+    "description": "Największy targ pchli w Europie — 10 000+ sprzedawców, 2+ mln gości. Tradycja moules-frites. Zamknięte ulice centrum.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": false,
+    "recurring": false,
+    "recurring_day": -1,
+    "dates": [
+      "2026-09-05",
+      "2026-09-06"
+    ],
+    "id": 81
+  },
+  {
+    "name": "Brocante Saint-Michel Bordeaux",
+    "city": "Bordeaux",
+    "country": "FR",
+    "state": "Nouvelle-Aquitaine",
+    "address": "Place Saint-Michel, 33000 Bordeaux",
+    "lat": 44.8338,
+    "lng": -0.5705,
+    "type": "flohmarkt",
+    "schedule": "Co niedziela 07:00-13:00",
+    "time_from": "07:00",
+    "time_to": "13:00",
+    "website": "",
+    "description": "Klimatyczny targ przy gotyckiej bazylice Saint-Michel. Jeden z najlepszych poza Paryżem.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": false,
+    "recurring": true,
+    "recurring_day": 0,
+    "dates": [],
+    "id": 82
+  },
+  {
+    "name": "Flohmarkt am Arkonaplatz Berlin",
+    "city": "Berlin",
+    "country": "DE",
+    "state": "Berlin",
+    "address": "Arkonaplatz, 10435 Berlin",
+    "lat": 52.5363,
+    "lng": 13.4085,
+    "type": "flohmarkt",
+    "schedule": "Co niedziela 10:00-17:00",
+    "time_from": "10:00",
+    "time_to": "17:00",
+    "website": "https://www.flohmarkt-arkonaplatz.de",
+    "description": "Klimatyczny targ w Prenzlauer Berg. NRD-owskie przedmioty, płyty, vintage. Bardzo lokalny charakter.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": false,
+    "recurring": true,
+    "recurring_day": 0,
+    "dates": [],
+    "id": 83
+  },
+  {
+    "name": "Flohdom Horner Rennbahn Hamburg",
+    "city": "Hamburg",
+    "country": "DE",
+    "state": "Hamburg",
+    "address": "Rennbahnstrasse 96, 22111 Hamburg",
+    "lat": 53.5627,
+    "lng": 10.086,
+    "type": "flohmarkt",
+    "schedule": "Co sobota 07:00-15:00 (calor., zadaszony)",
+    "time_from": "07:00",
+    "time_to": "15:00",
+    "website": "https://kreaktiva.de",
+    "description": "Jeden z największych krytych targów pchlich w Niemczech — 20 000 m², niezależny od pogody.",
+    "indoor": true,
+    "free_entry": false,
+    "parking": true,
+    "recurring": true,
+    "recurring_day": 6,
+    "dates": [],
+    "id": 84
+  },
+  {
+    "name": "Flohmarkt Schaumainkai Frankfurt",
+    "city": "Frankfurt am Main",
+    "country": "DE",
+    "state": "Hessen",
+    "address": "Schaumainkai, 60594 Frankfurt am Main",
+    "lat": 50.1036,
+    "lng": 8.6827,
+    "type": "flohmarkt",
+    "schedule": "Co sobota 09:00-14:00 (oprocz swiat)",
+    "time_from": "09:00",
+    "time_to": "14:00",
+    "website": "https://www.hfm-frankfurt.de/flohmaerkte",
+    "description": "Targ nad brzegiem Majnu przy Museum Embankment. Tradycja od 1975 roku. Antyki, książki, używane rzeczy.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": false,
+    "recurring": true,
+    "recurring_day": 6,
+    "dates": [],
+    "id": 85
+  },
+  {
+    "name": "Bazar na Kole Warszawa",
+    "city": "Warszawa",
+    "country": "PL",
+    "state": "mazowieckie",
+    "address": "ul. Obozowa 99, 01-161 Warszawa",
+    "lat": 52.2301,
+    "lng": 20.95,
+    "type": "antikmarkt",
+    "schedule": "Sob-Niedz 07:00-14:00",
+    "time_from": "07:00",
+    "time_to": "14:00",
+    "website": "",
+    "description": "Jeden z najbardziej prestiżowych targów antyków w Polsce. Meble, zegary, srebra, plakaty przedwojenne, znaczki. Tylko gotówka.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": true,
+    "recurring": true,
+    "recurring_day": -1,
+    "dates": [],
+    "id": 86
+  },
+  {
+    "name": "Bazar Rozyckiego Warszawa",
+    "city": "Warszawa",
+    "country": "PL",
+    "state": "mazowieckie",
+    "address": "ul. Targowa 54, 03-733 Warszawa",
+    "lat": 52.2523,
+    "lng": 21.0403,
+    "type": "flohmarkt",
+    "schedule": "Pon-Sob 06:00-17:00; Vintage: Sob-Niedz 11:00-17:00",
+    "time_from": "06:00",
+    "time_to": "17:00",
+    "website": "https://stacjapraga.pl",
+    "description": "Najstarszy targ w Warszawie (od 1882). Zabytek kultury Pragi. Vintage, żywność, rzemiosło etniczne, bric-a-brac.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": false,
+    "recurring": true,
+    "recurring_day": -1,
+    "dates": [],
+    "id": 87
+  },
+  {
+    "name": "Pchli Targ pod Hala Targowa Krakow",
+    "city": "Krakow",
+    "country": "PL",
+    "state": "malopolskie",
+    "address": "ul. Grzegorzecka 3/11, 31-532 Krakow",
+    "lat": 50.0595,
+    "lng": 19.9512,
+    "type": "flohmarkt",
+    "schedule": "Co niedziela 05:00-13:00",
+    "time_from": "05:00",
+    "time_to": "13:00",
+    "website": "",
+    "description": "Do 1000 sprzedawców w niedzielne poranki. Meble, rowery vintage, płyty, biżuteria, książki. Przyjedź przed 08:00.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": true,
+    "recurring": true,
+    "recurring_day": 0,
+    "dates": [],
+    "id": 88
+  },
+  {
+    "name": "Pchli Targ Plac Nowy Kazimierz Krakow",
+    "city": "Krakow",
+    "country": "PL",
+    "state": "malopolskie",
+    "address": "Plac Nowy, Kazimierz, 31-056 Krakow",
+    "lat": 50.0508,
+    "lng": 19.9472,
+    "type": "flohmarkt",
+    "schedule": "Co sobota 07:00-15:00",
+    "time_from": "07:00",
+    "time_to": "15:00",
+    "website": "",
+    "description": "Klimatyczny targ w historycznej żydowskiej dzielnicy Kazimierz. Ubrania vintage, płyty, bibeloty, książki.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": false,
+    "recurring": true,
+    "recurring_day": 6,
+    "dates": [],
+    "id": 89
+  },
+  {
+    "name": "Gielda Starosci Czacz",
+    "city": "Czacz",
+    "country": "PL",
+    "state": "wielkopolskie",
+    "address": "Droga krajowa nr 5, Czacz (okolice Smigla)",
+    "lat": 51.9972,
+    "lng": 16.6833,
+    "type": "antikmarkt",
+    "schedule": "Pn-Sob calorocznie, szczeg. Pt wieczor - Niedz",
+    "time_from": "06:00",
+    "time_to": "18:00",
+    "website": "",
+    "description": "Cała wieś to jeden wielki targ — setki szop z meblami, antykami, odzyskem z Niemiec i całej Europy. Unikalne miejsce na DK5 Wrocław-Poznań.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": true,
+    "recurring": true,
+    "recurring_day": -1,
+    "dates": [],
+    "id": 90
+  },
+  {
+    "name": "Gielda Starosci Hala Stulecia Wroclaw",
+    "city": "Wroclaw",
+    "country": "PL",
+    "state": "dolnoslaskie",
+    "address": "ul. Wystawowa 1, 51-618 Wroclaw",
+    "lat": 51.1071,
+    "lng": 17.0773,
+    "type": "antikmarkt",
+    "schedule": "Miesieczne targi (sprawdz targstarociwroclaw.pl) 08:00-16:00",
+    "time_from": "08:00",
+    "time_to": "16:00",
+    "website": "https://targstarociwroclaw.pl",
+    "description": "Meble, obrazy, porcelana, szkło, biżuteria, znaczki. Historyczna lokalizacja przy Hali Stulecia UNESCO.",
+    "indoor": false,
+    "free_entry": false,
+    "parking": true,
+    "recurring": false,
+    "recurring_day": -1,
+    "dates": [],
+    "id": 91
+  },
+  {
+    "name": "Blesi Trhy Praha U Elektry",
+    "city": "Praha",
+    "country": "CZ",
+    "state": "Praha",
+    "address": "U Elektry 7, 190 00 Praha 9 – Vysocany",
+    "lat": 50.1045,
+    "lng": 14.5065,
+    "type": "flohmarkt",
+    "schedule": "Sob-Niedz 06:00-16:00",
+    "time_from": "06:00",
+    "time_to": "16:00",
+    "website": "http://www.blesitrhy.cz",
+    "description": "Jeden z największych targów pchlich w Europie — 50 000 m², lokomotywownia. Od opon przez czeskie szkło po radzieckie gadżety. Wejście CZK 50.",
+    "indoor": false,
+    "free_entry": false,
+    "parking": true,
+    "recurring": true,
+    "recurring_day": -1,
+    "dates": [],
+    "id": 92
+  },
+  {
+    "name": "Blesi Trh Hermanak Praha",
+    "city": "Praha",
+    "country": "CZ",
+    "state": "Praha",
+    "address": "Rezacovo namesti, 170 00 Praha 7 – Holesovice",
+    "lat": 50.1043,
+    "lng": 14.439,
+    "type": "flohmarkt",
+    "schedule": "Ostatnia sobota miesiaca 09:00-14:00",
+    "time_from": "09:00",
+    "time_to": "14:00",
+    "website": "",
+    "description": "Sąsiedzki klimatyczny targ w Holešovicach — vintage, wyroby ręczne. Popularny wśród miejscowych i expat.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": false,
+    "recurring": false,
+    "recurring_day": -1,
+    "dates": [],
+    "id": 93
+  },
+  {
+    "name": "Naplavka Farmers Flea Market Praha",
+    "city": "Praha",
+    "country": "CZ",
+    "state": "Praha",
+    "address": "Rasinovo nabrezi, 120 00 Praha 2",
+    "lat": 50.075,
+    "lng": 14.4165,
+    "type": "flohmarkt",
+    "schedule": "Co sobota 08:00-14:00",
+    "time_from": "08:00",
+    "time_to": "14:00",
+    "website": "",
+    "description": "Mieszany targ żywności, vintage i rękodzieła nad Wełtawą. Klimatyczna nabrzeżna lokalizacja.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": false,
+    "recurring": true,
+    "recurring_day": 6,
+    "dates": [],
+    "id": 94
+  },
+  {
+    "name": "Blesi Trh Alfa Pasaz Brno",
+    "city": "Brno",
+    "country": "CZ",
+    "state": "Jihomoravsky kraj",
+    "address": "Postovska 450/6, 602 00 Brno",
+    "lat": 49.194,
+    "lng": 16.609,
+    "type": "antikmarkt",
+    "schedule": "Co 3-4 tygodnie w weekendy (sprawdz FB)",
+    "time_from": "09:00",
+    "time_to": "15:00",
+    "website": "https://www.facebook.com/blesi.trhy.alfa.pasaz.brno/",
+    "description": "Antyki i kolekcjonerstwo w historycznej pasażu Alfa. Porcelana, szkło, meble, kolekcje.",
+    "indoor": true,
+    "free_entry": true,
+    "parking": false,
+    "recurring": false,
+    "recurring_day": -1,
+    "dates": [],
+    "id": 95
+  },
+  {
+    "name": "Naschmarkt Flohmarkt Wien",
+    "city": "Wien",
+    "country": "AT",
+    "state": "Wien",
+    "address": "Kettenbruck­engasse Parkplatz, 1060 Wien",
+    "lat": 48.1981,
+    "lng": 16.3631,
+    "type": "flohmarkt",
+    "schedule": "Co sobota 06:30-18:00",
+    "time_from": "06:30",
+    "time_to": "18:00",
+    "website": "https://www.naschmarkt-vienna.com/flea-market-naschmarkt",
+    "description": "Największy i najsłynniejszy targ pchli w Austrii. ~400 sprzedawców. Płyty, dirndle, lederhosen, vintage lata 60-80, antyki. Najlepiej 06:30-08:00. U4 Kettenbruckengasse.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": false,
+    "recurring": true,
+    "recurring_day": 6,
+    "dates": [],
+    "id": 96
+  },
+  {
+    "name": "Brunnenmarkt Yppenmarkt Flohmarkt Wien",
+    "city": "Wien",
+    "country": "AT",
+    "state": "Wien",
+    "address": "Brunnengasse / Yppenplatz, 1160 Wien",
+    "lat": 48.217,
+    "lng": 16.3365,
+    "type": "flohmarkt",
+    "schedule": "Co sobota od 06:00",
+    "time_from": "06:00",
+    "time_to": "13:00",
+    "website": "",
+    "description": "Wielokulturowy targ w Ottakring. Okazje na odzież i sprzęt domowy obok różnorodnych stoisk z jedzeniem.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": false,
+    "recurring": true,
+    "recurring_day": 6,
+    "dates": [],
+    "id": 97
+  },
+  {
+    "name": "Flohmarkt Resselpark Wien",
+    "city": "Wien",
+    "country": "AT",
+    "state": "Wien",
+    "address": "Resselpark, 1040 Wien",
+    "lat": 48.1995,
+    "lng": 16.3718,
+    "type": "antikmarkt",
+    "schedule": "Wybrane soboty/niedziele kwiecien-pazdziernik 10:00-18:00",
+    "time_from": "10:00",
+    "time_to": "18:00",
+    "website": "https://www.flohmarktkalender.at/wien/termine/",
+    "description": "Antyki, vintage, książki w centralnej lokalizacji przy Musikverein. Popularny wśród turystów.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": false,
+    "recurring": false,
+    "recurring_day": -1,
+    "dates": [],
+    "id": 98
+  },
+  {
+    "name": "Porta Portese Roma",
+    "city": "Roma",
+    "country": "IT",
+    "state": "Lazio",
+    "address": "Via Portuense / Piazza Porta Portese, 00153 Roma",
+    "lat": 41.8789,
+    "lng": 12.4701,
+    "type": "flohmarkt",
+    "schedule": "Co niedziela 06:00-14:00",
+    "time_from": "06:00",
+    "time_to": "14:00",
+    "website": "",
+    "description": "Najslynniejszy targ pchli we Wloszech — 1000+ stoisk na 2 km w Trastevere. Antyki, ubrania vintage, elektronika, ksiazki, plyty, rekodzieło.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": false,
+    "recurring": true,
+    "recurring_day": 0,
+    "dates": [],
+    "id": 99
+  },
+  {
+    "name": "Fiera di Sinigaglia Milano",
+    "city": "Milano",
+    "country": "IT",
+    "state": "Lombardia",
+    "address": "Ripa di Porta Ticinese, 20144 Milano",
+    "lat": 45.4499,
+    "lng": 9.1646,
+    "type": "flohmarkt",
+    "schedule": "Co sobota 07:30-14:00",
+    "time_from": "07:30",
+    "time_to": "14:00",
+    "website": "https://www.fieradisinigaglia.it",
+    "description": "Najstarszy targ pchli w Mediolanie (XIX w.) nad kanalem Naviglio Grande. Vinyl, vintage, antyki, rekodzieło etniczne.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": false,
+    "recurring": true,
+    "recurring_day": 6,
+    "dates": [],
+    "id": 100
+  },
+  {
+    "name": "Mercatone Antiquariato Naviglio Grande Milano",
+    "city": "Milano",
+    "country": "IT",
+    "state": "Lombardia",
+    "address": "Alzaia Naviglio Grande, 20144 Milano",
+    "lat": 45.449,
+    "lng": 9.16,
+    "type": "antikmarkt",
+    "schedule": "Ostatnia niedziela miesiaca 08:00-18:00",
+    "time_from": "08:00",
+    "time_to": "18:00",
+    "website": "http://www.navigliogrande.mi.it/mercatone-dellantiquariato/",
+    "description": "380 specjalistycznych sprzedawcow antykow na ~2 km kanalu. Meble, grafiki, bizuteria, srebra, sztuka. Premier targow antykow we Wloszech.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": false,
+    "recurring": false,
+    "recurring_day": -1,
+    "dates": [],
+    "id": 101
+  },
+  {
+    "name": "Gran Balon Torino",
+    "city": "Torino",
+    "country": "IT",
+    "state": "Piemonte",
+    "address": "Via Borgo Dora / Via Lanino, 10152 Torino",
+    "lat": 45.0799,
+    "lng": 7.6845,
+    "type": "antikmarkt",
+    "schedule": "Balon: co sobota 07:00-18:00; Gran Balon: 2. niedziela miesiaca 08:00-18:00",
+    "time_from": "07:00",
+    "time_to": "18:00",
+    "website": "https://www.balon.it",
+    "description": "Historyczny targ pchli Turynu od XIX w. — 250+ sprzedawcow + 50 stalych sklepow. Antyki, vintage, kolekcje.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": false,
+    "recurring": true,
+    "recurring_day": -1,
+    "dates": [],
+    "id": 102
+  },
+  {
+    "name": "East Market Milano",
+    "city": "Milano",
+    "country": "IT",
+    "state": "Lombardia",
+    "address": "Via Mecenate 88a, 20138 Milano",
+    "lat": 45.4535,
+    "lng": 9.2443,
+    "type": "flohmarkt",
+    "schedule": "2. lub 3. niedziela miesiaca 10:00-20:00",
+    "time_from": "10:00",
+    "time_to": "20:00",
+    "website": "https://www.eastmarket.it",
+    "description": "Kuratorowany targ vintage mody, plyt, design objects. Bardzo popularny wsrod mlodych. DJ sety i food trucki.",
+    "indoor": false,
+    "free_entry": false,
+    "parking": true,
+    "recurring": false,
+    "recurring_day": -1,
+    "dates": [],
+    "id": 103
+  },
+  {
+    "name": "Mercato di Porta Palazzo Torino",
+    "city": "Torino",
+    "country": "IT",
+    "state": "Piemonte",
+    "address": "Piazza della Repubblica, 10152 Torino",
+    "lat": 45.0797,
+    "lng": 7.6838,
+    "type": "flohmarkt",
+    "schedule": "Pon-Pt 06:30-13:30, Sob 06:30-18:30",
+    "time_from": "06:30",
+    "time_to": "18:30",
+    "website": "https://www.mercatodiportapalazzo.com",
+    "description": "Jeden z najwiekszych targ. na wolnym powietrzu w Europie (51 300 m2). Zywnosc, ubrania, uzywane rzeczy, sekcja pchla w weekendy.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": false,
+    "recurring": true,
+    "recurring_day": -1,
+    "dates": [],
+    "id": 104
+  },
+  {
+    "name": "Ecseri Bolhapiac Budapest",
+    "city": "Budapest",
+    "country": "HU",
+    "state": "Budapest",
+    "address": "Nagykorosi ut 156, 1194 Budapest",
+    "lat": 47.436,
+    "lng": 19.146,
+    "type": "antikmarkt",
+    "schedule": "Pon-Pt 09:30-14:30, Sob 07:30-15:00, Niedz 08:30-13:00",
+    "time_from": "07:30",
+    "time_to": "15:00",
+    "website": "",
+    "description": "Najwiekszy i najslynniejszy targ antykow na Wegrzech. Obrazy, meble, porcelana, militaria, relikty komunizmu, kamery, winyl. Targi obowiazkowe. Targowanie oczekiwane.",
+    "indoor": false,
+    "free_entry": false,
+    "parking": true,
+    "recurring": true,
+    "recurring_day": -1,
+    "dates": [],
+    "id": 105
+  },
+  {
+    "name": "Antik PLACC Budapest Klauzal ter",
+    "city": "Budapest",
+    "country": "HU",
+    "state": "Budapest",
+    "address": "Klauzal ter 11, 1072 Budapest",
+    "lat": 47.4982,
+    "lng": 19.0652,
+    "type": "antikmarkt",
+    "schedule": "Co niedziela 08:00-16:00",
+    "time_from": "08:00",
+    "time_to": "16:00",
+    "website": "",
+    "description": "Dopracowana bizuteria vintage, narzedzia, kolekcje w historycznej hali targowej. Jakosc wazniejsza niz ilosc.",
+    "indoor": true,
+    "free_entry": true,
+    "parking": false,
+    "recurring": true,
+    "recurring_day": 0,
+    "dates": [],
+    "id": 106
+  },
+  {
+    "name": "Gozsdu Weekend Market Budapest",
+    "city": "Budapest",
+    "country": "HU",
+    "state": "Budapest",
+    "address": "Kiraly utca 13 – Dob utca 16, 1075 Budapest",
+    "lat": 47.4985,
+    "lng": 19.0638,
+    "type": "flohmarkt",
+    "schedule": "Pt-Niedz 10:00-17:00 (latem); Sob-Niedz zima",
+    "time_from": "10:00",
+    "time_to": "17:00",
+    "website": "https://gozsdumuhely.hu",
+    "description": "Specjalistyczni sprzedawcy w historycznej Gozsdu Courtyard. Duzy wybor aparatow i optyki, vintage moda, rekodzieło.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": false,
+    "recurring": true,
+    "recurring_day": -1,
+    "dates": [],
+    "id": 107
+  },
+  {
+    "name": "Budai Zsibvasar Budapest",
+    "city": "Budapest",
+    "country": "HU",
+    "state": "Budapest",
+    "address": "Budaorsi ut 172, 1112 Budapest",
+    "lat": 47.4658,
+    "lng": 18.9892,
+    "type": "flohmarkt",
+    "schedule": "Sob-Niedz 07:00-14:00",
+    "time_from": "07:00",
+    "time_to": "14:00",
+    "website": "",
+    "description": "Dobrze zorganizowany targ z kategoriami: ozdoby, zegary, meble, zabawki vintage. Specjalizowani sprzedawcy.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": true,
+    "recurring": true,
+    "recurring_day": -1,
+    "dates": [],
+    "id": 108
+  },
+  {
+    "name": "Targul Vitan Bucharest",
+    "city": "Bucharest",
+    "country": "RO",
+    "state": "Sectorul 4",
+    "address": "Splaiul Unirii 450, Sector 4, Bucharest",
+    "lat": 44.409,
+    "lng": 26.133,
+    "type": "flohmarkt",
+    "schedule": "Co niedziela 07:00-14:30",
+    "time_from": "07:00",
+    "time_to": "14:30",
+    "website": "",
+    "description": "5000+ sprzedawcow, 30 000+ gosci co niedziele — jeden z najwiekszych niedzielnych targow w Europie Wsch. Instrumenty, bizuteria, aparaty, srebra, vintage.",
+    "indoor": false,
+    "free_entry": false,
+    "parking": true,
+    "recurring": true,
+    "recurring_day": 0,
+    "dates": [],
+    "id": 109
+  },
+  {
+    "name": "Valea Cascadelor Flea Market Bucharest",
+    "city": "Bucharest",
+    "country": "RO",
+    "state": "Sectorul 6",
+    "address": "Bulevardul Timisoara 101, Sector 6, Bucharest",
+    "lat": 44.428,
+    "lng": 26.029,
+    "type": "flohmarkt",
+    "schedule": "Czw 05:30-13:30, Sob-Niedz 06:00-14:00",
+    "time_from": "05:30",
+    "time_to": "14:00",
+    "website": "",
+    "description": "Najwiekszy targ pchli w Bukareszcie — 500+ sprzedawcow, 5000 m2. Ubrania, akcesoria, ksiazki, winyl, zabawki, pamiatki komunizmu.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": true,
+    "recurring": true,
+    "recurring_day": -1,
+    "dates": [],
+    "id": 110
+  },
+  {
+    "name": "Piata Obor Bucharest",
+    "city": "Bucharest",
+    "country": "RO",
+    "state": "Sectorul 2",
+    "address": "Ziduri Mosi 4, Sector 2, Bucharest",
+    "lat": 44.4544,
+    "lng": 26.11,
+    "type": "flohmarkt",
+    "schedule": "7 dni w tygodniu od 07:00 (pchli targ najbardziej w weekendy)",
+    "time_from": "07:00",
+    "time_to": "16:00",
+    "website": "https://piataoborbucuresti.ro",
+    "description": "Największy kryty targ w Rumunii (26 000 m2). Zywnosc, produkty i duza sekcja pchla. Bardzo autentyczne doswiadczenie. Metro Obor (M1).",
+    "indoor": true,
+    "free_entry": true,
+    "parking": true,
+    "recurring": true,
+    "recurring_day": -1,
+    "dates": [],
+    "id": 111
+  },
+  {
+    "name": "Targul Colectionarilor de Antichitati Bucharest",
+    "city": "Bucharest",
+    "country": "RO",
+    "state": "Sectorul 1",
+    "address": "Piata Universitatii, Bucharest",
+    "lat": 44.4355,
+    "lng": 26.1025,
+    "type": "antikmarkt",
+    "schedule": "2. i 4. weekend miesiaca (Sob-Niedz)",
+    "time_from": "09:00",
+    "time_to": "17:00",
+    "website": "",
+    "description": "Antyki, monety, militaria, pamiatki komunizmu, kolekcje. Centralna lokalizacja przy Piata Universitatii.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": false,
+    "recurring": false,
+    "recurring_day": -1,
+    "dates": [],
+    "id": 112
+  },
+  {
+    "name": "Peco Flea Market Cluj-Napoca",
+    "city": "Cluj-Napoca",
+    "country": "RO",
+    "state": "Cluj",
+    "address": "Zona Peco, Cluj-Napoca",
+    "lat": 46.7626,
+    "lng": 23.591,
+    "type": "flohmarkt",
+    "schedule": "Sob-Niedz 07:00-14:00",
+    "time_from": "07:00",
+    "time_to": "14:00",
+    "website": "",
+    "description": "Glowny targ pchli Cluj — ubrania, narzedzia, antyki, uzywane rzeczy. Popularny wsrod studentow. Najslynniejszy pchli targ w Transylwanii.",
+    "indoor": false,
+    "free_entry": true,
+    "parking": true,
+    "recurring": true,
+    "recurring_day": -1,
+    "dates": [],
+    "id": 113
   }
 ]

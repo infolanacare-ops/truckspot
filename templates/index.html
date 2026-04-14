@@ -904,7 +904,7 @@ body.navigating .leaflet-top.leaflet-left{display:none}
     <div class="menu-item" onclick="drawerAction('nearby')"><div class="menu-icon">📍</div><span class="menu-label" data-i="menu_near">Nearest parkings</span></div>
     <div class="menu-item" onclick="drawerAction('all')"><div class="menu-icon">🗺</div><span class="menu-label" data-i="menu_all">All parkings</span></div>
     <div class="menu-item" onclick="drawerAction('search')"><div class="menu-icon">🔍</div><span class="menu-label" data-i="menu_search">Search</span></div>
-    <div class="menu-item" onclick="drawerAction('markets')"><div class="menu-icon" style="background:rgba(249,115,22,.12);border-color:#f97316">🛍</div><span class="menu-label" data-i="menu_markets">Flohmarkt / Markets</span><span class="menu-badge" id="markets-badge" style="display:none">ON</span></div>
+    <div id="markets-menu-item" class="menu-item" onclick="drawerAction('markets')"><div class="menu-icon" style="background:rgba(249,115,22,.12);border-color:#f97316">🛍</div><span class="menu-label" data-i="menu_markets">Flohmarkt / Markets</span><span class="menu-badge" id="markets-badge" style="display:none">ON</span></div>
     <div class="menu-item" onclick="drawerAction('autobahn')"><div class="menu-icon" style="background:rgba(0,100,200,.12);border-color:#0064c8">🇩🇪</div><span class="menu-label">Autobahn DE (oficjalne MOP)</span><span class="menu-badge" id="autobahn-badge" style="display:none">ON</span></div>
     <div class="menu-sep"></div>
     <div class="menu-section" data-i="sec_community">Community</div>
@@ -1546,6 +1546,11 @@ function enterMode(mode){
   } else {
     setTimeout(()=>map.invalidateSize(),100);
   }
+
+  // Flohmarkt/Markets only for bus and tourist modes
+  const marketsItem = document.getElementById('markets-menu-item');
+  if(marketsItem) marketsItem.style.display = (mode === 'tir') ? 'none' : '';
+  if(mode === 'tir' && marketsVisible) hideMarkets();
 
   loadParkings(mode);
   loadUserSpots();
@@ -3366,12 +3371,14 @@ function showMarketDetail(m){
   const typeLabel = m.type==='flohmarkt'?'Flohmarkt':m.type==='antikmarkt'?'Antikmarkt':'Trödelmarkt';
   const entryTxt = m.free_entry ? '🆓 Free entry' : '💶 Paid entry';
   const parkingTxt = m.parking ? '🅿️ Parking available' : '';
+  const COUNTRY_FLAGS = {DE:'🇩🇪',FR:'🇫🇷',PL:'🇵🇱',CZ:'🇨🇿',AT:'🇦🇹',IT:'🇮🇹',HU:'🇭🇺',RO:'🇷🇴',NL:'🇳🇱',BE:'🇧🇪',ES:'🇪🇸'};
+  const flag = COUNTRY_FLAGS[m.country] || '';
   document.getElementById('panel-content').innerHTML=`
     <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem">
-      <div class="panel-name" style="flex:1">🛍 ${m.name}</div>
+      <div class="panel-name" style="flex:1">${flag} 🛍 ${m.name}</div>
       <span style="font-size:.65rem;background:rgba(249,115,22,.15);color:#f97316;border-radius:8px;padding:.15rem .45rem;font-weight:700">${typeLabel}</span>
     </div>
-    <div class="panel-addr">📍 ${m.city}${m.state?', '+m.state:''}</div>
+    <div class="panel-addr">📍 ${m.city}${m.state?', '+m.state:''}${m.country?' ('+m.country+')':''}</div>
     <div style="font-size:.8rem;color:var(--text);margin-bottom:.5rem">📅 ${m.schedule||'–'} · ⏰ ${m.time_from||''}–${m.time_to||''}</div>
     <div class="amenities" style="margin-bottom:.7rem">
       <span class="amenity">${entryTxt}</span>
