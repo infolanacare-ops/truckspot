@@ -1731,6 +1731,7 @@ let osmLoading=false;
 let pickingMode=false, spotLat=null, spotLng=null;
 let spotStars=1, spotCat='parking', spotTempMarker=null;
 let gpsActive=false, gpsWatchId=null, gpsMarker=null;
+let userLat=null, userLng=null;
 let alertedIds=new Set();
 
 // ══════════════════════════════════════
@@ -1976,6 +1977,9 @@ function enterMode(mode){
   updateProfileUI();
   applyLang();
   localStorage.setItem('ts_mode', mode);
+  // push — zapytaj o zgodę po chwili (żeby nie przerywać onboardingu)
+  setTimeout(requestPushPermission, 3000);
+  checkAlertFromUrl();
 }
 
 function onMapClick(e){
@@ -2267,6 +2271,8 @@ function startGps(){
   gpsActive=true; setEl('gps-badge','ON'); document.getElementById('gps-badge').style.display='';
   gpsWatchId=navigator.geolocation.watchPosition(pos=>{
     const {latitude:lat,longitude:lng}=pos.coords;
+    userLat=lat; userLng=lng;
+    updatePushPosition(lat, lng);
     const dot=L.divIcon({className:'',html:'<div class="gps-dot"></div>',iconSize:[14,14],iconAnchor:[7,7]});
     if(!gpsMarker) gpsMarker=L.marker([lat,lng],{icon:dot,zIndexOffset:1000}).addTo(map);
     else gpsMarker.setLatLng([lat,lng]);
@@ -4374,6 +4380,88 @@ async function submitComment(parkingId){
 // ══════════════════════════════════════
 applyTheme();
 applyLang();
+// ══════════════════════════════════════
+// PUSH NOTIFICATIONS
+// ══════════════════════════════════════
+let pushSubId = localStorage.getItem('ts_push_id') || null;
+
+function urlBase64ToUint8Array(base64String){
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g,'+').replace(/_/g,'/');
+  const raw = atob(base64);
+  return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
+}
+
+async function initPush(){
+  if(!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  // pobierz VAPID public key z serwera
+  let vapidKey;
+  try {
+    const r = await fetch('/api/vapid-public-key');
+    const d = await r.json();
+    vapidKey = d.key;
+  } catch(e){ return; }
+  if(!vapidKey) return;
+
+  const reg = await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if(!sub){
+    try {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey)
+      });
+    } catch(e){ return; }
+  }
+
+  // zarejestruj/odśwież subskrypcję na serwerze
+  const body = { subscription: sub.toJSON(), id: pushSubId,
+    lat: userLat || null, lng: userLng || null };
+  try {
+    const r = await fetch('/api/push/subscribe', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if(d.id){ pushSubId = d.id; localStorage.setItem('ts_push_id', d.id); }
+  } catch(e){}
+}
+
+async function requestPushPermission(){
+  if(!('Notification' in window)) return;
+  if(Notification.permission === 'granted'){ initPush(); return; }
+  if(Notification.permission === 'denied') return;
+  const perm = await Notification.requestPermission();
+  if(perm === 'granted') initPush();
+}
+
+function updatePushPosition(lat, lng){
+  if(!pushSubId) return;
+  fetch('/api/push/update-position', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({id: pushSubId, lat, lng})
+  }).catch(()=>{});
+}
+
+// SW → app: przejdź do alerty po kliknięciu powiadomienia
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message', e => {
+    if(e.data?.type === 'ALERT_NAVIGATE' && e.data.lat && e.data.lng){
+      map && map.setView([e.data.lat, e.data.lng], 13);
+    }
+  });
+}
+
+// sprawdź parametry URL przy starcie (np. z powiadomienia)
+function checkAlertFromUrl(){
+  const p = new URLSearchParams(location.search);
+  const lat = parseFloat(p.get('alert_lat'));
+  const lng = parseFloat(p.get('alert_lng'));
+  if(!isNaN(lat) && !isNaN(lng)){
+    setTimeout(()=>{ map && map.setView([lat, lng], 13); }, 1000);
+  }
+}
+
 if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
 
 // resume session if already set up

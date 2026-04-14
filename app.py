@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import os, json, secrets, time, requests as _requests
+import os, json, secrets, time, math, requests as _requests
 from flask import Flask, render_template, request, jsonify, send_from_directory
+
+try:
+    from pywebpush import webpush, WebPushException
+    PUSH_AVAILABLE = True
+except ImportError:
+    PUSH_AVAILABLE = False
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(32))
@@ -13,7 +19,78 @@ MARKETS_PATH    = os.path.join(DATA_DIR, "markets.json")
 SCENIC_PATH     = os.path.join(DATA_DIR, "scenic.json")
 COMMENTS_PATH   = os.path.join(DATA_DIR, "comments.json")
 OCCUPANCY_PATH  = os.path.join(DATA_DIR, "occupancy.json")
-MESSAGES_PATH   = os.path.join(DATA_DIR, "messages.json")
+MESSAGES_PATH       = os.path.join(DATA_DIR, "messages.json")
+SUBSCRIPTIONS_PATH  = os.path.join(DATA_DIR, "subscriptions.json")
+
+VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
+VAPID_PUBLIC_KEY  = os.environ.get("VAPID_PUBLIC_KEY", "")
+VAPID_EMAIL       = os.environ.get("VAPID_EMAIL", "mailto:admin@truckspot.app")
+
+PUSH_ALERT_RADIUS_KM = 20  # promień alertów
+
+CAT_LABELS_PL = {
+    'police':   '🚔 Policja w pobliżu!',
+    'accident': '🚨 Wypadek na drodze!',
+    'traffic':  '🚦 Korek na trasie!',
+    'roadwork': '🚧 Roboty drogowe!',
+    'weather':  '⛈️ Ostrzeżenie pogodowe!',
+    'fuel':     '⛽ Info o paliwie',
+    'help':     '🆘 Potrzebna pomoc!',
+    'info':     'ℹ️ Info od kierowcy',
+}
+
+def haversine_km(lat1, lng1, lat2, lng2):
+    R = 6371
+    dlat = math.radians(lat2 - lat1)
+    dlng = math.radians(lng2 - lng1)
+    a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlng/2)**2
+    return R * 2 * math.asin(math.sqrt(max(0, a)))
+
+def load_subscriptions():
+    if not os.path.exists(SUBSCRIPTIONS_PATH):
+        return []
+    with open(SUBSCRIPTIONS_PATH, encoding="utf-8") as f:
+        return json.load(f)
+
+def save_subscriptions(subs):
+    with open(SUBSCRIPTIONS_PATH, "w", encoding="utf-8") as f:
+        json.dump(subs, f, ensure_ascii=False, indent=2)
+
+def send_push_nearby(lat, lng, cat, text, radius_km=PUSH_ALERT_RADIUS_KM):
+    if not PUSH_AVAILABLE or not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
+        return 0
+    subs = load_subscriptions()
+    title = CAT_LABELS_PL.get(cat, 'ℹ️ Alert TruckSpot')
+    payload = json.dumps({
+        'title': title,
+        'body':  text[:120],
+        'icon':  '/static/icon-192.png',
+        'badge': '/static/favicon-32.png',
+        'data':  {'lat': lat, 'lng': lng, 'cat': cat},
+        'tag':   f'cb-{cat}',
+    })
+    dead, sent = [], 0
+    for sub in subs:
+        slat, slng = sub.get('lat'), sub.get('lng')
+        if slat is None or slng is None:
+            continue
+        if haversine_km(lat, lng, slat, slng) > radius_km:
+            continue
+        try:
+            webpush(
+                subscription_info=sub['subscription'],
+                data=payload,
+                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_claims={'sub': VAPID_EMAIL},
+            )
+            sent += 1
+        except WebPushException as ex:
+            if ex.response and ex.response.status_code in (404, 410):
+                dead.append(sub['id'])
+    # usuń wygasłe subskrypcje
+    if dead:
+        save_subscriptions([s for s in subs if s.get('id') not in dead])
+    return sent
 
 # ── Autobahn GmbH cache (in-memory, TTL=10 min) ──────────────────────────────
 _AUTOBAHN_CACHE = {}          # road_id -> (timestamp, data)
@@ -507,6 +584,14 @@ def api_messages_post():
     msgs.append(msg)
     with open(MESSAGES_PATH, "w", encoding="utf-8") as f:
         json.dump(msgs, f, ensure_ascii=False, indent=2)
+
+    # Push do użytkowników w pobliżu (tylko alerty wysokiej ważności)
+    if msg["cat"] in ("police", "accident", "help", "roadwork", "weather"):
+        try:
+            send_push_nearby(msg["lat"], msg["lng"], msg["cat"], msg["text"])
+        except Exception:
+            pass
+
     return jsonify({"ok": True, "id": new_id}), 201
 
 
@@ -564,6 +649,59 @@ def api_scenic():
     if stype:
         scenic = [s for s in scenic if s.get("type", "") == stype]
     return jsonify(scenic)
+
+
+@app.route("/api/vapid-public-key")
+def api_vapid_public_key():
+    return jsonify({"key": VAPID_PUBLIC_KEY})
+
+@app.route("/api/push/subscribe", methods=["POST"])
+def api_push_subscribe():
+    data = request.get_json(force=True)
+    if not data.get("subscription"):
+        return jsonify({"error": "missing subscription"}), 400
+    subs = load_subscriptions()
+    sub_id = data.get("id") or secrets.token_hex(8)
+    # aktualizuj jeśli istnieje, dodaj jeśli nowe
+    existing = next((s for s in subs if s.get("id") == sub_id), None)
+    entry = {
+        "id":           sub_id,
+        "subscription": data["subscription"],
+        "lat":          data.get("lat"),
+        "lng":          data.get("lng"),
+        "ts":           time.time(),
+    }
+    if existing:
+        existing.update(entry)
+    else:
+        subs.append(entry)
+    save_subscriptions(subs)
+    return jsonify({"ok": True, "id": sub_id})
+
+@app.route("/api/push/update-position", methods=["POST"])
+def api_push_update_position():
+    data = request.get_json(force=True)
+    sub_id = data.get("id")
+    lat, lng = data.get("lat"), data.get("lng")
+    if not sub_id or lat is None or lng is None:
+        return jsonify({"error": "missing fields"}), 400
+    subs = load_subscriptions()
+    for s in subs:
+        if s.get("id") == sub_id:
+            s["lat"], s["lng"], s["ts"] = lat, lng, time.time()
+            break
+    save_subscriptions(subs)
+    return jsonify({"ok": True})
+
+@app.route("/api/push/unsubscribe", methods=["POST"])
+def api_push_unsubscribe():
+    data = request.get_json(force=True)
+    sub_id = data.get("id")
+    if not sub_id:
+        return jsonify({"error": "missing id"}), 400
+    subs = [s for s in load_subscriptions() if s.get("id") != sub_id]
+    save_subscriptions(subs)
+    return jsonify({"ok": True})
 
 
 if __name__ == "__main__":

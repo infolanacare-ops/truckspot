@@ -177,28 +177,57 @@ async function syncPendingVotes() {
 }
 
 // ── PUSH NOTIFICATIONS ───────────────────────────────────────────────────────
+const CAT_VIBRATE = {
+  police:   [200, 100, 200, 100, 200],
+  accident: [300, 100, 300],
+  help:     [500, 100, 500],
+  roadwork: [100, 50, 100],
+  weather:  [100, 50, 100, 50, 100],
+};
+
 self.addEventListener('push', e => {
-  const data = e.data?.json() || { title: 'TruckSpot', body: 'Nowe powiadomienie' };
-  e.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: '/static/icon-192.png',
-      badge: '/static/icon-96.png',
-      tag: data.tag || 'truckspot',
-      data: data.url ? { url: data.url } : undefined,
-      actions: data.actions || [],
-    })
-  );
+  let payload = { title: 'TruckSpot', body: 'Nowy alert w pobliżu' };
+  try { payload = e.data?.json() || payload; } catch(err) {}
+
+  const cat = payload.data?.cat || 'info';
+  const lat = payload.data?.lat;
+  const lng = payload.data?.lng;
+  const openUrl = lat && lng
+    ? `/?alert_lat=${lat}&alert_lng=${lng}&alert_cat=${cat}`
+    : '/';
+
+  const options = {
+    body:    payload.body,
+    icon:    '/static/icon-192.png',
+    badge:   '/static/favicon-32.png',
+    tag:     payload.tag || `cb-${cat}`,
+    renotify: true,
+    vibrate: CAT_VIBRATE[cat] || [200, 100, 200],
+    data:    { url: openUrl, lat, lng, cat },
+    actions: [
+      { action: 'navigate', title: '🗺️ Pokaż na mapie' },
+      { action: 'dismiss',  title: '✕ Zamknij' },
+    ],
+  };
+
+  e.waitUntil(self.registration.showNotification(payload.title, options));
 });
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
+  if (e.action === 'dismiss') return;
+
   const url = e.notification.data?.url || '/';
   e.waitUntil(
-    clients.matchAll({ type: 'window' }).then(list => {
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
       const existing = list.find(c => c.url.includes(self.location.origin));
-      if (existing) { existing.focus(); existing.navigate(url); }
-      else clients.openWindow(url);
+      if (existing) {
+        existing.focus();
+        existing.postMessage({ type: 'ALERT_NAVIGATE', url,
+          lat: e.notification.data?.lat, lng: e.notification.data?.lng });
+      } else {
+        clients.openWindow(url);
+      }
     })
   );
 });
