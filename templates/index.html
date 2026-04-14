@@ -4948,26 +4948,32 @@ function renderCameraMarkers(elements){
   });
 }
 
-// Wywoływane z onNavPosition — ostrzeżenie o zbliżającym się fotoradarze
+// Wywoływane z onNavPosition — ostrzeżenie o zbliżającym się fotoradarze (2x)
 function checkNavCameras(lat, lng){
   if(!camerasVisible || !navActive) return;
-  const warnDist = navSpeedKmh > 80 ? 1.5 : 0.8; // km
+  // [daleko, blisko] w km
+  const thresholds = navSpeedKmh > 80 ? [1.5, 0.4] : [0.8, 0.2];
   for(const mk of cameraMarkers){
     const pos = mk.getLngLat();
     const d = haversineKm(lat, lng, pos.lat, pos.lng);
-    const camId = `${pos.lat.toFixed(5)},${pos.lng.toFixed(5)}`;
-    if(d < warnDist && !navAnnouncedCameras.has(camId)){
-      navAnnouncedCameras.add(camId);
-      const dist = d < 1 ? Math.round(d*1000)+' m' : d.toFixed(1)+' km';
-      const txt = currentLang==='pl' ? `Fotoradar za ${dist}` : `Speed camera in ${dist}`;
-      speakNav(txt, true);
-      showAlert('📷','⚠️ FOTORADAR', `Za ${dist} · Zwolnij!`);
-      setTimeout(closeAlert, 4000);
+    const base = `${pos.lat.toFixed(5)},${pos.lng.toFixed(5)}`;
+    for(let i = 0; i < thresholds.length; i++){
+      const key = `${base}_${i}`;
+      if(d < thresholds[i] && !navAnnouncedCameras.has(key)){
+        navAnnouncedCameras.add(key);
+        const dist = d < 1 ? Math.round(d*1000)+' m' : d.toFixed(1)+' km';
+        const txt = currentLang==='pl' ? `Fotoradar za ${dist}` : `Speed camera in ${dist}`;
+        speakNav(txt, true);
+        if(i === 0){
+          showAlert('📷','⚠️ FOTORADAR', `Za ${dist} · Zwolnij!`);
+          setTimeout(closeAlert, 4000);
+        }
+      }
     }
   }
 }
 
-// Wywoływane z onNavPosition — ostrzeżenie o zgłoszeniach kierowców
+// Wywoływane z onNavPosition — ostrzeżenie o zgłoszeniach kierowców (2x)
 const REPORT_VOICE_PL = {
   camera:   d => `Fotoradar za ${d}`,
   police:   d => `Uwaga! Policja za ${d}`,
@@ -4982,19 +4988,24 @@ const REPORT_VOICE_EN = {
 };
 function checkNavReports(lat, lng){
   if(!navActive || !navReports.length) return;
-  const warnDist = navSpeedKmh > 80 ? 2.5 : 1.2; // km
+  // [daleko, blisko] w km
+  const thresholds = navSpeedKmh > 80 ? [2.5, 0.7] : [1.2, 0.35];
   for(const r of navReports){
-    if(navAnnouncedReports.has(r.id)) continue;
     const d = haversineKm(lat, lng, r.lat, r.lng);
-    if(d < warnDist){
-      navAnnouncedReports.add(r.id);
-      const distStr = d < 1 ? Math.round(d*1000)+' m' : d.toFixed(1)+' km';
-      const cfg = REPORT_CFG[r.cat] || {icon:'⚠️', label:r.cat};
-      const voices = currentLang === 'pl' ? REPORT_VOICE_PL : REPORT_VOICE_EN;
-      const txt = (voices[r.cat] || (d => cfg.label+' '+d))(distStr);
-      speakNav(txt, true);
-      showAlert(cfg.icon, '⚠️ '+cfg.label.toUpperCase(), `Za ${distStr}`);
-      setTimeout(closeAlert, 5000);
+    const cfg = REPORT_CFG[r.cat] || {icon:'⚠️', label:r.cat};
+    const voices = currentLang === 'pl' ? REPORT_VOICE_PL : REPORT_VOICE_EN;
+    for(let i = 0; i < thresholds.length; i++){
+      const key = `${r.id}_${i}`;
+      if(d < thresholds[i] && !navAnnouncedReports.has(key)){
+        navAnnouncedReports.add(key);
+        const distStr = d < 1 ? Math.round(d*1000)+' m' : d.toFixed(1)+' km';
+        const txt = (voices[r.cat] || (ds => cfg.label+' '+ds))(distStr);
+        speakNav(txt, true);
+        if(i === 0){
+          showAlert(cfg.icon, '⚠️ '+cfg.label.toUpperCase(), `Za ${distStr}`);
+          setTimeout(closeAlert, 5000);
+        }
+      }
     }
   }
 }
