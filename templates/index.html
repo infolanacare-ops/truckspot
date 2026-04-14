@@ -1092,9 +1092,21 @@ body.navigating .leaflet-top.leaflet-left{display:none}
 <div id="profile-panel">
   <div class="pp-header">
     <div class="pp-close" onclick="closeProfile()"><span class="si"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></span></div>
-    <div class="pp-avatar-big" id="pp-avatar-big" onclick="document.getElementById('avatar-picker-section').scrollIntoView({behavior:'smooth'})">
+    <div class="pp-avatar-big" id="pp-avatar-big" onclick="openAvatarMenu()">
       <span id="pp-avatar-emoji">🚛</span>
-      <div class="pp-avatar-edit-badge">✏️</div>
+      <div class="pp-avatar-edit-badge">📷</div>
+    </div>
+    <input type="file" id="avatar-photo-input" accept="image/*" style="display:none" onchange="onAvatarPhotoSelected(this)">
+    <!-- Avatar action sheet -->
+    <div id="avatar-action-sheet" style="display:none;position:fixed;inset:0;z-index:3100;background:rgba(0,0,0,.5)" onclick="closeAvatarMenu()">
+      <div onclick="event.stopPropagation()" style="position:absolute;bottom:0;left:0;right:0;background:var(--panel);border-radius:20px 20px 0 0;padding:1.2rem">
+        <div style="font-size:.8rem;color:var(--muted);text-align:center;margin-bottom:1rem;font-weight:600">Zmień avatar</div>
+        <button onclick="closeAvatarMenu();document.getElementById('avatar-photo-input').click()" style="width:100%;padding:.85rem;margin-bottom:.6rem;border:none;border-radius:14px;background:var(--panel2);color:var(--text);font-size:.95rem;cursor:pointer;font-family:var(--font);text-align:left;border:1px solid var(--border)">📷 Dodaj zdjęcie z galerii</button>
+        <button onclick="closeAvatarMenu();openCameraCapture()" style="width:100%;padding:.85rem;margin-bottom:.6rem;border:none;border-radius:14px;background:var(--panel2);color:var(--text);font-size:.95rem;cursor:pointer;font-family:var(--font);text-align:left;border:1px solid var(--border)">📸 Zrób zdjęcie</button>
+        <button onclick="closeAvatarMenu();document.getElementById('avatar-picker-section').scrollIntoView({behavior:'smooth'})" style="width:100%;padding:.85rem;margin-bottom:.6rem;border:none;border-radius:14px;background:var(--panel2);color:var(--text);font-size:.95rem;cursor:pointer;font-family:var(--font);text-align:left;border:1px solid var(--border)">😀 Wybierz emoji</button>
+        <button id="avatar-remove-btn" onclick="closeAvatarMenu();removeAvatarPhoto()" style="width:100%;padding:.85rem;margin-bottom:.6rem;border:none;border-radius:14px;background:rgba(239,68,68,.1);color:#ef4444;font-size:.95rem;cursor:pointer;font-family:var(--font);text-align:left;border:1px solid rgba(239,68,68,.2);display:none">🗑️ Usuń zdjęcie</button>
+        <button onclick="closeAvatarMenu()" style="width:100%;padding:.75rem;border:none;border-radius:14px;background:transparent;color:var(--muted);font-size:.9rem;cursor:pointer;font-family:var(--font)">Anuluj</button>
+      </div>
     </div>
     <div class="pp-name" id="pp-name">TRUCKER</div>
     <div class="pp-bio" id="pp-bio"></div>
@@ -1751,10 +1763,19 @@ function updateProfileUI(){
   // avatar w drawerze
   const da = document.getElementById('drawer-avatar');
   if(da){
-    da.textContent = profile.avatar || (profile.name||'T')[0].toUpperCase();
-    da.style.background = profile.avatarColor || 'var(--accent)';
-    da.style.fontSize = profile.avatar ? '1.6rem' : '1.3rem';
-    da.classList.toggle('letter', !profile.avatar);
+    if(profile.avatarPhoto){
+      da.textContent = '';
+      da.style.backgroundImage = `url(${profile.avatarPhoto})`;
+      da.style.backgroundSize = 'cover';
+      da.style.backgroundPosition = 'center';
+      da.style.background = '';
+    } else {
+      da.style.backgroundImage = '';
+      da.style.background = profile.avatarColor || 'var(--accent)';
+      da.textContent = profile.avatar || (profile.name||'T')[0].toUpperCase();
+      da.style.fontSize = profile.avatar ? '1.6rem' : '1.3rem';
+      da.classList.toggle('letter', !profile.avatar);
+    }
   }
 }
 
@@ -1762,9 +1783,13 @@ function openProfile(){
   const pp = document.getElementById('profile-panel');
   pp.classList.add('open');
   // wypełnij dane
-  document.getElementById('pp-avatar-emoji').textContent = profile.avatar || (profile.name||'T')[0].toUpperCase();
   const bigAv = document.getElementById('pp-avatar-big');
   bigAv.style.background = profile.avatarColor || '#f59e0b';
+  bigAv.style.backgroundImage = '';
+  const emojiSpan = document.getElementById('pp-avatar-emoji');
+  emojiSpan.style.display = '';
+  emojiSpan.textContent = profile.avatar || (profile.name||'T')[0].toUpperCase();
+  if(profile.avatarPhoto) applyAvatarPhoto();
   setEl('pp-name', profile.name||'TRUCKER');
   setEl('pp-bio', profile.bio||'');
   setEl('pp-country', profile.country||'–');
@@ -1805,6 +1830,77 @@ function openProfile(){
 
 function closeProfile(){
   document.getElementById('profile-panel').classList.remove('open');
+}
+
+function openAvatarMenu(){
+  document.getElementById('avatar-remove-btn').style.display = profile.avatarPhoto ? '' : 'none';
+  document.getElementById('avatar-action-sheet').style.display = '';
+}
+function closeAvatarMenu(){
+  document.getElementById('avatar-action-sheet').style.display = 'none';
+}
+
+function openCameraCapture(){
+  const inp = document.getElementById('avatar-photo-input');
+  inp.setAttribute('capture','user');
+  inp.click();
+  setTimeout(()=>inp.removeAttribute('capture'), 500);
+}
+
+function onAvatarPhotoSelected(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      // resize do 200x200 canvas
+      const canvas = document.createElement('canvas');
+      canvas.width = 200; canvas.height = 200;
+      const ctx = canvas.getContext('2d');
+      // crop do kwadratu
+      const side = Math.min(img.width, img.height);
+      const ox = (img.width - side) / 2;
+      const oy = (img.height - side) / 2;
+      ctx.drawImage(img, ox, oy, side, side, 0, 0, 200, 200);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+      profile.avatarPhoto = dataUrl;
+      saveProfile();
+      applyAvatarPhoto();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function applyAvatarPhoto(){
+  const bigAv = document.getElementById('pp-avatar-big');
+  const emojiSpan = document.getElementById('pp-avatar-emoji');
+  if(profile.avatarPhoto){
+    bigAv.style.backgroundImage = `url(${profile.avatarPhoto})`;
+    bigAv.style.backgroundSize = 'cover';
+    bigAv.style.backgroundPosition = 'center';
+    emojiSpan.style.display = 'none';
+    // drawer avatar
+    const da = document.getElementById('drawer-avatar');
+    if(da){
+      da.style.backgroundImage = `url(${profile.avatarPhoto})`;
+      da.style.backgroundSize = 'cover';
+      da.style.backgroundPosition = 'center';
+      da.textContent = '';
+    }
+    document.getElementById('avatar-remove-btn').style.display = '';
+  }
+}
+
+function removeAvatarPhoto(){
+  profile.avatarPhoto = null;
+  saveProfile();
+  const bigAv = document.getElementById('pp-avatar-big');
+  bigAv.style.backgroundImage = '';
+  document.getElementById('pp-avatar-emoji').style.display = '';
+  updateProfileUI();
 }
 
 function saveProfileEdit(){
