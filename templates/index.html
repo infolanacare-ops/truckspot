@@ -3897,54 +3897,153 @@ function navCardColor(type, mod){
   if(type==='arrive'||type==='depart') return NAV_COLORS[type];
   return NAV_COLORS.default;
 }
-const MANEUVER_PL = {
-  'depart':'Start',
-  'arrive':'Dotarłeś na miejsce!',
-  'turn':{'left':'Skręć w lewo','right':'Skręć w prawo','straight':'Jedź prosto',
-          'slight left':'Trzymaj się lewej','slight right':'Trzymaj się prawej',
-          'sharp left':'Ostro w lewo','sharp right':'Ostro w prawo'},
-  'roundabout':'Wjedź na rondo',
-  'merge':'Włącz się do ruchu',
-  'on ramp':'Wjedź na autostradę',
-  'off ramp':'Zjedź z autostrady',
-  'fork':'Trzymaj się',
-  'end of road':'Na końcu drogi',
-  'continue':'Kontynuuj',
-  'default':'Kontynuuj',
-};
+// ── Naturalny głos nawigacyjny ────────────────────────────────────────────────
+// Buduje pełne, aksamitne zdanie z kroku Mapbox — z nazwą ulicy, numerem zjazdu itp.
 
-function stepInstruction(step){
-  // Returns clean text (no emoji) — used for both display labels and TTS
-  const m = step.maneuver || {};
-  const name = step.name ? ' ' + step.name : '';
-  const type = m.type || 'default';
+function streetLabel(step){
+  // Zwraca naturalną nazwę drogi: "ulicę Kościuszki", "autostradę A1", "drogę krajową DK7"
+  const name = step.name || '';
+  const ref  = step.ref  || '';
+  const dest = step.destinations || '';
+  if(currentLang !== 'pl'){
+    if(ref && name) return `${name} (${ref})`;
+    return ref || name || '';
+  }
+  // PL — odmiana
+  if(ref){
+    if(/^A\d/.test(ref))  return `autostradę ${ref}`;
+    if(/^S\d/.test(ref))  return `ekspresówkę ${ref}`;
+    if(/^DK|^\d+$/.test(ref)) return `drogę ${ref}`;
+    return ref;
+  }
+  if(name) return `ulicę ${name}`;
+  if(dest){
+    const first = dest.split(',')[0].split('/')[0].trim();
+    if(first) return `kierunek ${first}`;
+  }
+  return '';
+}
+
+function exitOrdinal(n){
+  // "pierwszym", "drugim", "trzecim"...
+  const ord = ['','pierwszym','drugim','trzecim','czwartym','piątym','szóstym','siódmym','ósmym'];
+  return ord[n] || `${n}.`;
+}
+
+function fmtDistTts(m){
+  // Naturalny format dystansu dla TTS
+  if(m >= 900)  return `za ${Math.round(m/100)*100} metrów`;
+  if(m >= 400)  return `za ${Math.round(m/50)*50} metrów`;
+  if(m >= 180)  return `za ${Math.round(m/10)*10} metrów`;
+  if(m >= 80)   return `za ${Math.round(m/10)*10} metrów`;
+  return 'teraz';
+}
+
+function stepInstruction(step, tts=false){
+  // tts=true  → pełne zdanie na głos
+  // tts=false → krótka etykieta wyświetlana na ekranie
+  const m    = step.maneuver || {};
+  const type = m.type     || 'default';
   const mod  = m.modifier || 'straight';
+  const exit = m.exit;           // numer zjazdu z ronda
+  const name = step.name || '';
+  const ref  = step.ref  || '';
+
   if(currentLang === 'pl'){
-    if(type === 'depart') return 'Start' + name;
-    if(type === 'arrive') return 'Dotarłeś na miejsce';
-    const typeMap = MANEUVER_PL[type];
-    const txt = typeof typeMap === 'object'
-      ? (typeMap[mod] || typeMap['straight'] || 'Kontynuuj')
-      : (typeMap || 'Kontynuuj');
-    return txt + name;
+    const road = tts ? streetLabel(step) : (ref||name||'');
+    const roadSfx = road ? ` w ${road}` : (name ? ` w ${name}` : '');
+    const roadIn  = road ? ` na ${road}` : '';
+
+    if(type === 'depart'){
+      if(tts) return road ? `Ruszamy. Kieruj się na ${road}.` : 'Ruszamy. Jedź prosto.';
+      return 'Ruszaj' + (ref||name ? ' · '+(ref||name) : '');
+    }
+    if(type === 'arrive'){
+      return tts ? 'Dotarłeś do celu. Nawigacja zakończona.' : 'Cel podróży';
+    }
+    if(type === 'turn' || type === 'end of road'){
+      const dirs = {
+        'left':        tts ? `Skręć w lewo${roadSfx}.`        : 'Skręć w lewo',
+        'right':       tts ? `Skręć w prawo${roadSfx}.`       : 'Skręć w prawo',
+        'straight':    tts ? `Jedź prosto${roadIn||''}.`       : 'Jedź prosto',
+        'slight left': tts ? `Trzymaj się lewej${roadSfx}.`   : 'Trzymaj się lewej',
+        'slight right':tts ? `Trzymaj się prawej${roadSfx}.`  : 'Trzymaj się prawej',
+        'sharp left':  tts ? `Skręć ostro w lewo${roadSfx}.`  : 'Ostro w lewo',
+        'sharp right': tts ? `Skręć ostro w prawo${roadSfx}.` : 'Ostro w prawo',
+        'uturn':       tts ? 'Zawróć, gdy będzie to możliwe.'  : 'Zawróć',
+      };
+      return dirs[mod] || (tts ? `Jedź prosto${roadIn||''}.` : 'Jedź prosto');
+    }
+    if(type === 'roundabout' || type === 'rotary'){
+      if(tts){
+        const ex = exit ? `Wjedź na rondo i wyjedź ${exitOrdinal(exit)} zjazdem` : 'Wjedź na rondo';
+        return road ? `${ex} na ${road}.` : `${ex}.`;
+      }
+      return exit ? `Rondo — zjazd ${exit}` : 'Wjedź na rondo';
+    }
+    if(type === 'merge'){
+      return tts ? `Włącz się do ruchu${roadIn||''}.` : 'Włącz się do ruchu';
+    }
+    if(type === 'on ramp'){
+      return tts ? `Wjedź na ${road||'autostradę'}.` : 'Wjazd na autostradę';
+    }
+    if(type === 'off ramp'){
+      const dest = step.destinations ? step.destinations.split(',')[0].split('/')[0].trim() : '';
+      if(tts) return dest ? `Zjedź z autostrady, kierunek ${dest}.` : `Zjedź z autostrady.`;
+      return dest ? `Zjazd · ${dest}` : 'Zjazd z autostrady';
+    }
+    if(type === 'fork'){
+      const side = mod.includes('left') ? 'lewą' : 'prawą';
+      return tts ? `Trzymaj się ${side} strony${roadIn||''}.` : `Rozwidlenie — ${side}`;
+    }
+    if(type === 'continue'){
+      return tts ? (road ? `Kontynuuj jazdę na ${road}.` : 'Kontynuuj jazdę.') : 'Kontynuuj';
+    }
+    if(type === 'new name'){
+      return tts ? (road ? `Droga zmienia nazwę. Kontynuuj na ${road}.` : 'Kontynuuj jazdę.') : (ref||name||'Kontynuuj');
+    }
+    return tts ? 'Kontynuuj jazdę.' : 'Kontynuuj';
   }
-  if(type === 'depart') return 'Depart' + name;
-  if(type === 'arrive') return 'You have arrived';
-  if(type === 'turn' || type === 'continue' || type === 'end of road'){
-    const verbs = {left:'Turn left',right:'Turn right',straight:'Continue straight',
+
+  // ── English ──
+  const road = ref || name || '';
+  const roadSfx = road ? ` onto ${road}` : '';
+  if(type === 'depart') return tts ? (road ? `Starting route. Head towards ${road}.` : 'Starting route. Head straight.') : 'Depart';
+  if(type === 'arrive') return tts ? 'You have arrived at your destination.' : 'Destination';
+  if(type === 'turn' || type === 'end of road'){
+    const dirs = {
+      'left':'Turn left','right':'Turn right','straight':'Continue straight',
       'slight left':'Keep left','slight right':'Keep right',
-      'sharp left':'Sharp left','sharp right':'Sharp right'};
-    return (verbs[mod] || 'Turn') + name;
+      'sharp left':'Turn sharply left','sharp right':'Turn sharply right','uturn':'Make a U-turn',
+    };
+    return (dirs[mod]||'Continue') + roadSfx;
   }
-  if(type === 'roundabout' || type === 'rotary') return 'Enter roundabout' + name;
-  if(type === 'merge') return 'Merge' + name;
-  if(type === 'on ramp')  return 'Take on-ramp' + name;
-  if(type === 'off ramp') return 'Take exit' + name;
+  if(type === 'roundabout'||type==='rotary'){
+    return exit ? `At the roundabout, take exit ${exit}${roadSfx}` : `Enter the roundabout${roadSfx}`;
+  }
+  if(type === 'merge')    return `Merge${roadSfx}`;
+  if(type === 'on ramp')  return `Take the on-ramp${roadSfx}`;
+  if(type === 'off ramp'){
+    const dest = step.destinations ? step.destinations.split(',')[0].trim() : '';
+    return dest ? `Take the exit towards ${dest}` : `Take the exit${roadSfx}`;
+  }
   if(type === 'fork'){
-    const side = mod.includes('left') ? (currentLang==='pl'?'lewą':'left') : (currentLang==='pl'?'prawą':'right');
-    return (currentLang==='pl' ? 'Trzymaj się ' : 'Keep ') + side + name;
+    const side = mod.includes('left') ? 'left' : 'right';
+    return `Keep ${side}${roadSfx}`;
   }
-  return (currentLang === 'pl' ? 'Kontynuuj' : 'Continue') + name;
+  return `Continue${roadSfx}`;
+}
+
+// Buduje pełne zdanie TTS z dystansem — "Za trzysta metrów skręć w lewo w ulicę Kościuszki"
+function buildTtsSentence(step, distM){
+  const instr = stepInstruction(step, true);
+  if(!distM || distM < 30) return instr;
+  const distTxt = fmtDistTts(distM);
+  // Pierwsza litera małą — bo jest poprzedzona "Za X metrów"
+  const instrLower = instr.charAt(0).toLowerCase() + instr.slice(1);
+  return currentLang === 'pl'
+    ? `${distTxt.charAt(0).toUpperCase()+distTxt.slice(1)} ${instrLower}`
+    : `In ${Math.round(distM)} meters, ${instr.charAt(0).toLowerCase()+instr.slice(1)}`;
 }
 
 function stepArrow(step){
@@ -4095,16 +4194,50 @@ function stripForTts(txt){
     .trim();
 }
 
-function speakNav(txt, priority){
+// Najlepszy głos dla danego języka — raz wykryty i cachowany
+let _navVoiceCache = {};
+function getBestVoice(lang){
+  if(_navVoiceCache[lang]) return _navVoiceCache[lang];
+  const voices = speechSynthesis.getVoices();
+  if(!voices.length) return null;
+  // Preferuj głosy online (wyższa jakość) i pełne locale
+  const preferred = {
+    'pl-PL': ['Google polski','Microsoft Paulina','Polish','pl'],
+    'de-DE': ['Google Deutsch','Microsoft Hedda','German','de'],
+    'en-US': ['Google US English','Microsoft Zira','Microsoft David','English (US)','en-US'],
+  };
+  const pref = preferred[lang] || [];
+  // 1. Szukaj preferowanego po nazwie
+  for(const p of pref){
+    const v = voices.find(v => v.name.toLowerCase().includes(p.toLowerCase()) && v.lang.startsWith(lang.split('-')[0]));
+    if(v){ _navVoiceCache[lang]=v; return v; }
+  }
+  // 2. Szukaj po języku
+  const v = voices.find(v => v.lang === lang) || voices.find(v => v.lang.startsWith(lang.split('-')[0]));
+  if(v){ _navVoiceCache[lang]=v; return v; }
+  return null;
+}
+
+// Głosy ładują się asynchronicznie — odśwież cache
+if(typeof speechSynthesis !== 'undefined'){
+  speechSynthesis.onvoiceschanged = () => { _navVoiceCache = {}; };
+}
+
+function speakNav(txt, priority=false){
   if(navMuted) return;
   if(!('speechSynthesis' in window)) return;
   const clean = stripForTts(txt);
   if(!clean) return;
   if(priority) speechSynthesis.cancel();
+  const lang = currentLang==='pl'?'pl-PL':currentLang==='de'?'de-DE':currentLang==='es'?'es-ES':'en-US';
   const utt = new SpeechSynthesisUtterance(clean);
-  utt.lang = currentLang==='pl'?'pl-PL':currentLang==='de'?'de-DE':currentLang==='es'?'es-ES':'en-US';
-  utt.rate = 1.05;
+  utt.lang = lang;
+  // Wolniejsze tempo — naturalne w głośnej kabinie TIR
+  utt.rate   = 0.92;
+  utt.pitch  = 1.0;
   utt.volume = 1.0;
+  const voice = getBestVoice(lang);
+  if(voice) utt.voice = voice;
   speechSynthesis.speak(utt);
 }
 
@@ -4154,7 +4287,7 @@ function startNavigation(){
   updateNavStep(0);
   setEl('nav-total-dist', fmtDist(navDistRemaining));
   setNavEta(routeTotalDur);
-  speakNav(stepInstruction(routeSteps[0]), true);
+  speakNav(stepInstruction(routeSteps[0], true), true);
   // Auto tryb dzienny/nocny mapy
   const h = new Date().getHours();
   const navStyle = (h >= 6 && h < 20)
@@ -4509,7 +4642,7 @@ function onNavPosition(pos){
       updateNavStep(navStepIdx, true);
       if(!navAnnouncedSteps.has(navStepIdx)){
         navAnnouncedSteps.add(navStepIdx);
-        speakNav(stepInstruction(routeSteps[navStepIdx]), true);
+        speakNav(stepInstruction(routeSteps[navStepIdx], true), true);
       }
     } else {
       updateNavDistDisplay(dToManeuver);
@@ -4517,16 +4650,17 @@ function onNavPosition(pos){
       const cStep = routeSteps[navStepIdx];
       if(cStep) setEl('nav-road-name', cStep.name||cStep.ref||'');
 
-      // Look-ahead voice: announce upcoming step at 500m and 200m
-      const announceAt = navSpeedKmh > 80 ? [1000, 300] : [500, 150];
+      // Look-ahead voice — pełne zdania TTS z dystansem
+      // Prędkość > 80 km/h (autostrada): 1200m + 400m + 100m
+      // Miasto < 50 km/h: 400m + 120m
+      const announceAt = navSpeedKmh > 80 ? [1200, 400, 100]
+                       : navSpeedKmh > 50 ? [600, 200, 80]
+                       :                    [400, 120, 50];
       for(const dist of announceAt){
         const key = `${navStepIdx}_${dist}`;
-        if(!navAnnouncedSteps.has(key) && dToManeuver < dist && dToManeuver > dist*0.3){
+        if(!navAnnouncedSteps.has(key) && dToManeuver < dist && dToManeuver > dist * 0.25){
           navAnnouncedSteps.add(key);
-          const prefix = dist >= 500
-            ? (currentLang==='pl' ? `Za ${fmtDist(dToManeuver)}: ` : `In ${fmtDist(dToManeuver)}: `)
-            : (currentLang==='pl' ? 'Teraz: ' : 'Now: ');
-          speakNav(prefix + stepInstruction(routeSteps[navStepIdx]), false);
+          speakNav(buildTtsSentence(routeSteps[navStepIdx], dToManeuver), false);
         }
       }
       break;
@@ -4562,7 +4696,7 @@ function onNavPosition(pos){
     } else if(distFromRoute > 80 && !navRerouteWarned && now - navRerouteTs > rerouteCooldown){
       // 80-150m — ostrzeżenie głosowe "zawróć"
       navRerouteWarned = true;
-      speakNav(currentLang==='pl' ? 'Zawróć gdy możliwe' : 'Turn around when possible', true);
+      speakNav(currentLang==='pl' ? 'Zboczyłeś z trasy. Zawróć, gdy będzie to możliwe.' : 'You are off route. Turn around when possible.', true);
       setEl('nav-street-name', currentLang==='pl' ? '↩ Zawróć gdy możliwe' : '↩ Turn around when possible');
     } else if(distFromRoute < 40){
       navRerouteWarned = false; // wróciłeś na trasę — reset
@@ -4583,7 +4717,10 @@ function onNavPosition(pos){
     if(d < poiAlertDist){
       navAnnouncedPois.add(p.id);
       const dist = d < 1 ? Math.round(d*1000)+' metrów' : d.toFixed(1)+' km';
-      speakNav(`Za ${dist}: ${p.name}`, false);
+      const poiTxt = currentLang==='pl'
+        ? `Za ${dist} ${p.name}.`
+        : `In ${dist}, ${p.name}.`;
+      speakNav(poiTxt, false);
       showAlert(p.icon, p.name, `Za ${dist}`);
       break;
     }
