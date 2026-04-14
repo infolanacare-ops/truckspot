@@ -1091,14 +1091,6 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
     <div class="menu-item" onclick="drawerAction('search')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span></div><span class="menu-label" data-i="menu_search">Search</span></div>
     <div id="scenic-menu-item" class="menu-item" onclick="drawerAction('scenic')" style="display:none"><div class="menu-icon" style="background:rgba(16,185,129,.12);border-color:#10b981"><span class="si"><svg viewBox="0 0 24 24"><path d="M8 3l4 8 5-5 5 15H2L8 3z"/></svg></span></div><span class="menu-label">Piękne widoki / Scenic</span><span class="menu-badge" id="scenic-badge" style="display:none">ON</span></div>
     <div id="markets-menu-item" class="menu-item" onclick="drawerAction('markets')"><div class="menu-icon" style="background:rgba(249,115,22,.12);border-color:#f97316"><span class="si"><svg viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></span></div><span class="menu-label" data-i="menu_markets">Flohmarkt / Markets</span><span class="menu-badge" id="markets-badge" style="display:none">ON</span></div>
-    <div class="menu-item" onclick="toggleCamerasSwitch()">
-      <div class="menu-icon" style="background:rgba(239,68,68,.12);border-color:#ef4444"><span style="font-size:1.1rem">📷</span></div>
-      <span class="menu-label">Fotoradary<span id="cameras-count" style="font-size:.65rem;font-weight:700;color:var(--muted);margin-left:.4rem"></span></span>
-      <label class="ts-toggle" onclick="event.stopPropagation()">
-        <input type="checkbox" id="cameras-toggle" checked onchange="onCamerasToggleChange(this.checked)">
-        <div class="ts-toggle-track"></div>
-      </label>
-    </div>
     <div class="menu-item" onclick="drawerAction('autobahn')"><div class="menu-icon" style="background:rgba(0,100,200,.12);border-color:#0064c8"><span style="font-size:1.1rem">🇩🇪</span></div><span class="menu-label">Autobahn DE (oficjalne MOP)</span><span class="menu-badge" id="autobahn-badge" style="display:none">ON</span></div>
     <div class="menu-sep"></div>
     <div class="menu-section" data-i="sec_community">Community</div>
@@ -2027,7 +2019,6 @@ function enterMode(mode){
     map.on('click', (e)=>{ onMapClickForMsg(e); onMapClick(e); });
     map.on('moveend', ()=>{
       if(map.getZoom()>=8) loadOsmParkings();
-      if(map.getZoom()>=11) debouncedLoadCameras();
     });
   } else {
     setTimeout(()=>map.resize(),100);
@@ -3228,6 +3219,7 @@ function startNavigation(){
   // Announce start
   speakNav(stepInstruction(routeSteps[0]), true);
   loadRoutePois();
+  loadNavCameras();
   navWatchId = navigator.geolocation.watchPosition(onNavPosition,
     e=>{ if(e.code!==e.TIMEOUT) showAlert('⚠️','GPS Error',''); },
     {enableHighAccuracy:true, maximumAge:2000, timeout:15000});
@@ -3560,6 +3552,7 @@ function stopNavigation(){
   document.getElementById('nav-overlay').classList.remove('active');
   document.body.classList.remove('navigating');
   navAnnouncedCameras = new Set();
+  cameraMarkers.forEach(m=>m.remove()); cameraMarkers=[];
   showAlert('🏁','','Navigation stopped');
 }
 
@@ -4165,49 +4158,26 @@ const COUNTRY_FLAGS_SCENIC = {AT:'🇦🇹',CH:'🇨🇭',IT:'🇮🇹',FR:'🇫
 // FOTORADARY (OpenStreetMap via Overpass) — zawsze włączone, auto-aktualizacja
 // ══════════════════════════════════════
 let cameraMarkers = [];
-let camerasEnabled = true; // domyślnie włączone
 let navAnnouncedCameras = new Set();
-let _cameraDebounce = null;
-let _cameraLastBbox = '';
 
 const CAMERA_SVG = '<path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11l-4 4z"/>';
 
-function toggleCamerasSwitch(){
-  const cb = document.getElementById('cameras-toggle');
-  if(cb){ cb.checked = !cb.checked; onCamerasToggleChange(cb.checked); }
-}
-function onCamerasToggleChange(enabled){
-  camerasEnabled = enabled;
-  if(!enabled){
-    cameraMarkers.forEach(m=>m.remove()); cameraMarkers=[];
-    _cameraLastBbox = ''; // reset żeby załadowało się po ponownym włączeniu
-    document.getElementById('cameras-count').textContent = '';
-  } else {
-    debouncedLoadCameras();
-  }
-}
-
-function debouncedLoadCameras(){
-  if(!camerasEnabled) return;
-  clearTimeout(_cameraDebounce);
-  _cameraDebounce = setTimeout(loadAndShowCameras, 800);
-}
-
-async function loadAndShowCameras(){
-  if(!camerasEnabled || map.getZoom() < 11) return;
-  const b = map.getBounds();
-  const bbox = [b.getSouth().toFixed(3),b.getWest().toFixed(3),b.getNorth().toFixed(3),b.getEast().toFixed(3)].join(',');
-  if(bbox === _cameraLastBbox) return; // nie ładuj jeśli ten sam obszar
-  _cameraLastBbox = bbox;
-
+// Ładuje fotoradary dla całej trasy (bbox routeCoords) — tylko podczas nawigacji
+async function loadNavCameras(){
+  if(!routeCoords.length) return;
+  const lats = routeCoords.map(c=>c[1]);
+  const lngs = routeCoords.map(c=>c[0]);
+  const pad = 0.04; // ~4km margines
+  const south = Math.min(...lats)-pad, north = Math.max(...lats)+pad;
+  const west  = Math.min(...lngs)-pad, east  = Math.max(...lngs)+pad;
   try {
-    const query = `[out:json][timeout:25];(node["highway"="speed_camera"](${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()});node["enforcement"="maxspeed"](${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()}););out body;`;
+    const query = `[out:json][timeout:30];(node["highway"="speed_camera"](${south},${west},${north},${east});node["enforcement"="maxspeed"](${south},${west},${north},${east}););out body;`;
     const resp = await fetch('https://overpass-api.de/api/interpreter', {
       method:'POST', body: 'data='+encodeURIComponent(query)
     });
     const data = await resp.json();
     renderCameraMarkers(data.elements || []);
-  } catch(e){ /* cicho ignoruj błędy sieciowe */ }
+  } catch(e){ /* ignoruj błędy sieciowe */ }
 }
 
 function renderCameraMarkers(elements){
