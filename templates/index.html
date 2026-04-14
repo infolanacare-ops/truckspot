@@ -748,6 +748,19 @@ body.navigating .leaflet-top.leaflet-left{display:none}
 .mk-market{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
   background:#f97316;border:3px solid #fff;box-shadow:0 3px 10px rgba(249,115,22,.5);font-size:.95rem}
 
+/* ══ SVG ICON SYSTEM ══ */
+.si{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.si svg{display:block}
+/* Menu icons with SVG */
+.menu-icon .si svg{width:20px;height:20px;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+/* Bottom nav SVG */
+.bnav-icon .si svg{width:22px;height:22px;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.bnav-item.active .bnav-icon .si svg{stroke:var(--accent)}
+/* Topbar SVG */
+.burger .si svg,.topbar-search .si svg,.filter-btn .si svg{width:22px;height:22px;stroke:var(--text);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+/* CB cat buttons SVG */
+.msg-cat-btn .si svg{width:16px;height:16px;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;fill:none;vertical-align:middle;margin-right:3px}
+
 /* ══ COUNTRY FILTER STRIP ══ */
 #market-country-filter{
   position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
@@ -886,20 +899,20 @@ body.navigating .leaflet-top.leaflet-left{display:none}
 ══════════════════════════════════════ -->
 <div id="app">
   <div class="topbar">
-    <div class="burger" onclick="openDrawer()">☰</div>
+    <div class="burger" onclick="openDrawer()"><span class="si"><svg viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></span></div>
     <div class="topbar-logo">TruckSpot</div>
     <span class="topbar-mode-badge" id="topbar-mode">TIR</span>
     <span class="topbar-pts" id="topbar-pts">0 pts</span>
-    <div class="filter-btn" onclick="openFilters()">⚙️<div class="filter-badge" id="filter-badge">0</div></div>
-    <div class="topbar-search" onclick="openSearch()">🔍</div>
+    <div class="filter-btn" onclick="openFilters()"><span class="si"><svg viewBox="0 0 24 24"><line x1="21" y1="4" x2="14" y2="4"/><line x1="10" y1="4" x2="3" y2="4"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="20" x2="16" y2="20"/><line x1="12" y1="20" x2="3" y2="20"/><line x1="14" y1="2" x2="14" y2="6"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="16" y1="18" x2="16" y2="22"/></svg></span><div class="filter-badge" id="filter-badge">0</div></div>
+    <div class="topbar-search" onclick="openSearch()"><span class="si"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span></div>
   </div>
   <div id="map"></div>
   <div class="bottom-nav">
-    <div class="bnav-item active" onclick="bnav(this,'map')"><span class="bnav-icon">🗺</span><span class="bnav-lbl" data-i="nav_map">Map</span></div>
-    <div class="bnav-item" onclick="bnav(this,'route')"><span class="bnav-icon">🔀</span><span class="bnav-lbl" data-i="nav_route">Route</span></div>
-    <div class="bnav-item" onclick="bnav(this,'add')"><span class="bnav-icon">＋</span><span class="bnav-lbl" data-i="nav_add">Add</span></div>
-    <div class="bnav-item" onclick="bnav(this,'radio')"><span class="bnav-icon">📻</span><span class="bnav-lbl" data-i="nav_radio">Radio</span></div>
-    <div class="bnav-item" onclick="bnav(this,'rank')"><span class="bnav-icon">🏆</span><span class="bnav-lbl" data-i="nav_rank">Ranking</span></div>
+    <div class="bnav-item active" onclick="bnav(this,'map')"><span class="bnav-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="M3 7l6-4 6 4 6-4v14l-6 4-6-4-6 4V7z"/><path d="M9 3v14M15 7v14"/></svg></span></span><span class="bnav-lbl" data-i="nav_map">Map</span></div>
+    <div class="bnav-item" onclick="bnav(this,'route')"><span class="bnav-icon"><span class="si"><svg viewBox="0 0 24 24"><polygon points="12 2 19 21 12 17 5 21 12 2"/></svg></span></span><span class="bnav-lbl" data-i="nav_route">Route</span></div>
+    <div class="bnav-item" onclick="bnav(this,'add')"><span class="bnav-icon"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></span></span><span class="bnav-lbl" data-i="nav_add">Add</span></div>
+    <div class="bnav-item" onclick="bnav(this,'radio')"><span class="bnav-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg></span></span><span class="bnav-lbl" data-i="nav_radio">Radio</span></div>
+    <div class="bnav-item" onclick="bnav(this,'rank')"><span class="bnav-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg></span></span><span class="bnav-lbl" data-i="nav_rank">Ranking</span></div>
   </div>
 </div>
 
@@ -923,35 +936,35 @@ body.navigating .leaflet-top.leaflet-left{display:none}
   </div>
   <div class="drawer-menu">
     <div class="menu-section" data-i="sec_nav">Navigation</div>
-    <div class="menu-item" onclick="drawerAction('route')"><div class="menu-icon" style="background:rgba(59,130,246,.12);border-color:#3b82f6">🔀</div><span class="menu-label" data-i="menu_route">Plan route</span></div>
-    <div class="menu-item" onclick="drawerAction('nearby')"><div class="menu-icon">📍</div><span class="menu-label" data-i="menu_near">Nearest parkings</span></div>
-    <div class="menu-item" onclick="drawerAction('all')"><div class="menu-icon">🗺</div><span class="menu-label" data-i="menu_all">All parkings</span></div>
-    <div class="menu-item" onclick="drawerAction('search')"><div class="menu-icon">🔍</div><span class="menu-label" data-i="menu_search">Search</span></div>
-    <div id="markets-menu-item" class="menu-item" onclick="drawerAction('markets')"><div class="menu-icon" style="background:rgba(249,115,22,.12);border-color:#f97316">🛍</div><span class="menu-label" data-i="menu_markets">Flohmarkt / Markets</span><span class="menu-badge" id="markets-badge" style="display:none">ON</span></div>
-    <div class="menu-item" onclick="drawerAction('autobahn')"><div class="menu-icon" style="background:rgba(0,100,200,.12);border-color:#0064c8">🇩🇪</div><span class="menu-label">Autobahn DE (oficjalne MOP)</span><span class="menu-badge" id="autobahn-badge" style="display:none">ON</span></div>
+    <div class="menu-item" onclick="drawerAction('route')"><div class="menu-icon" style="background:rgba(59,130,246,.12);border-color:#3b82f6"><span class="si"><svg viewBox="0 0 24 24"><polygon points="12 2 19 21 12 17 5 21 12 2"/></svg></span></div><span class="menu-label" data-i="menu_route">Plan route</span></div>
+    <div class="menu-item" onclick="drawerAction('nearby')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg></span></div><span class="menu-label" data-i="menu_near">Nearest parkings</span></div>
+    <div class="menu-item" onclick="drawerAction('all')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="M3 7l6-4 6 4 6-4v14l-6 4-6-4-6 4V7z"/><path d="M9 3v14M15 7v14"/></svg></span></div><span class="menu-label" data-i="menu_all">All parkings</span></div>
+    <div class="menu-item" onclick="drawerAction('search')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span></div><span class="menu-label" data-i="menu_search">Search</span></div>
+    <div id="markets-menu-item" class="menu-item" onclick="drawerAction('markets')"><div class="menu-icon" style="background:rgba(249,115,22,.12);border-color:#f97316"><span class="si"><svg viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></span></div><span class="menu-label" data-i="menu_markets">Flohmarkt / Markets</span><span class="menu-badge" id="markets-badge" style="display:none">ON</span></div>
+    <div class="menu-item" onclick="drawerAction('autobahn')"><div class="menu-icon" style="background:rgba(0,100,200,.12);border-color:#0064c8"><span style="font-size:1.1rem">🇩🇪</span></div><span class="menu-label">Autobahn DE (oficjalne MOP)</span><span class="menu-badge" id="autobahn-badge" style="display:none">ON</span></div>
     <div class="menu-sep"></div>
     <div class="menu-section" data-i="sec_community">Community</div>
-    <div class="menu-item" onclick="drawerAction('cbradio')"><div class="menu-icon" style="background:rgba(59,130,246,.12);border-color:#3b82f6">📻</div><span class="menu-label">CB Radio — mapa wiadomości</span><span class="menu-badge" id="msgs-count-badge" style="display:none">0</span></div>
-    <div class="menu-item" onclick="drawerAction('add')"><div class="menu-icon" style="background:rgba(139,92,246,.12);border-color:#8b5cf6">＋</div><span class="menu-label" data-i="menu_add">Add a spot</span><span class="menu-badge">+10 pts</span></div>
-    <div class="menu-item" onclick="drawerAction('myspots')"><div class="menu-icon">⭐</div><span class="menu-label" data-i="menu_myspots">My spots</span></div>
-    <div class="menu-item" onclick="drawerAction('favs')"><div class="menu-icon" style="background:rgba(245,158,11,.12);border-color:#f59e0b">❤️</div><span class="menu-label">Ulubione parkingi</span><span class="menu-badge" id="favs-count" style="display:none">0</span></div>
-    <div class="menu-item" onclick="drawerAction('rank')"><div class="menu-icon" style="background:rgba(245,158,11,.12);border-color:#f59e0b">🏆</div><span class="menu-label" data-i="menu_rank">Ranking</span></div>
-    <div class="menu-item" onclick="drawerAction('share')"><div class="menu-icon" style="background:rgba(16,185,129,.12);border-color:#10b981">📣</div><span class="menu-label" data-i="menu_share">Recommend TruckSpot</span><span class="menu-badge green">+50 pts</span></div>
+    <div class="menu-item" onclick="drawerAction('cbradio')"><div class="menu-icon" style="background:rgba(59,130,246,.12);border-color:#3b82f6"><span class="si"><svg viewBox="0 0 24 24"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg></span></div><span class="menu-label">CB Radio — mapa wiadomości</span><span class="menu-badge" id="msgs-count-badge" style="display:none">0</span></div>
+    <div class="menu-item" onclick="drawerAction('add')"><div class="menu-icon" style="background:rgba(139,92,246,.12);border-color:#8b5cf6"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></span></div><span class="menu-label" data-i="menu_add">Add a spot</span><span class="menu-badge">+10 pts</span></div>
+    <div class="menu-item" onclick="drawerAction('myspots')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg></span></div><span class="menu-label" data-i="menu_myspots">My spots</span></div>
+    <div class="menu-item" onclick="drawerAction('favs')"><div class="menu-icon" style="background:rgba(245,158,11,.12);border-color:#f59e0b"><span class="si"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span></div><span class="menu-label">Ulubione parkingi</span><span class="menu-badge" id="favs-count" style="display:none">0</span></div>
+    <div class="menu-item" onclick="drawerAction('rank')"><div class="menu-icon" style="background:rgba(245,158,11,.12);border-color:#f59e0b"><span class="si"><svg viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg></span></div><span class="menu-label" data-i="menu_rank">Ranking</span></div>
+    <div class="menu-item" onclick="drawerAction('share')"><div class="menu-icon" style="background:rgba(16,185,129,.12);border-color:#10b981"><span class="si"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></span></div><span class="menu-label" data-i="menu_share">Recommend TruckSpot</span><span class="menu-badge green">+50 pts</span></div>
     <div class="menu-sep"></div>
     <div class="menu-section" data-i="sec_tools">Tools</div>
-    <div class="menu-item" onclick="drawerAction('tacho')"><div class="menu-icon" style="background:rgba(245,158,11,.12);border-color:#f59e0b">🕐</div><span class="menu-label">Tachograf EU</span><span class="menu-badge" id="tacho-badge" style="display:none">ON</span></div>
-    <div class="menu-item" onclick="drawerAction('gps')"><div class="menu-icon">📡</div><span class="menu-label" data-i="menu_gps">GPS Alerts</span><span class="menu-badge" id="gps-badge" style="display:none">ON</span></div>
-    <div class="menu-item" onclick="drawerAction('radio')"><div class="menu-icon">📻</div><span class="menu-label" data-i="menu_radio">Radio</span></div>
+    <div class="menu-item" onclick="drawerAction('tacho')"><div class="menu-icon" style="background:rgba(245,158,11,.12);border-color:#f59e0b"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span></div><span class="menu-label">Tachograf EU</span><span class="menu-badge" id="tacho-badge" style="display:none">ON</span></div>
+    <div class="menu-item" onclick="drawerAction('gps')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg></span></div><span class="menu-label" data-i="menu_gps">GPS Alerts</span><span class="menu-badge" id="gps-badge" style="display:none">ON</span></div>
+    <div class="menu-item" onclick="drawerAction('radio')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg></span></div><span class="menu-label" data-i="menu_radio">Radio</span></div>
     <div class="menu-sep"></div>
     <div class="menu-section" data-i="sec_settings">Settings</div>
     <!-- Theme toggle -->
     <div class="theme-toggle-row">
-      <div class="menu-icon">🎨</div>
+      <div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></span></div>
       <span class="menu-label" data-i="menu_theme">Dark mode</span>
       <div class="toggle-track on" id="theme-track" onclick="toggleTheme()"><div class="toggle-thumb"></div></div>
     </div>
-    <div class="menu-item" onclick="drawerAction('lang')"><div class="menu-icon">🌐</div><span class="menu-label" data-i="menu_lang">Language</span></div>
-    <div class="menu-item" onclick="drawerAction('mode')"><div class="menu-icon">🔄</div><span class="menu-label" data-i="menu_mode">Change mode</span></div>
+    <div class="menu-item" onclick="drawerAction('lang')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span></div><span class="menu-label" data-i="menu_lang">Language</span></div>
+    <div class="menu-item" onclick="drawerAction('mode')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span></div><span class="menu-label" data-i="menu_mode">Change mode</span></div>
   </div>
 </div>
 
@@ -1098,14 +1111,14 @@ body.navigating .leaflet-top.leaflet-left{display:none}
   <div class="msg-form-sheet" onclick="event.stopPropagation()">
     <div class="msg-form-title">📢 Zostaw wiadomość kierowcom</div>
     <div class="msg-cats" id="msg-cats">
-      <button class="msg-cat-btn active" data-cat="traffic" onclick="pickMsgCat(this)" style="border-color:#ef4444;background:#ef4444;color:#fff">🚗 Korek</button>
-      <button class="msg-cat-btn" data-cat="police" onclick="pickMsgCat(this)">🚔 Kontrola</button>
-      <button class="msg-cat-btn" data-cat="accident" onclick="pickMsgCat(this)">💥 Wypadek</button>
-      <button class="msg-cat-btn" data-cat="roadwork" onclick="pickMsgCat(this)">🚧 Roboty</button>
-      <button class="msg-cat-btn" data-cat="weather" onclick="pickMsgCat(this)">🌨 Pogoda</button>
-      <button class="msg-cat-btn" data-cat="fuel" onclick="pickMsgCat(this)">⛽ Paliwo</button>
-      <button class="msg-cat-btn" data-cat="help" onclick="pickMsgCat(this)">🆘 Pomoc</button>
-      <button class="msg-cat-btn" data-cat="info" onclick="pickMsgCat(this)">💬 Info</button>
+      <button class="msg-cat-btn active" data-cat="traffic" onclick="pickMsgCat(this)" style="border-color:#ef4444;background:#ef4444;color:#fff"><span class="si"><svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span> Korek</button>
+      <button class="msg-cat-btn" data-cat="police" onclick="pickMsgCat(this)"><span class="si"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span> Kontrola</button>
+      <button class="msg-cat-btn" data-cat="accident" onclick="pickMsgCat(this)"><span class="si"><svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span> Wypadek</button>
+      <button class="msg-cat-btn" data-cat="roadwork" onclick="pickMsgCat(this)"><span class="si"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span> Roboty</button>
+      <button class="msg-cat-btn" data-cat="weather" onclick="pickMsgCat(this)"><span class="si"><svg viewBox="0 0 24 24"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"/><line x1="8" y1="16" x2="8.01" y2="16"/><line x1="8" y1="20" x2="8.01" y2="20"/><line x1="12" y1="18" x2="12.01" y2="18"/><line x1="12" y1="22" x2="12.01" y2="22"/><line x1="16" y1="16" x2="16.01" y2="16"/><line x1="16" y1="20" x2="16.01" y2="20"/></svg></span> Pogoda</button>
+      <button class="msg-cat-btn" data-cat="fuel" onclick="pickMsgCat(this)"><span class="si"><svg viewBox="0 0 24 24"><line x1="3" y1="22" x2="15" y2="22"/><line x1="4" y1="9" x2="14" y2="9"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"/></svg></span> Paliwo</button>
+      <button class="msg-cat-btn" data-cat="help" onclick="pickMsgCat(this)"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/></svg></span> Pomoc</button>
+      <button class="msg-cat-btn" data-cat="info" onclick="pickMsgCat(this)"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span> Info</button>
     </div>
     <textarea class="msg-textarea" id="msg-textarea" placeholder="Co widzisz? Max 200 znaków..." maxlength="200"></textarea>
     <button class="msg-submit-btn" onclick="submitMapMessage()">📢 Wyślij wszystkim kierowcom</button>
@@ -1605,7 +1618,7 @@ function onMapClick(e){
     document.getElementById('fab-add').textContent='＋';
     spotLat=e.latlng.lat; spotLng=e.latlng.lng;
     if(spotTempMarker) map.removeLayer(spotTempMarker);
-    spotTempMarker=L.marker([spotLat,spotLng],{icon:L.divIcon({className:'',html:'<div class="mk-user">📍</div>',iconSize:[34,34],iconAnchor:[17,17]})}).addTo(map);
+    spotTempMarker=L.marker([spotLat,spotLng],{icon:L.divIcon({className:'',html:mkPinP('#8b5cf6','+'),iconSize:[34,42],iconAnchor:[17,42]})}).addTo(map);
     setEl('spot-coords-info','📍 '+spotLat.toFixed(5)+', '+spotLng.toFixed(5));
     document.getElementById('add-panel').classList.add('open');
   } else { closePanel(); }
@@ -1673,7 +1686,7 @@ function renderMarkers(parkings){
   markers.forEach(m=>map.removeLayer(m)); markers=[];
   const cfg=MODE_CONFIG[currentMode];
   parkings.forEach(p=>{
-    const icon=L.divIcon({className:'',html:`<div class="mk" style="background:${cfg.color}"><span>${cfg.markerEmoji}</span></div>`,iconSize:[38,38],iconAnchor:[19,38]});
+    const icon=L.divIcon({className:'',html:mkPinP(cfg.color),iconSize:[38,47],iconAnchor:[19,47]});
     markers.push(L.marker([p.lat,p.lng],{icon}).addTo(map).on('click',()=>showDetail(p)));
   });
 }
@@ -1687,7 +1700,7 @@ function loadOsmParkings(){
     osmMarkers.forEach(m=>map.removeLayer(m)); osmMarkers=[];
     const cfg=MODE_CONFIG[currentMode];
     data.forEach(p=>{
-      const icon=L.divIcon({className:'',html:`<div class="mk" style="background:${cfg.color};opacity:.7;width:28px;height:28px;border-radius:50%"><span style="font-size:.8rem">${cfg.markerEmoji}</span></div>`,iconSize:[28,28],iconAnchor:[14,14]});
+      const icon=L.divIcon({className:'',html:mkPinP(cfg.color+'cc','P',28),iconSize:[28,35],iconAnchor:[14,35]});
       osmMarkers.push(L.marker([p.lat,p.lng],{icon}).addTo(map).on('click',()=>showOsmDetail(p)));
     });
   }).catch(()=>{ osmLoading=false; });
@@ -1816,7 +1829,7 @@ function loadUserSpots(){
   });
 }
 function addUserSpotMarker(spot){
-  const icon=L.divIcon({className:'',html:`<div class="mk-user">${CAT_ICONS[spot.cat]||'📌'}</div>`,iconSize:[34,34],iconAnchor:[17,17]});
+  const icon=L.divIcon({className:'',html:mkPinP('#8b5cf6', (spot.cat||'?')[0].toUpperCase()),iconSize:[34,42],iconAnchor:[17,42]});
   userSpotMarkers.push(L.marker([spot.lat,spot.lng],{icon}).addTo(map).on('click',()=>showUserSpotDetail(spot)));
 }
 
@@ -3086,6 +3099,18 @@ function timeSince(ts){
 // ══════════════════════════════════════
 // CB RADIO — MAPA WIADOMOŚCI
 // ══════════════════════════════════════
+// SVG paths for CB Radio map markers (Lucide, viewBox 0 0 24 24)
+const CAT_SVG_PATHS = {
+  traffic:  '<rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>',
+  police:   '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  accident: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  roadwork: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+  weather:  '<path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"/><line x1="8" y1="16" x2="8.01" y2="16"/><line x1="8" y1="20" x2="8.01" y2="20"/><line x1="12" y1="18" x2="12.01" y2="18"/>',
+  fuel:     '<line x1="3" y1="22" x2="15" y2="22"/><line x1="4" y1="9" x2="14" y2="9"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"/>',
+  help:     '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/>',
+  info:     '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
+};
+
 const MSG_CATS = {
   traffic:  { icon:'🚗', color:'#ef4444', label:'Korek' },
   police:   { icon:'🚔', color:'#dc2626', label:'Kontrola drogowa' },
@@ -3204,8 +3229,8 @@ function renderMsgMarker(m){
   const isMine = m.color === author.color && m.emoji === author.emoji;
   const icon = L.divIcon({
     className:'',
-    html:`<div class="msg-bubble${isMine?' mine':''}" style="background:${cat.color}" title="${cat.label}: ${m.text.substring(0,40)}…">${cat.icon}</div>`,
-    iconSize:[36,36], iconAnchor:[18,36],
+    html:mkPinIcon(isMine ? cat.color+'dd' : cat.color, CAT_SVG_PATHS[m.cat]||CAT_SVG_PATHS.info),
+    iconSize:[36,45], iconAnchor:[18,45],
   });
   const mk = L.marker([m.lat, m.lng], {icon, zIndexOffset:200})
     .addTo(map)
@@ -3332,8 +3357,8 @@ function loadAndShowAutobahn(){
       document.getElementById('autobahn-badge').style.display='';
       data.forEach(p=>{
         const icon = L.divIcon({className:'',
-          html:'<div class="mk" style="background:#0064c8;font-size:.7rem">🇩🇪</div>',
-          iconSize:[38,38],iconAnchor:[19,38]});
+          html:mkPinP('#0064c8','DE'),
+          iconSize:[38,47],iconAnchor:[19,47]});
         const mk = L.marker([p.lat,p.lng],{icon}).addTo(map)
           .on('click',()=>showAutobahnDetail(p));
         autobahnMarkers.push(mk);
@@ -3367,6 +3392,26 @@ function showAutobahnDetail(p){
   document.getElementById('detail-panel').classList.add('open');
   map.panTo([p.lat,p.lng]);
   loadOccupancy(p.id);
+}
+
+// ══════════════════════════════════════
+// SVG MAP MARKER HELPERS
+// ══════════════════════════════════════
+function mkPin(color, innerHtml, size=38){
+  const h = Math.round(size*1.25);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${h}" viewBox="0 0 40 50" style="overflow:visible">
+    <defs><filter id="mps" x="-40%" y="-30%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity="0.4"/>
+    </filter></defs>
+    <path d="M20 1C9.5 1 1 9.5 1 20c0 13.8 17.5 28 18.3 28.7a1 1 0 0 0 1.4 0C21.5 48 39 33.8 39 20 39 9.5 30.5 1 20 1z" fill="${color}" filter="url(#mps)"/>
+    ${innerHtml}
+  </svg>`;
+}
+function mkPinP(color, letter='P', size=38){
+  return mkPin(color, `<text x="20" y="26" text-anchor="middle" font-family="'Inter',Arial Black,sans-serif" font-weight="900" font-size="18" fill="white" letter-spacing="-1">${letter}</text>`, size);
+}
+function mkPinIcon(color, svgPath, size=38){
+  return mkPin(color, `<g transform="translate(8,8)" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><svg width="24" height="24" viewBox="0 0 24 24">${svgPath}</svg></g>`, size);
 }
 
 // MARKETS (FLOHMARKT)
@@ -3403,8 +3448,9 @@ function renderMarketMarkers(){
     : marketsData;
   filtered.forEach(m=>{
     if(!m.lat || !m.lng) return;
-    const flag = ({DE:'🇩🇪',FR:'🇫🇷',PL:'🇵🇱',CZ:'🇨🇿',AT:'🇦🇹',IT:'🇮🇹',HU:'🇭🇺',RO:'🇷🇴'})[m.country]||'🛍';
-    const icon = L.divIcon({className:'',html:`<div class="mk-market">${flag}</div>`,iconSize:[34,34],iconAnchor:[17,17]});
+    const CTRY_LETTERS = {DE:'DE',FR:'FR',PL:'PL',CZ:'CZ',AT:'AT',IT:'IT',HU:'HU',RO:'RO'};
+    const lbl = CTRY_LETTERS[m.country]||'S';
+    const icon = L.divIcon({className:'',html:mkPin('#f97316',`<text x="20" y="24" text-anchor="middle" font-family="'Inter',Arial,sans-serif" font-weight="800" font-size="11" fill="white">${lbl}</text><text x="20" y="35" text-anchor="middle" font-size="10">🛍</text>`),iconSize:[38,47],iconAnchor:[19,47]});
     const mk = L.marker([m.lat,m.lng],{icon}).addTo(map).on('click',()=>showMarketDetail(m));
     marketMarkers.push(mk);
   });
