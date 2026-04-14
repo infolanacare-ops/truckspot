@@ -128,7 +128,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 #step-mode{
   background:radial-gradient(ellipse 80% 50% at 50% -10%, rgba(212,175,55,.12) 0%, transparent 65%), var(--bg);
 }
-.mode-card.tir    {--c:#d4af37;--cg:rgba(212,175,55,.13)}
+.mode-card.tir    {--c:#c8960c;--cg:rgba(200,150,12,.13)}
 .mode-card.camper {--c:#10b981;--cg:rgba(16,185,129,.11)}
 .mode-card.tourist{--c:#3b82f6;--cg:rgba(59,130,246,.11)}
 .mode-card{
@@ -1257,8 +1257,8 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
       <div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20" fill="currentColor" opacity=".15"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg></span></div>
       <span class="menu-label">Kolor akcentu</span>
       <div class="accent-swatches" id="accent-swatches">
-        <div class="accent-swatch" data-accent="gold"   style="background:linear-gradient(135deg,#f0d060,#d4af37)" onclick="setAccentColor('gold')"  title="Złoty"></div>
-        <div class="accent-swatch" data-accent="silver" style="background:linear-gradient(135deg,#e2e8f0,#94a3b8)" onclick="setAccentColor('silver')" title="Srebrny"></div>
+        <div class="accent-swatch" data-accent="gold"   style="background:linear-gradient(135deg,#ffd700 0%,#c8960c 40%,#ffe566 60%,#b8780a 100%)" onclick="setAccentColor('gold')"  title="Złoty"></div>
+        <div class="accent-swatch" data-accent="silver" style="background:linear-gradient(135deg,#e8e8e8 0%,#a8a9ad 40%,#f0f0f0 60%,#8a8a8e 100%)" onclick="setAccentColor('silver')" title="Srebrny"></div>
         <div class="accent-swatch" data-accent="green"  style="background:linear-gradient(135deg,#34d399,#10b981)" onclick="setAccentColor('green')"  title="Zielony"></div>
         <div class="accent-swatch" data-accent="blue"   style="background:linear-gradient(135deg,#60a5fa,#3b82f6)" onclick="setAccentColor('blue')"   title="Niebieski"></div>
       </div>
@@ -1818,8 +1818,8 @@ function toggleTheme(){
 // ACCENT COLOR
 // ══════════════════════════════════════
 const ACCENT_PRESETS = {
-  gold:   {a:'#d4af37', a2:'#f0d060', bg:'rgba(212,175,55,.15)'},
-  silver: {a:'#94a3b8', a2:'#cbd5e1', bg:'rgba(148,163,184,.15)'},
+  gold:   {a:'#c8960c', a2:'#ffd700', bg:'rgba(200,150,12,.18)'},
+  silver: {a:'#a8a9ad', a2:'#e8e8e8', bg:'rgba(168,169,173,.16)'},
   green:  {a:'#10b981', a2:'#34d399', bg:'rgba(16,185,129,.15)'},
   blue:   {a:'#3b82f6', a2:'#60a5fa', bg:'rgba(59,130,246,.15)'},
 };
@@ -1839,6 +1839,11 @@ function setAccentColor(name){
     MODE_CONFIG.tir.color2 = p.a2;
     profile.tirPinColor = p.a;
     renderMarkers(allParkings||[]);
+  }
+  // odśwież strzałkę nawigacji jeśli aktywna
+  if(gpsMarker){
+    const poly = gpsMarker.getElement().querySelector('polygon');
+    if(poly) poly.setAttribute('fill', p.a2);
   }
 }
 
@@ -2899,9 +2904,10 @@ function mkGpsDotMarker(lat, lng){
 
 function setGpsArrow(lat, lng){
   if(!gpsMarker){
+    const arrowColor = getComputedStyle(document.documentElement).getPropertyValue('--accent2').trim() || '#ffd700';
     const el = document.createElement('div');
     el.innerHTML = `<svg class="nav-arrow" width="40" height="52" viewBox="0 0 40 52" xmlns="http://www.w3.org/2000/svg">
-      <polygon points="20,2 38,50 20,40 2,50" fill="#22c55e" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>
+      <polygon points="20,2 38,50 20,40 2,50" fill="${arrowColor}" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>
     </svg>`;
     el.style.cssText = 'line-height:0';
     gpsMarker = new mapboxgl.Marker({element:el, anchor:'center', rotationAlignment:'map', pitchAlignment:'map'})
