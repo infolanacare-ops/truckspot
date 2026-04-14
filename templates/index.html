@@ -1062,8 +1062,13 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .nav-pitch-btn{padding:.5rem .7rem;border:none;border-radius:12px;cursor:pointer;
   background:rgba(255,255,255,.15);color:#fff;font-size:.78rem;font-weight:800;
   flex-shrink:0;backdrop-filter:blur(4px);letter-spacing:.02em;min-width:38px;transition:.2s}
-.nav-stop-btn{padding:.6rem 1.1rem;border:none;border-radius:12px;cursor:pointer;
-  background:#ef4444;color:#fff;font-family:var(--font-head);font-size:.85rem;font-weight:800;flex-shrink:0}
+.nav-stop-btn{
+  width:46px;height:46px;border:none;border-radius:14px;cursor:pointer;flex-shrink:0;
+  background:rgba(239,68,68,.25);backdrop-filter:blur(6px);
+  border:1.5px solid rgba(239,68,68,.5);
+  color:#ef4444;font-size:1.3rem;font-weight:900;line-height:1;
+  display:flex;align-items:center;justify-content:center;transition:.2s}
+.nav-stop-btn:active{background:rgba(239,68,68,.65);transform:scale(.93)}
 
 /* — Pasy ruchu — */
 .nav-lanes{
@@ -1784,7 +1789,7 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
     <button class="nav-mute-btn" id="nav-mute-btn" onclick="toggleNavMute()" title="Wycisz głos">🔊</button>
     <button class="nav-pitch-btn" id="nav-pitch-btn" onclick="cycleNavPitch()" title="Zmień perspektywę">3D</button>
     <button class="nav-overview-btn" id="nav-overview-btn" onclick="toggleNavOverview()" title="Podgląd trasy">🗺</button>
-    <button class="nav-stop-btn" onclick="stopNavigation()">✕ Stop</button>
+    <button class="nav-stop-btn" onclick="stopNavigation()" title="Zatrzymaj nawigację">✕</button>
   </div>
 </div>
 
