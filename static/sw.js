@@ -1,7 +1,7 @@
-// TruckSpot Service Worker — offline mode v6
-const SHELL_CACHE = 'ts-shell-v6';
-const DATA_CACHE  = 'ts-data-v6';
-const TILE_CACHE  = 'ts-tiles-v6';
+// TruckSpot Service Worker — offline mode v7
+const SHELL_CACHE = 'ts-shell-v7';
+const DATA_CACHE  = 'ts-data-v7';
+const TILE_CACHE  = 'ts-tiles-v7';
 
 // App shell — cache przy instalacji, zawsze dostępny offline
 const SHELL_ASSETS = [
@@ -40,13 +40,15 @@ self.addEventListener('install', e => {
   );
 });
 
-// ── ACTIVATE — usuń stare cache ──────────────────────────────────────────────
+// ── ACTIVATE — usuń stare cache + powiadom apkę o aktualizacji ──────────────
 self.addEventListener('activate', e => {
   const CURRENT = [SHELL_CACHE, DATA_CACHE, TILE_CACHE];
   e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => !CURRENT.includes(k)).map(k => caches.delete(k)))
     ).then(() => self.clients.claim())
+     .then(() => self.clients.matchAll({type:'window', includeUncontrolled:true}))
+     .then(clients => clients.forEach(c => c.postMessage({type:'UPDATE_AVAILABLE'})))
   );
 });
 

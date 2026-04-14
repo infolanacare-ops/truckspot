@@ -697,6 +697,26 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .rank-name{flex:1;font-weight:600;font-size:.88rem;color:var(--text)}
 .rank-pts{font-family:var(--font-head);font-size:.9rem;font-weight:800;color:var(--accent)}
 
+/* ══ UPDATE BANNER ══ */
+.update-banner{
+  position:fixed;bottom:0;left:0;right:0;z-index:2000;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#000;display:flex;align-items:center;gap:.8rem;
+  padding:.75rem 1rem;transform:translateY(100%);
+  transition:transform .4s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:0 -4px 24px rgba(0,0,0,.3)}
+.update-banner.show{transform:translateY(0)}
+.update-banner-text{flex:1;font-size:.85rem;font-weight:700}
+.update-banner-btn{
+  flex-shrink:0;border:none;border-radius:20px;
+  background:rgba(0,0,0,.25);color:#000;font-family:var(--font-head);
+  font-size:.82rem;font-weight:800;padding:.45rem 1rem;cursor:pointer;
+  white-space:nowrap}
+.update-banner-close{
+  width:28px;height:28px;border:none;border-radius:50%;
+  background:rgba(0,0,0,.15);color:#000;cursor:pointer;
+  font-size:.9rem;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+
 /* ══ ALERT TOAST ══ */
 .alert-toast{position:fixed;top:65px;left:50%;transform:translateX(-50%) translateY(-140px);z-index:1500;
   background:var(--panel);border-left:4px solid var(--accent);border-radius:14px;padding:.7rem 1rem;
@@ -1227,6 +1247,14 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
 <!-- backdrop do zamknięcia diala -->
 <div id="report-dial-backdrop" onclick="closeReportDial()"
   style="display:none;position:fixed;inset:0;z-index:599"></div>
+
+<!-- UPDATE BANNER -->
+<div class="update-banner" id="update-banner">
+  <span style="font-size:1.2rem">🔄</span>
+  <span class="update-banner-text">Dostępna nowa wersja TruckSpot!</span>
+  <button class="update-banner-btn" onclick="applyUpdate()">Aktualizuj</button>
+  <button class="update-banner-close" onclick="dismissUpdate()">✕</button>
+</div>
 
 <!-- ══════════════════════════════════════
      APP
@@ -5313,13 +5341,28 @@ function updatePushPosition(lat, lng){
   }).catch(()=>{});
 }
 
-// SW → app: przejdź do alerty po kliknięciu powiadomienia
+// SW → app
 if('serviceWorker' in navigator){
   navigator.serviceWorker.addEventListener('message', e => {
     if(e.data?.type === 'ALERT_NAVIGATE' && e.data.lat && e.data.lng){
       map && map.flyTo({center:[e.data.lng, e.data.lat], zoom:13});
     }
+    if(e.data?.type === 'UPDATE_AVAILABLE'){
+      showUpdateBanner();
+    }
   });
+}
+
+function showUpdateBanner(){
+  const b = document.getElementById('update-banner');
+  if(b) b.classList.add('show');
+}
+function dismissUpdate(){
+  const b = document.getElementById('update-banner');
+  if(b) b.classList.remove('show');
+}
+function applyUpdate(){
+  window.location.reload();
 }
 
 // sprawdź parametry URL przy starcie (np. z powiadomienia)
