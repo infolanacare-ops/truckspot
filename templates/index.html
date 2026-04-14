@@ -353,18 +353,18 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 /* ══ REPORTS ══ */
 /* ── REPORT SPEED-DIAL ── */
 .report-dial{
-  position:fixed;right:1rem;bottom:5.5rem;z-index:600;
+  position:fixed;right:.35rem;bottom:5.5rem;z-index:600;
   display:flex;flex-direction:column;align-items:center;gap:.55rem;
 }
 .report-dial-main{
-  width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;
+  width:64px;height:64px;border-radius:50%;border:none;cursor:pointer;
   background:rgba(255,255,255,.18);backdrop-filter:blur(8px);
   box-shadow:0 2px 12px rgba(0,0,0,.25);
   display:flex;align-items:center;justify-content:center;
   transition:.2s;
 }
 .report-dial-main::after{
-  content:'';width:12px;height:12px;border-radius:50%;
+  content:'';width:14px;height:14px;border-radius:50%;
   background:rgba(255,255,255,.85);
   box-shadow:0 0 0 3px rgba(255,255,255,.25);
   transition:.2s;
@@ -884,7 +884,12 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
    NAWIGACJA — TomTom style
 ══════════════════════════════════════ */
 .nav-overlay{position:fixed;inset:0;z-index:1200;pointer-events:none;display:none;flex-direction:column}
-.nav-overlay.active{display:flex;pointer-events:auto}
+.nav-overlay.active{display:flex;pointer-events:none}
+.nav-overlay.active .nav-maneuver-card,
+.nav-overlay.active .nav-next-strip,
+.nav-overlay.active .nav-road-strip,
+.nav-overlay.active .nav-pois-strip,
+.nav-overlay.active .nav-bottom{pointer-events:auto}
 
 /* — Główna karta manewru (góra) — */
 .nav-maneuver-card{
@@ -2910,7 +2915,7 @@ function setGpsArrow(lat, lng){
       <polygon points="20,2 38,50 20,40 2,50" fill="${arrowColor}" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>
     </svg>`;
     el.style.cssText = 'line-height:0';
-    gpsMarker = new mapboxgl.Marker({element:el, anchor:'center', rotationAlignment:'map', pitchAlignment:'map'})
+    gpsMarker = new mapboxgl.Marker({element:el, anchor:'center', rotationAlignment:'viewport', pitchAlignment:'map'})
       .setLngLat([lng,lat]).addTo(map);
   } else {
     gpsMarker.setLngLat([lng,lat]);
@@ -3433,15 +3438,28 @@ function startNavigation(){
   navAnnouncedPois=new Set(); navAnnouncedSteps=new Set(); navSpeedKmh=0;
   document.getElementById('nav-overlay').classList.add('active');
   document.body.classList.add('navigating');
+  // Ukryj FABy podczas nawigacji
+  const msgFab = document.getElementById('msg-fab');
+  const repDial = document.getElementById('report-dial');
+  if(msgFab) msgFab.style.display='none';
+  if(repDial) repDial.style.display='none';
   closeRoute();
   buildRouteDistances();
   updateNavStep(0);
   setEl('nav-total-dist', fmtDist(navDistRemaining));
   setEl('nav-eta-time', 'ETA: '+fmtDur(routeTotalDur));
-  // Announce start
   speakNav(stepInstruction(routeSteps[0]), true);
-  loadRoutePois();
-  loadNavCameras();
+  // Auto tryb dzienny/nocny mapy
+  const h = new Date().getHours();
+  const navStyle = (h >= 6 && h < 20)
+    ? 'mapbox://styles/mapbox/navigation-day-v1'
+    : 'mapbox://styles/mapbox/navigation-night-v1';
+  map.setStyle(navStyle);
+  map.once('style.load', ()=>{
+    if(routeCoords.length) drawRoute(routeCoords);
+    loadRoutePois();
+    loadNavCameras();
+  });
   map.easeTo({pitch:55, duration:800});
   navWatchId = navigator.geolocation.watchPosition(onNavPosition,
     e=>{ if(e.code!==e.TIMEOUT) showAlert('⚠️','GPS Error',''); },
@@ -3802,12 +3820,23 @@ function stopNavigation(){
   if(navWatchId) navigator.geolocation.clearWatch(navWatchId);
   document.getElementById('nav-overlay').classList.remove('active');
   document.body.classList.remove('navigating');
+  // Przywróć FABy
+  const msgFab = document.getElementById('msg-fab');
+  const repDial = document.getElementById('report-dial');
+  if(msgFab) msgFab.style.display='';
+  if(repDial) repDial.style.display='';
   navAnnouncedCameras = new Set();
   cameraMarkers.forEach(m=>m.remove()); cameraMarkers=[];
   // Zamień strzałkę z powrotem na kółko
   if(gpsMarker){ const ll = gpsMarker.getLngLat(); gpsMarker.remove(); gpsMarker=null;
     gpsMarker = mkGpsDotMarker(ll.lat, ll.lng); }
   map.easeTo({pitch:0, bearing:0, duration:600});
+  // Przywróć styl mapy
+  const baseStyle = document.body.classList.contains('light')
+    ? 'mapbox://styles/mapbox/streets-v12'
+    : 'mapbox://styles/mapbox/dark-v11';
+  map.setStyle(baseStyle);
+  map.once('style.load', ()=>{ renderMarkers(allParkings||[]); });
   showAlert('🏁','','Navigation stopped');
 }
 
