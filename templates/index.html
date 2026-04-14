@@ -2142,7 +2142,7 @@ async function showDetail(p){
     <div class="info-grid">${boxes}</div>
     ${amenHtml?`<div class="amenities">${amenHtml}</div>`:''}
     ${poiHtml?`<div class="poi-title">🗺 Nearby</div><div class="poi-list">${poiHtml}</div>`:''}
-    <button class="nav-btn" onclick="navigateTo(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')">📍 Navigate — Google Maps</button>
+    <button class="nav-btn" onclick="navigateTo(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')">🧭 Nawiguj</button>
     <button class="share-btn" onclick="shareParking(${p.id},'${p.name.replace(/'/g,"\\'")}')">🔗 Udostępnij parking</button>
     ${occWidgetHtml(p.id)}
     <div id="pd-comments"><div style="font-size:.78rem;color:var(--muted);padding:.8rem 0;text-align:center">⏳ Ładowanie opinii...</div></div>`;
@@ -2175,7 +2175,7 @@ function showOsmDetail(p){
       <div class="info-box"><div class="info-box-val">FREE</div><div class="info-box-lbl">price</div></div>
     </div>
     ${amenHtml?`<div class="amenities">${amenHtml}</div>`:''}
-    <button class="nav-btn" onclick="navigateTo(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')">📍 Navigate — Google Maps</button>`;
+    <button class="nav-btn" onclick="navigateTo(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')">🧭 Nawiguj</button>`;
   document.getElementById('detail-panel').classList.add('open');
   map.panTo([p.lng,p.lat]);
 }
@@ -2190,7 +2190,7 @@ function showUserSpotDetail(spot){
     </div>
     <div style="font-size:1.1rem;margin-bottom:.5rem">${stars}</div>
     ${spot.desc?`<div style="font-size:.85rem;color:var(--muted);margin-bottom:.9rem;line-height:1.5">${spot.desc}</div>`:''}
-    <button class="nav-btn" onclick="navigateTo(${spot.lat},${spot.lng},'${spot.name.replace(/'/g,"\\'")}')">📍 Navigate — Google Maps</button>`;
+    <button class="nav-btn" onclick="navigateTo(${spot.lat},${spot.lng},'${spot.name.replace(/'/g,"\\'")}')">🧭 Nawiguj</button>`;
   document.getElementById('detail-panel').classList.add('open');
   map.panTo([spot.lng,spot.lat]);
 }
@@ -3880,7 +3880,7 @@ function showAutobahnDetail(p){
       📡 Dane: <a href="https://autobahn.api.bund.dev" target="_blank" style="color:var(--blue)">Autobahn GmbH / Bundesministerium (oficjalne)</a>
     </div>
     ${occWidgetHtml(p.id)}
-    <button class="nav-btn" onclick="navigateTo(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')">📍 Navigate — Google Maps</button>`;
+    <button class="nav-btn" onclick="navigateTo(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')">🧭 Nawiguj</button>`;
   document.getElementById('detail-panel').classList.add('open');
   map.panTo([p.lng,p.lat]);
   loadOccupancy(p.id);
@@ -4022,7 +4022,7 @@ function showMarketDetail(m){
     </div>
     ${m.description?`<div style="font-size:.82rem;color:var(--muted);line-height:1.5;margin-bottom:.9rem">${m.description}</div>`:''}
     ${m.website?`<a href="${m.website}" target="_blank" style="display:block;text-align:center;padding:.6rem;border-radius:10px;background:rgba(249,115,22,.12);color:#f97316;font-size:.82rem;font-weight:700;text-decoration:none;margin-bottom:.6rem">🌐 Website</a>`:''}
-    <button class="nav-btn" onclick="navigateTo(${m.lat},${m.lng},'${m.name.replace(/'/g,"\\'")}')">📍 Navigate — Google Maps</button>`;
+    <button class="nav-btn" onclick="navigateTo(${m.lat},${m.lng},'${m.name.replace(/'/g,"\\'")}')">🧭 Nawiguj</button>`;
   document.getElementById('detail-panel').classList.add('open');
   map.panTo([m.lng, m.lat]);
 }
