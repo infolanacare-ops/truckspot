@@ -273,6 +273,8 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 .color-grid{display:flex;gap:.5rem;flex-wrap:wrap}
 .av-color{width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:.15s}
 .av-color.selected{border-color:white;transform:scale(1.15)}
+.tir-pin-opt{display:flex;flex-direction:column;align-items:center;gap:.2rem;cursor:pointer;padding:.4rem .6rem;border-radius:10px;border:2px solid transparent;transition:.15s}
+.tir-pin-opt.selected{border-color:white;background:rgba(255,255,255,.08)}
 
 /* comment avatar bubble */
 .c-avatar{
@@ -1195,6 +1197,17 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
     <div class="avatar-grid" id="avatar-grid"></div>
     <div class="avatar-picker-title" style="margin-top:.6rem">Kolor tła</div>
     <div class="color-grid" id="color-grid"></div>
+    <div class="avatar-picker-title" style="margin-top:.8rem">Kolor pinezki TIR</div>
+    <div style="display:flex;gap:.75rem;margin-top:.4rem" id="tir-pin-grid">
+      <div class="tir-pin-opt" data-col="#d4af37" onclick="setTirPinColor('#d4af37')" title="Złoty">
+        <svg width="32" height="42" viewBox="0 0 40 53"><defs><linearGradient id="tpg1" x1="0" y1="0" x2=".4" y2="1"><stop offset="0%" stop-color="#f0d060"/><stop offset="100%" stop-color="#d4af37"/></linearGradient></defs><path d="M20 2C10.6 2 3 9.6 3 19c0 9 7.4 17.4 14.8 23.8L20 44.8l2.2-2C29.6 36.4 37 28 37 19 37 9.6 29.4 2 20 2z" fill="url(#tpg1)"/><path d="M17.5 43.5 Q20 53 22.5 43.5" fill="#d4af37"/><circle cx="20" cy="19" r="11.5" fill="white" opacity="0.9"/><text x="20" y="23" text-anchor="middle" font-size="12" font-weight="900" fill="#d4af37" font-family="Montserrat,Arial Black,sans-serif">P</text></svg>
+        <span style="font-size:.7rem;color:#d4af37;font-weight:700">ZŁOTY</span>
+      </div>
+      <div class="tir-pin-opt" data-col="#b0bec5" onclick="setTirPinColor('#b0bec5')" title="Srebrny">
+        <svg width="32" height="42" viewBox="0 0 40 53"><defs><linearGradient id="tpg2" x1="0" y1="0" x2=".4" y2="1"><stop offset="0%" stop-color="#e2e8f0"/><stop offset="100%" stop-color="#b0bec5"/></linearGradient></defs><path d="M20 2C10.6 2 3 9.6 3 19c0 9 7.4 17.4 14.8 23.8L20 44.8l2.2-2C29.6 36.4 37 28 37 19 37 9.6 29.4 2 20 2z" fill="url(#tpg2)"/><path d="M17.5 43.5 Q20 53 22.5 43.5" fill="#b0bec5"/><circle cx="20" cy="19" r="11.5" fill="white" opacity="0.9"/><text x="20" y="23" text-anchor="middle" font-size="12" font-weight="900" fill="#b0bec5" font-family="Montserrat,Arial Black,sans-serif">P</text></svg>
+        <span style="font-size:.7rem;color:#94a3b8;font-weight:700">SREBRNY</span>
+      </div>
+    </div>
   </div>
   <button class="pp-save-btn" onclick="saveProfileEdit()">💾 Zapisz profil</button>
 </div>
@@ -1741,7 +1754,7 @@ function loginGuest(){
 // APP CONFIG
 // ══════════════════════════════════════
 const MODE_CONFIG = {
-  tir:     {icon:'🚛',label:'TIR',    color:'#f59e0b',color2:'#fbbf24',apiMode:'tir',   markerEmoji:'🚛',
+  tir:     {icon:'🚛',label:'TIR',    color:'#d4af37',color2:'#f0d060',apiMode:'tir',   markerEmoji:'🚛',
              amenityFilter:['shower','restaurant','truck_wash','repair','shop','wifi','toilet'],
              poiFilter:['restaurant','fuel','shop','repair']},
   bus:     {icon:'🚐',label:'Bus/Van',color:'#10b981',color2:'#34d399',apiMode:'camper',markerEmoji:'🚐',
@@ -1795,7 +1808,7 @@ let alertedIds=new Set();
 // PROFILE
 // ══════════════════════════════════════
 const PROFILE_DEFAULTS = {name:'TRUCKER',pts:0,spots:0,comments:0,km:0,loginType:'guest',
-  avatar:'🚛',avatarColor:'#f59e0b',bio:'',country:'',homeBase:'',
+  avatar:'🚛',avatarColor:'#f59e0b',bio:'',country:'',homeBase:'',tirPinColor:'#d4af37',
   joined: new Date().toISOString().slice(0,10)};
 let profile = Object.assign({}, PROFILE_DEFAULTS, JSON.parse(localStorage.getItem('ts_profile')||'{}'));
 
@@ -1893,6 +1906,19 @@ function openProfile(){
     d.onclick = ()=>{ profile.avatarColor=col; bigAv.style.background=col; document.getElementById('drawer-avatar').style.background=col; cgrid.querySelectorAll('.av-color').forEach(x=>x.classList.remove('selected')); d.classList.add('selected'); };
     cgrid.appendChild(d);
   });
+  // tir pin color
+  const curTirCol = profile.tirPinColor||'#d4af37';
+  document.querySelectorAll('.tir-pin-opt').forEach(el=>{
+    el.classList.toggle('selected', el.dataset.col===curTirCol);
+  });
+}
+
+function setTirPinColor(col){
+  profile.tirPinColor = col;
+  document.querySelectorAll('.tir-pin-opt').forEach(el=>{
+    el.classList.toggle('selected', el.dataset.col===col);
+  });
+  if(currentMode==='tir') renderMarkers(allParkings||[]);
 }
 
 function closeProfile(){
@@ -2120,8 +2146,9 @@ function loadParkings(mode){
 function renderMarkers(parkings){
   markers.forEach(m=>m.remove()); markers=[];
   const cfg=MODE_CONFIG[currentMode];
+  const pinColor = (currentMode==='tir') ? (profile.tirPinColor||cfg.color) : cfg.color;
   parkings.forEach(p=>{
-    markers.push(mkMbMarker(p.lat,p.lng,mkPinP(cfg.color),()=>showDetail(p)));
+    markers.push(mkMbMarker(p.lat,p.lng,mkPinP(pinColor),()=>showDetail(p)));
   });
 }
 
