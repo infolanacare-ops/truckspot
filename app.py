@@ -25,6 +25,7 @@ SUBSCRIPTIONS_PATH  = os.path.join(DATA_DIR, "subscriptions.json")
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
 VAPID_PUBLIC_KEY  = os.environ.get("VAPID_PUBLIC_KEY", "")
 VAPID_EMAIL       = os.environ.get("VAPID_EMAIL", "mailto:admin@truckspot.app")
+MAPBOX_TOKEN      = os.environ.get("MAPBOX_TOKEN", "")
 
 PUSH_ALERT_RADIUS_KM = 20  # promień alertów
 
@@ -130,7 +131,7 @@ def manifest():
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html", mapbox_token=MAPBOX_TOKEN)
 
 @app.route("/api/parkings")
 def api_parkings():
