@@ -3177,6 +3177,10 @@ function mkGpsDotMarker(lat, lng){
   return new mapboxgl.Marker({element:el, anchor:'center'}).setLngLat([lng,lat]).addTo(map);
 }
 
+// Smooth marker animation state
+let _markerAnimId = null;
+let _markerFrom = null;
+
 function setGpsArrow(lat, lng){
   if(!gpsMarker){
     const arrowColor = getComputedStyle(document.documentElement).getPropertyValue('--accent2').trim() || '#ffd700';
@@ -3187,8 +3191,23 @@ function setGpsArrow(lat, lng){
     el.style.cssText = 'line-height:0';
     gpsMarker = new mapboxgl.Marker({element:el, anchor:'center', rotationAlignment:'viewport', pitchAlignment:'map'})
       .setLngLat([lng,lat]).addTo(map);
+    _markerFrom = {lat, lng};
   } else {
-    gpsMarker.setLngLat([lng,lat]);
+    // Smooth interpolation from last position to new position
+    if(_markerAnimId) cancelAnimationFrame(_markerAnimId);
+    const from = _markerFrom || {lat, lng};
+    const t0 = performance.now();
+    const dur = 900; // match GPS interval
+    function step(now){
+      const t = Math.min((now - t0) / dur, 1);
+      const iLat = from.lat + (lat - from.lat) * t;
+      const iLng = from.lng + (lng - from.lng) * t;
+      if(gpsMarker) gpsMarker.setLngLat([iLng, iLat]);
+      if(t < 1) _markerAnimId = requestAnimationFrame(step);
+      else _markerFrom = {lat, lng};
+    }
+    _markerFrom = from;
+    _markerAnimId = requestAnimationFrame(step);
   }
 }
 
@@ -4174,8 +4193,10 @@ function onNavPosition(pos){
   navSpeedKmh = rawSpeed != null ? Math.round(rawSpeed*3.6) : navSpeedKmh;
   setNavSpeed(navSpeedKmh, navCurrentSpeedLimit);
 
-  // GPS arrow (nawigacja)
-  setGpsArrow(lat, lng);
+  // GPS arrow — snap do trasy (wygląd na drodze) + smooth animation
+  const snapIdx = closestRouteIdx(lat, lng);
+  const snapCoord = routeCoords[snapIdx];
+  setGpsArrow(snapCoord ? snapCoord[1] : lat, snapCoord ? snapCoord[0] : lng);
 
   // Heading: GPS native lub delta z poprzedniej pozycji
   const rawHeading = pos.coords.heading;
@@ -4431,6 +4452,8 @@ function stopNavigation(){
   const ob = document.getElementById('nav-overview-btn');
   if(ob) ob.classList.remove('active');
   if(navWatchId){ navigator.geolocation.clearWatch(navWatchId); navWatchId=null; }
+  if(_markerAnimId){ cancelAnimationFrame(_markerAnimId); _markerAnimId=null; }
+  _markerFrom = null;
   camerasVisible = false; navCIdx = 0;
   document.getElementById('nav-overlay').classList.remove('active');
   document.body.classList.remove('navigating');
