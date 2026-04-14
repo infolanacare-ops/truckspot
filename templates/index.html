@@ -615,6 +615,7 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .gps-dot{width:14px;height:14px;background:#3b82f6;border-radius:50%;border:3px solid #fff;
   box-shadow:0 0 0 4px rgba(59,130,246,.3);animation:pulse-gps 2s infinite}
 @keyframes pulse-gps{0%,100%{box-shadow:0 0 0 4px rgba(59,130,246,.3)}50%{box-shadow:0 0 0 10px rgba(59,130,246,.06)}}
+.nav-arrow{width:0;height:0;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));}
 .mk-user{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
   background:var(--purple);border:3px solid #fff;box-shadow:0 3px 10px rgba(139,92,246,.5);font-size:.95rem}
 
@@ -2695,6 +2696,20 @@ function mkGpsDotMarker(lat, lng){
   return new mapboxgl.Marker({element:el, anchor:'center'}).setLngLat([lng,lat]).addTo(map);
 }
 
+function setGpsArrow(lat, lng){
+  if(!gpsMarker){
+    const el = document.createElement('div');
+    el.innerHTML = `<svg class="nav-arrow" width="40" height="52" viewBox="0 0 40 52" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="20,2 38,50 20,40 2,50" fill="#22c55e" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>
+    </svg>`;
+    el.style.cssText = 'line-height:0';
+    gpsMarker = new mapboxgl.Marker({element:el, anchor:'center', rotationAlignment:'map', pitchAlignment:'map'})
+      .setLngLat([lng,lat]).addTo(map);
+  } else {
+    gpsMarker.setLngLat([lng,lat]);
+  }
+}
+
 // Mały kołowy marker (zastępuje L.circleMarker)
 function mkCircleMk(lat, lng, color='#10b981', size=16){
   const el = document.createElement('div');
@@ -3220,6 +3235,7 @@ function startNavigation(){
   speakNav(stepInstruction(routeSteps[0]), true);
   loadRoutePois();
   loadNavCameras();
+  map.easeTo({pitch:55, duration:800});
   navWatchId = navigator.geolocation.watchPosition(onNavPosition,
     e=>{ if(e.code!==e.TIMEOUT) showAlert('⚠️','GPS Error',''); },
     {enableHighAccuracy:true, maximumAge:2000, timeout:15000});
@@ -3400,13 +3416,22 @@ function onNavPosition(pos){
   navSpeedKmh = rawSpeed != null ? Math.round(rawSpeed*3.6) : navSpeedKmh;
   setNavSpeed(navSpeedKmh, navCurrentSpeedLimit);
 
-  // GPS dot
-  if(!gpsMarker) gpsMarker=mkGpsDotMarker(lat,lng);
-  else gpsMarker.setLngLat([lng,lat]);
+  // GPS arrow (nawigacja)
+  setGpsArrow(lat, lng);
+
+  // Heading: GPS native lub delta z poprzedniej pozycji
+  const rawHeading = pos.coords.heading;
+  let navHeading = 0;
+  if(rawHeading != null && !isNaN(rawHeading) && navSpeedKmh > 3){
+    navHeading = rawHeading;
+  } else if(navLastLat != null){
+    navHeading = Math.atan2(lng - navLastLng, lat - navLastLat) * 180 / Math.PI;
+    if(navHeading < 0) navHeading += 360;
+  }
 
   // Speed-adaptive zoom: slow city=15, motorway=13
   const targetZoom = navSpeedKmh > 80 ? 13 : navSpeedKmh > 40 ? 14 : 15;
-  map.flyTo({center:[lng,lat], zoom:targetZoom, animate:true, duration:0.5});
+  map.easeTo({center:[lng,lat], zoom:targetZoom, bearing:navHeading, pitch:55, duration:600});
 
   // ── Remaining distance along route ──────────────────────────────────
   const cIdx = closestRouteIdx(lat, lng);
@@ -3553,6 +3578,10 @@ function stopNavigation(){
   document.body.classList.remove('navigating');
   navAnnouncedCameras = new Set();
   cameraMarkers.forEach(m=>m.remove()); cameraMarkers=[];
+  // Zamień strzałkę z powrotem na kółko
+  if(gpsMarker){ const ll = gpsMarker.getLngLat(); gpsMarker.remove(); gpsMarker=null;
+    gpsMarker = mkGpsDotMarker(ll.lat, ll.lng); }
+  map.easeTo({pitch:0, bearing:0, duration:600});
   showAlert('🏁','','Navigation stopped');
 }
 
