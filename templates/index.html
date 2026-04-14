@@ -3760,6 +3760,7 @@ function setNavEta(secs){
 
 let navRoutePois = [];     // POI wzdłuż trasy, posortowane po odległości od startu
 let navAnnouncedPois = new Set(); // ID już ogłoszonych
+let navCIdx = 0;           // indeks najbliższego punktu trasy (aktualizowany w onNavPosition)
 
 async function startDriving(){
   const btn = document.getElementById('jedz-btn');
@@ -3937,7 +3938,7 @@ async function loadRoutePois(){
     name:p.name, type:'parking', icon:'🅿️', hgv:true,
   }));
   navRoutePois = parkingPois.filter(p => pointToRouteDistKm(p.lat, p.lng, routeCoords) <= radius);
-  renderNavPois(null, null);
+  renderNavPois();
 
   // Fetch each segment sequentially
   const allPois = [];
@@ -3972,39 +3973,56 @@ async function loadRoutePois(){
     })
     .sort((a,b) => a.distFromStart - b.distFromStart);
 
-  renderNavPois(null, null);
+  renderNavPois();
 }
 
-function renderNavPois(currentLat, currentLng){
+function renderNavPois(){
   const strip = document.getElementById('nav-pois-strip');
-  if(!strip || !navRoutePois.length){
-    if(strip) strip.innerHTML = '<div style="font-size:.72rem;color:var(--muted);align-self:center;padding:.2rem">Brak POI na trasie</div>';
+  if(!strip) return;
+  if(!navRoutePois.length){
+    strip.innerHTML = '<div style="font-size:.72rem;color:var(--muted);align-self:center;padding:.2rem">Brak POI na trasie</div>';
     return;
   }
 
-  // Sort by distance from current position if we have GPS
-  let pois = navRoutePois;
-  if(currentLat != null){
-    pois = navRoutePois.map(p=>({
-      ...p,
-      distFromMe: haversineKm(currentLat, currentLng, p.lat, p.lng)
-    })).filter(p=>p.distFromMe > 0.05) // skip already passed
-      .sort((a,b)=>a.distFromMe - b.distFromMe)
-      .slice(0, 12);
+  // Odległość przebyta wzdłuż trasy do bieżącej pozycji (km)
+  const myDist = (navActive && navRouteDistances.length > 0)
+    ? (navRouteDistances[navCIdx] || 0)
+    : null;
+
+  let pois;
+  if(myDist !== null){
+    // Tylko POI PRZED nami — filtr po distFromStart wzdłuż trasy
+    pois = navRoutePois
+      .filter(p => typeof p.distFromStart === 'number' && p.distFromStart > myDist)
+      .map(p => ({...p, distAhead: p.distFromStart - myDist}))
+      .sort((a,b) => a.distAhead - b.distAhead)
+      .slice(0, 10);
   } else {
-    pois = pois.slice(0, 12);
+    // Brak GPS — pokaż wszystkie w kolejności trasy
+    pois = navRoutePois
+      .filter(p => typeof p.distFromStart === 'number')
+      .sort((a,b) => a.distFromStart - b.distFromStart)
+      .slice(0, 10);
+  }
+
+  if(!pois.length){
+    strip.innerHTML = '<div style="font-size:.72rem;color:var(--muted);align-self:center">Brak POI przed tobą</div>';
+    return;
   }
 
   strip.innerHTML = pois.map(p => {
-    const dist = currentLat != null ? p.distFromMe : p.distFromStart;
-    const distTxt = dist < 1 ? Math.round(dist*1000)+'m' : dist.toFixed(1)+'km';
-    const near = currentLat != null && dist < 2;
+    const dist = p.distAhead ?? p.distFromStart ?? 0;
+    let distTxt;
+    if(dist < 0.05)      distTxt = '<50m';
+    else if(dist < 1)    distTxt = Math.round(dist*1000)+'m';
+    else                 distTxt = dist.toFixed(1)+'km';
+    const near = dist > 0 && dist < 1;
     return `<div class="nav-poi-chip${near?' near':''}" onclick="map.flyTo({center:[${p.lng},${p.lat}],zoom:15})" title="${p.name}">
       <div class="nav-poi-chip-icon">${p.icon}</div>
       <div class="nav-poi-chip-name">${p.name.substring(0,14)}</div>
       <div class="nav-poi-chip-dist">${distTxt}</div>
     </div>`;
-  }).join('') || '<div style="font-size:.72rem;color:var(--muted);align-self:center">Brak POI w pobliżu</div>';
+  }).join('');
 }
 
 function updateNavStep(idx, flash=false){
@@ -4169,6 +4187,7 @@ function onNavPosition(pos){
 
   // ── Remaining distance along route ──────────────────────────────────
   const cIdx = closestRouteIdx(lat, lng);
+  navCIdx = cIdx;
   navDistRemaining = navRouteDistances[navRouteDistances.length-1] - navRouteDistances[cIdx];
   setEl('nav-total-dist', fmtDist(navDistRemaining));
 
@@ -4269,7 +4288,7 @@ function onNavPosition(pos){
   checkNavReports(lat, lng);
 
   // ── POI strip + voice alerts ─────────────────────────────────────────
-  renderNavPois(lat, lng);
+  renderNavPois();
 
   const poiAlertDist = navSpeedKmh > 80 ? 4 : 2; // km
   for(const p of navRoutePois){
