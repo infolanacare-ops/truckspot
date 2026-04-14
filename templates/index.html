@@ -191,18 +191,96 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
   border-bottom:1px solid var(--border);position:relative;overflow:hidden}
 .drawer-header::before{content:'';position:absolute;top:-40px;right:-40px;width:120px;height:120px;
   border-radius:50%;background:radial-gradient(circle,rgba(245,158,11,.12) 0%,transparent 70%)}
-.profile-row{display:flex;align-items:center;gap:.9rem;margin-bottom:.9rem}
+.profile-row{display:flex;align-items:center;gap:.9rem;margin-bottom:.9rem;cursor:pointer}
+.profile-row:active{opacity:.8}
 .avatar{width:52px;height:52px;border-radius:50%;
   background:linear-gradient(135deg,var(--accent),var(--accent2));
   display:flex;align-items:center;justify-content:center;
-  font-family:var(--font-head);font-size:1.3rem;font-weight:900;color:#000;
-  flex-shrink:0;box-shadow:0 4px 12px rgba(245,158,11,.3)}
+  font-size:1.6rem;font-weight:900;color:#fff;
+  flex-shrink:0;box-shadow:0 4px 12px rgba(245,158,11,.3);
+  transition:.2s;user-select:none}
+.avatar.letter{font-family:var(--font-head);font-size:1.3rem;color:#000}
+.avatar-edit-hint{font-size:.62rem;color:var(--accent);margin-top:.1rem;font-weight:600}
 .profile-name{font-family:var(--font-head);font-size:1rem;font-weight:800;color:var(--text)}
 .profile-sub{font-size:.72rem;color:var(--muted);margin-top:.15rem}
 .stats-row{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
 .stat-box{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:.5rem .8rem;text-align:center}
 .stat-box-val{font-family:var(--font-head);font-size:1.1rem;font-weight:800;color:var(--accent)}
 .stat-box-lbl{font-size:.62rem;color:var(--muted);margin-top:.1rem}
+
+/* ── PROFILE PANEL ── */
+#profile-panel{
+  position:fixed;inset:0;z-index:2500;
+  background:var(--bg);display:none;flex-direction:column;overflow-y:auto;
+}
+#profile-panel.open{display:flex}
+.pp-header{
+  background:var(--panel2);padding:3rem 1.5rem 1.5rem;
+  position:relative;overflow:hidden;text-align:center;flex-shrink:0;
+}
+.pp-header::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);
+  width:200px;height:200px;border-radius:50%;
+  background:radial-gradient(circle,rgba(245,158,11,.15) 0%,transparent 70%)}
+.pp-close{position:absolute;top:1rem;left:1rem;width:36px;height:36px;border-radius:10px;
+  background:var(--panel);border:1px solid var(--border);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;z-index:1}
+.pp-avatar-big{
+  width:88px;height:88px;border-radius:50%;margin:0 auto .7rem;
+  display:flex;align-items:center;justify-content:center;
+  font-size:2.8rem;box-shadow:0 8px 24px rgba(0,0,0,.3);
+  cursor:pointer;position:relative;transition:.2s;
+  border:3px solid rgba(255,255,255,.15);
+}
+.pp-avatar-big:active{transform:scale(.95)}
+.pp-avatar-edit-badge{
+  position:absolute;bottom:2px;right:2px;width:22px;height:22px;
+  background:var(--accent);border-radius:50%;border:2px solid var(--bg);
+  display:flex;align-items:center;justify-content:center;font-size:.6rem;
+}
+.pp-name{font-family:var(--font-head);font-size:1.4rem;font-weight:900;color:var(--text);margin-bottom:.2rem}
+.pp-bio{font-size:.8rem;color:var(--muted);line-height:1.5;max-width:280px;margin:0 auto .5rem}
+.pp-meta{display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap;font-size:.72rem;color:var(--muted)}
+.pp-meta span{display:flex;align-items:center;gap:.2rem}
+.pp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;padding:1rem 1.2rem;flex-shrink:0}
+.pp-stat{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:.7rem .4rem;text-align:center}
+.pp-stat-val{font-family:var(--font-head);font-size:1.1rem;font-weight:800;color:var(--accent)}
+.pp-stat-lbl{font-size:.56rem;color:var(--muted);margin-top:.15rem;line-height:1.2}
+.pp-section{padding:.8rem 1.2rem .3rem;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.pp-form{padding:0 1.2rem 1rem;display:flex;flex-direction:column;gap:.6rem}
+.pp-input{
+  width:100%;padding:.65rem .9rem;border:1.5px solid var(--border);border-radius:12px;
+  font-family:var(--font);font-size:.9rem;background:var(--input-bg);color:var(--text);outline:none;transition:.15s;
+}
+.pp-input:focus{border-color:var(--accent)}
+.pp-save-btn{
+  margin:0 1.2rem 1rem;padding:.8rem;border:none;border-radius:14px;cursor:pointer;
+  font-family:var(--font-head);font-size:.95rem;font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;
+}
+
+/* Avatar picker */
+.avatar-picker{
+  padding:.8rem 1.2rem 1.2rem;
+}
+.avatar-picker-title{font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.6rem}
+.avatar-grid{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.8rem}
+.av-opt{
+  width:42px;height:42px;border-radius:12px;border:2px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:1.4rem;
+  cursor:pointer;transition:.15s;background:var(--panel);
+}
+.av-opt:active,.av-opt.selected{border-color:var(--accent);background:var(--accent-bg);transform:scale(1.1)}
+.color-grid{display:flex;gap:.5rem;flex-wrap:wrap}
+.av-color{width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:.15s}
+.av-color.selected{border-color:white;transform:scale(1.15)}
+
+/* comment avatar bubble */
+.c-avatar{
+  width:28px;height:28px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.95rem;font-weight:900;color:#fff;
+}
+.c-avatar.letter{font-family:var(--font-head);font-size:.8rem}
 
 .drawer-menu{flex:1;overflow-y:auto;padding:.5rem 0}
 .menu-section{padding:.5rem 1rem .2rem;font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
@@ -949,11 +1027,12 @@ body.navigating .leaflet-top.leaflet-left{display:none}
 <!-- SIDE DRAWER -->
 <div class="drawer" id="drawer">
   <div class="drawer-header">
-    <div class="profile-row">
-      <div class="avatar" id="drawer-avatar">T</div>
+    <div class="profile-row" onclick="closeDrawer();setTimeout(openProfile,300)">
+      <div class="avatar" id="drawer-avatar">🚛</div>
       <div>
         <div class="profile-name" id="drawer-name">TRUCKER</div>
         <div class="profile-sub" id="drawer-mode-sub">Mode: TIR</div>
+        <div class="avatar-edit-hint">✏️ Edytuj profil</div>
       </div>
     </div>
     <div class="stats-row">
@@ -1009,6 +1088,61 @@ body.navigating .leaflet-top.leaflet-left{display:none}
 </div>
 
 <!-- ADD SPOT PANEL -->
+<!-- PROFILE PANEL -->
+<div id="profile-panel">
+  <div class="pp-header">
+    <div class="pp-close" onclick="closeProfile()"><span class="si"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></span></div>
+    <div class="pp-avatar-big" id="pp-avatar-big" onclick="document.getElementById('avatar-picker-section').scrollIntoView({behavior:'smooth'})">
+      <span id="pp-avatar-emoji">🚛</span>
+      <div class="pp-avatar-edit-badge">✏️</div>
+    </div>
+    <div class="pp-name" id="pp-name">TRUCKER</div>
+    <div class="pp-bio" id="pp-bio"></div>
+    <div class="pp-meta">
+      <span>🌍 <span id="pp-country">–</span></span>
+      <span>🏠 <span id="pp-home">–</span></span>
+      <span>📅 <span id="pp-joined">–</span></span>
+    </div>
+  </div>
+  <div class="pp-stats">
+    <div class="pp-stat"><div class="pp-stat-val" id="pp-pts">0</div><div class="pp-stat-lbl">punktów</div></div>
+    <div class="pp-stat"><div class="pp-stat-val" id="pp-spots">0</div><div class="pp-stat-lbl">spotów</div></div>
+    <div class="pp-stat"><div class="pp-stat-val" id="pp-comments">0</div><div class="pp-stat-lbl">opinii</div></div>
+    <div class="pp-stat"><div class="pp-stat-val" id="pp-km">0</div><div class="pp-stat-lbl">km</div></div>
+  </div>
+  <div class="pp-section">Edytuj profil</div>
+  <div class="pp-form">
+    <input class="pp-input" id="pp-input-nick" type="text" placeholder="Twój pseudonim (np. Marek TIR)" maxlength="40">
+    <input class="pp-input" id="pp-input-bio" type="text" placeholder="Krótki opis (np. 20 lat w trasie 🚛)" maxlength="80">
+    <input class="pp-input" id="pp-input-home" type="text" placeholder="Baza domowa (np. Warszawa)" maxlength="40">
+    <select class="pp-input" id="pp-input-country">
+      <option value="">— Kraj —</option>
+      <option value="PL">🇵🇱 Polska</option>
+      <option value="DE">🇩🇪 Niemcy</option>
+      <option value="CZ">🇨🇿 Czechy</option>
+      <option value="SK">🇸🇰 Słowacja</option>
+      <option value="HU">🇭🇺 Węgry</option>
+      <option value="RO">🇷🇴 Rumunia</option>
+      <option value="AT">🇦🇹 Austria</option>
+      <option value="IT">🇮🇹 Włochy</option>
+      <option value="FR">🇫🇷 Francja</option>
+      <option value="ES">🇪🇸 Hiszpania</option>
+      <option value="NL">🇳🇱 Holandia</option>
+      <option value="BE">🇧🇪 Belgia</option>
+      <option value="UK">🇬🇧 UK</option>
+      <option value="Other">🌍 Inny</option>
+    </select>
+    <input class="pp-input" id="pp-input-km" type="number" placeholder="Łączne km w trasie (szacunkowo)" min="0" max="9999999">
+  </div>
+  <div class="avatar-picker" id="avatar-picker-section">
+    <div class="avatar-picker-title">Wybierz avatar</div>
+    <div class="avatar-grid" id="avatar-grid"></div>
+    <div class="avatar-picker-title" style="margin-top:.6rem">Kolor tła</div>
+    <div class="color-grid" id="color-grid"></div>
+  </div>
+  <button class="pp-save-btn" onclick="saveProfileEdit()">💾 Zapisz profil</button>
+</div>
+
 <div class="add-panel" id="add-panel">
   <div class="panel-handle"></div>
   <button class="panel-close" onclick="closeAddPanel()">✕</button>
@@ -1581,7 +1715,10 @@ let alertedIds=new Set();
 // ══════════════════════════════════════
 // PROFILE
 // ══════════════════════════════════════
-let profile = JSON.parse(localStorage.getItem('ts_profile')||'{"name":"TRUCKER","pts":0,"spots":0,"loginType":"guest"}');
+const PROFILE_DEFAULTS = {name:'TRUCKER',pts:0,spots:0,comments:0,km:0,loginType:'guest',
+  avatar:'🚛',avatarColor:'#f59e0b',bio:'',country:'',homeBase:'',
+  joined: new Date().toISOString().slice(0,10)};
+let profile = Object.assign({}, PROFILE_DEFAULTS, JSON.parse(localStorage.getItem('ts_profile')||'{}'));
 
 function saveProfile(){ localStorage.setItem('ts_profile', JSON.stringify(profile)); }
 
@@ -1590,12 +1727,104 @@ function addPts(n){
   showAlert('🎉', `+${n} ${t('pts')}!`, profile.pts + ' ' + t('pts'));
 }
 
+const AVATAR_EMOJIS = [
+  '🚛','🚜','🚌','🚐','🚗','🏎️','🚑','🚒','⛟','🚚',
+  '🧳','🗺️','⛺','🏕️','🌍','🗻','🏖️','🌅','🏔️','🌄',
+  '👨‍✈️','👷','🦺','🧢','⭐','🔥','💎','🎯','🏆','⚡'
+];
+const AVATAR_COLORS = ['#f59e0b','#3b82f6','#10b981','#8b5cf6','#ef4444','#06b6d4','#f97316','#ec4899','#6366f1','#84cc16'];
+
+function renderAvatarEl(emoji, color, size=52){
+  const el = document.createElement('div');
+  el.className = 'avatar';
+  el.style.cssText = `width:${size}px;height:${size}px;background:${color};font-size:${size*0.55}px`;
+  el.textContent = emoji || (profile.name||'T')[0].toUpperCase();
+  if(!emoji) el.classList.add('letter');
+  return el;
+}
+
 function updateProfileUI(){
   setEl('topbar-pts', profile.pts + ' ' + t('pts'));
   setEl('drawer-pts', profile.pts);
   setEl('drawer-spots', profile.spots);
-  setEl('drawer-avatar', (profile.name||'T')[0].toUpperCase());
   setEl('drawer-name', profile.name||'TRUCKER');
+  // avatar w drawerze
+  const da = document.getElementById('drawer-avatar');
+  if(da){
+    da.textContent = profile.avatar || (profile.name||'T')[0].toUpperCase();
+    da.style.background = profile.avatarColor || 'var(--accent)';
+    da.style.fontSize = profile.avatar ? '1.6rem' : '1.3rem';
+    da.classList.toggle('letter', !profile.avatar);
+  }
+}
+
+function openProfile(){
+  const pp = document.getElementById('profile-panel');
+  pp.classList.add('open');
+  // wypełnij dane
+  document.getElementById('pp-avatar-emoji').textContent = profile.avatar || (profile.name||'T')[0].toUpperCase();
+  const bigAv = document.getElementById('pp-avatar-big');
+  bigAv.style.background = profile.avatarColor || '#f59e0b';
+  setEl('pp-name', profile.name||'TRUCKER');
+  setEl('pp-bio', profile.bio||'');
+  setEl('pp-country', profile.country||'–');
+  setEl('pp-home', profile.homeBase||'–');
+  setEl('pp-joined', profile.joined||'–');
+  setEl('pp-pts', profile.pts||0);
+  setEl('pp-spots', profile.spots||0);
+  setEl('pp-comments', profile.comments||0);
+  setEl('pp-km', profile.km ? (profile.km>=1000 ? Math.round(profile.km/1000)+'k' : profile.km) : 0);
+  // formularz
+  document.getElementById('pp-input-nick').value = profile.name||'';
+  document.getElementById('pp-input-bio').value = profile.bio||'';
+  document.getElementById('pp-input-home').value = profile.homeBase||'';
+  document.getElementById('pp-input-km').value = profile.km||'';
+  const sel = document.getElementById('pp-input-country');
+  if(sel) sel.value = profile.country||'';
+  // avatar grid
+  const grid = document.getElementById('avatar-grid');
+  grid.innerHTML = '';
+  AVATAR_EMOJIS.forEach(em=>{
+    const d = document.createElement('div');
+    d.className = 'av-opt' + (profile.avatar===em?' selected':'');
+    d.textContent = em;
+    d.onclick = ()=>{ profile.avatar=em; document.getElementById('pp-avatar-emoji').textContent=em; grid.querySelectorAll('.av-opt').forEach(x=>x.classList.remove('selected')); d.classList.add('selected'); updateProfileUI(); };
+    grid.appendChild(d);
+  });
+  // color grid
+  const cgrid = document.getElementById('color-grid');
+  cgrid.innerHTML = '';
+  AVATAR_COLORS.forEach(col=>{
+    const d = document.createElement('div');
+    d.className = 'av-color' + (profile.avatarColor===col?' selected':'');
+    d.style.background = col;
+    d.onclick = ()=>{ profile.avatarColor=col; bigAv.style.background=col; document.getElementById('drawer-avatar').style.background=col; cgrid.querySelectorAll('.av-color').forEach(x=>x.classList.remove('selected')); d.classList.add('selected'); };
+    cgrid.appendChild(d);
+  });
+}
+
+function closeProfile(){
+  document.getElementById('profile-panel').classList.remove('open');
+}
+
+function saveProfileEdit(){
+  const nick = document.getElementById('pp-input-nick').value.trim();
+  if(nick) profile.name = nick;
+  profile.bio = document.getElementById('pp-input-bio').value.trim();
+  profile.homeBase = document.getElementById('pp-input-home').value.trim();
+  profile.country = document.getElementById('pp-input-country').value;
+  const km = parseInt(document.getElementById('pp-input-km').value);
+  if(!isNaN(km)) profile.km = km;
+  saveProfile();
+  updateProfileUI();
+  // odśwież widok
+  setEl('pp-name', profile.name);
+  setEl('pp-bio', profile.bio);
+  setEl('pp-country', profile.country||'–');
+  setEl('pp-home', profile.homeBase||'–');
+  localStorage.setItem('ts_comment_nick', profile.name);
+  closeProfile();
+  showAlert('✅','Profil zapisany!', profile.name);
 }
 
 // ══════════════════════════════════════
@@ -3909,11 +4138,17 @@ function commentsHtml(comments, parkingId){
     : null;
   const avgHtml = avg ? `<span class="comment-avg">⭐ ${avg}</span>` : '';
 
+  function commentAvatar(user){
+    const colors = ['#f59e0b','#3b82f6','#10b981','#8b5cf6','#ef4444','#06b6d4','#f97316'];
+    const col = colors[(user||'?').charCodeAt(0)%colors.length];
+    return `<div class="c-avatar letter" style="background:${col}">${(user||'?')[0].toUpperCase()}</div>`;
+  }
   const list = comments.length
     ? comments.map(c=>`
       <div class="comment-item">
-        <div class="comment-header">
-          <span class="comment-user">👤 ${c.user}</span>
+        <div class="comment-header" style="display:flex;align-items:center;gap:.5rem">
+          ${commentAvatar(c.user)}
+          <span class="comment-user" style="flex:1">${c.user}</span>
           <span class="comment-stars">${'⭐'.repeat(c.stars)}</span>
           <span class="comment-date">${c.date ? c.date.slice(0,10) : ''}</span>
         </div>
@@ -3952,6 +4187,7 @@ async function submitComment(parkingId){
   const payload = {parking_id: String(parkingId), user: nick, text, stars: commentStars, date: new Date().toISOString()};
   try {
     await fetch('/api/comments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    profile.comments = (profile.comments||0) + 1; saveProfile();
     addPts(5);
     showAlert('✅','Dziękujemy!','Opinia dodana (+5 pkt)');
     if(currentDetailParking) showDetail(currentDetailParking);
