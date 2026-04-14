@@ -1,0 +1,58 @@
+{
+  "appId": "com.truckspot.app",
+  "appName": "TruckSpot",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://truckspot.onrender.com",
+    "cleartext": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "launchAutoHide": true,
+      "backgroundColor": "#1a1f2e",
+      "androidSplashResourceName": "splash",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false,
+      "iosSpinnerStyle": "large",
+      "spinnerColor": "#3b82f6"
+    },
+    "StatusBar": {
+      "style": "dark",
+      "backgroundColor": "#1a1f2e"
+    },
+    "Keyboard": {
+      "resize": "body",
+      "style": "dark",
+      "resizeOnFullScreen": true
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    },
+    "Geolocation": {
+      "permissions": {
+        "android": {
+          "ACCESS_COARSE_LOCATION": "Find nearby parkings",
+          "ACCESS_FINE_LOCATION": "Navigation and GPS tracking",
+          "ACCESS_BACKGROUND_LOCATION": "Background navigation alerts"
+        }
+      }
+    }
+  },
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false,
+    "backgroundColor": "#1a1f2e",
+    "buildOptions": {
+      "keystorePath": "truckspot.keystore",
+      "keystoreAlias": "truckspot"
+    }
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "scrollEnabled": true,
+    "backgroundColor": "#1a1f2e"
+  }
+}

@@ -2,11 +2,38 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#1a1f2e">
+<meta name="description" content="Parkingi, miejsca odpoczynku i nawigacja dla kierowców TIR, busów i turystów w całej Europie.">
+
+<!-- PWA / App Store metas -->
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TruckSpot">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚛</text></svg>">
+<meta name="application-name" content="TruckSpot">
+<meta name="msapplication-TileColor" content="#1a1f2e">
+<meta name="msapplication-TileImage" content="/static/icon-144.png">
+
+<!-- Icons -->
+<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="152x152" href="/static/icon-152.png">
+
+<!-- PWA Manifest -->
+<link rel="manifest" href="/static/manifest.json">
+
+<!-- iOS Splash Screens -->
+<link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" href="/static/splash-iphone13.png">
+<link rel="apple-touch-startup-image" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)" href="/static/splash-iphone14.png">
+
+<!-- Open Graph (linki społecznościowe) -->
+<meta property="og:title" content="TruckSpot — parkingi dla TIR">
+<meta property="og:description" content="Znajdź parking, zaplanuj trasę, CB Radio dla kierowców.">
+<meta property="og:image" content="/static/icon-512.png">
+<meta property="og:type" content="website">
+
 <title>TruckSpot</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">

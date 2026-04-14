@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1242 2688">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1f2e"/>
+      <stop offset="100%" style="stop-color:#252d45"/>
+    </linearGradient>
+    <linearGradient id="pin" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#6d28d9"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="30" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1242" height="2688" fill="url(#bg)"/>
+
+  <!-- Glow behind icon -->
+  <circle cx="621" cy="1100" r="320" fill="#3b82f6" opacity="0.08" filter="url(#glow)"/>
+
+  <!-- Map pin -->
+  <path d="M621 760 C489 760 382 867 382 999 C382 1131 510 1270 621 1380 C732 1270 860 1131 860 999 C860 867 753 760 621 760 Z"
+        fill="url(#pin)"/>
+  <circle cx="621" cy="985" r="140" fill="white" opacity="0.15"/>
+
+  <!-- Truck inside pin -->
+  <rect x="459" y="930" width="180" height="110" rx="14" fill="white"/>
+  <rect x="639" y="942" width="110" height="98" rx="10" fill="white" opacity="0.85"/>
+  <rect x="472" y="943" width="78" height="52" rx="8" fill="#3b82f6" opacity="0.7"/>
+  <circle cx="495" cy="1046" r="26" fill="#1a1f2e"/>
+  <circle cx="495" cy="1046" r="16" fill="#3b82f6"/>
+  <circle cx="495" cy="1046" r="6" fill="white"/>
+  <circle cx="699" cy="1046" r="26" fill="#1a1f2e"/>
+  <circle cx="699" cy="1046" r="16" fill="#3b82f6"/>
+  <circle cx="699" cy="1046" r="6" fill="white"/>
+
+  <!-- App name -->
+  <text x="621" y="1540"
+        text-anchor="middle"
+        font-family="'Arial Black', Arial, sans-serif"
+        font-weight="900"
+        font-size="110"
+        fill="white"
+        letter-spacing="4">TruckSpot</text>
+
+  <!-- Tagline -->
+  <text x="621" y="1640"
+        text-anchor="middle"
+        font-family="Arial, sans-serif"
+        font-weight="400"
+        font-size="52"
+        fill="#8890a8"
+        letter-spacing="2">Parkingi dla kierowców TIR</text>
+
+  <!-- Loading dots -->
+  <circle cx="561" cy="1760" r="14" fill="#3b82f6" opacity="0.9"/>
+  <circle cx="621" cy="1760" r="14" fill="#6d28d9" opacity="0.7"/>
+  <circle cx="681" cy="1760" r="14" fill="#3b82f6" opacity="0.5"/>
+</svg>

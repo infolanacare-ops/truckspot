@@ -1,0 +1,57 @@
+{
+  "name": "TruckSpot",
+  "short_name": "TruckSpot",
+  "description": "Parkingi, miejsca odpoczynku i nawigacja dla kierowców TIR, busów i turystów w całej Europie",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a1f2e",
+  "theme_color": "#1a1f2e",
+  "lang": "pl",
+  "categories": ["navigation", "travel", "maps"],
+  "icons": [
+    { "src": "/static/icon-48.png",  "sizes": "48x48",   "type": "image/png", "purpose": "any" },
+    { "src": "/static/icon-72.png",  "sizes": "72x72",   "type": "image/png", "purpose": "any" },
+    { "src": "/static/icon-96.png",  "sizes": "96x96",   "type": "image/png", "purpose": "any" },
+    { "src": "/static/icon-128.png", "sizes": "128x128", "type": "image/png", "purpose": "any" },
+    { "src": "/static/icon-144.png", "sizes": "144x144", "type": "image/png", "purpose": "any" },
+    { "src": "/static/icon-152.png", "sizes": "152x152", "type": "image/png", "purpose": "any" },
+    { "src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/static/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/static/icon-1024.png","sizes": "1024x1024","type": "image/png", "purpose": "any" }
+  ],
+  "screenshots": [
+    {
+      "src": "/static/splash-android.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "TruckSpot — mapa parkingów"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Najbliższe parkingi",
+      "short_name": "Pobliskie",
+      "description": "Znajdź parkingi w pobliżu",
+      "url": "/?action=nearby",
+      "icons": [{ "src": "/static/icon-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "CB Radio",
+      "short_name": "CB Radio",
+      "description": "Wiadomości od kierowców",
+      "url": "/?action=cbradio",
+      "icons": [{ "src": "/static/icon-96.png", "sizes": "96x96" }]
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=com.truckspot.app",
+      "id": "com.truckspot.app"
+    }
+  ],
+  "prefer_related_applications": false
+}

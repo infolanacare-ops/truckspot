@@ -43,6 +43,13 @@ def service_worker():
     resp.headers['Cache-Control'] = 'no-cache'
     return resp
 
+@app.route("/static/manifest.json")
+def manifest():
+    resp = send_from_directory('static', 'manifest.json')
+    resp.headers['Content-Type'] = 'application/manifest+json'
+    resp.headers['Cache-Control'] = 'public, max-age=86400'
+    return resp
+
 @app.route("/")
 def index():
     return render_template("index.html")
