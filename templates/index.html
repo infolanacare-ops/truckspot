@@ -4137,12 +4137,33 @@ function onNavPosition(pos){
     if(navHeading < 0) navHeading += 360;
   }
 
-  // Speed-adaptive zoom: slow city=15, motorway=13
+  // ── TomTom-style camera — zoom + pitch zależny od odległości do manewru ──
   const baseZoom = navSpeedKmh > 80 ? 13 : navSpeedKmh > 40 ? 14 : 15;
   const pm = NAV_PITCH_MODES[navPitchMode];
-  const targetZoom = baseZoom + pm.zoomOff;
+
+  // Oblicz dystans do następnego manewru (wcześniej niż pętla kroków)
+  let dToNextManeuver = Infinity;
+  {
+    const loc = routeSteps[navStepIdx]?.maneuver?.location;
+    if(loc) dToNextManeuver = haversineKm(lat, lng, loc[1], loc[0]) * 1000;
+  }
+
+  // Im bliżej manewru — większy zoom, płaszy pitch (lepiej widać skrzyżowanie)
+  let zoomBoost = 0, pitchFactor = 1.0, camDuration = 650;
+  if(dToNextManeuver < 700){
+    if     (dToNextManeuver < 80) { zoomBoost=4.0; pitchFactor=0.35; camDuration=350; }
+    else if(dToNextManeuver < 150){ zoomBoost=3.2; pitchFactor=0.50; camDuration=400; }
+    else if(dToNextManeuver < 250){ zoomBoost=2.2; pitchFactor=0.65; camDuration=450; }
+    else if(dToNextManeuver < 400){ zoomBoost=1.2; pitchFactor=0.80; camDuration=550; }
+    else                          { zoomBoost=0.4; pitchFactor=0.92; camDuration=600; }
+  }
+
+  const targetZoom  = Math.min(baseZoom + pm.zoomOff + zoomBoost, 18.5);
+  const targetPitch = pm.pitch * pitchFactor;
+
   if(!navOverviewMode && !navUserInteracting)
-    map.easeTo({center:[lng,lat], zoom:targetZoom, bearing:navHeading, pitch:pm.pitch, duration:600});
+    map.easeTo({center:[lng,lat], zoom:targetZoom, bearing:navHeading,
+                pitch:targetPitch, duration:camDuration});
   // Upewnij się że trasa jest narysowana (może zniknąć po zmianie stylu)
   if(routeCoords.length && !map.getSource('ts-route')) drawRoute(routeCoords);
 
