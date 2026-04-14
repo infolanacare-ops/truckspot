@@ -1044,6 +1044,69 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .nav-speed-sign-unit{font-size:.45rem;font-weight:700;color:#555;letter-spacing:.03em;margin-top:-.05rem}
 .nav-speed-sign.speeding .nav-speed-sign-unit{color:rgba(255,255,255,.8)}
 
+/* TIR Safety bar — pokazuje aktywny profil pojazdu podczas nawigacji */
+.nav-tir-bar{
+  background:rgba(234,179,8,.12);
+  border-bottom:1px solid rgba(234,179,8,.3);
+  padding:.3rem 1rem;
+  display:none;align-items:center;gap:.5rem;flex-shrink:0;
+  font-size:.72rem;font-weight:700;color:#eab308;
+  pointer-events:auto;
+}
+.nav-tir-bar.active{display:flex}
+.nav-tir-bar-icon{font-size:1rem;flex-shrink:0}
+.nav-tir-bar-params{flex:1;display:flex;gap:.6rem;flex-wrap:wrap}
+.nav-tir-bar-param{
+  background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.35);
+  border-radius:6px;padding:.1rem .35rem;font-size:.68rem;font-weight:800;
+  color:#fbbf24;letter-spacing:.02em;
+}
+.nav-tir-bar-warn{
+  font-size:.65rem;color:rgba(234,179,8,.7);font-weight:600;
+}
+/* TIR modal — wymuszony przed nawigacją */
+.tir-confirm-modal{
+  position:fixed;inset:0;z-index:3000;
+  background:rgba(0,0,0,.85);backdrop-filter:blur(6px);
+  display:none;align-items:center;justify-content:center;padding:1.5rem;
+}
+.tir-confirm-modal.active{display:flex}
+.tir-confirm-box{
+  background:var(--panel);border:2px solid rgba(234,179,8,.5);
+  border-radius:20px;padding:1.5rem;max-width:400px;width:100%;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
+}
+.tir-confirm-title{
+  font-family:var(--font-head);font-size:1.25rem;font-weight:900;
+  color:#eab308;margin-bottom:.4rem;
+}
+.tir-confirm-subtitle{font-size:.82rem;color:var(--muted);margin-bottom:1.2rem;line-height:1.5}
+.tir-confirm-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:1.2rem}
+.tir-cfield{display:flex;flex-direction:column;gap:.25rem}
+.tir-cfield label{font-size:.65rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.tir-cfield input{padding:.55rem .7rem;border:1.5px solid var(--border);border-radius:10px;
+  background:var(--input-bg);color:var(--text);font-size:1rem;font-family:var(--font-head);
+  font-weight:800;outline:none;transition:.15s}
+.tir-cfield input:focus{border-color:#eab308}
+.tir-cfield-unit{font-size:.65rem;color:var(--muted)}
+.tir-confirm-actions{display:flex;gap:.6rem}
+.tir-confirm-go{
+  flex:1;padding:.85rem;border:none;border-radius:14px;cursor:pointer;
+  font-family:var(--font-head);font-size:1rem;font-weight:900;
+  background:linear-gradient(135deg,#eab308,#ca8a04);color:#000;
+  box-shadow:0 4px 16px rgba(234,179,8,.4);transition:.15s
+}
+.tir-confirm-go:active{transform:scale(.97)}
+.tir-confirm-cancel{
+  padding:.85rem 1rem;border:1.5px solid var(--border);border-radius:14px;
+  cursor:pointer;background:transparent;color:var(--muted);font-weight:700
+}
+.tir-confirm-warning{
+  background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);
+  border-radius:10px;padding:.65rem .8rem;margin-bottom:1rem;
+  font-size:.78rem;color:#fca5a5;line-height:1.5;
+}
+
 /* Ikona fotoradaru pod znakiem prędkości */
 @keyframes cam-pulse{
   0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.6)}
@@ -1814,22 +1877,22 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
       <div class="ro-tir-params">
         <div class="ro-param">
           <label for="tir-height">Wysokość</label>
-          <input type="number" id="tir-height" placeholder="4.0" step="0.1" min="0" max="6" oninput="updateRouteOptsSummary()">
+          <input type="number" id="tir-height" placeholder="4.0" step="0.1" min="0" max="6" value="4.0" oninput="saveRouteOptsTirProfile();updateRouteOptsSummary()">
           <span class="ro-param-unit">metry</span>
         </div>
         <div class="ro-param">
           <label for="tir-width">Szerokość</label>
-          <input type="number" id="tir-width" placeholder="2.5" step="0.1" min="0" max="4" oninput="updateRouteOptsSummary()">
+          <input type="number" id="tir-width" placeholder="2.55" step="0.05" min="0" max="4" value="2.55" oninput="saveRouteOptsTirProfile();updateRouteOptsSummary()">
           <span class="ro-param-unit">metry</span>
         </div>
         <div class="ro-param">
           <label for="tir-weight">Masa całkowita</label>
-          <input type="number" id="tir-weight" placeholder="40000" step="500" min="0" max="60000" oninput="updateRouteOptsSummary()">
+          <input type="number" id="tir-weight" placeholder="40000" step="500" min="0" max="60000" value="40000" oninput="saveRouteOptsTirProfile();updateRouteOptsSummary()">
           <span class="ro-param-unit">kilogramy</span>
         </div>
         <div class="ro-param">
           <label for="tir-length">Długość</label>
-          <input type="number" id="tir-length" placeholder="18.0" step="0.5" min="0" max="25" oninput="updateRouteOptsSummary()">
+          <input type="number" id="tir-length" placeholder="18.75" step="0.5" min="0" max="25" value="18.75" oninput="saveRouteOptsTirProfile();updateRouteOptsSummary()">
           <span class="ro-param-unit">metry</span>
         </div>
       </div>
@@ -1857,6 +1920,12 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
       <div class="nav-street-name" id="nav-street-name">Obliczanie trasy...</div>
       <div class="nav-maneuver-label" id="nav-maneuver-label"></div>
     </div>
+  </div>
+
+  <!-- TIR Safety bar — aktywny profil pojazdu -->
+  <div class="nav-tir-bar" id="nav-tir-bar">
+    <span class="nav-tir-bar-icon">🚛</span>
+    <div class="nav-tir-bar-params" id="nav-tir-bar-params"></div>
   </div>
 
   <!-- Następny manewr -->
@@ -1913,6 +1982,43 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
     <button class="nav-mute-btn" id="nav-mute-btn" onclick="toggleNavMute()" title="Wycisz głos">🔊</button>
     <button class="nav-pitch-btn" id="nav-pitch-btn" onclick="cycleNavPitch()" title="Zmień perspektywę">3D</button>
     <button class="nav-stop-btn" onclick="stopNavigation()" title="Zatrzymaj nawigację">✕</button>
+  </div>
+</div>
+
+<!-- TIR CONFIRM MODAL — wymuszony przed nawigacją TIR -->
+<div class="tir-confirm-modal" id="tir-confirm-modal">
+  <div class="tir-confirm-box">
+    <div class="tir-confirm-title">🚛 Profil pojazdu TIR</div>
+    <div class="tir-confirm-subtitle">Sprawdź wymiary przed nawigacją.<br>Błędne dane mogą prowadzić do wypadku!</div>
+    <div class="tir-confirm-warning">
+      ⚠️ <strong>UWAGA:</strong> Trasa zostanie obliczona z uwzględnieniem tych parametrów. Zły profil = ryzyko wjazdu pod wiadukt lub na drogę zakazaną dla TIR.
+    </div>
+    <div class="tir-confirm-grid">
+      <div class="tir-cfield">
+        <label>Wysokość</label>
+        <input type="number" id="tcc-height" step="0.1" min="2" max="6">
+        <span class="tir-cfield-unit">metry</span>
+      </div>
+      <div class="tir-cfield">
+        <label>Szerokość</label>
+        <input type="number" id="tcc-width" step="0.05" min="1" max="4">
+        <span class="tir-cfield-unit">metry</span>
+      </div>
+      <div class="tir-cfield">
+        <label>Masa całkowita</label>
+        <input type="number" id="tcc-weight" step="500" min="3500" max="60000">
+        <span class="tir-cfield-unit">kilogramy</span>
+      </div>
+      <div class="tir-cfield">
+        <label>Długość</label>
+        <input type="number" id="tcc-length" step="0.5" min="3" max="25">
+        <span class="tir-cfield-unit">metry</span>
+      </div>
+    </div>
+    <div class="tir-confirm-actions">
+      <button class="tir-confirm-cancel" onclick="closeTirConfirm()">Anuluj</button>
+      <button class="tir-confirm-go" onclick="confirmTirAndNavigate()">✓ Potwierdź i jedź</button>
+    </div>
   </div>
 </div>
 
@@ -3482,16 +3588,20 @@ function buildRouteUrl(coordStr){
     overview:'full', access_token:MAPBOX_TOKEN
   });
   if(excl.length) params.set('exclude', excl.join(','));
-  // TIR vehicle params
+  // TIR vehicle params — zawsze z bezpiecznymi wartościami domyślnymi
   if(currentMode === 'tir'){
-    const h = parseFloat(document.getElementById('tir-height')?.value);
-    const w = parseFloat(document.getElementById('tir-weight')?.value);
-    const wd = parseFloat(document.getElementById('tir-width')?.value);
-    const l = parseFloat(document.getElementById('tir-length')?.value);
-    if(h > 0) params.set('max_height', h);
-    if(wd > 0) params.set('max_width', wd);
-    if(w > 0) params.set('max_weight', (w/1000).toFixed(2)); // kg → tony
-    if(l > 0) params.set('max_length', l);
+    const h  = parseFloat(document.getElementById('tir-height')?.value)  || 4.0;
+    const wd = parseFloat(document.getElementById('tir-width')?.value)   || 2.55;
+    const w  = parseFloat(document.getElementById('tir-weight')?.value)  || 40000;
+    const l  = parseFloat(document.getElementById('tir-length')?.value)  || 18.75;
+    params.set('max_height', h);
+    params.set('max_width',  wd);
+    params.set('max_weight', (w/1000).toFixed(2));
+    params.set('max_length', l);
+    // TIR: zawsze omijaj drogi lokalne (track) i serwisowe
+    const excl2 = params.get('exclude') ? params.get('exclude').split(',') : [];
+    if(!excl2.includes('track')) excl2.push('track');
+    params.set('exclude', excl2.join(','));
   }
   return `https://api.mapbox.com/directions/v5/mapbox/${profile}/${coordStr}?${params}`;
 }
@@ -3541,9 +3651,12 @@ function saveRouteOptsTirProfile(){
 (function loadTirVehicle(){
   try{
     const v = JSON.parse(localStorage.getItem('ts_tir_vehicle')||'{}');
-    const set = (id, val) => { const el=document.getElementById(id); if(el&&val) el.value=val; };
-    set('tir-height',v.h); set('tir-width',v.wd); set('tir-weight',v.w); set('tir-length',v.l);
-    // Ustaw aktywny typ trasy
+    const set = (id, val) => { const el=document.getElementById(id); if(el) el.value=val||''; };
+    // Domyślne wartości standardowego TIR UE jeśli brak zapisanych
+    set('tir-height', v.h  || '4.0');
+    set('tir-width',  v.wd || '2.55');
+    set('tir-weight', v.w  || '40000');
+    set('tir-length', v.l  || '18.75');
     setRouteType(routeType);
     updateRouteOptsSummary();
   }catch(e){}
@@ -3869,15 +3982,63 @@ let navAnnouncedPois = new Set(); // ID już ogłoszonych
 let navCIdx = 0;           // indeks najbliższego punktu trasy (aktualizowany w onNavPosition)
 
 async function startDriving(){
+  if(currentMode === 'tir'){
+    showTirConfirm();
+    return;
+  }
   const btn = document.getElementById('jedz-btn');
   btn.disabled = true;
   btn.innerHTML = '⏳ Obliczam trasę...';
   try {
-    await searchRoute(true); // true = nav mode
+    await searchRoute(true);
   } finally {
     btn.disabled = false;
     btn.innerHTML = '🚛 JEDŹ';
   }
+}
+
+function showTirConfirm(){
+  // Przepisz aktualne wartości do modalu
+  const vals = getTirValues();
+  const set = (id, val) => { const el=document.getElementById(id); if(el) el.value=val; };
+  set('tcc-height', vals.h);
+  set('tcc-width',  vals.wd);
+  set('tcc-weight', vals.w);
+  set('tcc-length', vals.l);
+  document.getElementById('tir-confirm-modal').classList.add('active');
+}
+
+function closeTirConfirm(){
+  document.getElementById('tir-confirm-modal').classList.remove('active');
+}
+
+async function confirmTirAndNavigate(){
+  // Przepisz wartości z modalu do głównych inputów
+  const get = id => document.getElementById(id)?.value;
+  const set = (id, val) => { const el=document.getElementById(id); if(el) el.value=val; };
+  set('tir-height', get('tcc-height'));
+  set('tir-width',  get('tcc-width'));
+  set('tir-weight', get('tcc-weight'));
+  set('tir-length', get('tcc-length'));
+  saveRouteOptsTirProfile();
+  closeTirConfirm();
+
+  const btn = document.getElementById('jedz-btn');
+  if(btn){ btn.disabled=true; btn.innerHTML='⏳ Obliczam trasę...'; }
+  try {
+    await searchRoute(true);
+  } finally {
+    if(btn){ btn.disabled=false; btn.innerHTML='🚛 JEDŹ'; }
+  }
+}
+
+function getTirValues(){
+  return {
+    h:  parseFloat(document.getElementById('tir-height')?.value)  || 4.0,
+    wd: parseFloat(document.getElementById('tir-width')?.value)   || 2.55,
+    w:  parseFloat(document.getElementById('tir-weight')?.value)  || 40000,
+    l:  parseFloat(document.getElementById('tir-length')?.value)  || 18.75,
+  };
 }
 
 function buildRouteDistances(){
@@ -4007,6 +4168,21 @@ function startNavigation(){
   });
   map.easeTo({pitch:55, duration:800});
   acquireWakeLock();
+  // Pokaż profil TIR podczas nawigacji
+  if(currentMode === 'tir'){
+    const v = getTirValues();
+    const bar = document.getElementById('nav-tir-bar');
+    const params = document.getElementById('nav-tir-bar-params');
+    if(bar && params){
+      params.innerHTML = [
+        `<span class="nav-tir-bar-param">H: ${v.h}m</span>`,
+        `<span class="nav-tir-bar-param">S: ${v.wd}m</span>`,
+        `<span class="nav-tir-bar-param">${(v.w/1000).toFixed(0)}t</span>`,
+        `<span class="nav-tir-bar-param">L: ${v.l}m</span>`,
+      ].join('');
+      bar.classList.add('active');
+    }
+  }
   navWatchId = navigator.geolocation.watchPosition(onNavPosition,
     e=>{ if(e.code!==e.TIMEOUT) showAlert('⚠️','GPS Error',''); },
     {enableHighAccuracy:true, maximumAge:2000, timeout:15000});
@@ -4512,6 +4688,8 @@ function stopNavigation(){
   if(_markerAnimId){ cancelAnimationFrame(_markerAnimId); _markerAnimId=null; }
   _markerFrom = null;
   camerasVisible = false; navCIdx = 0;
+  const tirBar = document.getElementById('nav-tir-bar');
+  if(tirBar) tirBar.classList.remove('active');
   document.getElementById('nav-overlay').classList.remove('active');
   document.body.classList.remove('navigating');
   // Przywróć msg-fab
