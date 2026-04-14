@@ -2399,6 +2399,9 @@ function enterMode(mode){
     map.addControl(new mapboxgl.AttributionControl({compact:true}), 'bottom-right');
     map.on('click', (e)=>{ onMapClickForMsg(e); onMapClick(e); });
     map.on('moveend', ()=>{ if(map.getZoom()>=8) loadOsmParkings(); loadReports(); });
+    // Wykryj ręczne operacje na mapie podczas nawigacji
+    map.on('zoomstart', e=>{ if(e.originalEvent && navActive) onNavUserInteract(); });
+    map.on('dragstart',  e=>{ if(e.originalEvent && navActive) onNavUserInteract(); });
   } else {
     setTimeout(()=>map.resize(),100);
   }
@@ -3971,7 +3974,7 @@ function onNavPosition(pos){
 
   // Speed-adaptive zoom: slow city=15, motorway=13
   const targetZoom = navSpeedKmh > 80 ? 13 : navSpeedKmh > 40 ? 14 : 15;
-  if(!navOverviewMode)
+  if(!navOverviewMode && !navUserInteracting)
     map.easeTo({center:[lng,lat], zoom:targetZoom, bearing:navHeading, pitch:55, duration:600});
 
   // ── Remaining distance along route ──────────────────────────────────
@@ -4114,6 +4117,17 @@ async function rerouteNavigation(fromLat, fromLng){
 }
 
 let navOverviewMode = false;
+let navUserInteracting = false;
+let navUserInteractTimer = null;
+
+function onNavUserInteract(){
+  navUserInteracting = true;
+  clearTimeout(navUserInteractTimer);
+  navUserInteractTimer = setTimeout(()=>{
+    navUserInteracting = false;
+  }, 20000);
+}
+
 function toggleNavOverview(){
   navOverviewMode = !navOverviewMode;
   const btn = document.getElementById('nav-overview-btn');
@@ -4148,6 +4162,7 @@ function stopNavigation(){
     gpsMarker = mkGpsDotMarker(ll.lat, ll.lng); }
   map.easeTo({pitch:0, bearing:0, duration:600});
   releaseWakeLock();
+  navUserInteracting = false; clearTimeout(navUserInteractTimer);
   // Reset mute przy zatrzymaniu
   navMuted = false;
   const mb = document.getElementById('nav-mute-btn');
