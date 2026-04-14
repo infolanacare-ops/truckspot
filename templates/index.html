@@ -4574,7 +4574,6 @@ function closeReportDial(){
 async function submitReport(cat){
   closeReportDial();
   const voterID = getVoterId();
-  // try GPS first
   let lat, lng;
   if(gpsMarker){
     const ll = gpsMarker.getLngLat();
@@ -4583,6 +4582,31 @@ async function submitReport(cat){
     const c = map.getCenter();
     lat = c.lat; lng = c.lng;
   }
+
+  // Fotoradary trafiają do dedykowanej permanentnej bazy
+  if(cat === 'camera'){
+    try {
+      const resp = await fetch('/api/cameras', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({lat, lng, user: profile.name||'Anonim', voter_id: voterID})
+      });
+      const data = await resp.json();
+      if(data.ok && !data.duplicate){
+        addPts(20);
+        showAlert('📸', '+20 pkt!', 'Fotoradar dodany do bazy!');
+        loadUserCameras();
+      } else if(data.merged){
+        addPts(5);
+        showAlert('📸', '+5 pkt!', `Fotoradar potwierdzony (${data.confirms}×)`);
+        loadUserCameras();
+      } else if(data.duplicate){
+        showAlert('ℹ️','','Już zgłosiłeś fotoradar w tym miejscu');
+      }
+    } catch(e){ showAlert('⚠️','','Błąd zgłoszenia'); }
+    return;
+  }
+
   try {
     const resp = await fetch('/api/reports', {
       method:'POST',
@@ -5274,6 +5298,31 @@ let navAnnouncedCameras = new Set();
 
 const CAMERA_SVG = '<path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11l-4 4z"/>';
 
+// Ładuje fotoradary zgłoszone przez użytkowników dla bbox trasy
+async function loadUserCameras(){
+  if(!routeCoords.length) return;
+  const lats = routeCoords.map(c=>c[1]);
+  const lngs = routeCoords.map(c=>c[0]);
+  const pad = 0.008;
+  const south = Math.min(...lats)-pad, north = Math.max(...lats)+pad;
+  const west  = Math.min(...lngs)-pad, east  = Math.max(...lngs)+pad;
+  try {
+    const resp = await fetch(`/api/cameras?south=${south}&west=${west}&north=${north}&east=${east}`);
+    const data = await resp.json();
+    // Konwertuj format user cameras na format OSM elements
+    return data.map(c => ({
+      lat: c.lat, lon: c.lng,
+      tags: {
+        maxspeed: c.maxspeed || '',
+        direction: c.direction || '',
+        source: 'user',
+        confirms: c.confirms,
+        id: c.id,
+      }
+    }));
+  } catch(e){ return []; }
+}
+
 // Ładuje fotoradary dla całej trasy — segmentami wzdłuż trasy (dokładniejsze niż bbox)
 async function loadNavCameras(){
   if(!routeCoords.length) return;
@@ -5322,6 +5371,15 @@ out center;`;
     } catch(e){ /* ignoruj błędy sieciowe dla segmentu */ }
   }
 
+  // Dołącz fotoradary zgłoszone przez użytkowników
+  const userCams = await loadUserCameras();
+  // Deduplikuj: user cameras w promieniu 100m od OSM — pomiń
+  const osmKeys = new Set(allElements.map(e=>`${e.lat.toFixed(4)},${e.lon.toFixed(4)}`));
+  for(const uc of userCams){
+    const key = `${uc.lat.toFixed(4)},${uc.lon.toFixed(4)}`;
+    if(!osmKeys.has(key)) allElements.push(uc);
+  }
+
   renderCameraMarkers(allElements);
 }
 
@@ -5368,15 +5426,23 @@ function renderCameraMarkers(elements){
   elements.forEach(el=>{
     if(!el.lat || !el.lon) return;
     const maxspeed = el.tags?.maxspeed || '';
+    const isUser = el.tags?.source === 'user';
+    const confirms = el.tags?.confirms || 0;
+    // Kolor: user zgłoszony=pomarańczowy, OSM=czerwony, user potwierdzony 3+= czerwony
+    const color = isUser && confirms < 3 ? '#f97316' : '#ef4444';
     const label = maxspeed
-      ? `<text x="20" y="23" text-anchor="middle" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="9" fill="#ef4444">${maxspeed.replace(' mph','').replace('km/h','')}</text>`
+      ? `<text x="20" y="23" text-anchor="middle" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="9" fill="${color}">${maxspeed.replace(' mph','').replace('km/h','')}</text>`
       : '';
-    const html = mkPin('#ef4444',
-      `<g transform="translate(8,7)" fill="none" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <svg width="24" height="24" viewBox="0 0 24 24">${CAMERA_SVG}</svg></g>${label}`);
+    const badge = isUser && confirms > 0
+      ? `<text x="32" y="8" text-anchor="middle" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="7" fill="#22c55e">×${confirms}</text>`
+      : '';
+    const html = mkPin(color,
+      `<g transform="translate(8,7)" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="24" height="24" viewBox="0 0 24 24">${CAMERA_SVG}</svg></g>${label}${badge}`);
     cameraMarkers.push(mkMbMarker(el.lat, el.lon, html, ()=>{
       const sp = maxspeed ? ` · ${maxspeed}` : '';
-      showAlert('📷','Fotoradar'+(sp), el.tags?.direction ? '→ kierunek '+el.tags.direction : 'Zwolnij!');
+      const src = isUser ? ` · zgłoszony przez kierowców (${confirms} potwierdzeń)` : '';
+      showAlert('📷','Fotoradar'+sp, (el.tags?.direction ? '→ '+el.tags.direction : 'Zwolnij!')+src);
     }));
   });
 }

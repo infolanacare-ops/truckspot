@@ -21,6 +21,7 @@ COMMENTS_PATH   = os.path.join(DATA_DIR, "comments.json")
 OCCUPANCY_PATH  = os.path.join(DATA_DIR, "occupancy.json")
 MESSAGES_PATH       = os.path.join(DATA_DIR, "messages.json")
 REPORTS_PATH        = os.path.join(DATA_DIR, "reports.json")
+CAMERAS_PATH        = os.path.join(DATA_DIR, "cameras.json")
 SUBSCRIPTIONS_PATH  = os.path.join(DATA_DIR, "subscriptions.json")
 
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
@@ -808,6 +809,114 @@ def api_reports_confirm(report_id):
             with open(REPORTS_PATH, "w", encoding="utf-8") as f:
                 json.dump(reports, f, ensure_ascii=False, indent=2)
             return jsonify({"ok": True, "confirms": r["confirms"]})
+
+    return jsonify({"error": "not found"}), 404
+
+
+# ── Baza fotoradarów zgłoszonych przez użytkowników ──────────────────────────
+# Permanentne (nie wygasają), usuwane tylko gdy confirms < -3 (zbyt wiele odrzuceń)
+
+def load_cameras():
+    if not os.path.exists(CAMERAS_PATH):
+        return []
+    with open(CAMERAS_PATH, encoding="utf-8") as f:
+        return json.load(f)
+
+def save_cameras(cameras):
+    with open(CAMERAS_PATH, "w", encoding="utf-8") as f:
+        json.dump(cameras, f, ensure_ascii=False, indent=2)
+
+@app.route("/api/cameras")
+def api_cameras_get():
+    """Fotoradary zgłoszone przez kierowców — bbox query."""
+    try:
+        south = float(request.args.get("south", -90))
+        west  = float(request.args.get("west",  -180))
+        north = float(request.args.get("north",  90))
+        east  = float(request.args.get("east",   180))
+    except ValueError:
+        return jsonify({"error": "bad params"}), 400
+
+    cameras = load_cameras()
+    result = [
+        c for c in cameras
+        if south <= c.get("lat", 0) <= north
+        and west  <= c.get("lng", 0) <= east
+        and c.get("confirms", 0) >= -2  # ukryj odrzucone
+    ]
+    return jsonify(result)
+
+
+@app.route("/api/cameras", methods=["POST"])
+def api_cameras_post():
+    """Zgłoś nowy fotoradar."""
+    data = request.get_json(force=True)
+    for field in ["lat", "lng", "voter_id"]:
+        if field not in data:
+            return jsonify({"error": f"Missing: {field}"}), 400
+
+    cameras = load_cameras()
+    lat = float(data["lat"])
+    lng = float(data["lng"])
+    voter_id = str(data["voter_id"])[:64]
+
+    # Duplikat: ten sam użytkownik w promieniu 200m
+    for c in cameras:
+        if c.get("voter_id") == voter_id:
+            if haversine_km(lat, lng, c["lat"], c["lng"]) < 0.2:
+                return jsonify({"ok": True, "id": c["id"], "duplicate": True})
+
+    # Scalaj z istniejącym z innego usera w promieniu 100m — dodaj potwierdzenie
+    for c in cameras:
+        if haversine_km(lat, lng, c["lat"], c["lng"]) < 0.1:
+            if voter_id not in c.get("confirmed_by", []) and c.get("voter_id") != voter_id:
+                c.setdefault("confirmed_by", []).append(voter_id)
+                c["confirms"] = len(c["confirmed_by"])
+                save_cameras(cameras)
+                return jsonify({"ok": True, "id": c["id"], "merged": True, "confirms": c["confirms"]})
+
+    new_id = max((c.get("id", 0) for c in cameras), default=0) + 1
+    camera = {
+        "id":           new_id,
+        "lat":          lat,
+        "lng":          lng,
+        "maxspeed":     str(data.get("maxspeed", ""))[:10],
+        "direction":    str(data.get("direction", ""))[:20],
+        "type":         str(data.get("type", "fixed"))[:20],
+        "voter_id":     voter_id,
+        "user":         str(data.get("user", "Anonim"))[:30],
+        "ts":           time.time(),
+        "confirms":     0,
+        "confirmed_by": [],
+        "source":       "user",
+    }
+    cameras.append(camera)
+    save_cameras(cameras)
+    return jsonify({"ok": True, "id": new_id}), 201
+
+
+@app.route("/api/cameras/<int:camera_id>/vote", methods=["POST"])
+def api_cameras_vote(camera_id):
+    """Potwierdź (vote=1) lub odrzuć (vote=-1) fotoradar."""
+    data = request.get_json(force=True)
+    voter_id = str(data.get("voter_id", ""))[:64]
+    vote = data.get("vote")  # 1 lub -1
+    if not voter_id or vote not in (1, -1):
+        return jsonify({"error": "bad params"}), 400
+
+    cameras = load_cameras()
+    for c in cameras:
+        if c.get("id") == camera_id:
+            if voter_id == c.get("voter_id"):
+                return jsonify({"error": "cannot vote own report"}), 400
+            voted = c.setdefault("votes_by", {})
+            if voter_id in voted:
+                return jsonify({"ok": True, "already": True, "confirms": c["confirms"]})
+            voted[voter_id] = vote
+            # confirms = suma głosów
+            c["confirms"] = sum(voted.values()) + len(c.get("confirmed_by", []))
+            save_cameras(cameras)
+            return jsonify({"ok": True, "confirms": c["confirms"]})
 
     return jsonify({"error": "not found"}), 404
 
