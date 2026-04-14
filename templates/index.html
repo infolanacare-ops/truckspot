@@ -4957,6 +4957,9 @@ function onNavPosition(pos){
     const threshold = navSpeedKmh > 80 ? 80 : 40;
     if(dToManeuver < threshold){
       navStepIdx++;
+      // Ukryj pasy przy zmianie kroku
+      const lanesEl = document.getElementById('nav-lanes');
+      if(lanesEl) lanesEl.style.display = 'none';
       updateNavStep(navStepIdx, true);
       if(!navAnnouncedSteps.has(navStepIdx)){
         navAnnouncedSteps.add(navStepIdx);
