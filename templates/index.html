@@ -3280,8 +3280,14 @@ const FILTER_DEFS = [
 let activeFilters = new Set();
 let tempFilters = new Set();
 
+// Zasięg POI w nawigacji (km) — 10 / 25 / 50 / 999 (wszystkie)
+const POI_RADIUS_OPTIONS = [10, 25, 50, 999];
+let navPoiRadius = parseInt(localStorage.getItem('ts_poi_radius') || '50');
+let tempPoiRadius = navPoiRadius;
+
 function openFilters(){
   tempFilters = new Set(activeFilters);
+  tempPoiRadius = navPoiRadius;
   renderFilterPanel();
   document.getElementById('filter-panel').classList.add('open');
 }
@@ -3291,7 +3297,20 @@ function closeFilters(){
 
 function renderFilterPanel(){
   const lang = currentLang;
-  const html = FILTER_DEFS.map(group => {
+
+  // Sekcja zasięgu POI (radio)
+  const radiusLabels = {10:'10 km', 25:'25 km', 50:'50 km', 999: lang==='pl'?'Wszystkie':'All'};
+  const radiusChips = POI_RADIUS_OPTIONS.map(r => {
+    const active = tempPoiRadius === r ? 'active' : '';
+    return `<div class="fchip ${active}" onclick="setTempPoiRadius(${r},this)">
+      <span class="fchip-icon">📍</span>${radiusLabels[r]}</div>`;
+  }).join('');
+  const radiusSection = `<div class="filter-section">
+    <div class="filter-section-title">${lang==='pl'?'Zasięg POI w nawigacji':'POI range in nav'}</div>
+    <div class="filter-chips">${radiusChips}</div>
+  </div><hr style="border:none;border-top:1px solid var(--border);margin:.4rem 0 1rem">`;
+
+  const amenityHtml = FILTER_DEFS.map(group => {
     const title = group.section[lang] || group.section.en;
     const chips = group.chips.map(c => {
       const label = c[lang] || c.en;
@@ -3304,7 +3323,14 @@ function renderFilterPanel(){
       <div class="filter-chips">${chips}</div>
     </div>`;
   }).join('<hr style="border:none;border-top:1px solid var(--border);margin:.4rem 0 1rem">');
-  document.getElementById('filter-body').innerHTML = html;
+
+  document.getElementById('filter-body').innerHTML = radiusSection + amenityHtml;
+}
+
+function setTempPoiRadius(r, el){
+  tempPoiRadius = r;
+  el.closest('.filter-chips').querySelectorAll('.fchip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
 }
 
 function toggleFilterChip(el, id){
@@ -3315,14 +3341,18 @@ function toggleFilterChip(el, id){
 
 function resetFilters(){
   tempFilters.clear();
-  document.querySelectorAll('.fchip').forEach(c=>c.classList.remove('active'));
+  tempPoiRadius = 50;
+  renderFilterPanel();
 }
 
 function applyFilters(){
   activeFilters = new Set(tempFilters);
+  navPoiRadius = tempPoiRadius;
+  localStorage.setItem('ts_poi_radius', navPoiRadius);
   closeFilters();
   updateFilterBadge();
   applyFilterToMarkers();
+  renderNavPois(); // odśwież strip jeśli nawigacja aktywna
 }
 
 function updateFilterBadge(){
@@ -3990,17 +4020,20 @@ function renderNavPois(){
     : null;
 
   let pois;
+  const maxDist = navPoiRadius < 999 ? navPoiRadius : Infinity;
+
   if(myDist !== null){
-    // Tylko POI PRZED nami — filtr po distFromStart wzdłuż trasy
+    // Tylko POI PRZED nami w zasięgu navPoiRadius
     pois = navRoutePois
       .filter(p => typeof p.distFromStart === 'number' && p.distFromStart > myDist)
       .map(p => ({...p, distAhead: p.distFromStart - myDist}))
+      .filter(p => p.distAhead <= maxDist)
       .sort((a,b) => a.distAhead - b.distAhead)
       .slice(0, 10);
   } else {
-    // Brak GPS — pokaż wszystkie w kolejności trasy
+    // Brak GPS — pokaż w kolejności trasy z uwzględnieniem zasięgu
     pois = navRoutePois
-      .filter(p => typeof p.distFromStart === 'number')
+      .filter(p => typeof p.distFromStart === 'number' && p.distFromStart <= maxDist)
       .sort((a,b) => a.distFromStart - b.distFromStart)
       .slice(0, 10);
   }
