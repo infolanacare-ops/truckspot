@@ -3598,9 +3598,9 @@ function buildRouteUrl(coordStr){
     params.set('max_width',  wd);
     params.set('max_weight', (w/1000).toFixed(2));
     params.set('max_length', l);
-    // TIR: zawsze omijaj drogi lokalne (track) i serwisowe
+    // TIR: dodaj unpaved jeśli nie zaznaczone (Mapbox nie obsługuje "track")
     const excl2 = params.get('exclude') ? params.get('exclude').split(',') : [];
-    if(!excl2.includes('track')) excl2.push('track');
+    if(!excl2.includes('unpaved')) excl2.push('unpaved');
     params.set('exclude', excl2.join(','));
   }
   return `https://api.mapbox.com/directions/v5/mapbox/${profile}/${coordStr}?${params}`;
