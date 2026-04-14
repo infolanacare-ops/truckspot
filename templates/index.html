@@ -3824,17 +3824,6 @@ function closestRouteIdx(lat, lng){
   return minIdx;
 }
 
-function stripForTts(txt){
-  // Remove emojis, arrows, special chars — only plain text for speech
-  return txt
-    .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')  // emoji range
-    .replace(/[\u{2600}-\u{27BF}]/gu, '')     // misc symbols
-    .replace(/[\u{1F300}-\u{1F9FF}]/gu, '')   // more emoji
-    .replace(/→|←|↑|↓|↗|↖|↘|↙|⬆|⬇|⬅|➡|🔄|🚀|🏁/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
 // ── Wake Lock ────────────────────────────────────────────────────────────────
 let navWakeLock = null;
 async function acquireWakeLock(){
@@ -3913,7 +3902,7 @@ function updateLaneGuidance(dToManeuver){
 
 function startNavigation(){
   if(!routeSteps.length){ showAlert('⚠️','','Najpierw oblicz trasę'); return; }
-  navActive=true; navStepIdx=0; navLastLat=null; navLastLng=null;
+  navActive=true; navStepIdx=0; navCIdx=0; navLastLat=null; navLastLng=null;
   navAnnouncedPois=new Set(); navAnnouncedSteps=new Set(); navSpeedKmh=0;
   navAnnouncedReports=new Set(); navRerouteWarned=false; navRerouteTs=0;
   // Usuń istniejącą kropkę GPS — setGpsArrow stworzy strzałkę
@@ -4024,18 +4013,19 @@ function renderNavPois(){
   }
 
   // Odległość przebyta wzdłuż trasy do bieżącej pozycji (km)
-  const myDist = (navActive && navRouteDistances.length > 0)
-    ? (navRouteDistances[navCIdx] || 0)
+  // navRouteDistances — metry; distFromStart — km → przelicz na km
+  const myDistKm = (navActive && navRouteDistances.length > 0)
+    ? (navRouteDistances[navCIdx] || 0) / 1000
     : null;
 
   let pois;
   const maxDist = navPoiRadius < 999 ? navPoiRadius : Infinity;
 
-  if(myDist !== null){
+  if(myDistKm !== null){
     // Tylko POI PRZED nami w zasięgu navPoiRadius
     pois = navRoutePois
-      .filter(p => typeof p.distFromStart === 'number' && p.distFromStart > myDist)
-      .map(p => ({...p, distAhead: p.distFromStart - myDist}))
+      .filter(p => typeof p.distFromStart === 'number' && p.distFromStart > myDistKm)
+      .map(p => ({...p, distAhead: p.distFromStart - myDistKm}))
       .filter(p => p.distAhead <= maxDist)
       .sort((a,b) => a.distAhead - b.distAhead)
       .slice(0, 10);
@@ -4367,16 +4357,18 @@ async function rerouteNavigation(fromLat, fromLng){
     navMaxspeeds   = parseMaxspeeds(route);
 
     // Reset stanu nawigacji
-    navStepIdx = 0;
+    navStepIdx = 0; navCIdx = 0;
     navAnnouncedSteps = new Set();
     navAnnouncedPois  = new Set();
+    navAnnouncedReports = new Set();
 
     // Przelicz dystanse wzdłuż trasy
     buildRouteDistances();
 
-    // Odrysuj trasę
+    // Odrysuj trasę i POI
     clearRouteLayer();
     drawRoute(routeCoords);
+    loadRoutePois();
 
     // Zaktualizuj UI
     updateNavStep(0);
@@ -4438,7 +4430,8 @@ function stopNavigation(){
   navActive=false; navOverviewMode=false;
   const ob = document.getElementById('nav-overview-btn');
   if(ob) ob.classList.remove('active');
-  if(navWatchId) navigator.geolocation.clearWatch(navWatchId);
+  if(navWatchId){ navigator.geolocation.clearWatch(navWatchId); navWatchId=null; }
+  camerasVisible = false; navCIdx = 0;
   document.getElementById('nav-overlay').classList.remove('active');
   document.body.classList.remove('navigating');
   // Przywróć msg-fab
@@ -5196,6 +5189,7 @@ const COUNTRY_FLAGS_SCENIC = {AT:'🇦🇹',CH:'🇨🇭',IT:'🇮🇹',FR:'🇫
 // FOTORADARY (OpenStreetMap via Overpass) — zawsze włączone, auto-aktualizacja
 // ══════════════════════════════════════
 let cameraMarkers = [];
+let camerasVisible = false;
 let navAnnouncedCameras = new Set();
 
 const CAMERA_SVG = '<path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11l-4 4z"/>';
@@ -5220,6 +5214,7 @@ async function loadNavCameras(){
 
 function renderCameraMarkers(elements){
   cameraMarkers.forEach(m=>m.remove()); cameraMarkers=[];
+  camerasVisible = true;
   const cnt = document.getElementById('cameras-count');
   if(cnt) cnt.textContent = elements.length ? `· ${elements.length}` : '';
   elements.forEach(el=>{
