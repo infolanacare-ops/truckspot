@@ -880,6 +880,48 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .route-clear-btn{width:100%;padding:.55rem;border:1px solid var(--border);border-radius:10px;background:none;
   color:var(--muted);cursor:pointer;font-size:.82rem;margin-top:.6rem}
 
+/* ── Route Options ── */
+.route-opts-toggle{
+  width:100%;display:flex;align-items:center;gap:.5rem;padding:.55rem .6rem;
+  border:1.5px solid var(--border);border-radius:12px;background:var(--panel2);
+  color:var(--muted);cursor:pointer;font-size:.82rem;font-weight:600;margin-bottom:.5rem;
+  transition:.15s}
+.route-opts-toggle:hover{border-color:var(--accent)}
+.route-opts-toggle .rot-arrow{margin-left:auto;transition:transform .25s}
+.route-opts-toggle.open .rot-arrow{transform:rotate(180deg)}
+.route-opts-body{
+  max-height:0;overflow:hidden;
+  transition:max-height .35s cubic-bezier(.4,0,.2,1)}
+.route-opts-body.open{max-height:600px}
+.ro-section{font-size:.65rem;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--muted);font-weight:700;margin:.75rem 0 .4rem;padding-bottom:.25rem;
+  border-bottom:1px solid var(--border)}
+/* type cards 2x2 */
+.ro-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-bottom:.2rem}
+.ro-type-card{
+  display:flex;flex-direction:column;align-items:center;gap:.3rem;
+  padding:.65rem .4rem;border:2px solid var(--border);border-radius:14px;
+  background:var(--panel2);cursor:pointer;transition:.15s;
+  font-size:.72rem;font-weight:700;color:var(--muted)}
+.ro-type-card svg{width:28px;height:28px;stroke:var(--muted);fill:none;
+  stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:.15s}
+.ro-type-card.active{border-color:var(--accent);background:var(--accent-bg);color:var(--accent)}
+.ro-type-card.active svg{stroke:var(--accent)}
+/* avoid toggles */
+.ro-avoid-row{
+  display:flex;align-items:center;gap:.7rem;padding:.55rem 0;
+  border-bottom:1px solid rgba(255,255,255,.04)}
+.ro-avoid-icon{font-size:1.1rem;flex-shrink:0;width:26px;text-align:center}
+.ro-avoid-label{flex:1;font-size:.85rem;color:var(--text)}
+/* vehicle params (TIR) */
+.ro-tir-params{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.3rem}
+.ro-param{display:flex;flex-direction:column;gap:.2rem}
+.ro-param label{font-size:.65rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+.ro-param input{padding:.5rem .7rem;border:1.5px solid var(--border);border-radius:10px;
+  background:var(--input-bg);color:var(--text);font-size:.88rem;font-family:var(--font);outline:none;transition:.15s}
+.ro-param input:focus{border-color:var(--accent)}
+.ro-param-unit{font-size:.65rem;color:var(--muted);margin-top:.1rem}
+
 /* ══════════════════════════════════════
    NAWIGACJA — TomTom style
 ══════════════════════════════════════ */
@@ -1544,6 +1586,83 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
     <label class="form-label" data-i="route_to">Destination</label>
     <input class="form-input" id="route-to" placeholder="e.g. Munich, Frankfurt...">
   </div>
+  <!-- OPCJE TRASY -->
+  <button class="route-opts-toggle" id="route-opts-toggle" onclick="toggleRouteOpts()">
+    <span>⚙️ Opcje trasy</span>
+    <span id="route-opts-summary" style="flex:1;font-size:.72rem;color:var(--accent);text-align:right;margin-right:.3rem"></span>
+    <span class="rot-arrow">▾</span>
+  </button>
+  <div class="route-opts-body" id="route-opts-body">
+    <!-- Typ trasy -->
+    <div class="ro-section">Typ trasy</div>
+    <div class="ro-type-grid">
+      <div class="ro-type-card active" data-rt="fast" onclick="setRouteType('fast')">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/><line x1="4" y1="12" x2="2" y2="12"/><line x1="22" y1="12" x2="18" y2="12"/></svg>
+        Szybka
+      </div>
+      <div class="ro-type-card" data-rt="eco" onclick="setRouteType('eco')">
+        <svg viewBox="0 0 24 24"><path d="M12 22V12m0-2a9 9 0 0 0-9 9h18a9 9 0 0 0-9-9z"/><path d="M12 12C12 7 15 3 22 2c0 8-4 10-10 10z"/></svg>
+        Ekologiczna
+      </div>
+      <div class="ro-type-card" data-rt="short" onclick="setRouteType('short')">
+        <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        Krótka
+      </div>
+      <div class="ro-type-card" data-rt="curvy" onclick="setRouteType('curvy')">
+        <svg viewBox="0 0 24 24"><path d="M3 3c0 0 4 0 4 4s-4 4-4 8 4 4 4 4"/><path d="M13 3c0 0 4 0 4 4s-4 4-4 8 4 4 4 4"/></svg>
+        Omijająca
+      </div>
+    </div>
+    <!-- Omiń -->
+    <div class="ro-section">Omiń</div>
+    <div class="ro-avoid-row">
+      <span class="ro-avoid-icon">🛣️</span>
+      <span class="ro-avoid-label">Autostrady</span>
+      <label class="ts-toggle"><input type="checkbox" id="av-motorway" onchange="updateRouteOptsSummary()"><span class="ts-toggle-track"></span></label>
+    </div>
+    <div class="ro-avoid-row">
+      <span class="ro-avoid-icon">💳</span>
+      <span class="ro-avoid-label">Opłaty</span>
+      <label class="ts-toggle"><input type="checkbox" id="av-toll" onchange="updateRouteOptsSummary()"><span class="ts-toggle-track"></span></label>
+    </div>
+    <div class="ro-avoid-row">
+      <span class="ro-avoid-icon">⛴️</span>
+      <span class="ro-avoid-label">Promy</span>
+      <label class="ts-toggle"><input type="checkbox" id="av-ferry" onchange="updateRouteOptsSummary()"><span class="ts-toggle-track"></span></label>
+    </div>
+    <div class="ro-avoid-row" style="border:none">
+      <span class="ro-avoid-icon">🪨</span>
+      <span class="ro-avoid-label">Drogi nieutwardzone</span>
+      <label class="ts-toggle"><input type="checkbox" id="av-unpaved" onchange="updateRouteOptsSummary()"><span class="ts-toggle-track"></span></label>
+    </div>
+    <!-- Parametry TIR — tylko w trybie TIR -->
+    <div id="ro-tir-section" style="display:none">
+      <div class="ro-section">Parametry pojazdu (TIR)</div>
+      <div class="ro-tir-params">
+        <div class="ro-param">
+          <label for="tir-height">Wysokość</label>
+          <input type="number" id="tir-height" placeholder="4.0" step="0.1" min="0" max="6" oninput="updateRouteOptsSummary()">
+          <span class="ro-param-unit">metry</span>
+        </div>
+        <div class="ro-param">
+          <label for="tir-width">Szerokość</label>
+          <input type="number" id="tir-width" placeholder="2.5" step="0.1" min="0" max="4" oninput="updateRouteOptsSummary()">
+          <span class="ro-param-unit">metry</span>
+        </div>
+        <div class="ro-param">
+          <label for="tir-weight">Masa całkowita</label>
+          <input type="number" id="tir-weight" placeholder="40000" step="500" min="0" max="60000" oninput="updateRouteOptsSummary()">
+          <span class="ro-param-unit">kilogramy</span>
+        </div>
+        <div class="ro-param">
+          <label for="tir-length">Długość</label>
+          <input type="number" id="tir-length" placeholder="18.0" step="0.5" min="0" max="25" oninput="updateRouteOptsSummary()">
+          <span class="ro-param-unit">metry</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <button class="jedz-btn" onclick="startDriving()" id="jedz-btn">🚛 JEDŹ</button>
   <div id="route-results"></div>
   <div id="route-history-section"></div>
@@ -2856,8 +2975,9 @@ async function navigateTo(lat, lng, name){
     );
     const fromLat = pos.coords.latitude, fromLng = pos.coords.longitude;
 
-    // Mapbox Directions API — driving-traffic (live traffic + truck friendly)
-    const mbUrl = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${fromLng},${fromLat};${lng},${lat}?geometries=geojson&steps=true&voice_instructions=true&banner_instructions=true&overview=full&access_token=${MAPBOX_TOKEN}`;
+    // Mapbox Directions API
+    saveRouteOptsTirProfile();
+    const mbUrl = buildRouteUrl(`${fromLng},${fromLat};${lng},${lat}`);
     const r = await fetch(mbUrl);
     const data = await r.json();
     if(!data.routes?.length){ showAlert('⚠️','','Trasa nie znaleziona'); return; }
@@ -3076,9 +3196,97 @@ let routeSteps = [], routeTotalDist = 0, routeTotalDur = 0;
 let routeCoords = [];
 let waypointCount = 0;
 
+// ── Opcje trasy ──
+let routeType = localStorage.getItem('ts_route_type') || 'fast';
+
+function buildRouteUrl(coordStr){
+  const profile = (routeType === 'short') ? 'driving' : 'driving-traffic';
+  const excl = [];
+  if(document.getElementById('av-motorway')?.checked) excl.push('motorway');
+  if(document.getElementById('av-toll')?.checked)     excl.push('toll');
+  if(document.getElementById('av-ferry')?.checked)    excl.push('ferry');
+  if(document.getElementById('av-unpaved')?.checked)  excl.push('unpaved');
+  const params = new URLSearchParams({
+    geometries:'geojson', steps:'true',
+    voice_instructions:'true', banner_instructions:'true',
+    overview:'full', access_token:MAPBOX_TOKEN
+  });
+  if(excl.length) params.set('exclude', excl.join(','));
+  // TIR vehicle params
+  if(currentMode === 'tir'){
+    const h = parseFloat(document.getElementById('tir-height')?.value);
+    const w = parseFloat(document.getElementById('tir-weight')?.value);
+    const wd = parseFloat(document.getElementById('tir-width')?.value);
+    const l = parseFloat(document.getElementById('tir-length')?.value);
+    if(h > 0) params.set('max_height', h);
+    if(wd > 0) params.set('max_width', wd);
+    if(w > 0) params.set('max_weight', (w/1000).toFixed(2)); // kg → tony
+    if(l > 0) params.set('max_length', l);
+  }
+  return `https://api.mapbox.com/directions/v5/mapbox/${profile}/${coordStr}?${params}`;
+}
+
+function toggleRouteOpts(){
+  const btn = document.getElementById('route-opts-toggle');
+  const body = document.getElementById('route-opts-body');
+  btn.classList.toggle('open');
+  body.classList.toggle('open');
+  // Pokaż sekcję TIR tylko w trybie TIR
+  const sec = document.getElementById('ro-tir-section');
+  if(sec) sec.style.display = currentMode === 'tir' ? '' : 'none';
+}
+
+function setRouteType(type){
+  routeType = type;
+  localStorage.setItem('ts_route_type', type);
+  document.querySelectorAll('.ro-type-card').forEach(c=>
+    c.classList.toggle('active', c.dataset.rt === type));
+  updateRouteOptsSummary();
+}
+
+function updateRouteOptsSummary(){
+  const labels = { fast:'Szybka', eco:'Ekologiczna', short:'Krótka', curvy:'Omijająca' };
+  const parts = [labels[routeType] || 'Szybka'];
+  if(document.getElementById('av-motorway')?.checked) parts.push('bez autostrad');
+  if(document.getElementById('av-toll')?.checked) parts.push('bez opłat');
+  if(document.getElementById('av-ferry')?.checked) parts.push('bez promów');
+  if(document.getElementById('av-unpaved')?.checked) parts.push('bez gruntowych');
+  const h = document.getElementById('tir-height')?.value;
+  const w = document.getElementById('tir-weight')?.value;
+  if(h) parts.push(`H:${h}m`);
+  if(w) parts.push(`${(w/1000).toFixed(1)}t`);
+  const el = document.getElementById('route-opts-summary');
+  if(el) el.textContent = parts.join(' · ');
+}
+
+function saveRouteOptsTirProfile(){
+  const h = document.getElementById('tir-height')?.value;
+  const wd = document.getElementById('tir-width')?.value;
+  const w = document.getElementById('tir-weight')?.value;
+  const l = document.getElementById('tir-length')?.value;
+  if(h||wd||w||l) localStorage.setItem('ts_tir_vehicle', JSON.stringify({h,wd,w,l}));
+}
+
+// Wczytaj zapisany profil pojazdu TIR
+(function loadTirVehicle(){
+  try{
+    const v = JSON.parse(localStorage.getItem('ts_tir_vehicle')||'{}');
+    const set = (id, val) => { const el=document.getElementById(id); if(el&&val) el.value=val; };
+    set('tir-height',v.h); set('tir-width',v.wd); set('tir-weight',v.w); set('tir-length',v.l);
+    // Ustaw aktywny typ trasy
+    setRouteType(routeType);
+    updateRouteOptsSummary();
+  }catch(e){}
+})();
+
 function openRoute(){
   document.getElementById('route-panel').classList.add('open');
   document.getElementById('route-history-section').innerHTML = routeHistoryHtml();
+  // Pokaż sekcję TIR jeśli tryb TIR
+  const tirSec = document.getElementById('ro-tir-section');
+  if(tirSec) tirSec.style.display = currentMode === 'tir' ? '' : 'none';
+  setRouteType(routeType);
+  updateRouteOptsSummary();
   closePanel();
 }
 function closeRoute(){
@@ -3174,9 +3382,10 @@ async function searchRoute(navMode){
     if(!toGeo){ showAlert('⚠️','','Destination not found'); return; }
 
     // Mapbox Directions API
+    saveRouteOptsTirProfile();
     const pts = [[fromLng,fromLat], ...waypoints.map(w=>[w.lng,w.lat]), [toGeo.lng,toGeo.lat]];
     const coordStr = pts.map(c=>c[0]+','+c[1]).join(';');
-    const mbUrl = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coordStr}?geometries=geojson&steps=true&voice_instructions=true&banner_instructions=true&overview=full&access_token=${MAPBOX_TOKEN}`;
+    const mbUrl = buildRouteUrl(coordStr);
     const routeResp = await fetch(mbUrl);
     const routeData = await routeResp.json();
     if(!routeData.routes?.length){ showAlert('⚠️','','Route not found'); return; }
@@ -3761,7 +3970,7 @@ async function rerouteNavigation(fromLat, fromLng){
   setEl('nav-street-name', '🔄 ' + txt);
 
   try {
-    const mbUrl = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${fromLng},${fromLat};${navDestLng},${navDestLat}?geometries=geojson&steps=true&voice_instructions=true&banner_instructions=true&overview=full&access_token=${MAPBOX_TOKEN}`;
+    const mbUrl = buildRouteUrl(`${fromLng},${fromLat};${navDestLng},${navDestLat}`);
     const r = await fetch(mbUrl);
     const data = await r.json();
     if(!data.routes?.length) return;

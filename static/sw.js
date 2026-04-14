@@ -1,7 +1,7 @@
-// TruckSpot Service Worker — offline mode v5
-const SHELL_CACHE = 'ts-shell-v5';
-const DATA_CACHE  = 'ts-data-v5';
-const TILE_CACHE  = 'ts-tiles-v5';
+// TruckSpot Service Worker — offline mode v6
+const SHELL_CACHE = 'ts-shell-v6';
+const DATA_CACHE  = 'ts-data-v6';
+const TILE_CACHE  = 'ts-tiles-v6';
 
 // App shell — cache przy instalacji, zawsze dostępny offline
 const SHELL_ASSETS = [
