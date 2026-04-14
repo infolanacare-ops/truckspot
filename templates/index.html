@@ -1977,7 +1977,7 @@ let alertedIds=new Set();
 const PROFILE_DEFAULTS = {name:'TRUCKER',pts:0,spots:0,comments:0,km:0,loginType:'guest',
   avatar:'🚛',avatarColor:'#f59e0b',bio:'',country:'',homeBase:'',tirPinColor:'#d4af37',
   joined: new Date().toISOString().slice(0,10)};
-let profile = Object.assign({}, PROFILE_DEFAULTS, JSON.parse(localStorage.getItem('ts_profile')||'{}'));
+let profile = Object.assign({}, PROFILE_DEFAULTS, (()=>{try{return JSON.parse(localStorage.getItem('ts_profile')||'{}')}catch(e){return {}}})());
 
 function saveProfile(){ localStorage.setItem('ts_profile', JSON.stringify(profile)); }
 
