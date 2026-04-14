@@ -1143,6 +1143,63 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 
 /* Ukryj zoom podczas nawigacji */
 body.navigating .mapboxgl-ctrl-top-left{display:none}
+
+/* ══ LANDSCAPE NAVIGATION — panel po lewej, mapa po prawej ══ */
+@media (orientation:landscape) and (max-height:520px){
+  /* Overlay staje się lewą kolumną — reszta mapy widoczna przez nią */
+  .nav-overlay.active{
+    flex-direction:column;
+    width:200px;
+    height:100%;
+    right:auto; /* tylko lewa część */
+    overflow:hidden;
+  }
+  /* Karta manewru — kompaktowa */
+  .nav-maneuver-card{
+    padding:.45rem .7rem;
+    gap:.55rem;
+  }
+  .nav-svg-arrow{width:44px;height:44px}
+  .nav-dist-big{font-size:1.45rem}
+  .nav-street-name{font-size:.78rem}
+  .nav-maneuver-label{font-size:.62rem}
+  /* Następny manewr — kompaktowy */
+  .nav-next-strip{padding:.3rem .7rem}
+  /* POI strip — pionowy pasek w kolumnie */
+  .nav-pois-strip{
+    flex-direction:column;
+    overflow-x:hidden;overflow-y:auto;
+    flex:1;min-height:0;
+    padding:.3rem .4rem;
+    gap:.3rem;
+  }
+  .nav-poi-chip{flex-direction:row;min-width:unset;width:100%;padding:.3rem .5rem;gap:.4rem;justify-content:flex-start}
+  .nav-poi-chip-name{max-width:80px;text-align:left}
+  /* Znak prędkości + kamera — w panelu, nie na mapie */
+  .nav-speed-sign-wrap{height:auto;overflow:visible;padding:.3rem .4rem 0}
+  .nav-speed-sign{position:static;display:none;width:48px;height:48px;border-width:4px;margin:0 auto}
+  .nav-speed-sign.visible{display:flex}
+  .nav-speed-sign-val{font-size:1.1rem}
+  .nav-cam-warn{position:static;width:40px;height:40px;font-size:1.1rem;margin:.25rem auto 0}
+  /* Spacer znika — POI wypełnia */
+  .nav-overlay .nav-spacer{display:none}
+  /* Bottom bar — przyklejony do dołu kolumny */
+  .nav-bottom{
+    position:static;
+    padding:.45rem .55rem calc(.45rem + env(safe-area-inset-bottom));
+    gap:.45rem;
+    border-top:1px solid rgba(255,255,255,.1);
+    flex-wrap:wrap;
+  }
+  .nav-speedometer{width:42px;height:42px}
+  .nav-speed-val{font-size:.9rem}
+  .nav-eta-dist{font-size:.9rem}
+  .nav-eta-remaining,.nav-eta-arrival{font-size:.65rem}
+  .nav-stop-btn{width:38px;height:38px;border-radius:10px;font-size:1.1rem}
+  .nav-mute-btn,.nav-pitch-btn{padding:.45rem .55rem;font-size:.85rem}
+  /* Przycisk zgłoszeń — po prawej stronie, nie za panelem */
+  .report-dial{right:.5rem;bottom:4rem}
+}
 /* Ukryj logo Mapbox i "Improve this map" */
 .mapboxgl-ctrl-logo{display:none!important}
 .mapboxgl-ctrl-attrib a[href*="improve-map"],
@@ -1837,7 +1894,7 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
   </div>
 
   <!-- Mapa wypełnia środek -->
-  <div style="flex:1;pointer-events:none"></div>
+  <div class="nav-spacer" style="flex:1;pointer-events:none"></div>
 
   <!-- Dół: prędkość + ETA + stop -->
   <div class="nav-bottom">
