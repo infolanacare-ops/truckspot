@@ -351,10 +351,10 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .toggle-track.on .toggle-thumb{left:23px}
 
 /* ══ REPORTS ══ */
-/* ── REPORT SPEED-DIAL (radial) ── */
+/* ── REPORT SPEED-DIAL (slide-up) ── */
 .report-dial{
   position:fixed;right:.5rem;bottom:5.5rem;z-index:600;
-  width:64px;height:64px;
+  width:64px;
 }
 .navigating .report-dial{
   bottom:calc(80px + env(safe-area-inset-bottom) + .6rem);
@@ -362,13 +362,12 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 }
 /* główny przycisk */
 .report-dial-main{
-  position:absolute;bottom:0;right:0;
   width:64px;height:64px;border-radius:50%;border:none;cursor:pointer;
   background:rgba(255,255,255,.18);backdrop-filter:blur(10px);
   box-shadow:0 4px 20px rgba(0,0,0,.35);
+  display:block;position:relative;
   transition:.3s cubic-bezier(.34,1.56,.64,1);
 }
-/* ciemna kropka w środku */
 .report-dial-main::after{
   content:'';
   position:absolute;top:50%;left:50%;
@@ -377,55 +376,47 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
   transform:translate(-50%,-50%);
   transition:.2s;
 }
-.report-dial-main.open{
-  background:rgba(239,68,68,.65);
-  transform:rotate(45deg) scale(1.08);
-}
+.report-dial-main.open{background:rgba(239,68,68,.65);transform:rotate(45deg) scale(1.08)}
 .report-dial-main.open::after{
   background:#fff;width:16px;height:16px;
   clip-path:polygon(40% 0,60% 0,60% 40%,100% 40%,100% 60%,60% 60%,60% 100%,40% 100%,40% 60%,0 60%,0 40%,40% 40%);
 }
-/* punkt zerowy = środek głównego przycisku */
+/* kolumna kółek nad głównym przyciskiem */
 .report-dial-items{
-  position:absolute;
-  bottom:32px;right:32px;
-  width:0;height:0;
+  position:absolute;bottom:74px;right:5px;
+  display:flex;flex-direction:column;align-items:center;gap:.45rem;
   pointer-events:none;
 }
-/* kółka na końcach promieni */
 .report-dial-item{
-  position:absolute;
+  position:relative;
   width:54px;height:54px;
-  margin:-27px;
   border-radius:50%;border:none;cursor:pointer;
-  background:rgba(18,22,38,.9);
-  backdrop-filter:blur(12px);
+  background:rgba(18,22,38,.9);backdrop-filter:blur(12px);
   box-shadow:0 4px 18px rgba(0,0,0,.5);
-  font-size:1.4rem;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
-  transform:scale(0);opacity:0;
-  transition:transform .38s cubic-bezier(.34,1.56,.64,1), opacity .2s;
+  font-size:1.35rem;
+  display:flex;align-items:center;justify-content:center;
+  transform:translateY(20px) scale(.7);opacity:0;
+  transition:transform .32s cubic-bezier(.34,1.56,.64,1), opacity .2s;
   pointer-events:none;
 }
-/* stagger wylotu promieni */
-.report-dial-item:nth-child(1){transition-delay:.02s}
-.report-dial-item:nth-child(2){transition-delay:.07s}
+/* stagger od dołu do góry (item 5 = najbliżej przycisku, pojawia się pierwszy) */
+.report-dial-item:nth-child(5){transition-delay:.02s}
+.report-dial-item:nth-child(4){transition-delay:.07s}
 .report-dial-item:nth-child(3){transition-delay:.12s}
-.report-dial-item:nth-child(4){transition-delay:.17s}
-/* pozycje radialnych kółek (r≈100px, łuk 10°–90° od pionu w lewo) */
-.report-dial-items.open .report-dial-item:nth-child(1){transform:translate(-17px,-99px) scale(1);opacity:1;pointer-events:auto}
-.report-dial-items.open .report-dial-item:nth-child(2){transform:translate(-60px,-80px) scale(1);opacity:1;pointer-events:auto}
-.report-dial-items.open .report-dial-item:nth-child(3){transform:translate(-91px,-42px) scale(1);opacity:1;pointer-events:auto}
-.report-dial-items.open .report-dial-item:nth-child(4){transform:translate(-103px,-5px) scale(1);opacity:1;pointer-events:auto}
+.report-dial-item:nth-child(2){transition-delay:.17s}
+.report-dial-item:nth-child(1){transition-delay:.22s}
+.report-dial-items.open .report-dial-item{
+  transform:translateY(0) scale(1);opacity:1;pointer-events:auto;
+}
 .report-dial-item:active{filter:brightness(1.4)}
-/* etykieta pod kółkiem */
+/* etykieta po lewej stronie kółka */
 .rdi-lbl{
-  position:absolute;top:calc(100% + 4px);
-  left:50%;transform:translateX(-50%);
-  font-size:.55rem;font-weight:700;font-family:var(--font-head);
+  position:absolute;right:calc(100% + 7px);top:50%;
+  transform:translateY(-50%);
+  font-size:.62rem;font-weight:700;font-family:var(--font-head);
   white-space:nowrap;color:#fff;
-  background:rgba(10,14,28,.82);
-  padding:.1rem .32rem;border-radius:5px;
+  background:rgba(10,14,28,.85);
+  padding:.15rem .4rem;border-radius:6px;
   pointer-events:none;
 }
 /* report markers on map */
@@ -1060,6 +1051,32 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .nav-speed-sign-unit{font-size:.45rem;font-weight:700;color:#555;letter-spacing:.03em;margin-top:-.05rem}
 .nav-speed-sign.speeding .nav-speed-sign-unit{color:rgba(255,255,255,.8)}
 
+/* Ikona fotoradaru pod znakiem prędkości */
+@keyframes cam-pulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.6)}
+  50%{box-shadow:0 0 0 10px rgba(239,68,68,0)}
+}
+.nav-cam-warn{
+  position:absolute;left:.65rem;top:.5rem;
+  width:52px;height:52px;
+  border-radius:50%;background:rgba(239,68,68,.15);
+  border:3px solid rgba(239,68,68,.8);
+  display:none;align-items:center;justify-content:center;
+  font-size:1.5rem;
+  animation:cam-pulse 1s ease infinite;
+  transition:width .3s,height .3s,font-size .3s,margin .3s;
+  pointer-events:none;
+}
+.nav-cam-warn.visible{display:flex}
+/* dystansowy odcień tekstu */
+.nav-cam-dist{
+  position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);
+  font-size:.55rem;font-weight:800;font-family:var(--font-head);
+  white-space:nowrap;color:#ef4444;
+  background:rgba(10,14,28,.82);padding:.1rem .3rem;border-radius:5px;
+  pointer-events:none;
+}
+
 /* — Pasek POI — */
 .nav-pois-strip{
   background:rgba(15,18,30,.78);backdrop-filter:blur(4px);
@@ -1301,9 +1318,12 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
   </div>
 </div>
 
-<!-- REPORT SPEED-DIAL (radialny) -->
+<!-- REPORT SPEED-DIAL (slide-up) -->
 <div class="report-dial" id="report-dial">
   <div class="report-dial-items" id="report-dial-items">
+    <button class="report-dial-item" onclick="submitReport('place');closeReportDial()" title="Fajne miejsce">
+      ⭐<span class="rdi-lbl">Fajne miejsce</span>
+    </button>
     <button class="report-dial-item" onclick="submitReport('camera');closeReportDial()" title="Fotoradar">
       📸<span class="rdi-lbl">Fotoradar</span>
     </button>
@@ -1811,11 +1831,15 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
   <div class="nav-pois-strip" id="nav-pois-strip">
   </div>
 
-  <!-- Znak ograniczenia prędkości (po lewej, poniżej POI) -->
-  <div class="nav-speed-sign-wrap">
+  <!-- Znak prędkości + ikona fotoradaru (po lewej, poniżej POI) -->
+  <div class="nav-speed-sign-wrap" style="position:relative;height:0;overflow:visible;pointer-events:none">
     <div class="nav-speed-sign" id="nav-speed-sign">
       <span class="nav-speed-sign-val" id="nav-speed-sign-val">–</span>
       <span class="nav-speed-sign-unit">km/h</span>
+    </div>
+    <!-- ikona fotoradaru pojawia się 500m przed, kurczy się co 100m -->
+    <div class="nav-cam-warn" id="nav-cam-warn" style="top:calc(.55rem + 74px)">
+      📷<span class="nav-cam-dist" id="nav-cam-dist"></span>
     </div>
   </div>
 
@@ -5129,29 +5153,74 @@ function renderCameraMarkers(elements){
   });
 }
 
+// Krótki dźwięk ostrzegawczy (Web Audio)
+function playBeep(freq=900, dur=0.18, vol=0.35){
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type='sine'; osc.frequency.value=freq;
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+dur);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime+dur);
+  }catch(e){}
+}
+
+// Aktualizuj ikonę fotoradaru pod znakiem prędkości
+function updateCamWarn(distM){
+  const el  = document.getElementById('nav-cam-warn');
+  const txt = document.getElementById('nav-cam-dist');
+  if(!el) return;
+  if(distM > 500 || distM <= 0){
+    el.classList.remove('visible');
+    return;
+  }
+  el.classList.add('visible');
+  // rozmiar maleje co 100m: 500→52px, 400→46px, 300→40px, 200→34px, ≤100→28px
+  const sizes = [52,46,40,34,28];
+  const step  = Math.min(4, Math.floor((500 - distM) / 100));
+  const sz    = sizes[step];
+  el.style.width = sz+'px';
+  el.style.height= sz+'px';
+  el.style.fontSize = (sz*0.48)+'px';
+  el.style.marginLeft = ((52-sz)/2)+'px'; // wyśrodkuj względem pełnego rozmiaru
+  txt.textContent = Math.round(distM/100)*100 + ' m';
+}
+
 // Wywoływane z onNavPosition — ostrzeżenie o zbliżającym się fotoradarze (2x)
 function checkNavCameras(lat, lng){
   if(!camerasVisible || !navActive) return;
-  // [daleko, blisko] w km
-  const thresholds = navSpeedKmh > 80 ? [1.5, 0.4] : [0.8, 0.2];
+  let nearestDist = Infinity;
+
   for(const mk of cameraMarkers){
     const pos = mk.getLngLat();
-    const d = haversineKm(lat, lng, pos.lat, pos.lng);
+    const d = haversineKm(lat, lng, pos.lat, pos.lng) * 1000; // metry
+    if(d < nearestDist) nearestDist = d;
+
     const base = `${pos.lat.toFixed(5)},${pos.lng.toFixed(5)}`;
-    for(let i = 0; i < thresholds.length; i++){
-      const key = `${base}_${i}`;
-      if(d < thresholds[i] && !navAnnouncedCameras.has(key)){
-        navAnnouncedCameras.add(key);
-        const dist = d < 1 ? Math.round(d*1000)+' m' : d.toFixed(1)+' km';
-        const txt = currentLang==='pl' ? `Fotoradar za ${dist}` : `Speed camera in ${dist}`;
-        speakNav(txt, true);
-        if(i === 0){
-          showAlert('📷','⚠️ FOTORADAR', `Za ${dist} · Zwolnij!`);
-          setTimeout(closeAlert, 4000);
-        }
-      }
+
+    // Komunikat + dźwięk przy 500m
+    const key500 = `${base}_0`;
+    if(d < 500 && !navAnnouncedCameras.has(key500)){
+      navAnnouncedCameras.add(key500);
+      const txt = currentLang==='pl' ? 'Fotoradar za 500 m' : 'Speed camera in 500 m';
+      speakNav(txt, true);
+      playBeep(880, 0.22);
+      showAlert('📷','⚠️ FOTORADAR', 'Za 500 m · Zwolnij!');
+      setTimeout(closeAlert, 4000);
+    }
+    // Ostry sygnał przy 100m
+    const key100 = `${base}_1`;
+    if(d < 100 && !navAnnouncedCameras.has(key100)){
+      navAnnouncedCameras.add(key100);
+      playBeep(1100, 0.15);
+      setTimeout(()=>playBeep(1100, 0.15), 220);
     }
   }
+
+  // Aktualizuj ikonę wizualną
+  updateCamWarn(nearestDist < Infinity ? nearestDist : 0);
 }
 
 // Wywoływane z onNavPosition — ostrzeżenie o zgłoszeniach kierowców (2x)
