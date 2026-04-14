@@ -78,11 +78,12 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 .ob-step.active{display:flex}
 
 /* shared header inside steps */
-.ob-logo{font-family:var(--font-head);font-size:2rem;font-weight:900;
-  background:linear-gradient(135deg,#f59e0b,#fbbf24);
+.ob-logo{font-family:var(--font-head);font-size:2.6rem;font-weight:900;
+  background:linear-gradient(135deg,#f0d060 0%,#d4af37 45%,#b8860b 100%);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  margin-bottom:.25rem;letter-spacing:-.03em}
-.ob-sub{color:var(--muted);font-size:.85rem;margin-bottom:2rem;text-align:center;line-height:1.5}
+  margin-bottom:.2rem;letter-spacing:-.04em;
+  filter:drop-shadow(0 0 18px rgba(212,175,55,.35))}
+.ob-sub{color:var(--muted);font-size:.83rem;margin-bottom:1.6rem;text-align:center;line-height:1.5;letter-spacing:.02em}
 .ob-cards{display:flex;flex-direction:column;gap:.8rem;width:100%;max-width:340px}
 
 /* generic card */
@@ -123,12 +124,38 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
   background:linear-gradient(135deg,var(--green),#34d399);color:#fff;
 }
 
-/* ── STEP 3: Mode ── */
-.mode-card.tir    {--c:#f59e0b}
-.mode-card.camper {--c:#10b981}
-.mode-card.tourist{--c:#3b82f6}
-.mode-card:hover  {border-color:var(--c)}
-.mode-card .ob-card-icon{font-size:2.2rem}
+/* ── STEP 3: Mode — PREMIUM ── */
+#step-mode{
+  background:radial-gradient(ellipse 80% 50% at 50% -10%, rgba(212,175,55,.12) 0%, transparent 65%), var(--bg);
+}
+.mode-card.tir    {--c:#d4af37;--cg:rgba(212,175,55,.13)}
+.mode-card.camper {--c:#10b981;--cg:rgba(16,185,129,.11)}
+.mode-card.tourist{--c:#3b82f6;--cg:rgba(59,130,246,.11)}
+.mode-card{
+  border:none!important;
+  border-left:4px solid var(--c)!important;
+  background:linear-gradient(120deg,var(--cg) 0%,var(--panel) 55%)!important;
+  padding:1.15rem 1.2rem;
+  box-shadow:0 4px 28px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.06)!important;
+  transition:transform .18s,box-shadow .2s!important;
+}
+.mode-card:hover,.mode-card:active{
+  transform:translateY(-2px) scale(1.015)!important;
+  box-shadow:0 10px 36px var(--cg),0 2px 8px rgba(0,0,0,.35)!important;
+}
+.mode-icon-wrap{
+  width:52px;height:52px;border-radius:14px;flex-shrink:0;
+  background:var(--cg);border:1.5px solid var(--c);
+  display:flex;align-items:center;justify-content:center;font-size:1.8rem;
+}
+.mode-card-badge{
+  font-size:.6rem;font-weight:800;letter-spacing:.08em;
+  color:var(--c);background:var(--cg);
+  border:1px solid var(--c);border-radius:20px;
+  padding:.15rem .5rem;margin-left:.4rem;vertical-align:middle;white-space:nowrap;
+}
+.mode-card-title-row{display:flex;align-items:center;gap:.3rem;flex-wrap:wrap}
+.mode-chevron{font-size:1.4rem;color:var(--c);flex-shrink:0;line-height:1}
 
 /* theme toggle on onboarding */
 .ob-theme-toggle{
@@ -1018,28 +1045,31 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
     </div>
     <div class="ob-cards">
       <div class="ob-card mode-card tir" onclick="enterMode('tir')">
-        <div class="ob-card-icon">🚛</div>
+        <div class="mode-icon-wrap">🚛</div>
         <div class="ob-card-body">
-          <div class="ob-card-title" id="lbl-tir-title">Truck Driver</div>
-          <div class="ob-card-desc" id="lbl-tir-desc">TIR parkings · washes · services · restaurants</div>
+          <div class="mode-card-title-row">
+            <div class="ob-card-title" id="lbl-tir-title">Kierowca TIR</div>
+            <span class="mode-card-badge">#1</span>
+          </div>
+          <div class="ob-card-desc" id="lbl-tir-desc">Parkingi TIR · myjnie · serwisy · restauracje</div>
         </div>
-        <div class="ob-card-arrow" style="color:#f59e0b">›</div>
+        <div class="mode-chevron">›</div>
       </div>
       <div class="ob-card mode-card camper" onclick="enterMode('bus')">
-        <div class="ob-card-icon">🚐</div>
+        <div class="mode-icon-wrap">🚐</div>
         <div class="ob-card-body">
-          <div class="ob-card-title" id="lbl-bus-title">Vanlifer / Busiarz</div>
-          <div class="ob-card-desc" id="lbl-bus-desc">Stellplätze · electricity · water · showers</div>
+          <div class="ob-card-title" id="lbl-bus-title">Busiarz / Van Life</div>
+          <div class="ob-card-desc" id="lbl-bus-desc">Stellplätze · prąd · woda · prysznice</div>
         </div>
-        <div class="ob-card-arrow" style="color:#10b981">›</div>
+        <div class="mode-chevron">›</div>
       </div>
       <div class="ob-card mode-card tourist" onclick="enterMode('tourist')">
-        <div class="ob-card-icon">🧳</div>
+        <div class="mode-icon-wrap">🧳</div>
         <div class="ob-card-body">
-          <div class="ob-card-title" id="lbl-tourist-title">Tourist / Camping</div>
-          <div class="ob-card-desc" id="lbl-tourist-desc">Campings · tent fields · attractions · landmarks</div>
+          <div class="ob-card-title" id="lbl-tourist-title">Turysta / Camping</div>
+          <div class="ob-card-desc" id="lbl-tourist-desc">Campingi · pola namiotowe · atrakcje · zabytki</div>
         </div>
-        <div class="ob-card-arrow" style="color:#3b82f6">›</div>
+        <div class="mode-chevron">›</div>
       </div>
     </div>
   </div>
