@@ -1036,13 +1036,29 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 }
 .nav-road-name{font-size:.8rem;color:#fff;font-weight:600;flex:1;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.nav-speed-limit{
-  width:32px;height:32px;border-radius:50%;background:#fff;
-  border:3px solid #e53;display:flex;align-items:center;justify-content:center;
-  font-family:var(--font-head);font-size:.72rem;font-weight:900;color:#111;
-  flex-shrink:0;display:none
+.nav-speed-limit{display:none} /* zastąpione przez nav-speed-sign */
+
+/* Znak ograniczenia prędkości — lewy bok mapy, pod POI */
+.nav-speed-sign-wrap{position:relative;height:0;overflow:visible;pointer-events:none}
+.nav-speed-sign{
+  position:absolute;left:.65rem;top:.55rem;
+  width:64px;height:64px;border-radius:50%;
+  background:#fff;border:5px solid #d32;
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  box-shadow:0 4px 18px rgba(0,0,0,.4);
+  pointer-events:none;
+  transition:border-color .2s, background .2s;
 }
-.nav-speed-limit.visible{display:flex}
+.nav-speed-sign.visible{display:flex}
+.nav-speed-sign.speeding{background:#d32;border-color:#fff}
+.nav-speed-sign-val{
+  font-family:var(--font-head);font-size:1.45rem;font-weight:900;
+  color:#111;line-height:1;
+  transition:color .2s;
+}
+.nav-speed-sign.speeding .nav-speed-sign-val{color:#fff}
+.nav-speed-sign-unit{font-size:.45rem;font-weight:700;color:#555;letter-spacing:.03em;margin-top:-.05rem}
+.nav-speed-sign.speeding .nav-speed-sign-unit{color:rgba(255,255,255,.8)}
 
 /* — Pasek POI — */
 .nav-pois-strip{
@@ -1793,6 +1809,14 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
 
   <!-- POI strip -->
   <div class="nav-pois-strip" id="nav-pois-strip">
+  </div>
+
+  <!-- Znak ograniczenia prędkości (po lewej, poniżej POI) -->
+  <div class="nav-speed-sign-wrap">
+    <div class="nav-speed-sign" id="nav-speed-sign">
+      <span class="nav-speed-sign-val" id="nav-speed-sign-val">–</span>
+      <span class="nav-speed-sign-unit">km/h</span>
+    </div>
   </div>
 
   <!-- Mapa wypełnia środek -->
@@ -3085,6 +3109,7 @@ async function navigateTo(lat, lng, name){
     routeTotalDist  = route.distance;
     routeTotalDur   = route.duration;
     routeSteps      = route.legs.flatMap(l=>l.steps||[]);
+    navMaxspeeds    = parseMaxspeeds(route);
     navDestLat = lat; navDestLng = lng; // zapamiętaj cel do reroutingu
 
     // rysuj trasę na mapie
@@ -3320,6 +3345,7 @@ function buildRouteUrl(coordStr){
   const params = new URLSearchParams({
     geometries:'geojson', steps:'true',
     voice_instructions:'true', banner_instructions:'true',
+    annotations:'maxspeed',
     overview:'full', access_token:MAPBOX_TOKEN
   });
   if(excl.length) params.set('exclude', excl.join(','));
@@ -3506,6 +3532,7 @@ async function searchRoute(navMode){
     routeTotalDist = route.distance;
     routeTotalDur  = route.duration;
     routeSteps = route.legs.flatMap(l=>l.steps||[]);
+    navMaxspeeds = parseMaxspeeds(route);
 
     const distKm = Math.round(routeTotalDist/1000);
     const durMin = Math.round(routeTotalDur/60);
@@ -4024,12 +4051,43 @@ function updateNavDistDisplay(metres){
   }
 }
 
+let navMaxspeeds = []; // km/h per routeCoords index (z annotations Mapbox)
+
+function parseMaxspeeds(route){
+  const speeds = [];
+  for(const leg of route.legs){
+    const ann = leg.annotation?.maxspeed || [];
+    for(const ms of ann){
+      if(!ms || ms.unknown || ms.speed == null) speeds.push(0);
+      else speeds.push(ms.unit === 'mph' ? Math.round(ms.speed * 1.609) : ms.speed);
+    }
+    // ostatnia współrzędna nogi = ta sama prędkość co ostatni segment
+    speeds.push(speeds[speeds.length - 1] || 0);
+  }
+  return speeds;
+}
+
+function updateSpeedSign(kmh){
+  const sign = document.getElementById('nav-speed-sign');
+  const val  = document.getElementById('nav-speed-sign-val');
+  if(!sign) return;
+  if(kmh > 0){
+    sign.classList.add('visible');
+    val.textContent = kmh;
+    sign.classList.toggle('speeding', navSpeedKmh > 0 && navSpeedKmh > kmh + 5);
+  } else {
+    sign.classList.remove('visible','speeding');
+  }
+}
+
 function setNavSpeed(kmh, limitKmh){
   const el = document.getElementById('nav-speedometer');
   setEl('nav-speed-val', kmh > 0 ? kmh : '–');
   if(el){
     el.classList.toggle('speeding', limitKmh > 0 && kmh > limitKmh + 5);
   }
+  // aktualizuj też pulsowanie znaku
+  if(limitKmh > 0) updateSpeedSign(limitKmh);
 }
 
 function onNavPosition(pos){
@@ -4065,6 +4123,19 @@ function onNavPosition(pos){
   const cIdx = closestRouteIdx(lat, lng);
   navDistRemaining = navRouteDistances[navRouteDistances.length-1] - navRouteDistances[cIdx];
   setEl('nav-total-dist', fmtDist(navDistRemaining));
+
+  // Ograniczenie prędkości z annotations Mapbox
+  if(navMaxspeeds.length > 0){
+    const limit = navMaxspeeds[Math.min(cIdx, navMaxspeeds.length - 1)] || 0;
+    if(limit !== navCurrentSpeedLimit){
+      navCurrentSpeedLimit = limit;
+      updateSpeedSign(limit);
+    } else {
+      const sign = document.getElementById('nav-speed-sign');
+      if(sign && navCurrentSpeedLimit > 0)
+        sign.classList.toggle('speeding', navSpeedKmh > navCurrentSpeedLimit + 5);
+    }
+  }
 
   // ETA: use real speed, fallback 80km/h
   const speedForEta = navSpeedKmh > 5 ? navSpeedKmh : 80;
@@ -4184,6 +4255,7 @@ async function rerouteNavigation(fromLat, fromLng){
     routeTotalDist = route.distance;
     routeTotalDur  = route.duration;
     routeSteps     = route.legs.flatMap(l=>l.steps||[]);
+    navMaxspeeds   = parseMaxspeeds(route);
 
     // Reset stanu nawigacji
     navStepIdx = 0;
