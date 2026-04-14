@@ -1052,6 +1052,9 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .nav-mute-btn{padding:.6rem .8rem;border:none;border-radius:12px;cursor:pointer;
   background:rgba(255,255,255,.15);color:#fff;font-size:1rem;flex-shrink:0;backdrop-filter:blur(4px);transition:.2s}
 .nav-mute-btn.muted{background:rgba(239,68,68,.55);color:#fff}
+.nav-pitch-btn{padding:.5rem .7rem;border:none;border-radius:12px;cursor:pointer;
+  background:rgba(255,255,255,.15);color:#fff;font-size:.78rem;font-weight:800;
+  flex-shrink:0;backdrop-filter:blur(4px);letter-spacing:.02em;min-width:38px;transition:.2s}
 .nav-stop-btn{padding:.6rem 1.1rem;border:none;border-radius:12px;cursor:pointer;
   background:#ef4444;color:#fff;font-family:var(--font-head);font-size:.85rem;font-weight:800;flex-shrink:0}
 
@@ -1768,6 +1771,7 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
       <div class="nav-eta-time" id="nav-eta-time">–</div>
     </div>
     <button class="nav-mute-btn" id="nav-mute-btn" onclick="toggleNavMute()" title="Wycisz głos">🔊</button>
+    <button class="nav-pitch-btn" id="nav-pitch-btn" onclick="cycleNavPitch()" title="Zmień perspektywę">3D</button>
     <button class="nav-overview-btn" id="nav-overview-btn" onclick="toggleNavOverview()" title="Podgląd trasy">🗺</button>
     <button class="nav-stop-btn" onclick="stopNavigation()">✕ Stop</button>
   </div>
@@ -3115,11 +3119,15 @@ function drawRoute(coords){
       map.addSource('ts-route',{type:'geojson',data:geojson});
       map.addLayer({id:'ts-route-casing',type:'line',source:'ts-route',
         layout:{'line-join':'round','line-cap':'round'},
-        paint:{'line-color':'#1d4ed8','line-width':9,'line-opacity':0.7}
+        paint:{'line-color':'#1d4ed8',
+          'line-width':['interpolate',['linear'],['zoom'],4,2,8,5,12,9,16,12],
+          'line-opacity':0.7}
       });
       map.addLayer({id:'ts-route-line',type:'line',source:'ts-route',
         layout:{'line-join':'round','line-cap':'round'},
-        paint:{'line-color':'#3b82f6','line-width':6,'line-opacity':0.95}
+        paint:{'line-color':'#3b82f6',
+          'line-width':['interpolate',['linear'],['zoom'],4,1,8,3,12,6,16,8],
+          'line-opacity':0.95}
       });
     }
   });
@@ -3754,6 +3762,8 @@ function startNavigation(){
   navActive=true; navStepIdx=0; navLastLat=null; navLastLng=null;
   navAnnouncedPois=new Set(); navAnnouncedSteps=new Set(); navSpeedKmh=0;
   navAnnouncedReports=new Set();
+  // Usuń istniejącą kropkę GPS — setGpsArrow stworzy strzałkę
+  if(gpsMarker){ gpsMarker.remove(); gpsMarker=null; }
   document.getElementById('nav-overlay').classList.add('active');
   document.body.classList.add('navigating');
   // Ukryj FABy podczas nawigacji
@@ -3974,9 +3984,13 @@ function onNavPosition(pos){
   }
 
   // Speed-adaptive zoom: slow city=15, motorway=13
-  const targetZoom = navSpeedKmh > 80 ? 13 : navSpeedKmh > 40 ? 14 : 15;
+  const baseZoom = navSpeedKmh > 80 ? 13 : navSpeedKmh > 40 ? 14 : 15;
+  const pm = NAV_PITCH_MODES[navPitchMode];
+  const targetZoom = baseZoom + pm.zoomOff;
   if(!navOverviewMode && !navUserInteracting)
-    map.easeTo({center:[lng,lat], zoom:targetZoom, bearing:navHeading, pitch:55, duration:600});
+    map.easeTo({center:[lng,lat], zoom:targetZoom, bearing:navHeading, pitch:pm.pitch, duration:600});
+  // Upewnij się że trasa jest narysowana (może zniknąć po zmianie stylu)
+  if(routeCoords.length && !map.getSource('ts-route')) drawRoute(routeCoords);
 
   // ── Remaining distance along route ──────────────────────────────────
   const cIdx = closestRouteIdx(lat, lng);
@@ -4122,6 +4136,22 @@ let navOverviewMode = false;
 let navUserInteracting = false;
 let navUserInteractTimer = null;
 
+// Trzy poziomy perspektywy nawigacji
+const NAV_PITCH_MODES = [
+  {pitch:55, label:'3D', zoomOff: 0},
+  {pitch:28, label:'2.5D', zoomOff: 1},
+  {pitch:0,  label:'⊙',  zoomOff: -1},
+];
+let navPitchMode = 0;
+function cycleNavPitch(){
+  navPitchMode = (navPitchMode + 1) % NAV_PITCH_MODES.length;
+  const m = NAV_PITCH_MODES[navPitchMode];
+  document.getElementById('nav-pitch-btn').textContent = m.label;
+  if(!navOverviewMode && !navUserInteracting){
+    map.easeTo({pitch: m.pitch, duration:500});
+  }
+}
+
 function onNavUserInteract(){
   navUserInteracting = true;
   clearTimeout(navUserInteractTimer);
@@ -4165,6 +4195,9 @@ function stopNavigation(){
   map.easeTo({pitch:0, bearing:0, duration:600});
   releaseWakeLock();
   navUserInteracting = false; clearTimeout(navUserInteractTimer);
+  navPitchMode = 0;
+  const pb = document.getElementById('nav-pitch-btn');
+  if(pb) pb.textContent = NAV_PITCH_MODES[0].label;
   // Reset mute przy zatrzymaniu
   navMuted = false;
   const mb = document.getElementById('nav-mute-btn');
