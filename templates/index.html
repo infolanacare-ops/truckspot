@@ -1057,6 +1057,7 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
     <div class="menu-item" onclick="drawerAction('search')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span></div><span class="menu-label" data-i="menu_search">Search</span></div>
     <div id="scenic-menu-item" class="menu-item" onclick="drawerAction('scenic')" style="display:none"><div class="menu-icon" style="background:rgba(16,185,129,.12);border-color:#10b981"><span class="si"><svg viewBox="0 0 24 24"><path d="M8 3l4 8 5-5 5 15H2L8 3z"/></svg></span></div><span class="menu-label">Piękne widoki / Scenic</span><span class="menu-badge" id="scenic-badge" style="display:none">ON</span></div>
     <div id="markets-menu-item" class="menu-item" onclick="drawerAction('markets')"><div class="menu-icon" style="background:rgba(249,115,22,.12);border-color:#f97316"><span class="si"><svg viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></span></div><span class="menu-label" data-i="menu_markets">Flohmarkt / Markets</span><span class="menu-badge" id="markets-badge" style="display:none">ON</span></div>
+    <div class="menu-item" onclick="drawerAction('cameras')"><div class="menu-icon" style="background:rgba(239,68,68,.12);border-color:#ef4444"><span style="font-size:1.1rem">📷</span></div><span class="menu-label">Fotoradary</span><span class="menu-badge" id="cameras-badge" style="display:none">ON</span></div>
     <div class="menu-item" onclick="drawerAction('autobahn')"><div class="menu-icon" style="background:rgba(0,100,200,.12);border-color:#0064c8"><span style="font-size:1.1rem">🇩🇪</span></div><span class="menu-label">Autobahn DE (oficjalne MOP)</span><span class="menu-badge" id="autobahn-badge" style="display:none">ON</span></div>
     <div class="menu-sep"></div>
     <div class="menu-section" data-i="sec_community">Community</div>
@@ -2013,6 +2014,7 @@ function drawerAction(action){
     else if(action==='route') openRoute();
     else if(action==='markets') toggleMarkets();
     else if(action==='scenic') toggleScenic();
+    else if(action==='cameras') toggleCameras();
     else if(action==='autobahn') toggleAutobahn();
     else if(action==='favs') openFavsPanel();
     else if(action==='cbradio') openMsgsPanel();
@@ -3424,6 +3426,9 @@ function onNavPosition(pos){
     }
   }
 
+  // ── Fotoradary ──────────────────────────────────────────────────────
+  checkNavCameras(lat, lng);
+
   // ── POI strip + voice alerts ─────────────────────────────────────────
   renderNavPois(lat, lng);
 
@@ -3490,6 +3495,7 @@ function stopNavigation(){
   if(navWatchId) navigator.geolocation.clearWatch(navWatchId);
   document.getElementById('nav-overlay').classList.remove('active');
   document.body.classList.remove('navigating');
+  navAnnouncedCameras = new Set();
   showAlert('🏁','','Navigation stopped');
 }
 
@@ -4090,6 +4096,85 @@ const SCENIC_COLORS = {
   coastal:'#0ea5e9', gorge:'#f59e0b', lake:'#06b6d4', forest:'#22c55e',
 };
 const COUNTRY_FLAGS_SCENIC = {AT:'🇦🇹',CH:'🇨🇭',IT:'🇮🇹',FR:'🇫🇷',DE:'🇩🇪',PL:'🇵🇱',CZ:'🇨🇿',HR:'🇭🇷',SI:'🇸🇮',RO:'🇷🇴',HU:'🇭🇺',SK:'🇸🇰',GR:'🇬🇷',NO:'🇳🇴',GB:'🇬🇧',IS:'🇮🇸',ES:'🇪🇸',PT:'🇵🇹',BG:'🇧🇬',IE:'🇮🇪'};
+
+// ══════════════════════════════════════
+// FOTORADARY (OpenStreetMap via Overpass)
+// ══════════════════════════════════════
+let cameraMarkers = [];
+let camerasVisible = false;
+let navAnnouncedCameras = new Set();
+
+// SVG path — ikona kamery prędkości
+const CAMERA_SVG = '<path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11l-4 4z"/>';
+
+function toggleCameras(){
+  if(camerasVisible){ hideCameras(); }
+  else { loadAndShowCameras(); }
+  closeDrawer();
+}
+
+async function loadAndShowCameras(){
+  const b = map.getBounds();
+  showAlert('📷','Fotoradary','Pobieranie z OpenStreetMap…');
+  try {
+    const query = `[out:json][timeout:25];(node["highway"="speed_camera"](${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()});node["enforcement"="maxspeed"](${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()}););out body;`;
+    const resp = await fetch('https://overpass-api.de/api/interpreter', {
+      method:'POST', body: 'data='+encodeURIComponent(query)
+    });
+    const data = await resp.json();
+    renderCameraMarkers(data.elements || []);
+  } catch(e){
+    showAlert('⚠️','','Błąd pobierania fotoradarów');
+  }
+}
+
+function renderCameraMarkers(elements){
+  cameraMarkers.forEach(m=>m.remove()); cameraMarkers=[];
+  camerasVisible = true;
+  document.getElementById('cameras-badge').style.display='';
+  document.getElementById('cameras-badge').textContent = elements.length || 'ON';
+
+  elements.forEach(el=>{
+    if(!el.lat || !el.lon) return;
+    const maxspeed = el.tags?.maxspeed || '';
+    const label = maxspeed ? `<text x="20" y="22" text-anchor="middle" font-family="'Inter',Arial,sans-serif" font-weight="800" font-size="9" fill="#ef4444">${maxspeed.replace(' mph','')}</text>` : '';
+    const html = mkPin('#ef4444', `<g transform="translate(8,8)" fill="none" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round">
+      <svg width="24" height="24" viewBox="0 0 24 24">${CAMERA_SVG}</svg></g>${label}`);
+    const mk = mkMbMarker(el.lat, el.lon, html, ()=>{
+      const sp = maxspeed ? ` · limit ${maxspeed}` : '';
+      showAlert('📷','Fotoradar', (el.tags?.name||'Fotoradar prędkości')+sp);
+    });
+    cameraMarkers.push(mk);
+  });
+
+  closeAlert();
+  if(!elements.length) showAlert('ℹ️','','Brak fotoradarów w tym obszarze (OSM)');
+}
+
+function hideCameras(){
+  camerasVisible = false;
+  cameraMarkers.forEach(m=>m.remove()); cameraMarkers=[];
+  document.getElementById('cameras-badge').style.display='none';
+}
+
+// Wywoływane z onNavPosition — ostrzeżenie o zbliżającym się fotoradarze
+function checkNavCameras(lat, lng){
+  if(!camerasVisible || !navActive) return;
+  const warnDist = navSpeedKmh > 80 ? 1.5 : 0.8; // km
+  for(const mk of cameraMarkers){
+    const pos = mk.getLngLat();
+    const d = haversineKm(lat, lng, pos.lat, pos.lng);
+    const camId = `${pos.lat.toFixed(5)},${pos.lng.toFixed(5)}`;
+    if(d < warnDist && !navAnnouncedCameras.has(camId)){
+      navAnnouncedCameras.add(camId);
+      const dist = d < 1 ? Math.round(d*1000)+' m' : d.toFixed(1)+' km';
+      const txt = currentLang==='pl' ? `Fotoradar za ${dist}` : `Speed camera in ${dist}`;
+      speakNav(txt, true);
+      showAlert('📷','⚠️ FOTORADAR', `Za ${dist} · Zwolnij!`);
+      setTimeout(closeAlert, 4000);
+    }
+  }
+}
 
 function toggleScenic(){
   if(scenicVisible){ hideScenic(); }
