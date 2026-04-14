@@ -747,6 +747,29 @@ body.navigating .leaflet-top.leaflet-left{display:none}
 /* ══ MARKET MARKERS ══ */
 .mk-market{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
   background:#f97316;border:3px solid #fff;box-shadow:0 3px 10px rgba(249,115,22,.5);font-size:.95rem}
+
+/* ══ COUNTRY FILTER STRIP ══ */
+#market-country-filter{
+  position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+  display:none;flex-direction:row;gap:.4rem;
+  background:var(--panel);border:1px solid var(--border);border-radius:50px;
+  padding:.35rem .6rem;box-shadow:0 4px 20px rgba(0,0,0,.35);
+  z-index:800;overflow-x:auto;max-width:calc(100vw - 2rem);
+  scrollbar-width:none;white-space:nowrap}
+#market-country-filter.visible{display:flex}
+#market-country-filter::-webkit-scrollbar{display:none}
+.mf-pill{border:none;border-radius:30px;padding:.28rem .65rem;font-size:.8rem;font-weight:700;cursor:pointer;
+  background:var(--panel2);color:var(--muted);transition:all .15s;white-space:nowrap}
+.mf-pill.active{background:var(--accent);color:#000}
+
+/* ══ COMMENT NICK INPUT ══ */
+.comment-nick{width:100%;padding:.5rem .8rem;border:1.5px solid var(--border);border-radius:10px;
+  font-family:var(--font);font-size:.85rem;background:var(--input-bg);color:var(--text);
+  outline:none;margin-bottom:.4rem;transition:.15s}
+.comment-nick:focus{border-color:var(--accent)}
+.comment-avg{display:inline-flex;align-items:center;gap:.25rem;font-size:.75rem;
+  color:#f59e0b;font-weight:700;background:rgba(245,158,11,.12);
+  border-radius:8px;padding:.15rem .5rem;margin-left:.4rem}
 </style>
 </head>
 <body>
@@ -1053,6 +1076,19 @@ body.navigating .leaflet-top.leaflet-left{display:none}
   </div>
 </div>
 
+<!-- MARKET COUNTRY FILTER STRIP -->
+<div id="market-country-filter">
+  <button class="mf-pill active" data-c="" onclick="setMarketsCountry(this,'')">🌍 Wszystkie</button>
+  <button class="mf-pill" data-c="DE" onclick="setMarketsCountry(this,'DE')">🇩🇪 DE</button>
+  <button class="mf-pill" data-c="FR" onclick="setMarketsCountry(this,'FR')">🇫🇷 FR</button>
+  <button class="mf-pill" data-c="PL" onclick="setMarketsCountry(this,'PL')">🇵🇱 PL</button>
+  <button class="mf-pill" data-c="CZ" onclick="setMarketsCountry(this,'CZ')">🇨🇿 CZ</button>
+  <button class="mf-pill" data-c="AT" onclick="setMarketsCountry(this,'AT')">🇦🇹 AT</button>
+  <button class="mf-pill" data-c="IT" onclick="setMarketsCountry(this,'IT')">🇮🇹 IT</button>
+  <button class="mf-pill" data-c="HU" onclick="setMarketsCountry(this,'HU')">🇭🇺 HU</button>
+  <button class="mf-pill" data-c="RO" onclick="setMarketsCountry(this,'RO')">🇷🇴 RO</button>
+</div>
+
 <!-- MAP MESSAGES FAB -->
 <button class="msg-fab" id="msg-fab" onclick="toggleDropMode()" title="Napisz wiadomość na mapie">📢</button>
 <div class="msg-drop-hint" id="msg-drop-hint">Kliknij na mapę żeby zostawić wiadomość</div>
@@ -1062,11 +1098,14 @@ body.navigating .leaflet-top.leaflet-left{display:none}
   <div class="msg-form-sheet" onclick="event.stopPropagation()">
     <div class="msg-form-title">📢 Zostaw wiadomość kierowcom</div>
     <div class="msg-cats" id="msg-cats">
-      <button class="msg-cat-btn active" data-cat="info" onclick="pickMsgCat(this)" style="border-color:#3b82f6;background:#3b82f6;color:#fff">💬 Info</button>
-      <button class="msg-cat-btn" data-cat="police" onclick="pickMsgCat(this)">🚔 Policja</button>
-      <button class="msg-cat-btn" data-cat="warning" onclick="pickMsgCat(this)">⚠️ Uwaga</button>
+      <button class="msg-cat-btn active" data-cat="traffic" onclick="pickMsgCat(this)" style="border-color:#ef4444;background:#ef4444;color:#fff">🚗 Korek</button>
+      <button class="msg-cat-btn" data-cat="police" onclick="pickMsgCat(this)">🚔 Kontrola</button>
+      <button class="msg-cat-btn" data-cat="accident" onclick="pickMsgCat(this)">💥 Wypadek</button>
+      <button class="msg-cat-btn" data-cat="roadwork" onclick="pickMsgCat(this)">🚧 Roboty</button>
+      <button class="msg-cat-btn" data-cat="weather" onclick="pickMsgCat(this)">🌨 Pogoda</button>
+      <button class="msg-cat-btn" data-cat="fuel" onclick="pickMsgCat(this)">⛽ Paliwo</button>
       <button class="msg-cat-btn" data-cat="help" onclick="pickMsgCat(this)">🆘 Pomoc</button>
-      <button class="msg-cat-btn" data-cat="ok" onclick="pickMsgCat(this)">✅ Polecam</button>
+      <button class="msg-cat-btn" data-cat="info" onclick="pickMsgCat(this)">💬 Info</button>
     </div>
     <textarea class="msg-textarea" id="msg-textarea" placeholder="Co widzisz? Max 200 znaków..." maxlength="200"></textarea>
     <button class="msg-submit-btn" onclick="submitMapMessage()">📢 Wyślij wszystkim kierowcom</button>
@@ -3048,17 +3087,20 @@ function timeSince(ts){
 // CB RADIO — MAPA WIADOMOŚCI
 // ══════════════════════════════════════
 const MSG_CATS = {
-  info:    { icon:'💬', color:'#3b82f6', label:'Informacja' },
-  police:  { icon:'🚔', color:'#ef4444', label:'Policja/kontrola' },
-  warning: { icon:'⚠️', color:'#f97316', label:'Uwaga/problem' },
-  help:    { icon:'🆘', color:'#8b5cf6', label:'Potrzebuję pomocy' },
-  ok:      { icon:'✅', color:'#22c55e', label:'Polecam miejsce' },
+  traffic:  { icon:'🚗', color:'#ef4444', label:'Korek' },
+  police:   { icon:'🚔', color:'#dc2626', label:'Kontrola drogowa' },
+  accident: { icon:'💥', color:'#f97316', label:'Wypadek' },
+  roadwork: { icon:'🚧', color:'#eab308', label:'Roboty drogowe' },
+  weather:  { icon:'🌨', color:'#60a5fa', label:'Zła pogoda' },
+  fuel:     { icon:'⛽', color:'#22c55e', label:'Tanie paliwo' },
+  help:     { icon:'🆘', color:'#8b5cf6', label:'Potrzebuję pomocy' },
+  info:     { icon:'💬', color:'#3b82f6', label:'Informacja' },
 };
 
 let msgMarkers = [];
 let msgDropMode = false;
 let msgDropLat = null, msgDropLng = null;
-let msgSelectedCat = 'info';
+let msgSelectedCat = 'traffic';
 let msgRefreshTimer = null;
 
 function getChatAuthor(){
@@ -3332,6 +3374,7 @@ function showAutobahnDetail(p){
 let marketsVisible = false;
 let marketsData = [];
 let marketMarkers = [];
+let marketsCountry = ''; // '' = all
 
 function toggleMarkets(){
   if(marketsVisible){ hideMarkets(); }
@@ -3349,21 +3392,36 @@ function loadAndShowMarkets(){
 function showMarkets(){
   marketsVisible = true;
   document.getElementById('markets-badge').style.display='';
-  setEl('markets-badge','ON');
+  document.getElementById('market-country-filter').classList.add('visible');
+  renderMarketMarkers();
+}
+
+function renderMarketMarkers(){
   marketMarkers.forEach(m=>map.removeLayer(m)); marketMarkers=[];
-  marketsData.forEach(m=>{
+  const filtered = marketsCountry
+    ? marketsData.filter(m=>m.country===marketsCountry)
+    : marketsData;
+  filtered.forEach(m=>{
     if(!m.lat || !m.lng) return;
-    const icon = L.divIcon({className:'',html:'<div class="mk-market">🛍</div>',iconSize:[34,34],iconAnchor:[17,17]});
-    const typeLabel = m.type==='flohmarkt'?'Flohmarkt':m.type==='antikmarkt'?'Antikmarkt':'Trödelmarkt';
+    const flag = ({DE:'🇩🇪',FR:'🇫🇷',PL:'🇵🇱',CZ:'🇨🇿',AT:'🇦🇹',IT:'🇮🇹',HU:'🇭🇺',RO:'🇷🇴'})[m.country]||'🛍';
+    const icon = L.divIcon({className:'',html:`<div class="mk-market">${flag}</div>`,iconSize:[34,34],iconAnchor:[17,17]});
     const mk = L.marker([m.lat,m.lng],{icon}).addTo(map).on('click',()=>showMarketDetail(m));
     marketMarkers.push(mk);
   });
-  showAlert('🛍','Markets', marketsData.length+' markets loaded');
+  setEl('markets-badge', filtered.length>0 ? filtered.length : 'ON');
+}
+
+function setMarketsCountry(btn, code){
+  marketsCountry = code;
+  document.querySelectorAll('.mf-pill').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(marketsVisible) renderMarketMarkers();
 }
 
 function hideMarkets(){
   marketsVisible = false;
   document.getElementById('markets-badge').style.display='none';
+  document.getElementById('market-country-filter').classList.remove('visible');
   marketMarkers.forEach(m=>map.removeLayer(m)); marketMarkers=[];
 }
 
@@ -3675,12 +3733,22 @@ async function voteOccupancy(id, level){
   } catch(e){}
 }
 
+function getCommentNick(){
+  const stored = localStorage.getItem('ts_comment_nick');
+  return stored || profile.name || '';
+}
+
 function commentsHtml(comments, parkingId){
+  const avg = comments.length
+    ? (comments.reduce((s,c)=>s+c.stars,0)/comments.length).toFixed(1)
+    : null;
+  const avgHtml = avg ? `<span class="comment-avg">⭐ ${avg}</span>` : '';
+
   const list = comments.length
     ? comments.map(c=>`
       <div class="comment-item">
         <div class="comment-header">
-          <span class="comment-user">${c.user}</span>
+          <span class="comment-user">👤 ${c.user}</span>
           <span class="comment-stars">${'⭐'.repeat(c.stars)}</span>
           <span class="comment-date">${c.date ? c.date.slice(0,10) : ''}</span>
         </div>
@@ -3688,14 +3756,19 @@ function commentsHtml(comments, parkingId){
       </div>`).join('')
     : '<div style="font-size:.78rem;color:var(--muted);padding:.3rem 0">Brak opinii. Bądź pierwszy!</div>';
 
+  const savedNick = getCommentNick();
   return `<div class="comments-section">
-    <div class="comments-title">💬 Opinie (${comments.length})</div>
+    <div class="comments-title">💬 Opinie (${comments.length})${avgHtml}</div>
     ${list}
     <div class="comment-form">
+      <input class="comment-nick" id="c-nick-${parkingId}" type="text"
+        placeholder="Twój pseudonim (np. Marek TIR)" maxlength="40"
+        value="${savedNick.replace(/"/g,'&quot;')}"
+        oninput="localStorage.setItem('ts_comment_nick',this.value)">
       <div class="comment-stars-row" id="c-stars-row">
         ${[1,2,3,4,5].map(v=>`<span class="c-star active" data-v="${v}" onclick="pickCommentStar(${v},${parkingId})">⭐</span>`).join('')}
       </div>
-      <textarea class="comment-textarea" id="c-text-${parkingId}" placeholder="Twoja opinia..." rows="2"></textarea>
+      <textarea class="comment-textarea" id="c-text-${parkingId}" placeholder="Twoja opinia o tym parkingu..." rows="2"></textarea>
       <button class="comment-submit" onclick="submitComment(${parkingId})">✅ Dodaj opinię (+5 pkt)</button>
     </div>
   </div>`;
@@ -3709,12 +3782,13 @@ function pickCommentStar(v, pid){
 async function submitComment(parkingId){
   const text = document.getElementById(`c-text-${parkingId}`)?.value.trim();
   if(!text){ showAlert('⚠️','','Napisz coś o tym miejscu'); return; }
-  const payload = {parking_id: String(parkingId), user: profile.name||'Anonymous', text, stars: commentStars, date: new Date().toISOString()};
+  const nick = document.getElementById(`c-nick-${parkingId}`)?.value.trim() || 'Anonim';
+  localStorage.setItem('ts_comment_nick', nick);
+  const payload = {parking_id: String(parkingId), user: nick, text, stars: commentStars, date: new Date().toISOString()};
   try {
     await fetch('/api/comments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     addPts(5);
     showAlert('✅','Dziękujemy!','Opinia dodana (+5 pkt)');
-    // Reload comments in panel
     if(currentDetailParking) showDetail(currentDetailParking);
   } catch(e){ showAlert('⚠️','Błąd','Nie udało się zapisać'); }
 }
