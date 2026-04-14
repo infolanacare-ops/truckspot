@@ -1051,8 +1051,11 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .nav-speedometer.speeding{border-color:#ef4444;background:rgba(239,68,68,.15)}
 .nav-speedometer.speeding .nav-speed-val{color:#ef4444}
 .nav-eta-block{flex:1;min-width:0}
-.nav-eta-dist{font-family:var(--font-head);font-size:1.1rem;font-weight:800;color:#fff}
-.nav-eta-time{font-size:.72rem;color:rgba(255,255,255,.55);margin-top:.1rem}
+.nav-eta-dist{font-family:var(--font-head);font-size:1.1rem;font-weight:800;color:#fff;line-height:1.1}
+.nav-eta-time{display:flex;align-items:center;gap:.4rem;margin-top:.25rem}
+.nav-eta-remaining{font-size:.73rem;font-weight:600;color:rgba(255,255,255,.75)}
+.nav-eta-arrival{font-size:.73rem;font-weight:700;color:var(--accent2);background:rgba(255,255,255,.08);
+  padding:.1rem .35rem;border-radius:6px;letter-spacing:.02em}
 .nav-overview-btn{padding:.6rem .8rem;border:none;border-radius:12px;cursor:pointer;
   background:rgba(255,255,255,.15);color:#fff;font-size:1rem;flex-shrink:0;backdrop-filter:blur(4px)}
 .nav-overview-btn.active{background:var(--accent);color:#000}
@@ -1784,11 +1787,14 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
     </div>
     <div class="nav-eta-block">
       <div class="nav-eta-dist" id="nav-total-dist">–</div>
-      <div class="nav-eta-time" id="nav-eta-time">–</div>
+      <div class="nav-eta-time">
+        <span class="nav-eta-remaining" id="nav-eta-remaining">–</span>
+        <span style="color:rgba(255,255,255,.3);font-size:.65rem">·</span>
+        <span class="nav-eta-arrival" id="nav-eta-arrival">––:––</span>
+      </div>
     </div>
     <button class="nav-mute-btn" id="nav-mute-btn" onclick="toggleNavMute()" title="Wycisz głos">🔊</button>
     <button class="nav-pitch-btn" id="nav-pitch-btn" onclick="cycleNavPitch()" title="Zmień perspektywę">3D</button>
-    <button class="nav-overview-btn" id="nav-overview-btn" onclick="toggleNavOverview()" title="Podgląd trasy">🗺</button>
     <button class="nav-stop-btn" onclick="stopNavigation()" title="Zatrzymaj nawigację">✕</button>
   </div>
 </div>
@@ -3670,6 +3676,14 @@ function fmtDur(s){
   const m=Math.round(s/60);
   return m>=60 ? Math.floor(m/60)+'h '+(m%60)+'min' : m+' min';
 }
+function fmtArrival(secs){
+  const d = new Date(Date.now() + secs*1000);
+  return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+}
+function setNavEta(secs){
+  document.getElementById('nav-eta-remaining').textContent = fmtDur(secs);
+  document.getElementById('nav-eta-arrival').textContent   = fmtArrival(secs);
+}
 
 let navRoutePois = [];     // POI wzdłuż trasy, posortowane po odległości od startu
 let navAnnouncedPois = new Set(); // ID już ogłoszonych
@@ -3802,7 +3816,7 @@ function startNavigation(){
   buildRouteDistances();
   updateNavStep(0);
   setEl('nav-total-dist', fmtDist(navDistRemaining));
-  setEl('nav-eta-time', 'ETA: '+fmtDur(routeTotalDur));
+  setNavEta(routeTotalDur);
   speakNav(stepInstruction(routeSteps[0]), true);
   // Auto tryb dzienny/nocny mapy
   const h = new Date().getHours();
@@ -4034,7 +4048,7 @@ function onNavPosition(pos){
 
   // ETA: use real speed, fallback 80km/h
   const speedForEta = navSpeedKmh > 5 ? navSpeedKmh : 80;
-  setEl('nav-eta-time', 'ETA ~'+fmtDur(navDistRemaining / (speedForEta/3.6)));
+  setNavEta(navDistRemaining / (speedForEta/3.6));
 
   // ── Step management ─────────────────────────────────────────────────
   // Advance past steps whose maneuver point we've already passed
@@ -4169,7 +4183,7 @@ async function rerouteNavigation(fromLat, fromLng){
     const durMin = Math.round(routeTotalDur/60);
     const durTxt = durMin>=60 ? Math.floor(durMin/60)+'h '+(durMin%60)+'min' : durMin+' min';
     setEl('nav-total-dist', distKm+' km');
-    setEl('nav-eta-time', 'ETA ~'+durTxt);
+    setNavEta(routeTotalDur);
 
   } catch(e) {
     console.warn('[Nav] Reroute failed:', e);
