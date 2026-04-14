@@ -960,7 +960,14 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
   display:flex;align-items:center;gap:.85rem;
   box-shadow:0 4px 24px rgba(0,0,0,.45);
   flex-shrink:0;
+  transition:background .3s;
 }
+@keyframes nav-step-flash{
+  0%  {transform:translateY(-6px);opacity:.5}
+  60% {transform:translateY(2px); opacity:1}
+  100%{transform:translateY(0);   opacity:1}
+}
+.nav-maneuver-card.step-changed{animation:nav-step-flash .4s ease}
 .nav-svg-arrow{
   width:62px;height:62px;flex-shrink:0;
   filter:drop-shadow(0 2px 4px rgba(0,0,0,.3));
@@ -3121,24 +3128,33 @@ function drawRoute(coords){
       map.getSource('ts-route').setData(geojson);
     } else {
       map.addSource('ts-route',{type:'geojson',data:geojson});
+      // Glow pod trasą
+      map.addLayer({id:'ts-route-glow',type:'line',source:'ts-route',
+        layout:{'line-join':'round','line-cap':'round'},
+        paint:{'line-color':'#60a5fa',
+          'line-width':['interpolate',['linear'],['zoom'],4,8,8,18,12,26,16,32],
+          'line-opacity':0.22,'line-blur':6}
+      });
+      // Biała obwódka
       map.addLayer({id:'ts-route-casing',type:'line',source:'ts-route',
         layout:{'line-join':'round','line-cap':'round'},
-        paint:{'line-color':'#1d4ed8',
-          'line-width':['interpolate',['linear'],['zoom'],4,2,8,5,12,9,16,12],
-          'line-opacity':0.7}
+        paint:{'line-color':'rgba(255,255,255,0.9)',
+          'line-width':['interpolate',['linear'],['zoom'],4,4,8,10,12,16,16,20],
+          'line-opacity':0.9}
       });
+      // Niebieska linia trasy
       map.addLayer({id:'ts-route-line',type:'line',source:'ts-route',
         layout:{'line-join':'round','line-cap':'round'},
-        paint:{'line-color':'#3b82f6',
-          'line-width':['interpolate',['linear'],['zoom'],4,1,8,3,12,6,16,8],
-          'line-opacity':0.95}
+        paint:{'line-color':'#2563eb',
+          'line-width':['interpolate',['linear'],['zoom'],4,2,8,7,12,12,16,15],
+          'line-opacity':1}
       });
     }
   });
   routeLayer = true;
 }
 function clearRouteLayer(){
-  ['ts-route-line','ts-route-casing'].forEach(id=>{ if(map.getLayer(id)) map.removeLayer(id); });
+  ['ts-route-line','ts-route-casing','ts-route-glow'].forEach(id=>{ if(map.getLayer(id)) map.removeLayer(id); });
   if(map.getSource('ts-route')) map.removeSource('ts-route');
   routeLayer = null;
   routeCircleMarkers.forEach(m=>m.remove()); routeCircleMarkers=[];
@@ -3896,7 +3912,7 @@ function renderNavPois(currentLat, currentLng){
   }).join('') || '<div style="font-size:.72rem;color:var(--muted);align-self:center">Brak POI w pobliżu</div>';
 }
 
-function updateNavStep(idx){
+function updateNavStep(idx, flash=false){
   if(!routeSteps[idx]) return;
   const step = routeSteps[idx];
   const m = step.maneuver||{};
@@ -3909,7 +3925,15 @@ function updateNavStep(idx){
   const arrowEl = document.getElementById('nav-arrow-path');
   if(arrowEl) arrowEl.setAttribute('d', path);
   const card = document.getElementById('nav-maneuver-card');
-  if(card) card.style.background = color;
+  if(card){
+    card.style.background = color;
+    if(flash){
+      card.classList.remove('step-changed');
+      void card.offsetWidth; // reflow
+      card.classList.add('step-changed');
+      setTimeout(()=>card.classList.remove('step-changed'), 450);
+    }
+  }
 
   // Street name
   const streetName = step.name || (type==='arrive' ? (currentLang==='pl'?'Cel podróży':'Destination') : '');
@@ -4017,7 +4041,7 @@ function onNavPosition(pos){
     const threshold = navSpeedKmh > 80 ? 80 : 40;
     if(dToManeuver < threshold){
       navStepIdx++;
-      updateNavStep(navStepIdx);
+      updateNavStep(navStepIdx, true);
       if(!navAnnouncedSteps.has(navStepIdx)){
         navAnnouncedSteps.add(navStepIdx);
         speakNav(stepInstruction(routeSteps[navStepIdx]), true);
@@ -4142,9 +4166,9 @@ let navUserInteractTimer = null;
 
 // Trzy poziomy perspektywy nawigacji
 const NAV_PITCH_MODES = [
-  {pitch:55, label:'3D', zoomOff: 0},
-  {pitch:28, label:'2.5D', zoomOff: 1},
-  {pitch:0,  label:'⊙',  zoomOff: -1},
+  {pitch:68, label:'3D',   zoomOff: +2},   // bliżej, ostry kąt
+  {pitch:50, label:'2.5D', zoomOff:  0},   // jak stare 3D
+  {pitch:0,  label:'⊙',   zoomOff: -1},   // z góry
 ];
 let navPitchMode = 0;
 function cycleNavPitch(){
