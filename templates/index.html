@@ -3720,6 +3720,26 @@ let waypointCount = 0;
 // ── Opcje trasy ──
 let routeType = localStorage.getItem('ts_route_type') || 'fast';
 
+// Fallback routing dla TIR gdy pełne ograniczenia nie dają trasy
+function buildRouteUrlTirFallback(coordStr, mode){
+  const excl = ['unpaved'];
+  if(document.getElementById('av-toll')?.checked)    excl.push('toll');
+  if(document.getElementById('av-ferry')?.checked)   excl.push('ferry');
+  const params = new URLSearchParams({
+    geometries:'geojson', steps:'true',
+    voice_instructions:'true', banner_instructions:'true',
+    annotations:'maxspeed', overview:'full',
+    access_token:MAPBOX_TOKEN
+  });
+  params.set('exclude', excl.join(','));
+  if(mode === 'height_only'){
+    const h = parseFloat(document.getElementById('tir-height')?.value) || 4.0;
+    params.set('max_height', h);
+  }
+  // mode === 'none' — bez żadnych ograniczeń wymiarowych
+  return `https://api.mapbox.com/directions/v5/mapbox/driving/${coordStr}?${params}`;
+}
+
 function buildRouteUrl(coordStr){
   // TIR wymaga profilu 'driving' — max_height/width/weight/length nie działają z driving-traffic
   const profile = (currentMode === 'tir' || routeType === 'short') ? 'driving' : 'driving-traffic';
@@ -3911,14 +3931,52 @@ async function searchRoute(navMode){
     const toGeo = await geocodePlace(toVal);
     if(!toGeo){ showAlert('⚠️','','Destination not found'); return; }
 
-    // Mapbox Directions API
+    // Mapbox Directions API — dla TIR próbuj z fallbackiem
     saveRouteOptsTirProfile();
     const pts = [[fromLng,fromLat], ...waypoints.map(w=>[w.lng,w.lat]), [toGeo.lng,toGeo.lat]];
     const coordStr = pts.map(c=>c[0]+','+c[1]).join(';');
-    const mbUrl = buildRouteUrl(coordStr);
-    const routeResp = await fetch(mbUrl);
-    const routeData = await routeResp.json();
-    if(!routeData.routes?.length){ showAlert('⚠️','','Route not found'); return; }
+
+    let routeData = null;
+    let tirWarning = null; // ostrzeżenie jeśli użyto złagodzonego routingu
+
+    if(currentMode === 'tir'){
+      // Próba 1: pełne ograniczenia TIR
+      const r1 = await fetch(buildRouteUrl(coordStr));
+      const d1 = await r1.json();
+      if(d1.routes?.length){
+        routeData = d1;
+      } else {
+        // Próba 2: tylko max_height (wiadukty — najkrytyczniejsze)
+        const r2 = await fetch(buildRouteUrlTirFallback(coordStr, 'height_only'));
+        const d2 = await r2.json();
+        if(d2.routes?.length){
+          routeData = d2;
+          tirWarning = currentLang==='pl'
+            ? '⚠️ Trasa obliczona tylko z ograniczeniem wysokości. Sprawdź samodzielnie ograniczenia tonażu i szerokości!'
+            : '⚠️ Route calculated with height restriction only. Check weight and width limits manually!';
+        } else {
+          // Próba 3: bez ograniczeń TIR — pokaż krytyczne ostrzeżenie
+          const r3 = await fetch(buildRouteUrlTirFallback(coordStr, 'none'));
+          const d3 = await r3.json();
+          if(d3.routes?.length){
+            routeData = d3;
+            tirWarning = currentLang==='pl'
+              ? '🚨 UWAGA! Trasa obliczona BEZ ograniczeń TIR — brak danych w tym regionie. Jedź ostrożnie i sprawdzaj znaki!'
+              : '🚨 WARNING! Route calculated WITHOUT TIR restrictions — no data in this region. Watch for signs!';
+          }
+        }
+      }
+    } else {
+      const r = await fetch(buildRouteUrl(coordStr));
+      routeData = await r.json();
+    }
+
+    if(!routeData?.routes?.length){ showAlert('⚠️','','Route not found'); return; }
+
+    // Pokaż ostrzeżenie TIR jeśli użyto fallbacku
+    if(tirWarning){
+      setTimeout(()=>{ showAlert('🚛','TIR', tirWarning); }, 800);
+    }
 
     const route = routeData.routes[0];
     routeCoords = route.geometry.coordinates;
