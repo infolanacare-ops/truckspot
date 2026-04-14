@@ -967,6 +967,7 @@ body.navigating .leaflet-top.leaflet-left{display:none}
     <div class="menu-item" onclick="drawerAction('nearby')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg></span></div><span class="menu-label" data-i="menu_near">Nearest parkings</span></div>
     <div class="menu-item" onclick="drawerAction('all')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="M3 7l6-4 6 4 6-4v14l-6 4-6-4-6 4V7z"/><path d="M9 3v14M15 7v14"/></svg></span></div><span class="menu-label" data-i="menu_all">All parkings</span></div>
     <div class="menu-item" onclick="drawerAction('search')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span></div><span class="menu-label" data-i="menu_search">Search</span></div>
+    <div id="scenic-menu-item" class="menu-item" onclick="drawerAction('scenic')" style="display:none"><div class="menu-icon" style="background:rgba(16,185,129,.12);border-color:#10b981"><span class="si"><svg viewBox="0 0 24 24"><path d="M8 3l4 8 5-5 5 15H2L8 3z"/></svg></span></div><span class="menu-label">Piękne widoki / Scenic</span><span class="menu-badge" id="scenic-badge" style="display:none">ON</span></div>
     <div id="markets-menu-item" class="menu-item" onclick="drawerAction('markets')"><div class="menu-icon" style="background:rgba(249,115,22,.12);border-color:#f97316"><span class="si"><svg viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></span></div><span class="menu-label" data-i="menu_markets">Flohmarkt / Markets</span><span class="menu-badge" id="markets-badge" style="display:none">ON</span></div>
     <div class="menu-item" onclick="drawerAction('autobahn')"><div class="menu-icon" style="background:rgba(0,100,200,.12);border-color:#0064c8"><span style="font-size:1.1rem">🇩🇪</span></div><span class="menu-label">Autobahn DE (oficjalne MOP)</span><span class="menu-badge" id="autobahn-badge" style="display:none">ON</span></div>
     <div class="menu-sep"></div>
@@ -1631,6 +1632,11 @@ function enterMode(mode){
   if(marketsItem) marketsItem.style.display = (mode === 'tir') ? 'none' : '';
   if(mode === 'tir' && marketsVisible) hideMarkets();
 
+  // Scenic views only for tourist mode
+  const scenicItem = document.getElementById('scenic-menu-item');
+  if(scenicItem) scenicItem.style.display = (mode === 'tourist') ? '' : 'none';
+  if(mode !== 'tourist' && scenicVisible) hideScenic();
+
   loadParkings(mode);
   loadUserSpots();
   updateProfileUI();
@@ -1663,6 +1669,7 @@ function drawerAction(action){
     if(action==='nearby') findNearest();
     else if(action==='route') openRoute();
     else if(action==='markets') toggleMarkets();
+    else if(action==='scenic') toggleScenic();
     else if(action==='autobahn') toggleAutobahn();
     else if(action==='favs') openFavsPanel();
     else if(action==='cbradio') openMsgsPanel();
@@ -3522,6 +3529,91 @@ function showMarketDetail(m){
     <button class="nav-btn" onclick="navigateTo(${m.lat},${m.lng},'${m.name.replace(/'/g,"\\'")}')">📍 Navigate — Google Maps</button>`;
   document.getElementById('detail-panel').classList.add('open');
   map.panTo([m.lat, m.lng]);
+}
+
+// ══════════════════════════════════════
+// SCENIC VIEWS
+// ══════════════════════════════════════
+let scenicVisible = false;
+let scenicData = [];
+let scenicMarkers = [];
+
+const SCENIC_TYPE_ICONS = {
+  viewpoint:    '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+  mountain_pass:'<path d="M8 3l4 8 5-5 5 15H2L8 3z"/>',
+  waterfall:    '<path d="M12 2v8M8 6l4 4 4-4"/><path d="M5 12c0 4 3 8 7 10 4-2 7-6 7-10"/>',
+  coastal:      '<path d="M2 20h20M4 20c0-4 2-7 8-9s8-5 8-9"/>',
+  gorge:        '<path d="M4 20V4M20 20V4M8 20V8M16 20V8M12 20V12"/>',
+  lake:         '<ellipse cx="12" cy="14" rx="9" ry="5"/><path d="M7 9c0-2.2 2.2-4 5-4s5 1.8 5 4"/>',
+  forest:       '<path d="M12 2L6 10h3l-4 8h6v4h2v-4h6l-4-8h3L12 2z"/>',
+};
+const SCENIC_COLORS = {
+  viewpoint:'#10b981', mountain_pass:'#6366f1', waterfall:'#3b82f6',
+  coastal:'#0ea5e9', gorge:'#f59e0b', lake:'#06b6d4', forest:'#22c55e',
+};
+const COUNTRY_FLAGS_SCENIC = {AT:'🇦🇹',CH:'🇨🇭',IT:'🇮🇹',FR:'🇫🇷',DE:'🇩🇪',PL:'🇵🇱',CZ:'🇨🇿',HR:'🇭🇷',SI:'🇸🇮',RO:'🇷🇴',HU:'🇭🇺',SK:'🇸🇰',GR:'🇬🇷',NO:'🇳🇴',GB:'🇬🇧',IS:'🇮🇸',ES:'🇪🇸',PT:'🇵🇹',BG:'🇧🇬',IE:'🇮🇪'};
+
+function toggleScenic(){
+  if(scenicVisible){ hideScenic(); }
+  else { loadAndShowScenic(); }
+}
+
+function loadAndShowScenic(){
+  if(scenicData.length){ showScenic(); return; }
+  fetch('/api/scenic').then(r=>r.json()).then(data=>{
+    scenicData = data;
+    showScenic();
+  }).catch(()=>showAlert('⚠️','','Could not load scenic spots'));
+}
+
+function showScenic(){
+  scenicVisible = true;
+  document.getElementById('scenic-badge').style.display='';
+  renderScenicMarkers();
+}
+
+function renderScenicMarkers(){
+  scenicMarkers.forEach(m=>map.removeLayer(m)); scenicMarkers=[];
+  scenicData.forEach(s=>{
+    if(!s.lat || !s.lng) return;
+    const color = SCENIC_COLORS[s.type] || '#10b981';
+    const iconPath = SCENIC_TYPE_ICONS[s.type] || SCENIC_TYPE_ICONS.viewpoint;
+    const icon = L.divIcon({className:'',html:mkPinIcon(color, iconPath, 38),iconSize:[38,47],iconAnchor:[19,47]});
+    const mk = L.marker([s.lat,s.lng],{icon}).addTo(map).on('click',()=>showScenicDetail(s));
+    scenicMarkers.push(mk);
+  });
+  setEl('scenic-badge', scenicData.length > 0 ? scenicData.length : 'ON');
+}
+
+function hideScenic(){
+  scenicVisible = false;
+  document.getElementById('scenic-badge').style.display='none';
+  scenicMarkers.forEach(m=>map.removeLayer(m)); scenicMarkers=[];
+}
+
+function showScenicDetail(s){
+  const flag = COUNTRY_FLAGS_SCENIC[s.country] || '';
+  const typeLabels = {viewpoint:'Punkt widokowy',mountain_pass:'Przełęcz/Szczyt',waterfall:'Wodospad',coastal:'Wybrzeże',gorge:'Wąwóz/Kanion',lake:'Jezioro',forest:'Las/Przyroda'};
+  const typeLabel = typeLabels[s.type] || s.type;
+  const color = SCENIC_COLORS[s.type] || '#10b981';
+  const entryTxt = s.free_entry ? '🆓 Wstęp wolny' : '💶 Bilet wstępu';
+  document.getElementById('panel-content').innerHTML=`
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem">
+      <div class="panel-name" style="flex:1">${flag} ${s.name}</div>
+      <span style="font-size:.65rem;background:${color}22;color:${color};border-radius:8px;padding:.15rem .45rem;font-weight:700">${typeLabel}</span>
+    </div>
+    <div class="panel-addr">📍 ${s.region}${s.country?' ('+s.country+')':''}</div>
+    ${s.elevation?`<div style="font-size:.8rem;color:var(--muted);margin-bottom:.3rem">⛰️ ${s.elevation} m n.p.m.</div>`:''}
+    ${s.best_season?`<div style="font-size:.8rem;color:var(--muted);margin-bottom:.5rem">📅 Najlepszy czas: ${s.best_season}</div>`:''}
+    <div class="amenities" style="margin-bottom:.7rem">
+      <span class="amenity">${entryTxt}</span>
+      ${s.parking?'<span class="amenity">🅿️ Parking</span>':''}
+    </div>
+    <div style="font-size:.83rem;color:var(--text);line-height:1.6;margin-bottom:.9rem">${s.description||''}</div>
+    ${s.website?`<a href="${s.website}" target="_blank" style="display:block;text-align:center;padding:.6rem;border-radius:10px;background:${color}22;color:${color};font-size:.82rem;font-weight:700;text-decoration:none;margin-bottom:.6rem">🌐 Więcej informacji</a>`:''}
+    <button class="nav-btn" onclick="navigateTo(${s.lat},${s.lng},'${s.name.replace(/'/g,"\\'")}')">📍 Nawiguj — Google Maps</button>`;
+  document.getElementById('detail-panel').classList.add('open');
+  map.panTo([s.lat, s.lng]);
 }
 
 // ══════════════════════════════════════

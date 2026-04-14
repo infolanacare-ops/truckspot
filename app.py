@@ -10,6 +10,7 @@ DATA_DIR        = os.path.join(os.path.dirname(__file__), "data")
 PARKINGS_PATH   = os.path.join(DATA_DIR, "parkings.json")
 SPOTS_PATH      = os.path.join(DATA_DIR, "spots.json")
 MARKETS_PATH    = os.path.join(DATA_DIR, "markets.json")
+SCENIC_PATH     = os.path.join(DATA_DIR, "scenic.json")
 COMMENTS_PATH   = os.path.join(DATA_DIR, "comments.json")
 OCCUPANCY_PATH  = os.path.join(DATA_DIR, "occupancy.json")
 MESSAGES_PATH   = os.path.join(DATA_DIR, "messages.json")
@@ -547,6 +548,22 @@ def api_markets():
     if state:
         markets = [m for m in markets if m.get("state", "") == state]
     return jsonify(markets)
+
+
+@app.route("/api/scenic")
+def api_scenic():
+    """Zwraca punkty widokowe / piękne widoki."""
+    if not os.path.exists(SCENIC_PATH):
+        return jsonify([])
+    with open(SCENIC_PATH, encoding="utf-8") as f:
+        scenic = json.load(f)
+    country = request.args.get("country", "")
+    stype   = request.args.get("type", "")
+    if country:
+        scenic = [s for s in scenic if s.get("country", "") == country]
+    if stype:
+        scenic = [s for s in scenic if s.get("type", "") == stype]
+    return jsonify(scenic)
 
 
 if __name__ == "__main__":
