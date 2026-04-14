@@ -3859,8 +3859,11 @@ async function loadRoutePois(){
     }
   }
 
-  // Add our parkings immediately
-  const parkingPois = allParkings.map(p=>({
+  // Add our parkings immediately — respect active filters
+  const filteredParkings = activeFilters.size > 0
+    ? allParkings.filter(p => [...activeFilters].some(f => (p.amenities||[]).includes(f)))
+    : allParkings;
+  const parkingPois = filteredParkings.map(p=>({
     id:'park_'+p.id, lat:p.lat, lng:p.lng,
     name:p.name, type:'parking', icon:'🅿️', hgv:true,
   }));
