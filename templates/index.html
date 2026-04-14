@@ -5274,22 +5274,90 @@ let navAnnouncedCameras = new Set();
 
 const CAMERA_SVG = '<path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11l-4 4z"/>';
 
-// Ładuje fotoradary dla całej trasy (bbox routeCoords) — tylko podczas nawigacji
+// Ładuje fotoradary dla całej trasy — segmentami wzdłuż trasy (dokładniejsze niż bbox)
 async function loadNavCameras(){
   if(!routeCoords.length) return;
-  const lats = routeCoords.map(c=>c[1]);
-  const lngs = routeCoords.map(c=>c[0]);
-  const pad = 0.04; // ~4km margines
-  const south = Math.min(...lats)-pad, north = Math.max(...lats)+pad;
-  const west  = Math.min(...lngs)-pad, east  = Math.max(...lngs)+pad;
-  try {
-    const query = `[out:json][timeout:30];(node["highway"="speed_camera"](${south},${west},${north},${east});node["enforcement"="maxspeed"](${south},${west},${north},${east}););out body;`;
-    const resp = await fetch('https://overpass-api.de/api/interpreter', {
-      method:'POST', body: 'data='+encodeURIComponent(query)
-    });
-    const data = await resp.json();
-    renderCameraMarkers(data.elements || []);
-  } catch(e){ /* ignoruj błędy sieciowe */ }
+
+  // Podziel trasę na segmenty ~80km i odpytaj każdy osobno
+  // (Overpass lepiej radzi sobie z małymi zapytaniami niż jednym dużym bbox)
+  const SEGMENT_KM = 80;
+  const segments = buildRouteSegmentBboxes(SEGMENT_KM);
+
+  let allElements = [];
+  const seen = new Set();
+
+  // Odpytuj segmenty kolejno (nie równolegle — Overpass rate limit)
+  for(const bbox of segments){
+    try {
+      const [s,w,n,e] = bbox;
+      // Wszystkie tagi fotoradarów używane w całej Europie
+      const query = `[out:json][timeout:25];
+(
+  node["highway"="speed_camera"](${s},${w},${n},${e});
+  node["enforcement"="maxspeed"](${s},${w},${n},${e});
+  node["enforcement"="speed"](${s},${w},${n},${e});
+  node["camera:type"="speed"](${s},${w},${n},${e});
+  node["camera:type"="radar"](${s},${w},${n},${e});
+  node["speed_camera"="yes"](${s},${w},${n},${e});
+  node["man_made"="surveillance"]["camera:type"="speed"](${s},${w},${n},${e});
+  node["traffic_enforcement"="speed_control"](${s},${w},${n},${e});
+  way["highway"="speed_camera"](${s},${w},${n},${e});
+  way["enforcement"="maxspeed"](${s},${w},${n},${e});
+);
+out center;`;
+      const resp = await fetch('https://overpass-api.de/api/interpreter', {
+        method:'POST', body:'data='+encodeURIComponent(query)
+      });
+      if(!resp.ok) continue;
+      const data = await resp.json();
+      for(const el of (data.elements||[])){
+        const lat = el.lat ?? el.center?.lat;
+        const lon = el.lon ?? el.center?.lon;
+        if(!lat||!lon) continue;
+        const key = `${lat.toFixed(5)},${lon.toFixed(5)}`;
+        if(seen.has(key)) continue;
+        seen.add(key);
+        allElements.push({...el, lat, lon});
+      }
+    } catch(e){ /* ignoruj błędy sieciowe dla segmentu */ }
+  }
+
+  renderCameraMarkers(allElements);
+}
+
+// Podziel trasę na segmenty i zwróć listę bbox [south,west,north,east]
+function buildRouteSegmentBboxes(segmentKm){
+  const pad = 0.008; // ~800m od drogi po obu stronach
+  const bboxes = [];
+  let segStartIdx = 0;
+  let cumDist = 0;
+
+  for(let i=1; i<routeCoords.length; i++){
+    cumDist += haversineKm(
+      routeCoords[i][1], routeCoords[i][0],
+      routeCoords[i-1][1], routeCoords[i-1][0]
+    );
+    const isLast = i === routeCoords.length - 1;
+    if(cumDist >= segmentKm || isLast){
+      const seg = routeCoords.slice(segStartIdx, i + 1);
+      const lats = seg.map(c=>c[1]);
+      const lngs = seg.map(c=>c[0]);
+      bboxes.push([
+        Math.min(...lats)-pad, Math.min(...lngs)-pad,
+        Math.max(...lats)+pad, Math.max(...lngs)+pad
+      ]);
+      segStartIdx = i;
+      cumDist = 0;
+    }
+  }
+
+  if(!bboxes.length){
+    const lats = routeCoords.map(c=>c[1]);
+    const lngs = routeCoords.map(c=>c[0]);
+    bboxes.push([Math.min(...lats)-pad, Math.min(...lngs)-pad, Math.max(...lats)+pad, Math.max(...lngs)+pad]);
+  }
+
+  return bboxes;
 }
 
 function renderCameraMarkers(elements){
