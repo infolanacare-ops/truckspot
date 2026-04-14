@@ -350,6 +350,62 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .toggle-thumb{width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.25s;box-shadow:0 1px 4px rgba(0,0,0,.3)}
 .toggle-track.on .toggle-thumb{left:23px}
 
+/* ══ REPORTS ══ */
+.report-fab{
+  position:fixed;right:1rem;bottom:5.5rem;z-index:600;
+  width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;
+  background:linear-gradient(135deg,#ef4444,#dc2626);
+  box-shadow:0 4px 18px rgba(239,68,68,.45);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.5rem;transition:.15s;
+}
+.report-fab:active{transform:scale(.93)}
+.report-panel{
+  position:fixed;inset:0;z-index:1200;display:none;
+  align-items:flex-end;justify-content:center;
+  background:rgba(0,0,0,.55);
+}
+.report-panel.open{display:flex}
+.report-sheet{
+  background:var(--panel);border-radius:22px 22px 0 0;
+  padding:1.2rem 1.2rem 2rem;width:100%;max-width:500px;
+  box-shadow:0 -8px 40px rgba(0,0,0,.4);
+}
+.report-sheet-title{
+  font-family:var(--font-head);font-size:1.05rem;font-weight:800;
+  text-align:center;margin-bottom:1.1rem;color:var(--text);
+}
+.report-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.report-tile{
+  display:flex;flex-direction:column;align-items:center;gap:.5rem;
+  padding:1rem .5rem;border-radius:16px;cursor:pointer;border:2px solid transparent;
+  transition:.15s;background:var(--panel2);
+}
+.report-tile:active{transform:scale(.95)}
+.report-tile-icon{font-size:2rem;line-height:1}
+.report-tile-label{font-size:.78rem;font-weight:700;font-family:var(--font-head);color:var(--text)}
+.report-tile-pts{font-size:.68rem;color:var(--muted)}
+.report-tile.camera {border-color:#f97316;background:rgba(249,115,22,.08)}
+.report-tile.collision{border-color:#ef4444;background:rgba(239,68,68,.08)}
+.report-tile.obstacle{border-color:#eab308;background:rgba(234,179,8,.08)}
+.report-tile.police  {border-color:#3b82f6;background:rgba(59,130,246,.08)}
+/* report markers on map */
+.rpt-marker{
+  display:flex;align-items:center;justify-content:center;
+  width:36px;height:36px;border-radius:50%;border:2.5px solid rgba(255,255,255,.7);
+  font-size:1.1rem;cursor:pointer;
+  box-shadow:0 2px 10px rgba(0,0,0,.4);
+  animation:rpt-pop .25s ease;
+}
+@keyframes rpt-pop{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+.rpt-badge{
+  position:absolute;top:-6px;right:-6px;
+  background:#ef4444;color:#fff;border-radius:10px;
+  font-size:.6rem;font-weight:800;padding:.1rem .3rem;
+  border:1.5px solid var(--panel);min-width:16px;text-align:center;
+}
+.rpt-marker-wrap{position:relative;display:inline-block}
+
 /* ══ SEARCH ══ */
 .search-overlay{position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.7);opacity:0;pointer-events:none;transition:opacity .2s;display:flex;align-items:flex-start;padding:1rem}
 .search-overlay.open{opacity:1;pointer-events:auto}
@@ -1075,6 +1131,38 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
           <div class="ob-card-desc" id="lbl-tourist-desc">Campingi · pola namiotowe · atrakcje · zabytki</div>
         </div>
         <div class="mode-chevron">›</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REPORT FAB -->
+<button class="report-fab" onclick="openReportPanel()" title="Zgłoś zdarzenie">📢</button>
+
+<!-- REPORT PANEL -->
+<div class="report-panel" id="report-panel" onclick="closeReportPanel(event)">
+  <div class="report-sheet">
+    <div class="report-sheet-title">Zgłoś zdarzenie</div>
+    <div class="report-grid">
+      <div class="report-tile camera"    onclick="submitReport('camera')">
+        <div class="report-tile-icon">📸</div>
+        <div class="report-tile-label">Fotoradar</div>
+        <div class="report-tile-pts">+10 pkt</div>
+      </div>
+      <div class="report-tile collision" onclick="submitReport('collision')">
+        <div class="report-tile-icon">💥</div>
+        <div class="report-tile-label">Kolizja</div>
+        <div class="report-tile-pts">+10 pkt</div>
+      </div>
+      <div class="report-tile obstacle"  onclick="submitReport('obstacle')">
+        <div class="report-tile-icon">🚧</div>
+        <div class="report-tile-label">Przeszkoda</div>
+        <div class="report-tile-pts">+10 pkt</div>
+      </div>
+      <div class="report-tile police"    onclick="submitReport('police')">
+        <div class="report-tile-icon">🚔</div>
+        <div class="report-tile-label">Policja</div>
+        <div class="report-tile-pts">+10 pkt</div>
       </div>
     </div>
   </div>
@@ -2123,9 +2211,7 @@ function enterMode(mode){
     map.addControl(new mapboxgl.NavigationControl({showCompass:false}), 'top-left');
     map.addControl(new mapboxgl.AttributionControl({compact:true}), 'bottom-right');
     map.on('click', (e)=>{ onMapClickForMsg(e); onMapClick(e); });
-    map.on('moveend', ()=>{
-      if(map.getZoom()>=8) loadOsmParkings();
-    });
+    map.on('moveend', ()=>{ if(map.getZoom()>=8) loadOsmParkings(); loadReports(); });
   } else {
     setTimeout(()=>map.resize(),100);
   }
@@ -2213,6 +2299,7 @@ function loadParkings(mode){
   updateFavsCount();
   checkParkingDeeplink();
   startMsgRefresh();
+  startReportRefresh();
   fetch(`/api/parkings?mode=${MODE_CONFIG[mode].apiMode}`)
     .then(r=>r.json()).then(data=>{
       allParkings=data;
@@ -3689,6 +3776,121 @@ function stopNavigation(){
     gpsMarker = mkGpsDotMarker(ll.lat, ll.lng); }
   map.easeTo({pitch:0, bearing:0, duration:600});
   showAlert('🏁','','Navigation stopped');
+}
+
+// ══════════════════════════════════════
+// REPORTS — zgłoszenia kierowców
+// ══════════════════════════════════════
+let reportMarkers = [];
+let reportRefreshTimer = null;
+const REPORT_CFG = {
+  camera:    {icon:'📸', color:'#f97316', label:'Fotoradar'},
+  collision: {icon:'💥', color:'#ef4444', label:'Kolizja'},
+  obstacle:  {icon:'🚧', color:'#eab308', label:'Przeszkoda'},
+  police:    {icon:'🚔', color:'#3b82f6', label:'Policja'},
+};
+
+function openReportPanel(){
+  document.getElementById('report-panel').classList.add('open');
+}
+function closeReportPanel(e){
+  if(e && e.target.id !== 'report-panel') return;
+  document.getElementById('report-panel').classList.remove('open');
+}
+
+async function submitReport(cat){
+  document.getElementById('report-panel').classList.remove('open');
+  const voterID = getVoterId();
+  // try GPS first
+  let lat, lng;
+  if(gpsMarker){
+    const ll = gpsMarker.getLngLat();
+    lat = ll.lat; lng = ll.lng;
+  } else {
+    const c = map.getCenter();
+    lat = c.lat; lng = c.lng;
+  }
+  try {
+    const resp = await fetch('/api/reports', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({cat, lat, lng, user: profile.name||'Anonim', voter_id: voterID})
+    });
+    const data = await resp.json();
+    if(data.ok && !data.duplicate){
+      addPts(10);
+      showAlert(REPORT_CFG[cat].icon, '+10 pkt!', REPORT_CFG[cat].label+' zgłoszony');
+      loadReports();
+    } else if(data.duplicate){
+      showAlert('ℹ️','','Ten typ już zgłoszony w pobliżu');
+    }
+  } catch(e){
+    showAlert('⚠️','','Błąd zgłoszenia');
+  }
+}
+
+async function loadReports(){
+  const b = map.getBounds();
+  try {
+    const resp = await fetch(`/api/reports?south=${b.getSouth()}&west=${b.getWest()}&north=${b.getNorth()}&east=${b.getEast()}`);
+    const data = await resp.json();
+    renderReportMarkers(data);
+  } catch(e){}
+}
+
+function renderReportMarkers(reports){
+  reportMarkers.forEach(m=>m.remove());
+  reportMarkers = [];
+  reports.forEach(r=>{
+    const cfg = REPORT_CFG[r.cat] || {icon:'📍',color:'#8890a8',label:r.cat};
+    const wrap = document.createElement('div');
+    wrap.className = 'rpt-marker-wrap';
+    wrap.innerHTML = `<div class="rpt-marker" style="background:${cfg.color}22;border-color:${cfg.color}">${cfg.icon}</div>${r.confirms>0?`<div class="rpt-badge">${r.confirms}</div>`:''}`;
+    const mk = new mapboxgl.Marker({element:wrap, anchor:'center'})
+      .setLngLat([r.lng, r.lat])
+      .addTo(map);
+    wrap.addEventListener('click', ()=>showReportDetail(r, mk));
+    reportMarkers.push(mk);
+  });
+}
+
+function showReportDetail(r, mk){
+  const cfg = REPORT_CFG[r.cat] || {icon:'📍',label:r.cat};
+  const voterID = getVoterId();
+  const isOwn = r.voter_id === voterID;
+  const age = Math.round((Date.now()/1000 - r.ts) / 60);
+  const ageStr = age < 60 ? age+'min temu' : Math.round(age/60)+'h temu';
+  showAlert(cfg.icon, cfg.label,
+    `Zgłoszone przez ${r.user} · ${ageStr}<br>Potwierdzenia: ${r.confirms}` +
+    (!isOwn ? `<br><button onclick="confirmReport(${r.id})" style="margin-top:.5rem;padding:.3rem .9rem;background:var(--accent);color:#000;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:.8rem">✓ Potwierdź +5 pkt</button>` : ''));
+}
+
+async function confirmReport(id){
+  const voterID = getVoterId();
+  try {
+    const resp = await fetch(`/api/reports/${id}/confirm`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({voter_id: voterID})
+    });
+    const data = await resp.json();
+    if(data.ok && !data.already){
+      addPts(5);
+      showAlert('✓','+5 pkt!','Potwierdzono zgłoszenie');
+      loadReports();
+    } else if(data.already){
+      showAlert('ℹ️','','Już potwierdziłeś');
+    }
+  } catch(e){}
+}
+
+function startReportRefresh(){
+  loadReports();
+  reportRefreshTimer = setInterval(loadReports, 60000); // co minutę
+}
+function stopReportRefresh(){
+  if(reportRefreshTimer){ clearInterval(reportRefreshTimer); reportRefreshTimer=null; }
+  reportMarkers.forEach(m=>m.remove()); reportMarkers=[];
 }
 
 // ══════════════════════════════════════

@@ -20,6 +20,7 @@ SCENIC_PATH     = os.path.join(DATA_DIR, "scenic.json")
 COMMENTS_PATH   = os.path.join(DATA_DIR, "comments.json")
 OCCUPANCY_PATH  = os.path.join(DATA_DIR, "occupancy.json")
 MESSAGES_PATH       = os.path.join(DATA_DIR, "messages.json")
+REPORTS_PATH        = os.path.join(DATA_DIR, "reports.json")
 SUBSCRIPTIONS_PATH  = os.path.join(DATA_DIR, "subscriptions.json")
 
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
@@ -703,6 +704,112 @@ def api_push_unsubscribe():
     subs = [s for s in load_subscriptions() if s.get("id") != sub_id]
     save_subscriptions(subs)
     return jsonify({"ok": True})
+
+
+REPORT_TTL = {
+    'camera':   24 * 3600,
+    'collision': 2 * 3600,
+    'obstacle':  4 * 3600,
+    'police':   30 * 60,
+}
+
+@app.route("/api/reports")
+def api_reports_get():
+    try:
+        south = float(request.args.get("south", -90))
+        west  = float(request.args.get("west",  -180))
+        north = float(request.args.get("north",  90))
+        east  = float(request.args.get("east",   180))
+    except ValueError:
+        return jsonify({"error": "bad params"}), 400
+
+    if not os.path.exists(REPORTS_PATH):
+        return jsonify([])
+    with open(REPORTS_PATH, encoding="utf-8") as f:
+        reports = json.load(f)
+
+    now = time.time()
+    result = []
+    for r in reports:
+        ttl = REPORT_TTL.get(r.get("cat", "obstacle"), 4 * 3600)
+        if now - r.get("ts", 0) > ttl:
+            continue
+        lat, lng = r.get("lat", 0), r.get("lng", 0)
+        if south <= lat <= north and west <= lng <= east:
+            result.append(r)
+    return jsonify(result)
+
+
+@app.route("/api/reports", methods=["POST"])
+def api_reports_post():
+    data = request.get_json(force=True)
+    for field in ["lat", "lng", "cat", "voter_id"]:
+        if field not in data:
+            return jsonify({"error": f"Missing: {field}"}), 400
+    if data["cat"] not in REPORT_TTL:
+        return jsonify({"error": "invalid cat"}), 400
+
+    if not os.path.exists(REPORTS_PATH):
+        with open(REPORTS_PATH, "w", encoding="utf-8") as f:
+            json.dump([], f)
+    with open(REPORTS_PATH, encoding="utf-8") as f:
+        reports = json.load(f)
+
+    now = time.time()
+    # Purge expired
+    reports = [r for r in reports if now - r.get("ts", 0) < REPORT_TTL.get(r.get("cat","obstacle"), 4*3600)]
+
+    # Prevent duplicate from same voter within 500m
+    voter_id = str(data["voter_id"])[:64]
+    lat, lng = float(data["lat"]), float(data["lng"])
+    for r in reports:
+        if r.get("voter_id") == voter_id and r.get("cat") == data["cat"]:
+            if haversine_km(lat, lng, r["lat"], r["lng"]) < 0.5:
+                return jsonify({"ok": True, "id": r["id"], "duplicate": True})
+
+    new_id = max((r.get("id", 0) for r in reports), default=0) + 1
+    report = {
+        "id":       new_id,
+        "cat":      data["cat"],
+        "lat":      lat,
+        "lng":      lng,
+        "user":     str(data.get("user", "Anonim"))[:30],
+        "voter_id": voter_id,
+        "ts":       now,
+        "confirms": 0,
+        "confirmed_by": [],
+    }
+    reports.append(report)
+    with open(REPORTS_PATH, "w", encoding="utf-8") as f:
+        json.dump(reports, f, ensure_ascii=False, indent=2)
+    return jsonify({"ok": True, "id": new_id}), 201
+
+
+@app.route("/api/reports/<int:report_id>/confirm", methods=["POST"])
+def api_reports_confirm(report_id):
+    data = request.get_json(force=True)
+    voter_id = str(data.get("voter_id", ""))[:64]
+    if not voter_id:
+        return jsonify({"error": "missing voter_id"}), 400
+
+    if not os.path.exists(REPORTS_PATH):
+        return jsonify({"error": "not found"}), 404
+    with open(REPORTS_PATH, encoding="utf-8") as f:
+        reports = json.load(f)
+
+    for r in reports:
+        if r.get("id") == report_id:
+            if voter_id in r.get("confirmed_by", []):
+                return jsonify({"ok": True, "already": True, "confirms": r["confirms"]})
+            if r.get("voter_id") == voter_id:
+                return jsonify({"error": "cannot confirm own report"}), 400
+            r.setdefault("confirmed_by", []).append(voter_id)
+            r["confirms"] = len(r["confirmed_by"])
+            with open(REPORTS_PATH, "w", encoding="utf-8") as f:
+                json.dump(reports, f, ensure_ascii=False, indent=2)
+            return jsonify({"ok": True, "confirms": r["confirms"]})
+
+    return jsonify({"error": "not found"}), 404
 
 
 if __name__ == "__main__":
