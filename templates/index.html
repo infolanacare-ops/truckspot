@@ -1018,15 +1018,8 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nav-next-dist{font-size:.75rem;color:#fff;font-weight:800;flex-shrink:0;margin-left:auto}
 
-/* — Pasek ulicy (nazwa bieżącej drogi) — */
-.nav-road-strip{
-  background:rgba(20,24,40,.82);backdrop-filter:blur(6px);
-  padding:.35rem 1rem;
-  display:flex;align-items:center;gap:.6rem;
-  flex-shrink:0;
-}
-.nav-road-name{font-size:.8rem;color:#fff;font-weight:600;flex:1;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-road-name{display:none} /* nieużywane */
+.nav-road-strip{display:none} /* usunięty wąski pasek nazwy drogi */
 .nav-speed-limit{display:none} /* zastąpione przez nav-speed-sign */
 
 /* Znak ograniczenia prędkości — lewy bok mapy, pod POI */
@@ -3105,6 +3098,16 @@ function showAlert(icon,title,desc,parking=null){
   t2.classList.add('show');
   t2.onclick=(e)=>{if(e.target.className==='alert-close')return;if(alertParking)showDetail(alertParking);closeAlert();};
   clearTimeout(alertTimer); alertTimer=setTimeout(closeAlert,6000);
+  // Czytaj na głos — tylko podczas nawigacji, respektuj wyciszenie
+  if(navActive && typeof navMuted!=='undefined' && !navMuted){
+    const toSpeak=[title,desc].filter(x=>x&&x.replace(/[^\w]/g,'').length>2).join('. ');
+    if(toSpeak){
+      const utt=new SpeechSynthesisUtterance(toSpeak);
+      utt.lang=typeof currentLang!=='undefined'&&currentLang==='pl'?'pl-PL':'en-US';
+      utt.rate=1.05; utt.volume=1;
+      speechSynthesis.speak(utt);
+    }
+  }
 }
 function closeAlert(){document.getElementById('alert-toast').classList.remove('show');}
 
