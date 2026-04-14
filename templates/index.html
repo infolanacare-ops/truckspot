@@ -5177,8 +5177,8 @@ function updateCamWarn(distM){
     return;
   }
   el.classList.add('visible');
-  // rozmiar maleje co 100m: 500→52px, 400→46px, 300→40px, 200→34px, ≤100→28px
-  const sizes = [52,46,40,34,28];
+  // rozmiar rośnie co 100m: 500→28px, 400→34px, 300→40px, 200→46px, ≤100→52px
+  const sizes = [28,34,40,46,52];
   const step  = Math.min(4, Math.floor((500 - distM) / 100));
   const sz    = sizes[step];
   el.style.width = sz+'px';
