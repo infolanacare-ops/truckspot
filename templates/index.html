@@ -3493,6 +3493,7 @@ async function searchRoute(navMode){
       routeCircleMarkers.push(mkCircleMk(w.lat,w.lng,'#3b82f6',14));
     });
     routeCircleMarkers.push(mkCircleMk(toGeo.lat,toGeo.lng,'#10b981',20));
+    navDestLat = toGeo.lat; navDestLng = toGeo.lng; // zapamiętaj cel do reroutingu
     fitRouteCoords(routeCoords, 50);
 
     // Filter parkings on route
@@ -3558,6 +3559,7 @@ let navDistRemaining = 0;    // metres remaining along route
 let navRouteDistances = [];  // cumulative distances along routeCoords
 let navDestLat = null, navDestLng = null; // cel nawigacji (do reroutingu)
 let navRerouteTs = 0;        // timestamp ostatniego reroutingu (cooldown)
+let navRerouteWarned = false; // czy pokazano ostrzeżenie "zawróć"
 
 // SVG paths for TomTom-style arrows
 const NAV_SVG_PATHS = {
@@ -3786,7 +3788,7 @@ function startNavigation(){
   if(!routeSteps.length){ showAlert('⚠️','','Najpierw oblicz trasę'); return; }
   navActive=true; navStepIdx=0; navLastLat=null; navLastLng=null;
   navAnnouncedPois=new Set(); navAnnouncedSteps=new Set(); navSpeedKmh=0;
-  navAnnouncedReports=new Set();
+  navAnnouncedReports=new Set(); navRerouteWarned=false; navRerouteTs=0;
   // Usuń istniejącą kropkę GPS — setGpsArrow stworzy strzałkę
   if(gpsMarker){ gpsMarker.remove(); gpsMarker=null; }
   document.getElementById('nav-overlay').classList.add('active');
@@ -4090,13 +4092,22 @@ function onNavPosition(pos){
 
   // ── Off-route detection ──────────────────────────────────────────────
   const distFromRoute = haversineKm(lat, lng, routeCoords[cIdx][1], routeCoords[cIdx][0]) * 1000;
-  const rerouteCooldown = 20000; // 20 sekund między reroutingami
-  if(distFromRoute > 80 && navSpeedKmh > 5 && navDestLat !== null){
+  const rerouteCooldown = 10000; // 10 sekund między reroutingami
+  if(navDestLat !== null && navSpeedKmh > 2){
     const now = Date.now();
-    if(now - navRerouteTs > rerouteCooldown){
+    if(distFromRoute > 150 && now - navRerouteTs > rerouteCooldown){
+      // Powyżej 150m — przelicz trasę
       navRerouteTs = now;
+      navRerouteWarned = false;
       rerouteNavigation(lat, lng);
       return;
+    } else if(distFromRoute > 80 && !navRerouteWarned && now - navRerouteTs > rerouteCooldown){
+      // 80-150m — ostrzeżenie głosowe "zawróć"
+      navRerouteWarned = true;
+      speakNav(currentLang==='pl' ? 'Zawróć gdy możliwe' : 'Turn around when possible', true);
+      setEl('nav-street-name', currentLang==='pl' ? '↩ Zawróć gdy możliwe' : '↩ Turn around when possible');
+    } else if(distFromRoute < 40){
+      navRerouteWarned = false; // wróciłeś na trasę — reset
     }
   }
 
