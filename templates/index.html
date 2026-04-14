@@ -3721,7 +3721,8 @@ let waypointCount = 0;
 let routeType = localStorage.getItem('ts_route_type') || 'fast';
 
 function buildRouteUrl(coordStr){
-  const profile = (routeType === 'short') ? 'driving' : 'driving-traffic';
+  // TIR wymaga profilu 'driving' — max_height/width/weight/length nie działają z driving-traffic
+  const profile = (currentMode === 'tir' || routeType === 'short') ? 'driving' : 'driving-traffic';
   const excl = [];
   if(document.getElementById('av-motorway')?.checked) excl.push('motorway');
   if(document.getElementById('av-toll')?.checked)     excl.push('toll');
