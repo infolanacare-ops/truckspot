@@ -709,7 +709,7 @@ def api_push_unsubscribe():
 REPORT_TTL = {
     'camera':   24 * 3600,
     'collision': 2 * 3600,
-    'obstacle':  4 * 3600,
+    'roadwork':  8 * 3600,
     'police':   30 * 60,
 }
 
@@ -731,7 +731,7 @@ def api_reports_get():
     now = time.time()
     result = []
     for r in reports:
-        ttl = REPORT_TTL.get(r.get("cat", "obstacle"), 4 * 3600)
+        ttl = REPORT_TTL.get(r.get("cat", "roadwork"), 4 * 3600)
         if now - r.get("ts", 0) > ttl:
             continue
         lat, lng = r.get("lat", 0), r.get("lng", 0)
@@ -757,7 +757,7 @@ def api_reports_post():
 
     now = time.time()
     # Purge expired
-    reports = [r for r in reports if now - r.get("ts", 0) < REPORT_TTL.get(r.get("cat","obstacle"), 4*3600)]
+    reports = [r for r in reports if now - r.get("ts", 0) < REPORT_TTL.get(r.get("cat","roadwork"), 4*3600)]
 
     # Prevent duplicate from same voter within 500m
     voter_id = str(data["voter_id"])[:64]
