@@ -340,6 +340,11 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 
 /* theme toggle in drawer */
 .theme-toggle-row{display:flex;align-items:center;gap:.85rem;padding:.6rem 1.2rem}
+/* accent color picker */
+.accent-row{display:flex;align-items:center;gap:.85rem;padding:.5rem 1.2rem}
+.accent-swatches{display:flex;gap:.55rem;margin-left:auto}
+.accent-swatch{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:.15s;flex-shrink:0}
+.accent-swatch.active{border-color:#fff;transform:scale(1.2);box-shadow:0 0 0 3px rgba(255,255,255,.15)}
 .toggle-track{width:44px;height:24px;border-radius:12px;background:var(--border);position:relative;cursor:pointer;transition:.3s;flex-shrink:0}
 .toggle-track.on{background:var(--accent)}
 .toggle-thumb{width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.25s;box-shadow:0 1px 4px rgba(0,0,0,.3)}
@@ -1146,6 +1151,17 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
       <span class="menu-label" data-i="menu_theme">Dark mode</span>
       <div class="toggle-track on" id="theme-track" onclick="toggleTheme()"><div class="toggle-thumb"></div></div>
     </div>
+    <!-- Accent color -->
+    <div class="accent-row">
+      <div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20" fill="currentColor" opacity=".15"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg></span></div>
+      <span class="menu-label">Kolor akcentu</span>
+      <div class="accent-swatches" id="accent-swatches">
+        <div class="accent-swatch" data-accent="gold"   style="background:linear-gradient(135deg,#f0d060,#d4af37)" onclick="setAccentColor('gold')"  title="Złoty"></div>
+        <div class="accent-swatch" data-accent="silver" style="background:linear-gradient(135deg,#e2e8f0,#94a3b8)" onclick="setAccentColor('silver')" title="Srebrny"></div>
+        <div class="accent-swatch" data-accent="green"  style="background:linear-gradient(135deg,#34d399,#10b981)" onclick="setAccentColor('green')"  title="Zielony"></div>
+        <div class="accent-swatch" data-accent="blue"   style="background:linear-gradient(135deg,#60a5fa,#3b82f6)" onclick="setAccentColor('blue')"   title="Niebieski"></div>
+      </div>
+    </div>
     <div class="menu-item" onclick="drawerAction('lang')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span></div><span class="menu-label" data-i="menu_lang">Language</span></div>
     <div class="menu-item" onclick="drawerAction('mode')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span></div><span class="menu-label" data-i="menu_mode">Change mode</span></div>
   </div>
@@ -1696,6 +1712,39 @@ function toggleTheme(){
   localStorage.setItem('ts_theme', isDark ? 'dark' : 'light');
   applyTheme();
 }
+
+// ══════════════════════════════════════
+// ACCENT COLOR
+// ══════════════════════════════════════
+const ACCENT_PRESETS = {
+  gold:   {a:'#d4af37', a2:'#f0d060', bg:'rgba(212,175,55,.15)'},
+  silver: {a:'#94a3b8', a2:'#cbd5e1', bg:'rgba(148,163,184,.15)'},
+  green:  {a:'#10b981', a2:'#34d399', bg:'rgba(16,185,129,.15)'},
+  blue:   {a:'#3b82f6', a2:'#60a5fa', bg:'rgba(59,130,246,.15)'},
+};
+
+function setAccentColor(name){
+  const p = ACCENT_PRESETS[name]; if(!p) return;
+  const r = document.documentElement.style;
+  r.setProperty('--accent',     p.a);
+  r.setProperty('--accent2',    p.a2);
+  r.setProperty('--accent-bg',  p.bg);
+  localStorage.setItem('ts_accent', name);
+  document.querySelectorAll('.accent-swatch').forEach(el=>
+    el.classList.toggle('active', el.dataset.accent===name));
+  // odśwież markery TIR jeśli aktywny tryb
+  if(currentMode==='tir'){
+    MODE_CONFIG.tir.color  = p.a;
+    MODE_CONFIG.tir.color2 = p.a2;
+    profile.tirPinColor = p.a;
+    renderMarkers(allParkings||[]);
+  }
+}
+
+(function initAccent(){
+  const saved = localStorage.getItem('ts_accent') || 'gold';
+  setAccentColor(saved);
+})();
 
 // ══════════════════════════════════════
 // LANGUAGE
