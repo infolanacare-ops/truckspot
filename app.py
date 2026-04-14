@@ -921,5 +921,110 @@ def api_cameras_vote(camera_id):
     return jsonify({"error": "not found"}), 404
 
 
+# ── KONWÓJ — live pozycje kierowców ──────────────────────────────────────────
+CONVOY_PATH = os.path.join(DATA_DIR, "convoy.json")
+CONVOY_TTL  = 90  # sekund — kierowca znika jeśli nie pinguje 90s
+
+def load_convoy():
+    if not os.path.exists(CONVOY_PATH):
+        return []
+    with open(CONVOY_PATH, encoding="utf-8") as f:
+        return json.load(f)
+
+def save_convoy(drivers):
+    with open(CONVOY_PATH, "w", encoding="utf-8") as f:
+        json.dump(drivers, f, ensure_ascii=False, indent=2)
+
+@app.route("/api/convoy/ping", methods=["POST"])
+def api_convoy_ping():
+    """Kierowca wysyła swoją pozycję co 15s."""
+    data = request.get_json(force=True)
+    required = ["voter_id", "lat", "lng"]
+    for f in required:
+        if f not in data:
+            return jsonify({"error": f"Missing: {f}"}), 400
+
+    drivers = load_convoy()
+    now = time.time()
+
+    # Usuń wygasłe
+    drivers = [d for d in drivers if now - d.get("ts", 0) < CONVOY_TTL]
+
+    voter_id = str(data["voter_id"])[:64]
+    lat = float(data["lat"])
+    lng = float(data["lng"])
+
+    # Znajdź istniejący wpis lub dodaj nowy
+    existing = next((d for d in drivers if d["voter_id"] == voter_id), None)
+    entry = {
+        "voter_id":   voter_id,
+        "name":       str(data.get("name", "TRUCKER"))[:30],
+        "avatar":     str(data.get("avatar", "🚛"))[:8],
+        "avatar_color": str(data.get("avatar_color", "#f59e0b"))[:10],
+        "lat":        lat,
+        "lng":        lng,
+        "heading":    float(data.get("heading", 0)),
+        "speed":      float(data.get("speed", 0)),
+        "status":     str(data.get("status", "driving"))[:20],  # driving/break/sleep/social
+        "dest":       str(data.get("dest", ""))[:60],
+        "convoy_id":  str(data.get("convoy_id", ""))[:32],
+        "ts":         now,
+    }
+    if existing:
+        existing.update(entry)
+    else:
+        drivers.append(entry)
+
+    save_convoy(drivers)
+
+    # Zwróć kierowców w pobliżu (50km)
+    nearby = []
+    for d in drivers:
+        if d["voter_id"] == voter_id:
+            continue
+        dist = haversine_km(lat, lng, d["lat"], d["lng"])
+        if dist <= 50:
+            nearby.append({**d, "dist_km": round(dist, 1)})
+
+    nearby.sort(key=lambda x: x["dist_km"])
+    return jsonify({"ok": True, "nearby": nearby[:20]})
+
+
+@app.route("/api/convoy/nearby")
+def api_convoy_nearby():
+    """Pobierz kierowców w pobliżu (bez pingowania własnej pozycji)."""
+    try:
+        lat = float(request.args.get("lat", 0))
+        lng = float(request.args.get("lng", 0))
+        radius = min(float(request.args.get("radius", 50)), 200)
+    except ValueError:
+        return jsonify([])
+
+    drivers = load_convoy()
+    now = time.time()
+    result = []
+    for d in drivers:
+        if now - d.get("ts", 0) > CONVOY_TTL:
+            continue
+        dist = haversine_km(lat, lng, d["lat"], d["lng"])
+        if dist <= radius:
+            result.append({**d, "dist_km": round(dist, 1)})
+
+    result.sort(key=lambda x: x["dist_km"])
+    return jsonify(result[:30])
+
+
+@app.route("/api/convoy/leave", methods=["POST"])
+def api_convoy_leave():
+    """Kierowca opuszcza mapę (wyłącza widoczność)."""
+    data = request.get_json(force=True)
+    voter_id = str(data.get("voter_id", ""))[:64]
+    if not voter_id:
+        return jsonify({"error": "missing voter_id"}), 400
+    drivers = [d for d in load_convoy() if d["voter_id"] != voter_id]
+    save_convoy(drivers)
+    return jsonify({"ok": True})
+
+
 if __name__ == "__main__":
     app.run(debug=True, port=5002)

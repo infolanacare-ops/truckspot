@@ -1064,6 +1064,108 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .nav-tir-bar-warn{
   font-size:.65rem;color:rgba(234,179,8,.7);font-weight:600;
 }
+
+/* ══ KONWÓJ ══ */
+.convoy-btn{
+  position:fixed;right:.5rem;bottom:9.5rem;z-index:600;
+  width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;
+  background:rgba(16,185,129,.18);border:2px solid rgba(16,185,129,.6);
+  color:#10b981;font-size:1.5rem;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(0,0,0,.3);transition:.2s;backdrop-filter:blur(6px);
+}
+.convoy-btn.active{background:rgba(16,185,129,.45);border-color:#10b981;
+  box-shadow:0 0 0 4px rgba(16,185,129,.25);}
+.convoy-btn-count{
+  position:absolute;top:-4px;right:-4px;
+  background:#10b981;color:#000;border-radius:50%;
+  width:20px;height:20px;font-size:.65rem;font-weight:900;
+  display:none;align-items:center;justify-content:center;
+}
+.convoy-btn-count.visible{display:flex}
+
+/* Panel konwoju */
+.convoy-panel{
+  position:fixed;bottom:0;left:0;right:0;z-index:2000;
+  background:var(--panel);border-top:2px solid rgba(16,185,129,.4);
+  border-radius:20px 20px 0 0;
+  padding:1rem 1rem calc(1rem + env(safe-area-inset-bottom));
+  transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);
+  max-height:70vh;overflow-y:auto;
+}
+.convoy-panel.open{transform:translateY(0)}
+.convoy-panel-handle{
+  width:40px;height:4px;border-radius:2px;background:var(--border);
+  margin:0 auto .75rem;
+}
+.convoy-panel-title{
+  font-family:var(--font-head);font-size:1.1rem;font-weight:900;
+  color:#10b981;margin-bottom:.2rem;display:flex;align-items:center;gap:.5rem;
+}
+.convoy-panel-sub{font-size:.75rem;color:var(--muted);margin-bottom:.9rem}
+/* Status switcher */
+.convoy-status-row{display:flex;gap:.4rem;margin-bottom:.9rem;flex-wrap:wrap}
+.convoy-status-btn{
+  padding:.4rem .75rem;border-radius:20px;border:1.5px solid var(--border);
+  background:var(--panel2);color:var(--muted);font-size:.78rem;font-weight:700;
+  cursor:pointer;transition:.15s;
+}
+.convoy-status-btn.active{border-color:#10b981;background:rgba(16,185,129,.15);color:#10b981}
+/* Dest input */
+.convoy-dest-row{display:flex;gap:.5rem;margin-bottom:.9rem;align-items:center}
+.convoy-dest-input{
+  flex:1;padding:.55rem .8rem;border:1.5px solid var(--border);border-radius:12px;
+  background:var(--input-bg);color:var(--text);font-size:.85rem;outline:none;
+  font-family:var(--font);transition:.15s;
+}
+.convoy-dest-input:focus{border-color:#10b981}
+.convoy-dest-btn{
+  padding:.55rem .9rem;border:none;border-radius:12px;cursor:pointer;
+  background:rgba(16,185,129,.2);color:#10b981;font-weight:700;font-size:.85rem;
+}
+/* Lista kierowców */
+.convoy-driver-card{
+  background:var(--panel2);border:1px solid var(--border);border-radius:14px;
+  padding:.75rem;margin-bottom:.5rem;display:flex;align-items:center;gap:.75rem;
+  cursor:pointer;transition:.15s;
+}
+.convoy-driver-card:active{background:rgba(16,185,129,.08)}
+.convoy-driver-avatar{
+  width:44px;height:44px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.5rem;flex-shrink:0;border:2px solid rgba(255,255,255,.1);
+}
+.convoy-driver-info{flex:1;min-width:0}
+.convoy-driver-name{font-weight:800;font-size:.9rem;color:var(--text)}
+.convoy-driver-meta{font-size:.72rem;color:var(--muted);margin-top:.15rem;display:flex;gap:.5rem;flex-wrap:wrap}
+.convoy-driver-dist{
+  font-family:var(--font-head);font-size:.95rem;font-weight:900;
+  color:#10b981;flex-shrink:0;
+}
+.convoy-driver-status{
+  display:inline-flex;align-items:center;gap:.2rem;
+  padding:.1rem .4rem;border-radius:20px;font-size:.65rem;font-weight:700;
+}
+.status-driving{background:rgba(34,197,94,.15);color:#22c55e}
+.status-break{background:rgba(234,179,8,.15);color:#eab308}
+.status-sleep{background:rgba(99,102,241,.15);color:#818cf8}
+.status-social{background:rgba(236,72,153,.15);color:#f472b6}
+
+/* Marker konwoju na mapie */
+.convoy-marker{
+  width:46px;height:54px;position:relative;cursor:pointer;
+}
+.convoy-marker-arrow{
+  width:36px;height:44px;position:absolute;top:0;left:5px;
+  filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));
+  transition:transform .8s ease;
+}
+.convoy-marker-label{
+  position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);
+  background:rgba(10,14,28,.9);border:1px solid rgba(16,185,129,.5);
+  border-radius:6px;padding:.05rem .3rem;
+  font-size:.58rem;font-weight:800;color:#10b981;white-space:nowrap;
+}
+
 /* TIR modal — wymuszony przed nawigacją */
 .tir-confirm-modal{
   position:fixed;inset:0;z-index:3000;
@@ -1430,6 +1532,12 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
     </div>
   </div>
 </div>
+
+<!-- KONWÓJ button -->
+<button class="convoy-btn" id="convoy-btn" onclick="toggleConvoyPanel()" title="Konwój">
+  🚛
+  <span class="convoy-btn-count" id="convoy-btn-count">0</span>
+</button>
 
 <!-- REPORT SPEED-DIAL (slide-up) -->
 <div class="report-dial" id="report-dial">
@@ -1982,6 +2090,44 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
     <button class="nav-mute-btn" id="nav-mute-btn" onclick="toggleNavMute()" title="Wycisz głos">🔊</button>
     <button class="nav-pitch-btn" id="nav-pitch-btn" onclick="cycleNavPitch()" title="Zmień perspektywę">3D</button>
     <button class="nav-stop-btn" onclick="stopNavigation()" title="Zatrzymaj nawigację">✕</button>
+  </div>
+</div>
+
+<!-- PANEL KONWOJU -->
+<div class="convoy-panel" id="convoy-panel">
+  <div class="convoy-panel-handle"></div>
+  <div class="convoy-panel-title">🚛 Konwój</div>
+  <div class="convoy-panel-sub" id="convoy-panel-sub">Włącz widoczność aby zobaczyć innych kierowców</div>
+
+  <!-- Status kierowcy -->
+  <div class="convoy-status-row">
+    <button class="convoy-status-btn active" id="cs-driving" onclick="setConvoyStatus('driving')">🚛 Jadę</button>
+    <button class="convoy-status-btn" id="cs-break"   onclick="setConvoyStatus('break')">☕ Przerwa</button>
+    <button class="convoy-status-btn" id="cs-sleep"   onclick="setConvoyStatus('sleep')">🛌 Śpię</button>
+    <button class="convoy-status-btn" id="cs-social"  onclick="setConvoyStatus('social')">🃏 Towarzystwo</button>
+  </div>
+
+  <!-- Cel podróży -->
+  <div class="convoy-dest-row">
+    <input class="convoy-dest-input" id="convoy-dest" placeholder="Dokąd jedziesz? (np. Hamburg)" maxlength="60">
+    <button class="convoy-dest-btn" onclick="saveConvoyDest()">✓</button>
+  </div>
+
+  <!-- Toggle widoczności -->
+  <div style="display:flex;gap:.6rem;margin-bottom:.9rem">
+    <button id="convoy-toggle-btn" onclick="toggleConvoyVisible()"
+      style="flex:1;padding:.7rem;border:none;border-radius:14px;cursor:pointer;
+             background:linear-gradient(135deg,#10b981,#059669);color:#fff;
+             font-family:var(--font-head);font-size:.95rem;font-weight:900">
+      📡 Włącz widoczność
+    </button>
+  </div>
+
+  <!-- Lista kierowców w pobliżu -->
+  <div id="convoy-drivers-list">
+    <div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:.82rem">
+      Włącz widoczność aby zobaczyć kierowców w pobliżu
+    </div>
   </div>
 </div>
 
@@ -4216,6 +4362,178 @@ function getBestVoice(lang){
   const v = voices.find(v => v.lang === lang) || voices.find(v => v.lang.startsWith(lang.split('-')[0]));
   if(v){ _navVoiceCache[lang]=v; return v; }
   return null;
+}
+
+// ══════════════════════════════════════
+// KONWÓJ — live pozycje kierowców na mapie
+// ══════════════════════════════════════
+let convoyVisible   = false;
+let convoyStatus    = 'driving';
+let convoyDest      = '';
+let convoyPingTimer = null;
+let convoyMarkers   = {};   // voter_id → mapboxgl.Marker
+let convoyNearby    = [];   // ostatnia lista z serwera
+
+const STATUS_CFG = {
+  driving: {icon:'🚛', label:'Jadę',       cls:'status-driving'},
+  break:   {icon:'☕', label:'Przerwa',     cls:'status-break'},
+  sleep:   {icon:'🛌', label:'Śpię',       cls:'status-sleep'},
+  social:  {icon:'🃏', label:'Towarzystwo', cls:'status-social'},
+};
+
+function toggleConvoyPanel(){
+  const p = document.getElementById('convoy-panel');
+  p.classList.toggle('open');
+}
+
+function setConvoyStatus(s){
+  convoyStatus = s;
+  document.querySelectorAll('.convoy-status-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('cs-'+s);
+  if(btn) btn.classList.add('active');
+  if(convoyVisible) convoyPing();
+}
+
+function saveConvoyDest(){
+  convoyDest = document.getElementById('convoy-dest')?.value.trim() || '';
+  if(convoyVisible) convoyPing();
+  showAlert('✅','','Cel podróży zapisany');
+}
+
+function toggleConvoyVisible(){
+  convoyVisible = !convoyVisible;
+  const btn = document.getElementById('convoy-toggle-btn');
+  if(convoyVisible){
+    btn.innerHTML = '👁️ Widoczny dla innych';
+    btn.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
+    document.getElementById('convoy-btn').classList.add('active');
+    convoyPing();
+    convoyPingTimer = setInterval(convoyPing, 15000);
+  } else {
+    btn.innerHTML = '📡 Włącz widoczność';
+    btn.style.background = 'linear-gradient(135deg,#10b981,#059669)';
+    document.getElementById('convoy-btn').classList.remove('active');
+    clearInterval(convoyPingTimer);
+    convoyPingTimer = null;
+    // Usuń się z mapy innych
+    fetch('/api/convoy/leave', {method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({voter_id: getVoterId()})
+    }).catch(()=>{});
+    // Usuń markery
+    Object.values(convoyMarkers).forEach(m => m.remove());
+    convoyMarkers = {};
+    updateConvoyUI([]);
+  }
+}
+
+async function convoyPing(){
+  if(!convoyVisible) return;
+  const ll = gpsMarker ? gpsMarker.getLngLat() : null;
+  const center = map ? map.getCenter() : null;
+  const lat = ll ? ll.lat : (center ? center.lat : null);
+  const lng = ll ? ll.lng : (center ? center.lng : null);
+  if(!lat || !lng) return;
+
+  try {
+    const resp = await fetch('/api/convoy/ping', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        voter_id:     getVoterId(),
+        lat, lng,
+        heading:      navActive ? (map.getBearing()||0) : 0,
+        speed:        navSpeedKmh || 0,
+        name:         profile.name || 'TRUCKER',
+        avatar:       profile.avatar || '🚛',
+        avatar_color: profile.avatarColor || '#f59e0b',
+        status:       convoyStatus,
+        dest:         convoyDest,
+        convoy_id:    '',
+      })
+    });
+    const data = await resp.json();
+    if(data.ok){
+      convoyNearby = data.nearby || [];
+      updateConvoyUI(convoyNearby);
+      renderConvoyMarkers(convoyNearby);
+    }
+  } catch(e){}
+}
+
+function updateConvoyUI(drivers){
+  const cnt = document.getElementById('convoy-btn-count');
+  if(cnt){
+    cnt.textContent = drivers.length;
+    cnt.classList.toggle('visible', drivers.length > 0);
+  }
+  const sub = document.getElementById('convoy-panel-sub');
+  if(sub) sub.textContent = drivers.length > 0
+    ? `${drivers.length} kierowców w pobliżu (50 km)`
+    : 'Brak kierowców w pobliżu';
+
+  const list = document.getElementById('convoy-drivers-list');
+  if(!list) return;
+  if(!drivers.length){
+    list.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:.82rem">Brak kierowców w pobliżu (50 km)</div>';
+    return;
+  }
+  list.innerHTML = drivers.map(d => {
+    const sc = STATUS_CFG[d.status] || STATUS_CFG.driving;
+    const dest = d.dest ? `→ ${d.dest}` : '';
+    const speed = d.speed > 5 ? `${Math.round(d.speed)} km/h` : '';
+    return `<div class="convoy-driver-card" onclick="focusConvoyDriver(${d.lat},${d.lng})">
+      <div class="convoy-driver-avatar" style="background:${d.avatar_color||'#f59e0b'}">${d.avatar||'🚛'}</div>
+      <div class="convoy-driver-info">
+        <div class="convoy-driver-name">${d.name||'TRUCKER'}</div>
+        <div class="convoy-driver-meta">
+          <span class="convoy-driver-status ${sc.cls}">${sc.icon} ${sc.label}</span>
+          ${dest ? `<span>${dest}</span>` : ''}
+          ${speed ? `<span>${speed}</span>` : ''}
+        </div>
+      </div>
+      <div class="convoy-driver-dist">${d.dist_km < 1 ? Math.round(d.dist_km*1000)+'m' : d.dist_km+'km'}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderConvoyMarkers(drivers){
+  // Usuń markery których już nie ma
+  const activeIds = new Set(drivers.map(d => d.voter_id));
+  for(const [id, mk] of Object.entries(convoyMarkers)){
+    if(!activeIds.has(id)){ mk.remove(); delete convoyMarkers[id]; }
+  }
+  // Dodaj/aktualizuj
+  for(const d of drivers){
+    const el = document.createElement('div');
+    el.className = 'convoy-marker';
+    const sc = STATUS_CFG[d.status] || STATUS_CFG.driving;
+    el.innerHTML = `
+      <svg class="convoy-marker-arrow" style="transform:rotate(${d.heading}deg)"
+           viewBox="0 0 36 44" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="18,2 34,42 18,34 2,42"
+          fill="${d.avatar_color||'#10b981'}" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>
+        <text x="18" y="28" text-anchor="middle" font-size="14">${d.avatar||'🚛'}</text>
+      </svg>
+      <div class="convoy-marker-label">${(d.name||'').substring(0,8)}</div>`;
+    el.addEventListener('click', () => {
+      toggleConvoyPanel();
+      focusConvoyDriver(d.lat, d.lng);
+    });
+    if(convoyMarkers[d.voter_id]){
+      convoyMarkers[d.voter_id].setLngLat([d.lng, d.lat]);
+      convoyMarkers[d.voter_id].getElement().querySelector('.convoy-marker-arrow')
+        .style.transform = `rotate(${d.heading}deg)`;
+    } else {
+      convoyMarkers[d.voter_id] = new mapboxgl.Marker({element:el, anchor:'center'})
+        .setLngLat([d.lng, d.lat]).addTo(map);
+    }
+  }
+}
+
+function focusConvoyDriver(lat, lng){
+  map.flyTo({center:[lng,lat], zoom:13, duration:1200});
+  document.getElementById('convoy-panel').classList.remove('open');
 }
 
 // Głosy ładują się asynchronicznie — odśwież cache
