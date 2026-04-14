@@ -705,7 +705,7 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .gps-dot{width:14px;height:14px;background:#3b82f6;border-radius:50%;border:3px solid #fff;
   box-shadow:0 0 0 4px rgba(59,130,246,.3);animation:pulse-gps 2s infinite}
 @keyframes pulse-gps{0%,100%{box-shadow:0 0 0 4px rgba(59,130,246,.3)}50%{box-shadow:0 0 0 10px rgba(59,130,246,.06)}}
-.nav-arrow{width:0;height:0;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));}
+.nav-arrow{width:40px;height:52px;display:block;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));}
 .mk-user{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
   background:var(--purple);border:3px solid #fff;box-shadow:0 3px 10px rgba(139,92,246,.5);font-size:.95rem}
 
@@ -967,6 +967,9 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .nav-eta-block{flex:1;min-width:0}
 .nav-eta-dist{font-family:var(--font-head);font-size:1.1rem;font-weight:800;color:#fff}
 .nav-eta-time{font-size:.72rem;color:rgba(255,255,255,.55);margin-top:.1rem}
+.nav-overview-btn{padding:.6rem .8rem;border:none;border-radius:12px;cursor:pointer;
+  background:rgba(255,255,255,.15);color:#fff;font-size:1rem;flex-shrink:0;backdrop-filter:blur(4px)}
+.nav-overview-btn.active{background:var(--accent);color:#000}
 .nav-stop-btn{padding:.6rem 1.1rem;border:none;border-radius:12px;cursor:pointer;
   background:#ef4444;color:#fff;font-family:var(--font-head);font-size:.85rem;font-weight:800;flex-shrink:0}
 
@@ -1566,7 +1569,6 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
 
   <!-- POI strip -->
   <div class="nav-pois-strip" id="nav-pois-strip">
-    <div style="font-size:.68rem;color:rgba(255,255,255,.4);align-self:center;white-space:nowrap;padding:.2rem">⏳ Ładowanie POI...</div>
   </div>
 
   <!-- Mapa wypełnia środek -->
@@ -1582,6 +1584,7 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
       <div class="nav-eta-dist" id="nav-total-dist">–</div>
       <div class="nav-eta-time" id="nav-eta-time">–</div>
     </div>
+    <button class="nav-overview-btn" id="nav-overview-btn" onclick="toggleNavOverview()" title="Podgląd trasy">🗺</button>
     <button class="nav-stop-btn" onclick="stopNavigation()">✕ Stop</button>
   </div>
 </div>
@@ -3624,7 +3627,8 @@ function onNavPosition(pos){
 
   // Speed-adaptive zoom: slow city=15, motorway=13
   const targetZoom = navSpeedKmh > 80 ? 13 : navSpeedKmh > 40 ? 14 : 15;
-  map.easeTo({center:[lng,lat], zoom:targetZoom, bearing:navHeading, pitch:55, duration:600});
+  if(!navOverviewMode)
+    map.easeTo({center:[lng,lat], zoom:targetZoom, bearing:navHeading, pitch:55, duration:600});
 
   // ── Remaining distance along route ──────────────────────────────────
   const cIdx = closestRouteIdx(lat, lng);
@@ -3764,8 +3768,26 @@ async function rerouteNavigation(fromLat, fromLng){
   }
 }
 
+let navOverviewMode = false;
+function toggleNavOverview(){
+  navOverviewMode = !navOverviewMode;
+  const btn = document.getElementById('nav-overview-btn');
+  if(navOverviewMode){
+    btn.classList.add('active');
+    // Dopasuj kamerę do całej trasy — płasko z góry
+    if(routeCoords.length) fitRouteCoords(routeCoords, 60);
+    map.easeTo({pitch:0, bearing:0, duration:500});
+  } else {
+    btn.classList.remove('active');
+    // Wróć do widoku nawigacji
+    map.easeTo({pitch:55, duration:500});
+  }
+}
+
 function stopNavigation(){
-  navActive=false;
+  navActive=false; navOverviewMode=false;
+  const ob = document.getElementById('nav-overview-btn');
+  if(ob) ob.classList.remove('active');
   if(navWatchId) navigator.geolocation.clearWatch(navWatchId);
   document.getElementById('nav-overlay').classList.remove('active');
   document.body.classList.remove('navigating');
