@@ -1028,12 +1028,40 @@ def api_convoy_leave():
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
+SYSTEM_PROMPT = """Jesteś TruckBot — przyjaznym asystentem kierowcy w aplikacji TruckSpot.
+Pomagasz kierowcom ciężarówek, busów i turystów w nawigacji po Europie.
+Odpowiadasz krótko (max 2 zdania, 30 słów), naturalnie po polsku, bez emoji.
+
+Gdy kierowca pyta o miejsce, restaurację, parking lub chce gdzieś pojechać — zwróć JSON:
+{"action":"navigate","query":"nazwa miejsca lub adres"}
+
+Gdy pyta o coś informacyjnego — odpowiedz zwykłym tekstem.
+Gdy pytanie jest niejasne — dopytaj krótko.
+
+Kontekst aplikacji TruckSpot: parkingi TIR, MOP-y, stacje paliw, miejsca widokowe w całej Europie."""
+
+def call_gemini(prompt, temperature=0.7, max_tokens=150):
+    url = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/"
+        f"gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
+    )
+    resp = _requests.post(
+        url,
+        json={
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"maxOutputTokens": max_tokens, "temperature": temperature},
+        },
+        timeout=10,
+    )
+    result = resp.json()
+    return result["candidates"][0]["content"]["parts"][0]["text"].strip()
+
+
 @app.route("/api/ai-assist", methods=["POST"])
 def api_ai_assist():
-    """Generuje naturalną wypowiedź asystenta AI o atrakcjach w pobliżu (Gemini free)."""
+    """Asystent AI — atrakcje przy zatrzymaniu (tryb automatyczny)."""
     if not GEMINI_API_KEY:
         return jsonify({"error": "no_key"}), 503
-
     data = request.get_json(force=True)
     attrs = data.get("attrs", [])
     if not attrs:
@@ -1045,30 +1073,76 @@ def api_ai_assist():
         dist_str = f"{round(dist_m*1000)}m" if dist_m < 1 else f"{dist_m:.1f}km"
         name = a.get("name") or a.get("label", "")
         lines.append(f"- {a.get('icon','')} {name} ({dist_str})")
-    attrs_text = "\n".join(lines)
 
     prompt = (
-        "Jesteś miłym asystentem nawigacji dla kierowcy ciężarówki. "
-        "Kierowca właśnie się zatrzymał. "
-        "Powiedz mu naturalnie i przyjaźnie (1-2 zdania, max 30 słów) co ciekawego jest w pobliżu. "
-        "Nie używaj emoji. Mów po polsku. Bądź konkretny.\n\n"
-        f"Atrakcje w pobliżu:\n{attrs_text}"
-    )
-
-    url = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/"
-        f"gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
+        f"{SYSTEM_PROMPT}\n\n"
+        "Kierowca właśnie się zatrzymał. Powiedz mu przyjaźnie co ciekawego jest w pobliżu.\n\n"
+        f"Atrakcje:\n" + "\n".join(lines)
     )
     try:
-        resp = _requests.post(
-            url,
-            json={"contents": [{"parts": [{"text": prompt}]}],
-                  "generationConfig": {"maxOutputTokens": 120, "temperature": 0.8}},
-            timeout=8,
-        )
-        result = resp.json()
-        text = result["candidates"][0]["content"]["parts"][0]["text"].strip()
+        text = call_gemini(prompt, temperature=0.8, max_tokens=120)
         return jsonify({"text": text})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/ai-chat", methods=["POST"])
+def api_ai_chat():
+    """Asystent AI — czat głosowy/tekstowy z kierowcą."""
+    if not GEMINI_API_KEY:
+        return jsonify({"error": "no_key"}), 503
+
+    data = request.get_json(force=True)
+    message  = str(data.get("message", "")).strip()[:500]
+    lat      = data.get("lat")
+    lng      = data.get("lng")
+    nav      = data.get("navigating", False)   # czy jedziemy?
+    dest     = data.get("dest", "")            # cel nawigacji
+    speed    = data.get("speed", 0)
+    nearby   = data.get("nearby", [])          # pobliskie POI z apki
+
+    if not message:
+        return jsonify({"error": "empty"}), 400
+
+    # Zbuduj kontekst
+    ctx_parts = []
+    if lat and lng:
+        ctx_parts.append(f"Pozycja GPS: {lat:.4f}, {lng:.4f}")
+    if nav and dest:
+        ctx_parts.append(f"Trwa nawigacja do: {dest}, prędkość: {speed} km/h")
+    elif nav:
+        ctx_parts.append(f"Trwa nawigacja, prędkość: {speed} km/h")
+    if nearby:
+        near_txt = ", ".join([f"{p.get('name','?')} ({p.get('type','poi')})" for p in nearby[:5]])
+        ctx_parts.append(f"Pobliskie miejsca w apce: {near_txt}")
+
+    ctx = "\n".join(ctx_parts)
+    prompt = (
+        f"{SYSTEM_PROMPT}\n\n"
+        + (f"Kontekst:\n{ctx}\n\n" if ctx else "")
+        + f"Kierowca mówi: {message}"
+    )
+
+    try:
+        raw = call_gemini(prompt, temperature=0.75, max_tokens=150)
+
+        # Spróbuj sparsować jako JSON (akcja nawigacji)
+        action = None
+        text = raw
+        import re
+        json_match = re.search(r'\{[^}]+\}', raw)
+        if json_match:
+            try:
+                obj = json.loads(json_match.group())
+                if obj.get("action") == "navigate":
+                    action = obj
+                    # Odpowiedź głosowa poza JSON-em
+                    text = raw[:json_match.start()].strip() or \
+                           f"Już prowadzę cię do: {obj.get('query','celu')}."
+            except Exception:
+                pass
+
+        return jsonify({"text": text, "action": action})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

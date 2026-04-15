@@ -1138,6 +1138,74 @@ body.navigating .nav-tl-handle{display:block}
 }
 .nav-tl-dist{font-size:.6rem;color:#60a5fa;font-weight:700;margin-top:.05rem}
 
+/* ══ AI ASYSTENT ══ */
+.fab-ai{
+  position:fixed;left:1rem;bottom:4.5rem;z-index:600;
+  width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  color:#fff;font-size:1.4rem;box-shadow:0 4px 16px rgba(99,102,241,.45);
+  display:flex;align-items:center;justify-content:center;transition:.2s;
+}
+.fab-ai:active{transform:scale(.92)}
+.fab-ai.listening{animation:ai-pulse 1s infinite;background:linear-gradient(135deg,#ef4444,#f97316)}
+@keyframes ai-pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.5)}50%{box-shadow:0 0 0 12px rgba(239,68,68,0)}}
+body.navigating .fab-ai{display:none}
+.nav-ai-btn{
+  width:100%;margin-bottom:.55rem;
+  background:linear-gradient(135deg,rgba(99,102,241,.2),rgba(139,92,246,.2));
+  border-color:rgba(99,102,241,.4)!important;color:#a5b4fc;font-size:.9rem;
+}
+/* AI Panel */
+.ai-panel{
+  position:fixed;inset:0;z-index:1400;
+  background:rgba(8,10,20,.96);backdrop-filter:blur(20px);
+  display:flex;flex-direction:column;
+  transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);
+  pointer-events:none;
+}
+.ai-panel.open{transform:translateY(0);pointer-events:auto}
+.ai-panel-header{
+  display:flex;align-items:center;gap:.75rem;
+  padding:calc(env(safe-area-inset-top,0px) + .9rem) 1rem .9rem;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.ai-panel-avatar{
+  width:44px;height:44px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  display:flex;align-items:center;justify-content:center;font-size:1.3rem;
+}
+.ai-panel-title{font-family:var(--font-head);font-size:1rem;font-weight:900;color:#fff}
+.ai-panel-sub{font-size:.7rem;color:rgba(255,255,255,.4);margin-top:.1rem}
+.ai-panel-close{margin-left:auto;background:none;border:none;color:rgba(255,255,255,.4);font-size:1.4rem;cursor:pointer;padding:.3rem}
+.ai-messages{flex:1;overflow-y:auto;padding:.75rem 1rem;display:flex;flex-direction:column;gap:.6rem}
+.ai-msg{max-width:82%;padding:.6rem .85rem;border-radius:16px;font-size:.88rem;line-height:1.45}
+.ai-msg.user{align-self:flex-end;background:rgba(99,102,241,.25);color:#c7d2fe;border-radius:16px 16px 4px 16px}
+.ai-msg.bot{align-self:flex-start;background:rgba(255,255,255,.07);color:#e2e8f0;border-radius:16px 16px 16px 4px}
+.ai-msg.bot.loading{opacity:.5}
+.ai-panel-bottom{
+  padding:.7rem 1rem calc(.7rem + env(safe-area-inset-bottom,0px));
+  border-top:1px solid rgba(255,255,255,.07);
+  display:flex;gap:.6rem;align-items:center;
+}
+.ai-input{
+  flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+  border-radius:14px;padding:.65rem .9rem;color:#fff;font-size:.9rem;
+  font-family:inherit;outline:none;
+}
+.ai-input::placeholder{color:rgba(255,255,255,.3)}
+.ai-mic-btn{
+  width:46px;height:46px;border-radius:50%;border:none;cursor:pointer;flex-shrink:0;
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:1.2rem;
+  display:flex;align-items:center;justify-content:center;transition:.2s;
+}
+.ai-mic-btn.listening{background:linear-gradient(135deg,#ef4444,#f97316);animation:ai-pulse 1s infinite}
+.ai-send-btn{
+  width:46px;height:46px;border-radius:50%;border:none;cursor:pointer;flex-shrink:0;
+  background:rgba(99,102,241,.3);color:#a5b4fc;font-size:1.1rem;
+  display:flex;align-items:center;justify-content:center;transition:.2s;
+}
+.ai-send-btn:active{background:rgba(99,102,241,.6)}
+
 /* ══ KONWÓJ TOAST — chmurka z dołu lewego rogu ══ */
 .convoy-toast{
   position:fixed;
@@ -2317,12 +2385,36 @@ body.navigating .nav-pois-strip{display:none}
   </div>
 </div>
 
+<!-- AI ASYSTENT PANEL -->
+<div class="ai-panel" id="ai-panel">
+  <div class="ai-panel-header">
+    <div class="ai-panel-avatar">🤖</div>
+    <div>
+      <div class="ai-panel-title">TruckBot</div>
+      <div class="ai-panel-sub" id="ai-panel-sub">Gotowy — zapytaj mnie o cokolwiek</div>
+    </div>
+    <button class="ai-panel-close" onclick="closeAiAssistant()">✕</button>
+  </div>
+  <div class="ai-messages" id="ai-messages">
+    <div class="ai-msg bot">Cześć! Jestem TruckBot. Mogę pomóc znaleźć restaurację, parking, atrakcję — powiedz tylko gdzie chcesz pojechać i zaprowadzę cię tam. 🚛</div>
+  </div>
+  <div class="ai-panel-bottom">
+    <input class="ai-input" id="ai-input" placeholder="Wpisz lub naciśnij mikrofon..." onkeydown="if(event.key==='Enter')sendAiMessage()">
+    <button class="ai-mic-btn" id="ai-mic-btn" onclick="toggleAiMic()">🎙</button>
+    <button class="ai-send-btn" onclick="sendAiMessage()">➤</button>
+  </div>
+</div>
+
 <!-- Backdrop do zamknięcia sheet -->
 <div class="nav-sheet-backdrop" id="nav-sheet-backdrop" onclick="closeNavSheet()"></div>
 
 <!-- Slide-up sheet: filtry + konwój -->
 <div class="nav-sheet" id="nav-sheet">
   <div class="nav-sheet-handle"></div>
+  <!-- Asystent AI — pełna szerokość na górze -->
+  <button class="nav-sheet-btn nav-ai-btn" id="nav-ai-btn" onclick="closeNavSheet(); openAiAssistant()">
+    🎙 Zapytaj asystenta AI
+  </button>
   <div class="nav-sheet-actions">
     <button class="nav-sheet-btn" id="nav-mute-btn" onclick="toggleNavMute()">🔊 Głos</button>
     <button class="nav-sheet-btn" id="nav-pitch-btn" onclick="cycleNavPitch()">3D</button>
@@ -2492,6 +2584,7 @@ body.navigating .nav-pois-strip{display:none}
 
 <!-- FAB -->
 <button class="fab-add" id="fab-add" onclick="togglePicking()" style="display:none">＋</button>
+<button class="fab-ai" id="fab-ai" onclick="openAiAssistant()" title="Asystent AI">🎙</button>
 
 <!-- ALERT TOAST -->
 <div class="alert-toast" id="alert-toast">
@@ -6695,6 +6788,124 @@ function checkNavReports(lat, lng){
       }
     }
   }
+}
+
+// ── AI Asystent ──────────────────────────────────────────────────────────────
+let _aiRecognition = null;
+let _aiListening = false;
+
+function openAiAssistant(){
+  document.getElementById('ai-panel').classList.add('open');
+}
+function closeAiAssistant(){
+  document.getElementById('ai-panel').classList.remove('open');
+  stopAiMic();
+}
+
+function addAiMessage(text, role){
+  const msgs = document.getElementById('ai-messages');
+  const div = document.createElement('div');
+  div.className = `ai-msg ${role}`;
+  div.textContent = text;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+async function sendAiMessage(text){
+  const input = document.getElementById('ai-input');
+  const msg = text || input.value.trim();
+  if(!msg) return;
+  input.value = '';
+
+  addAiMessage(msg, 'user');
+  const loading = addAiMessage('...', 'bot loading');
+  document.getElementById('ai-panel-sub').textContent = 'Myślę...';
+
+  // Zbierz kontekst
+  const lat = navActive ? navLastLat : null;
+  const lng = navActive ? navLastLng : null;
+  const nearby = (allParkings || []).slice(0,5).map(p => ({name:p.name, type:'parking'}));
+
+  try {
+    const r = await fetch('/api/ai-chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        message: msg,
+        lat, lng,
+        navigating: navActive,
+        dest: navDestName || '',
+        speed: navSpeedKmh || 0,
+        nearby,
+      })
+    });
+    const j = await r.json();
+    loading.classList.remove('loading');
+    loading.textContent = j.text || 'Przepraszam, nie rozumiem.';
+    document.getElementById('ai-panel-sub').textContent = 'Gotowy';
+
+    // Odczytaj głosem
+    speakNav(j.text, false);
+
+    // Obsłuż akcję nawigacji
+    if(j.action?.action === 'navigate'){
+      const query = j.action.query;
+      setTimeout(async () => {
+        closeAiAssistant();
+        // Wpisz do pola celu i uruchom trasę
+        const toField = document.getElementById('route-to');
+        if(toField){ toField.value = query; }
+        // Przełącz na zakładkę trasy i jedź
+        bnav(document.querySelector('.bnav-item:nth-child(2)'), 'route');
+        await new Promise(r => setTimeout(r, 300));
+        searchRoute(true);
+      }, 1500);
+    }
+  } catch(e){
+    loading.textContent = 'Błąd połączenia z asystentem.';
+    document.getElementById('ai-panel-sub').textContent = 'Błąd';
+  }
+}
+
+function toggleAiMic(){
+  if(_aiListening) stopAiMic();
+  else startAiMic();
+}
+
+function startAiMic(){
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRecognition){
+    showAlert('⚠️','','Twoja przeglądarka nie obsługuje mikrofonu');
+    return;
+  }
+  _aiRecognition = new SpeechRecognition();
+  _aiRecognition.lang = 'pl-PL';
+  _aiRecognition.interimResults = false;
+  _aiRecognition.maxAlternatives = 1;
+
+  _aiRecognition.onstart = () => {
+    _aiListening = true;
+    document.getElementById('ai-mic-btn').classList.add('listening');
+    document.getElementById('fab-ai')?.classList.add('listening');
+    document.getElementById('ai-panel-sub').textContent = 'Słucham...';
+  };
+  _aiRecognition.onresult = e => {
+    const transcript = e.results[0][0].transcript;
+    document.getElementById('ai-input').value = transcript;
+    stopAiMic();
+    sendAiMessage(transcript);
+  };
+  _aiRecognition.onerror = () => stopAiMic();
+  _aiRecognition.onend = () => stopAiMic();
+  _aiRecognition.start();
+}
+
+function stopAiMic(){
+  _aiListening = false;
+  document.getElementById('ai-mic-btn')?.classList.remove('listening');
+  document.getElementById('fab-ai')?.classList.remove('listening');
+  if(_aiRecognition){ try{ _aiRecognition.stop(); }catch(e){} _aiRecognition = null; }
 }
 
 // ── Atrakcje przy zatrzymaniu ────────────────────────────────────────────────
