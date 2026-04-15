@@ -1066,17 +1066,17 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 }
 
 /* ══ ROUTE TIMELINE — oś czasu z prawej krawędzi ══ */
-/* Pionowa kreska-hint — prawie niewidoczna, wskazuje gdzie przesunąć palec */
+/* Pionowa kreska-hint — wzdłuż całej lewej krawędzi podczas nawigacji */
 .nav-tl-hint{
   position:fixed;left:0;
-  top:calc(108px + env(safe-area-inset-top,0px) + 72px);
-  bottom:calc(62px + env(safe-area-inset-bottom,0px));
-  width:2px;
+  top:calc(env(safe-area-inset-top,0px));
+  bottom:calc(env(safe-area-inset-bottom,0px));
+  width:3px;
   background:linear-gradient(to bottom,
     transparent 0%,
-    rgba(255,255,255,.12) 20%,
-    rgba(255,255,255,.18) 50%,
-    rgba(255,255,255,.12) 80%,
+    rgba(255,255,255,.22) 15%,
+    rgba(255,255,255,.32) 50%,
+    rgba(255,255,255,.22) 85%,
     transparent 100%);
   z-index:1204;display:none;pointer-events:none;
 }
@@ -1392,7 +1392,7 @@ body.navigating .nav-tl-handle{display:block}
 .nav-speedometer{
   position:fixed;
   top:calc(108px + env(safe-area-inset-top));
-  left:.65rem;
+  right:.65rem;
   z-index:1202;
   display:flex;align-items:stretch;
   background:rgba(16,20,36,.95);
@@ -1423,11 +1423,11 @@ body.navigating .nav-tl-handle{display:block}
 .nav-speedometer.speeding .nav-spd-sep{background:rgba(239,68,68,.3)}
 .nav-speedometer.speeding .nav-spd-lim{background:rgba(239,68,68,.1)}
 .nav-speedometer.speeding .nav-speed-sign-val{color:#ef4444}
-/* Camera warning — pod pill */
+/* Camera warning — pod pill, prawy róg */
 .nav-cam-warn{
   position:fixed;
   top:calc(108px + env(safe-area-inset-top) + 68px);
-  left:.65rem;
+  right:.65rem;
   z-index:1202;
   display:none;background:rgba(239,68,68,.15);
   border:1px solid rgba(239,68,68,.4);border-radius:12px;
@@ -1560,8 +1560,9 @@ body.navigating .nav-pois-strip{display:none}
     gap:.4rem;flex-wrap:wrap;
     border-top:1px solid rgba(255,255,255,.1);
   }
-  /* Pill w landscape — zostawić fixed top-left */
-  .nav-speedometer{top:.5rem;left:.5rem}
+  /* Pill w landscape — prawy górny róg */
+  .nav-speedometer{top:.5rem;right:.5rem;left:auto}
+  .nav-cam-warn{right:.5rem;left:auto}
   .nav-spd-cur,.nav-spd-lim{padding:.3rem .6rem;min-width:42px}
   .nav-speed-val{font-size:1.15rem}
   .nav-speed-sign-val{font-size:1.0rem}
@@ -2337,7 +2338,7 @@ body.navigating .nav-pois-strip{display:none}
 <!-- ROUTE TIMELINE — wysuwa się z prawej krawędzi -->
 <div class="nav-tl-hint" id="nav-tl-hint"></div>
 <div class="nav-tl-handle" id="nav-tl-handle" onclick="toggleRouteTimeline()" title="Oś czasu trasy"></div>
-<div class="nav-route-tl" id="nav-route-tl" onclick="if(event.target===this)hideRouteTimeline()">
+<div class="nav-route-tl" id="nav-route-tl">
   <div class="nav-tl-line"></div>
   <div class="nav-tl-list" id="nav-tl-list"></div>
 </div>
@@ -4817,7 +4818,11 @@ let _rtlTimer = null;
 
 function showRouteTimeline(){
   renderRouteTimeline();
-  document.getElementById('nav-route-tl')?.classList.add('open');
+  const tl = document.getElementById('nav-route-tl');
+  if(!tl) return;
+  tl.classList.add('open');
+  // Jedno kliknięcie gdziekolwiek w panel → zamknij
+  tl.onclick = () => hideRouteTimeline();
   if(_rtlTimer) clearTimeout(_rtlTimer);
   _rtlTimer = setTimeout(hideRouteTimeline, 20000);
 }
