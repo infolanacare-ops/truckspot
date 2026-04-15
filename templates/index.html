@@ -1294,6 +1294,10 @@ body.navigating .fab-ai{display:none}
 .convoy-btn-count.visible{display:flex}
 
 /* Panel konwoju */
+.convoy-panel-backdrop{
+  display:none;position:fixed;inset:0;z-index:1999;background:rgba(0,0,0,.45);
+}
+.convoy-panel-backdrop.open{display:block}
 .convoy-panel{
   position:fixed;bottom:0;left:0;right:0;z-index:2000;
   background:var(--panel);border-top:2px solid rgba(16,185,129,.4);
@@ -2521,9 +2525,13 @@ body.navigating .nav-pois-strip{display:none}
 </div>
 
 <!-- PANEL KONWOJU -->
+<div class="convoy-panel-backdrop" id="convoy-panel-backdrop" onclick="toggleConvoyPanel()"></div>
 <div class="convoy-panel" id="convoy-panel">
   <div class="convoy-panel-handle"></div>
-  <div class="convoy-panel-title">🚛 Konwój</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+    <div class="convoy-panel-title" style="margin-bottom:0">🚛 Konwój</div>
+    <button onclick="toggleConvoyPanel()" style="background:rgba(255,255,255,.1);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+  </div>
   <div class="convoy-panel-sub" id="convoy-panel-sub">Włącz widoczność aby zobaczyć innych kierowców</div>
 
   <!-- Status kierowcy -->
@@ -4982,7 +4990,9 @@ const STATUS_CFG = {
 
 function toggleConvoyPanel(){
   const p = document.getElementById('convoy-panel');
-  p.classList.toggle('open');
+  const bd = document.getElementById('convoy-panel-backdrop');
+  const isOpen = p.classList.toggle('open');
+  bd?.classList.toggle('open', isOpen);
 }
 
 function setConvoyStatus(s){
