@@ -5298,7 +5298,8 @@ if(typeof speechSynthesis !== 'undefined'){
   speechSynthesis.onvoiceschanged = () => { _navVoiceCache = {}; };
 }
 
-let _navSpeaking = false; // true gdy nawigacja właśnie mówi
+let _navSpeaking = false;
+let _navLastEndTs = 0; // timestamp ostatniej zakończonej komendy nawi
 
 function speakNav(txt, priority=false){
   if(navMuted) return;
@@ -5315,12 +5316,13 @@ function speakNav(txt, priority=false){
   const voice = getBestVoice(lang);
   if(voice) utt.voice = voice;
   utt.onstart = () => { _navSpeaking = true; };
-  utt.onend   = () => { _navSpeaking = false; };
-  utt.onerror = () => { _navSpeaking = false; };
+  utt.onend   = () => { _navSpeaking = false; _navLastEndTs = Date.now(); };
+  utt.onerror = () => { _navSpeaking = false; _navLastEndTs = Date.now(); };
   speechSynthesis.speak(utt);
 }
 
-/* Głos AI — czeka aż nawigacja skończy mówić */
+/* Głos AI — czeka na 7s ciszy od ostatniej komendy nawigacji */
+const AI_NAV_SILENCE_MS = 7000;
 function speakAi(txt){
   if(navMuted) return;
   if(!('speechSynthesis' in window)) return;
@@ -5334,19 +5336,22 @@ function speakAi(txt){
     if(voice) utt.voice = voice;
     speechSynthesis.speak(utt);
   };
-  // Jeśli nawigacja właśnie mówi — poczekaj aż skończy, potem 10s ciszy i powtórz
-  if(_navSpeaking || speechSynthesis.speaking){
-    let tries = 0;
-    const wait = () => {
-      if((_navSpeaking || speechSynthesis.speaking) && tries++ < 20)
-        return setTimeout(wait, 700);
-      // Nawigacja skończyła — odczekaj 10s i powtórz odpowiedź AI
-      setTimeout(_do, 10000);
-    };
-    setTimeout(wait, 700);
-  } else {
-    _do();
+  const navRecentlySilent = () =>
+    !_navSpeaking && !speechSynthesis.speaking &&
+    (Date.now() - _navLastEndTs) >= AI_NAV_SILENCE_MS;
+
+  // Nawi nie mówiła ostatnio — odezwij się od razu
+  if(_navLastEndTs === 0 && !_navSpeaking && !speechSynthesis.speaking){
+    return _do();
   }
+  // Czekaj aż miną 7s od ostatniej komendy nawi
+  let tries = 0;
+  const wait = () => {
+    if(tries++ > 60) return; // zabezpieczenie ~42s max
+    if(!navRecentlySilent()) return setTimeout(wait, 700);
+    _do();
+  };
+  setTimeout(wait, 700);
 }
 
 // ── Lane guidance — SVG arrows ────────────────────────────────────────────────
