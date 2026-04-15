@@ -2233,8 +2233,7 @@ body.navigating .convoy-btn{display:none}
         <div class="nav-eta-cell-lbl">przyjazd</div>
       </div>
     </div>
-    <!-- Głos i stop -->
-    <button class="nav-btm-btn nav-btm-mute" id="nav-mute-btn" onclick="toggleNavMute()" title="Wycisz głos">🔊</button>
+    <!-- Stop -->
     <button class="nav-btm-btn nav-btm-stop" onclick="stopNavigation()" title="Zatrzymaj nawigację">✕</button>
     <!-- Hamburger -->
     <button class="nav-hamburger" id="nav-hamburger" onclick="toggleNavSheet()" aria-label="Menu nawigacji">
@@ -2250,6 +2249,7 @@ body.navigating .convoy-btn{display:none}
 <div class="nav-sheet" id="nav-sheet">
   <div class="nav-sheet-handle"></div>
   <div class="nav-sheet-actions">
+    <button class="nav-sheet-btn" id="nav-mute-btn" onclick="toggleNavMute()">🔊 Głos</button>
     <button class="nav-sheet-btn" id="nav-pitch-btn" onclick="cycleNavPitch()">3D</button>
     <button class="nav-sheet-btn" onclick="closeNavSheet(); openFilters()">
       <span style="font-size:1.1rem">⚙</span> Filtry
@@ -4595,7 +4595,7 @@ function toggleNavMute(){
   navMuted = !navMuted;
   if(navMuted) speechSynthesis.cancel();
   const btn = document.getElementById('nav-mute-btn');
-  if(btn){ btn.classList.toggle('muted', navMuted); btn.textContent = navMuted ? '🔇' : '🔊'; }
+  if(btn){ btn.classList.toggle('muted', navMuted); btn.textContent = navMuted ? '🔇 Głos' : '🔊 Głos'; }
 }
 
 function stripForTts(txt){
