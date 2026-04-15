@@ -3872,43 +3872,87 @@ function mkCircleMk(lat, lng, color='#10b981', size=16){
 
 // Rysuje linię trasy (zastępuje L.polyline)
 let routeCircleMarkers = [];
-function drawRoute(coords){
-  // coords = [[lng,lat],...] GeoJSON order
-  const geojson = {type:'Feature',geometry:{type:'LineString',coordinates:coords}};
+function drawRoute(coords, splitIdx){
+  // splitIdx — indeks punktu do którego trasa jest "przejechana" (szara)
+  const ahead   = splitIdx > 0 ? coords.slice(splitIdx) : coords;
+  const passed  = splitIdx > 0 ? coords.slice(0, splitIdx + 1) : [];
+
+  const geoAhead  = {type:'Feature',geometry:{type:'LineString',coordinates:ahead}};
+  const geoPassed = {type:'Feature',geometry:{type:'LineString',coordinates:passed.length > 1 ? passed : [[0,0],[0,0]]}};
+
   const waitForStyle = (fn) => map.isStyleLoaded() ? fn() : map.once('style.load', fn);
   waitForStyle(()=>{
+    // Aktualizuj istniejące źródła
     if(map.getSource('ts-route')){
-      map.getSource('ts-route').setData(geojson);
-    } else {
-      map.addSource('ts-route',{type:'geojson',data:geojson});
-      // Glow pod trasą
-      map.addLayer({id:'ts-route-glow',type:'line',source:'ts-route',
-        layout:{'line-join':'round','line-cap':'round'},
-        paint:{'line-color':'#60a5fa',
-          'line-width':['interpolate',['linear'],['zoom'],4,8,8,18,12,26,16,32],
-          'line-opacity':0.22,'line-blur':6}
-      });
-      // Biała obwódka
-      map.addLayer({id:'ts-route-casing',type:'line',source:'ts-route',
-        layout:{'line-join':'round','line-cap':'round'},
-        paint:{'line-color':'rgba(255,255,255,0.9)',
-          'line-width':['interpolate',['linear'],['zoom'],4,4,8,10,12,16,16,20],
-          'line-opacity':0.9}
-      });
-      // Niebieska linia trasy
-      map.addLayer({id:'ts-route-line',type:'line',source:'ts-route',
-        layout:{'line-join':'round','line-cap':'round'},
-        paint:{'line-color':'#2563eb',
-          'line-width':['interpolate',['linear'],['zoom'],4,2,8,7,12,12,16,15],
-          'line-opacity':1}
-      });
+      map.getSource('ts-route').setData(geoAhead);
+      map.getSource('ts-route-passed')?.setData(geoPassed);
+      return;
     }
+
+    // ── Przejechana trasa (szara) ─────────────────────────
+    map.addSource('ts-route-passed',{type:'geojson',data:geoPassed});
+    map.addLayer({id:'ts-passed-casing',type:'line',source:'ts-route-passed',
+      layout:{'line-join':'round','line-cap':'round'},
+      paint:{'line-color':'#fff','line-width':
+        ['interpolate',['linear'],['zoom'],8,8,12,13,16,17],'line-opacity':.35}
+    });
+    map.addLayer({id:'ts-passed-line',type:'line',source:'ts-route-passed',
+      layout:{'line-join':'round','line-cap':'round'},
+      paint:{'line-color':'#6b7280','line-width':
+        ['interpolate',['linear'],['zoom'],8,5,12,9,16,13],'line-opacity':.7}
+    });
+
+    // ── Pozostała trasa (niebieska, ładna) ────────────────
+    map.addSource('ts-route',{type:'geojson',data:geoAhead});
+
+    // Zewnętrzny glow — mglisty niebieski
+    map.addLayer({id:'ts-route-glow',type:'line',source:'ts-route',
+      layout:{'line-join':'round','line-cap':'round'},
+      paint:{'line-color':'#3b82f6',
+        'line-width':['interpolate',['linear'],['zoom'],8,18,12,28,16,38],
+        'line-opacity':0.15,'line-blur':8}
+    });
+    // Ciemna obwódka — odcina trasę od mapy
+    map.addLayer({id:'ts-route-casing',type:'line',source:'ts-route',
+      layout:{'line-join':'round','line-cap':'round'},
+      paint:{'line-color':'#1e3a6e',
+        'line-width':['interpolate',['linear'],['zoom'],8,11,12,17,16,23],
+        'line-opacity':1}
+    });
+    // Główna linia — żywy niebieski gradient
+    map.addLayer({id:'ts-route-line',type:'line',source:'ts-route',
+      layout:{'line-join':'round','line-cap':'round'},
+      paint:{'line-color':'#3b82f6',
+        'line-width':['interpolate',['linear'],['zoom'],8,8,12,13,16,18],
+        'line-opacity':1}
+    });
+    // Biały centralny pasek — efekt "świecącej drogi"
+    map.addLayer({id:'ts-route-shine',type:'line',source:'ts-route',
+      layout:{'line-join':'round','line-cap':'round'},
+      paint:{'line-color':'rgba(255,255,255,0.55)',
+        'line-width':['interpolate',['linear'],['zoom'],8,2,12,4,16,6],
+        'line-opacity':1}
+    });
   });
   routeLayer = true;
 }
+
+function updateTraveledRoute(){
+  if(!navActive || !routeCoords.length || !map.getSource('ts-route')) return;
+  const ahead  = routeCoords.slice(navCIdx);
+  const passed = routeCoords.slice(0, navCIdx + 1);
+  map.getSource('ts-route').setData(
+    {type:'Feature',geometry:{type:'LineString',coordinates:ahead.length>1?ahead:[[0,0],[0,0]]}}
+  );
+  map.getSource('ts-route-passed')?.setData(
+    {type:'Feature',geometry:{type:'LineString',coordinates:passed.length>1?passed:[[0,0],[0,0]]}}
+  );
+}
+
 function clearRouteLayer(){
-  ['ts-route-line','ts-route-casing','ts-route-glow'].forEach(id=>{ if(map.getLayer(id)) map.removeLayer(id); });
-  if(map.getSource('ts-route')) map.removeSource('ts-route');
+  ['ts-route-shine','ts-route-line','ts-route-casing','ts-route-glow',
+   'ts-passed-line','ts-passed-casing'].forEach(id=>{ if(map.getLayer(id)) map.removeLayer(id); });
+  ['ts-route','ts-route-passed'].forEach(id=>{ if(map.getSource(id)) map.removeSource(id); });
   routeLayer = null;
   routeCircleMarkers.forEach(m=>m.remove()); routeCircleMarkers=[];
 }
@@ -5521,6 +5565,8 @@ function onNavPosition(pos){
   }
   // Upewnij się że trasa jest narysowana (może zniknąć po zmianie stylu)
   if(routeCoords.length && !map.getSource('ts-route')) drawRoute(routeCoords);
+  // Aktualizuj szarą "przejechana" część — co 3 ticki GPS
+  if(navCIdx % 3 === 0) updateTraveledRoute();
 
   // ── Remaining distance along route ──────────────────────────────────
   // cIdx + navCIdx już ustawione powyżej (forward-looking snap)
