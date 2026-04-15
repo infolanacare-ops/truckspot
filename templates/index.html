@@ -5475,11 +5475,10 @@ async function loadRoutePois(){
 function renderNavPois(){
   const strip = document.getElementById('nav-pois-strip');
   if(!strip) return;
+  // Brak filtrów = nie pokazuj nic
+  if(activeFilters.size === 0){ strip.innerHTML = ''; return; }
   const filteredPois = getFilteredNavPois();
-  if(!filteredPois.length){
-    strip.innerHTML = '<div style="font-size:.72rem;color:var(--muted);align-self:center;padding:.2rem">Brak POI na trasie</div>';
-    return;
-  }
+  if(!filteredPois.length){ strip.innerHTML = ''; return; }
 
   // Odległość przebyta wzdłuż trasy do bieżącej pozycji (km)
   const myDistKm = (navActive && navRouteDistances.length > 0)
@@ -5812,24 +5811,25 @@ function onNavPosition(pos){
     renderNavPois();
   }
 
-  // POI announcement — max 1 co 45s, nie kolejkuj gdy mowa aktywna
-  const now2 = Date.now();
-  if(!window._lastPoiAnnounceTs) window._lastPoiAnnounceTs = 0;
-  if(now2 - window._lastPoiAnnounceTs >= 45000 && !speechSynthesis.speaking){
-    const poiAlertDist = navSpeedKmh > 80 ? 3 : 1.5; // km — mniejszy zasięg
-    for(const p of getFilteredNavPois()){
-      if(navAnnouncedPois.has(p.id)) continue;
-      const d = haversineKm(lat, lng, p.lat, p.lng);
-      if(d < poiAlertDist){
-        navAnnouncedPois.add(p.id);
-        window._lastPoiAnnounceTs = now2;
-        const dist = d < 1 ? Math.round(d*1000)+' metrów' : d.toFixed(1)+' km';
-        const poiTxt = currentLang==='pl'
-          ? `Za ${dist} ${p.name}.`
-          : `In ${dist}, ${p.name}.`;
-        speakNav(poiTxt, false);
-        showAlert(p.icon, p.name, `Za ${dist}`);
-        break;
+  // POI announcement — tylko gdy filtry aktywne, dokładnie 2km przed punktem
+  if(activeFilters.size > 0){
+    const now2 = Date.now();
+    if(!window._lastPoiAnnounceTs) window._lastPoiAnnounceTs = 0;
+    if(now2 - window._lastPoiAnnounceTs >= 45000 && !speechSynthesis.speaking){
+      for(const p of getFilteredNavPois()){
+        if(navAnnouncedPois.has(p.id)) continue;
+        const d = haversineKm(lat, lng, p.lat, p.lng);
+        if(d <= 2.0 && d > 0.05){
+          navAnnouncedPois.add(p.id);
+          window._lastPoiAnnounceTs = now2;
+          const dist = d < 1 ? Math.round(d*1000)+' m' : d.toFixed(1)+' km';
+          const poiTxt = currentLang==='pl'
+            ? `Za ${dist} ${p.name}.`
+            : `In ${dist}, ${p.name}.`;
+          speakNav(poiTxt, false);
+          showAlert(p.icon, p.name, `Za ${dist}`);
+          break;
+        }
       }
     }
   }
