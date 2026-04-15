@@ -1251,45 +1251,106 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
   overflow:hidden;text-overflow:ellipsis;max-width:68px;text-align:center}
 .nav-poi-chip-dist{font-size:.6rem;color:#60a5fa;font-weight:700}
 
-/* — Dół (prędkość + ETA + stop) — */
+/* — Dół: slim pasek z unified speed pill + hamburger — */
 .nav-bottom{
   position:fixed;bottom:0;left:0;right:0;z-index:1201;
-  background:rgba(20,24,40,.95);backdrop-filter:blur(8px);
+  background:rgba(20,24,40,.97);backdrop-filter:blur(10px);
   border-top:1px solid rgba(255,255,255,.08);
-  padding:.7rem 1rem calc(.7rem + env(safe-area-inset-bottom));
-  display:flex;align-items:center;gap:.8rem;
+  padding:.55rem .9rem calc(.55rem + env(safe-area-inset-bottom));
+  display:flex;align-items:center;gap:.7rem;
 }
+/* Unified speed pill: moja prędkość | ograniczenie */
 .nav-speedometer{
-  width:52px;height:52px;border-radius:50%;
-  background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.15);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0
+  display:flex;align-items:stretch;
+  background:rgba(255,255,255,.06);
+  border:1.5px solid rgba(255,255,255,.12);
+  border-radius:16px;overflow:hidden;
+  flex-shrink:0;transition:.2s;
 }
-.nav-speed-val{font-family:var(--font-head);font-size:1.05rem;font-weight:900;color:#fff;line-height:1}
-.nav-speed-unit{font-size:.5rem;color:rgba(255,255,255,.5);text-transform:uppercase;font-weight:600}
-.nav-speedometer.speeding{border-color:#ef4444;background:rgba(239,68,68,.15)}
+.nav-spd-cur{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:.4rem .85rem;min-width:52px;
+}
+.nav-speed-val{font-family:var(--font-head);font-size:1.55rem;font-weight:900;color:#fff;line-height:1}
+.nav-speed-unit{font-size:.42rem;color:rgba(255,255,255,.4);text-transform:uppercase;font-weight:700;letter-spacing:.05em;margin-top:.1rem}
+.nav-spd-sep{width:1px;background:rgba(255,255,255,.1);align-self:stretch}
+.nav-spd-lim{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:.4rem .85rem;min-width:52px;
+  background:rgba(255,255,255,.04);
+  opacity:.35;transition:.2s;
+}
+.nav-spd-lim.visible{opacity:1}
+.nav-speed-sign-val{font-family:var(--font-head);font-size:1.35rem;font-weight:900;color:#fff;line-height:1;transition:color .2s}
+.nav-speed-sign-unit{font-size:.42rem;color:rgba(255,255,255,.35);text-transform:uppercase;font-weight:700;letter-spacing:.05em;margin-top:.1rem}
+/* Speeding: lewy panel czerwony, prawy pulsuje */
+.nav-speedometer.speeding .nav-spd-cur{background:rgba(239,68,68,.22)}
 .nav-speedometer.speeding .nav-speed-val{color:#ef4444}
-.nav-eta-block{flex:1;min-width:0}
-.nav-eta-dist{font-family:var(--font-head);font-size:1.1rem;font-weight:800;color:#fff;line-height:1.1}
-.nav-eta-time{display:flex;align-items:center;gap:.4rem;margin-top:.25rem}
-.nav-eta-remaining{font-size:.73rem;font-weight:600;color:rgba(255,255,255,.75)}
-.nav-eta-arrival{font-size:.73rem;font-weight:700;color:var(--accent2);background:rgba(255,255,255,.08);
-  padding:.1rem .35rem;border-radius:6px;letter-spacing:.02em}
-.nav-overview-btn{padding:.6rem .8rem;border:none;border-radius:12px;cursor:pointer;
-  background:rgba(255,255,255,.15);color:#fff;font-size:1rem;flex-shrink:0;backdrop-filter:blur(4px)}
-.nav-overview-btn.active{background:var(--accent);color:#000}
-.nav-mute-btn{padding:.6rem .8rem;border:none;border-radius:12px;cursor:pointer;
-  background:rgba(255,255,255,.15);color:#fff;font-size:1rem;flex-shrink:0;backdrop-filter:blur(4px);transition:.2s}
-.nav-mute-btn.muted{background:rgba(239,68,68,.55);color:#fff}
-.nav-pitch-btn{padding:.5rem .7rem;border:none;border-radius:12px;cursor:pointer;
-  background:rgba(255,255,255,.15);color:#fff;font-size:.78rem;font-weight:800;
-  flex-shrink:0;backdrop-filter:blur(4px);letter-spacing:.02em;min-width:38px;transition:.2s}
-.nav-stop-btn{
-  width:46px;height:46px;border:none;border-radius:14px;cursor:pointer;flex-shrink:0;
-  background:rgba(239,68,68,.25);backdrop-filter:blur(6px);
-  border:1.5px solid rgba(239,68,68,.5);
-  color:#ef4444;font-size:1.3rem;font-weight:900;line-height:1;
-  display:flex;align-items:center;justify-content:center;transition:.2s}
-.nav-stop-btn:active{background:rgba(239,68,68,.65);transform:scale(.93)}
+.nav-speedometer.speeding .nav-spd-sep{background:rgba(239,68,68,.3)}
+.nav-speedometer.speeding .nav-spd-lim{background:rgba(239,68,68,.1)}
+.nav-speedometer.speeding .nav-speed-sign-val{color:#ef4444}
+/* Camera warning — compact inline */
+.nav-cam-warn{
+  display:none;background:rgba(239,68,68,.15);
+  border:1px solid rgba(239,68,68,.4);border-radius:12px;
+  padding:.35rem .65rem;font-size:.8rem;color:#ef4444;
+  font-weight:800;white-space:nowrap;flex-shrink:0;
+}
+.nav-cam-warn.visible{display:flex;align-items:center;gap:.3rem}
+/* spacer */
+.nav-bottom-space{flex:1}
+/* Hamburger button */
+.nav-hamburger{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:5px;width:44px;height:44px;flex-shrink:0;
+  background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.14);
+  border-radius:14px;cursor:pointer;padding:0;transition:.2s;
+}
+.nav-hamburger:active{background:rgba(255,255,255,.22);transform:scale(.93)}
+.nav-hamburger span{
+  display:block;width:20px;height:2.5px;
+  background:#fff;border-radius:2px;transition:.25s;
+}
+.nav-hamburger.open span:nth-child(1){transform:translateY(7.5px) rotate(45deg)}
+.nav-hamburger.open span:nth-child(2){opacity:0;transform:scaleX(0)}
+.nav-hamburger.open span:nth-child(3){transform:translateY(-7.5px) rotate(-45deg)}
+/* Slide-up sheet z opcjami */
+.nav-sheet{
+  position:fixed;bottom:0;left:0;right:0;z-index:1202;
+  background:rgba(20,24,40,.98);backdrop-filter:blur(16px);
+  border-radius:22px 22px 0 0;border-top:1px solid rgba(255,255,255,.1);
+  padding:0 1rem calc(1rem + env(safe-area-inset-bottom));
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  pointer-events:none;
+}
+.nav-sheet.open{transform:translateY(0);pointer-events:auto}
+.nav-sheet-handle{width:40px;height:4px;background:rgba(255,255,255,.18);border-radius:2px;margin:.75rem auto .9rem}
+.nav-sheet-eta{display:flex;gap:.5rem;margin-bottom:.85rem}
+.nav-sheet-stat{
+  flex:1;background:rgba(255,255,255,.05);border-radius:14px;
+  padding:.6rem .4rem;text-align:center;border:1px solid rgba(255,255,255,.07);
+}
+.nav-sheet-stat-val{font-family:var(--font-head);font-size:1.1rem;font-weight:900;color:#fff;line-height:1.1}
+.nav-sheet-stat-label{font-size:.5rem;color:rgba(255,255,255,.35);text-transform:uppercase;font-weight:700;margin-top:.2rem;letter-spacing:.05em}
+.nav-sheet-actions{display:flex;gap:.55rem}
+.nav-sheet-btn{
+  flex:1;padding:.75rem .5rem;border:none;border-radius:14px;cursor:pointer;
+  background:rgba(255,255,255,.09);color:#fff;
+  font-family:var(--font-head);font-size:.85rem;font-weight:800;
+  border:1px solid rgba(255,255,255,.08);transition:.15s;
+}
+.nav-sheet-btn:active{background:rgba(255,255,255,.18)}
+.nav-sheet-btn.muted{background:rgba(239,68,68,.2);color:#ef4444;border-color:rgba(239,68,68,.3)}
+.nav-sheet-stop{background:rgba(239,68,68,.15);color:#ef4444;border-color:rgba(239,68,68,.3)}
+.nav-sheet-stop:active{background:rgba(239,68,68,.3)}
+/* Overlay do zamknięcia sheet kliknięciem w mapę */
+.nav-sheet-backdrop{
+  position:fixed;inset:0;z-index:1201;display:none;
+}
+.nav-sheet-backdrop.open{display:block}
+/* Stare klasy zachowane dla kompatybilności */
+.nav-eta-dist,.nav-eta-time,.nav-eta-remaining,.nav-eta-arrival,
+.nav-overview-btn,.nav-mute-btn,.nav-pitch-btn,.nav-stop-btn,.nav-eta-block{display:none}
 
 /* — Pasy ruchu — */
 .nav-lanes{
@@ -1340,28 +1401,27 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
   }
   .nav-poi-chip{flex-direction:row;min-width:unset;width:100%;padding:.3rem .5rem;gap:.4rem;justify-content:flex-start}
   .nav-poi-chip-name{max-width:80px;text-align:left}
-  /* Znak prędkości + kamera — w panelu, nie na mapie */
-  .nav-speed-sign-wrap{height:auto;overflow:visible;padding:.3rem .4rem 0}
-  .nav-speed-sign{position:static;display:none;width:48px;height:48px;border-width:4px;margin:0 auto}
-  .nav-speed-sign.visible{display:flex}
-  .nav-speed-sign-val{font-size:1.1rem}
-  .nav-cam-warn{position:static;width:40px;height:40px;font-size:1.1rem;margin:.25rem auto 0}
   /* Spacer znika — POI wypełnia */
   .nav-overlay .nav-spacer{display:none}
-  /* Bottom bar — przyklejony do dołu kolumny */
+  /* Bottom bar — kompaktowy, przyklejony do dołu kolumny */
   .nav-bottom{
     position:static;
-    padding:.45rem .55rem calc(.45rem + env(safe-area-inset-bottom));
-    gap:.45rem;
+    padding:.4rem .5rem calc(.4rem + env(safe-area-inset-bottom));
+    gap:.4rem;flex-wrap:wrap;
     border-top:1px solid rgba(255,255,255,.1);
-    flex-wrap:wrap;
   }
-  .nav-speedometer{width:42px;height:42px}
-  .nav-speed-val{font-size:.9rem}
-  .nav-eta-dist{font-size:.9rem}
-  .nav-eta-remaining,.nav-eta-arrival{font-size:.65rem}
-  .nav-stop-btn{width:38px;height:38px;border-radius:10px;font-size:1.1rem}
-  .nav-mute-btn,.nav-pitch-btn{padding:.45rem .55rem;font-size:.85rem}
+  .nav-speedometer{border-radius:12px}
+  .nav-spd-cur,.nav-spd-lim{padding:.3rem .6rem;min-width:42px}
+  .nav-speed-val{font-size:1.15rem}
+  .nav-speed-sign-val{font-size:1.0rem}
+  .nav-hamburger{width:38px;height:38px;border-radius:10px}
+  /* Sheet — w landscape po prawej stronie ekranu */
+  .nav-sheet{border-radius:20px 0 0 20px;bottom:auto;top:0;left:auto;
+    right:0;width:260px;height:100%;transform:translateX(100%);
+    padding:1rem;display:flex;flex-direction:column;justify-content:center;}
+  .nav-sheet.open{transform:translateX(0)}
+  .nav-sheet-handle{display:none}
+  .nav-sheet-backdrop.open{display:block}
   /* Przycisk zgłoszeń — po prawej stronie, nie za panelem */
   .report-dial{right:.5rem;bottom:4rem}
 }
@@ -2058,38 +2118,59 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
   <div class="nav-pois-strip" id="nav-pois-strip">
   </div>
 
-  <!-- Znak prędkości + ikona fotoradaru (po lewej, poniżej POI) -->
-  <div class="nav-speed-sign-wrap" style="position:relative;height:0;overflow:visible;pointer-events:none">
-    <div class="nav-speed-sign" id="nav-speed-sign">
-      <span class="nav-speed-sign-val" id="nav-speed-sign-val">–</span>
-      <span class="nav-speed-sign-unit">km/h</span>
-    </div>
-    <!-- ikona fotoradaru pojawia się 500m przed, kurczy się co 100m -->
-    <div class="nav-cam-warn" id="nav-cam-warn" style="top:calc(.55rem + 74px)">
-      📷<span class="nav-cam-dist" id="nav-cam-dist"></span>
-    </div>
-  </div>
-
   <!-- Mapa wypełnia środek -->
   <div class="nav-spacer" style="flex:1;pointer-events:none"></div>
 
-  <!-- Dół: prędkość + ETA + stop -->
+  <!-- Dół: unified speed pill + hamburger -->
   <div class="nav-bottom">
+    <!-- Unified pill: moja prędkość | ograniczenie -->
     <div class="nav-speedometer" id="nav-speedometer">
-      <div class="nav-speed-val" id="nav-speed-val">–</div>
-      <div class="nav-speed-unit">km/h</div>
-    </div>
-    <div class="nav-eta-block">
-      <div class="nav-eta-dist" id="nav-total-dist">–</div>
-      <div class="nav-eta-time">
-        <span class="nav-eta-remaining" id="nav-eta-remaining">–</span>
-        <span style="color:rgba(255,255,255,.3);font-size:.65rem">·</span>
-        <span class="nav-eta-arrival" id="nav-eta-arrival">––:––</span>
+      <div class="nav-spd-cur">
+        <div class="nav-speed-val" id="nav-speed-val">–</div>
+        <div class="nav-speed-unit">km/h</div>
+      </div>
+      <div class="nav-spd-sep"></div>
+      <div class="nav-spd-lim" id="nav-speed-sign">
+        <div class="nav-speed-sign-val" id="nav-speed-sign-val">–</div>
+        <div class="nav-speed-sign-unit">limit</div>
       </div>
     </div>
-    <button class="nav-mute-btn" id="nav-mute-btn" onclick="toggleNavMute()" title="Wycisz głos">🔊</button>
-    <button class="nav-pitch-btn" id="nav-pitch-btn" onclick="cycleNavPitch()" title="Zmień perspektywę">3D</button>
-    <button class="nav-stop-btn" onclick="stopNavigation()" title="Zatrzymaj nawigację">✕</button>
+    <!-- Fotoradar — pojawia się gdy w pobliżu -->
+    <div class="nav-cam-warn" id="nav-cam-warn">
+      📷 <span class="nav-cam-dist" id="nav-cam-dist"></span>
+    </div>
+    <div class="nav-bottom-space"></div>
+    <!-- Hamburger -->
+    <button class="nav-hamburger" id="nav-hamburger" onclick="toggleNavSheet()" aria-label="Menu nawigacji">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</div>
+
+<!-- Backdrop do zamknięcia sheet -->
+<div class="nav-sheet-backdrop" id="nav-sheet-backdrop" onclick="closeNavSheet()"></div>
+
+<!-- Slide-up sheet z ETA + opcjami -->
+<div class="nav-sheet" id="nav-sheet">
+  <div class="nav-sheet-handle"></div>
+  <div class="nav-sheet-eta">
+    <div class="nav-sheet-stat">
+      <div class="nav-sheet-stat-val" id="nav-total-dist">–</div>
+      <div class="nav-sheet-stat-label">pozostało</div>
+    </div>
+    <div class="nav-sheet-stat">
+      <div class="nav-sheet-stat-val" id="nav-eta-remaining">–</div>
+      <div class="nav-sheet-stat-label">czas</div>
+    </div>
+    <div class="nav-sheet-stat">
+      <div class="nav-sheet-stat-val" id="nav-eta-arrival">––:––</div>
+      <div class="nav-sheet-stat-label">przyjazd</div>
+    </div>
+  </div>
+  <div class="nav-sheet-actions">
+    <button class="nav-sheet-btn" id="nav-mute-btn" onclick="toggleNavMute()">🔊 Głos</button>
+    <button class="nav-sheet-btn" id="nav-pitch-btn" onclick="cycleNavPitch()">3D</button>
+    <button class="nav-sheet-btn nav-sheet-stop" onclick="stopNavigation(); closeNavSheet()">✕ Zakończ</button>
   </div>
 </div>
 
@@ -4397,13 +4478,28 @@ document.addEventListener('visibilitychange', ()=>{
   if(navActive && document.visibilityState === 'visible') acquireWakeLock();
 });
 
+// ── Nav sheet (hamburger slide-up) ───────────────────────────────────────────
+function toggleNavSheet(){
+  const sheet    = document.getElementById('nav-sheet');
+  const backdrop = document.getElementById('nav-sheet-backdrop');
+  const burger   = document.getElementById('nav-hamburger');
+  const open = sheet.classList.toggle('open');
+  backdrop.classList.toggle('open', open);
+  burger.classList.toggle('open', open);
+}
+function closeNavSheet(){
+  document.getElementById('nav-sheet')?.classList.remove('open');
+  document.getElementById('nav-sheet-backdrop')?.classList.remove('open');
+  document.getElementById('nav-hamburger')?.classList.remove('open');
+}
+
 // ── Mute ─────────────────────────────────────────────────────────────────────
 let navMuted = false;
 function toggleNavMute(){
   navMuted = !navMuted;
   if(navMuted) speechSynthesis.cancel();
   const btn = document.getElementById('nav-mute-btn');
-  if(btn){ btn.classList.toggle('muted', navMuted); btn.textContent = navMuted ? '🔇' : '🔊'; }
+  if(btn){ btn.classList.toggle('muted', navMuted); btn.textContent = navMuted ? '🔇 Głos' : '🔊 Głos'; }
 }
 
 function stripForTts(txt){
@@ -4923,7 +5019,7 @@ function parseMaxspeeds(route){
 }
 
 function updateSpeedSign(kmh){
-  const sign = document.getElementById('nav-speed-sign');
+  const sign = document.getElementById('nav-speed-sign'); // nav-spd-lim
   const val  = document.getElementById('nav-speed-sign-val');
   if(!sign) return;
   if(kmh > 0){
