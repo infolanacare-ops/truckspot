@@ -7627,9 +7627,9 @@ async function nextRadio(genre){
 }
 
 // Tryb asystenta w tle — bez panelu, słucha głosu, odpowiada głosem
-let _bgAssistantActive    = false;
-let _bgRestartPending     = false; // blokada podwójnego restartu
-let _navMutedByAssistant  = false; // czy asystent wyciszył navi (żeby przywrócić)
+let _bgAssistantActive   = false;
+let _navMutedByAssistant = false;
+let _aiProcessing        = false; // true gdy czekamy na odpowiedź AI (blokuje mic)
 
 function _setAssistantBtn(active){
   // Przycisk w hamburger menu
@@ -7644,26 +7644,26 @@ function openAiAssistant(){
   if(_bgAssistantActive){
     // Wyłącz asystenta
     _bgAssistantActive = false;
-    _bgRestartPending  = false;
-    try{ window._bgRecognition?.stop(); }catch(e){}
+    _aiProcessing = false;
+    try{ window._bgRecognition?.abort(); }catch(e){}
     window._bgRecognition = null;
     _setAssistantBtn(false);
     document.getElementById('fab-ai')?.classList.remove('listening');
-    // Przywróć głos navi jeśli to my go wyciszyliśmy
     if(_navMutedByAssistant){
       _navMutedByAssistant = false;
       if(navMuted) toggleNavMute();
     }
     return;
   }
-  // Włącz asystenta — wycisz navi jeśli aktywna
+  // Włącz asystenta — wycisz navi
   _bgAssistantActive = true;
+  _aiProcessing = false;
   _setAssistantBtn(true);
   if(!navMuted){
     _navMutedByAssistant = true;
     toggleNavMute();
   }
-  speechSynthesis.cancel(); // przerwij cokolwiek mówi nawi
+  speechSynthesis.cancel();
   const name = profile.name || localStorage.getItem('ts_driver_name') || '';
   const greeting = name ? `Hej ${name}, słucham!` : `Słucham, mów!`;
   const utt = new SpeechSynthesisUtterance(greeting);
@@ -7676,52 +7676,56 @@ function openAiAssistant(){
 
 function startBgListening(){
   if(!_bgAssistantActive) return;
-  // Nie uruchamiaj jeśli już zaplanowano restart
-  if(_bgRestartPending) return;
-  _bgRestartPending = true;
+  if(window._bgRecognition) return; // już działa
 
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){ _bgRestartPending = false; return; }
+  if(!SR) return;
 
   const rec = new SR();
   rec.lang = 'pl-PL';
+  rec.continuous = true;      // ← klucz: nie zamykaj po ciszy, brak klikania
   rec.interimResults = false;
   rec.maxAlternatives = 1;
   window._bgRecognition = rec;
 
   rec.onstart = () => {
-    _bgRestartPending = false;
     document.getElementById('fab-ai')?.classList.add('listening');
   };
+
   rec.onresult = e => {
-    const transcript = e.results[0][0].transcript.trim();
-    rec.stop();
+    // Ignoruj gdy AI mówi lub przetwarza
+    if(speechSynthesis.speaking || _aiProcessing) return;
+    const last = e.results[e.results.length - 1];
+    if(!last.isFinal) return;
+    const transcript = last[0].transcript.trim();
     if(transcript) sendAiMessage(transcript);
   };
+
   rec.onerror = e => {
-    // 'no-speech' = normalne (cisza) — nie traktuj jako błąd, nie odpalaj sendAiMessage
-    // 'not-allowed' / 'service-not-allowed' = brak uprawnień — zatrzymaj asystenta
     if(e.error === 'not-allowed' || e.error === 'service-not-allowed'){
       _bgAssistantActive = false;
       _setAssistantBtn(false);
       document.getElementById('fab-ai')?.classList.remove('listening');
+      window._bgRecognition = null;
     }
-    // onend i tak się wywoła — restart zrobi się tam
+    // no-speech, audio-capture itp. — continuous sam się odnowi
   };
+
   rec.onend = () => {
-    _bgRestartPending = false;
+    // continuous kończy się tylko przy błędzie lub abort() — restartuj
     document.getElementById('fab-ai')?.classList.remove('listening');
+    window._bgRecognition = null;
     if(!_bgAssistantActive) return;
-    // Jeśli AI właśnie odpowiada głosem — poczekaj aż skończy, potem wznów nasłuch
+    // Poczekaj aż AI skończy mówić, potem wznów
     const resume = () => {
-      if(speechSynthesis.speaking) return setTimeout(resume, 500);
+      if(speechSynthesis.speaking) return setTimeout(resume, 600);
       if(_bgAssistantActive) startBgListening();
     };
-    setTimeout(resume, 800);
+    setTimeout(resume, 600);
   };
 
   try{ rec.start(); }
-  catch(e){ _bgRestartPending = false; }
+  catch(e){ window._bgRecognition = null; }
 }
 
 function closeAiAssistant(){
@@ -7767,6 +7771,7 @@ async function sendAiMessage(text){
   const input = document.getElementById('ai-input');
   const msg = text || input.value.trim();
   if(!msg) return;
+  _aiProcessing = true; // zablokuj mic podczas przetwarzania
 
   // --- Obsługa potwierdzenia / odrzucenia trasy ---
   if(_pendingNavQuery){
@@ -7839,6 +7844,8 @@ async function sendAiMessage(text){
     // Dodaj odpowiedź bota do historii
     _aiHistory.push({role:'bot', text: reply});
 
+    // Odblokuj mic — odpowiedź przyszła
+    _aiProcessing = false;
     // Odczytaj głosem
     speakAi(reply);
 
@@ -7878,6 +7885,7 @@ async function sendAiMessage(text){
       stopRadio();
     }
   } catch(e){
+    _aiProcessing = false;
     if(loading) loading.textContent = 'Błąd połączenia.';
     if(inChat) document.getElementById('ai-panel-sub').textContent = 'Błąd';
   }
