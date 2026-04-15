@@ -1459,15 +1459,20 @@ body.navigating .fab-ai{display:none}
 /* spacer */
 .nav-bottom-space{flex:1}
 /* ── Unified speed pill — lewa strona, pod kartą manewru ── */
-/* Speed pill — wbudowana w prawy bok karty manewru (nie fixed, w flow) */
+/* Rząd pod kartą manewru: cam-warn po lewej, pill po prawej */
+.nav-speed-row{
+  display:flex;align-items:center;justify-content:flex-end;
+  gap:.5rem;padding:.35rem .65rem .2rem;
+  pointer-events:none;
+}
+/* Speed pill */
 .nav-speedometer{
   display:flex;align-items:stretch;flex-shrink:0;
-  background:rgba(0,0,0,.28);
-  border:1.5px solid rgba(255,255,255,.18);
+  background:rgba(14,18,32,.92);
+  border:1.5px solid rgba(255,255,255,.16);
   border-radius:14px;overflow:hidden;
-  box-shadow:0 2px 10px rgba(0,0,0,.35);
-  transition:.2s;pointer-events:none;
-  align-self:center;
+  box-shadow:0 2px 12px rgba(0,0,0,.45);
+  transition:.2s;
 }
 .nav-spd-cur{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -1491,9 +1496,9 @@ body.navigating .fab-ai{display:none}
 .nav-speedometer.speeding .nav-spd-sep{background:rgba(239,68,68,.3)}
 .nav-speedometer.speeding .nav-spd-lim{background:rgba(239,68,68,.1)}
 .nav-speedometer.speeding .nav-speed-sign-val{color:#ef4444}
-/* Camera warning — w flow, pod kartą manewru */
+/* Camera warning — w nav-speed-row po lewej stronie pill */
 .nav-cam-warn{
-  position:static;align-self:flex-end;margin-right:.65rem;
+  position:static;
   z-index:1202;
   display:none;background:rgba(239,68,68,.15);
   border:1px solid rgba(239,68,68,.4);border-radius:12px;
@@ -2307,18 +2312,6 @@ body.navigating .nav-pois-strip{display:none}
       <div class="nav-street-name" id="nav-street-name">Obliczanie trasy...</div>
       <div class="nav-maneuver-label" id="nav-maneuver-label"></div>
     </div>
-    <!-- Speed pill — wbudowany w kartę, po prawej -->
-    <div class="nav-speedometer" id="nav-speedometer">
-      <div class="nav-spd-cur">
-        <div class="nav-speed-val" id="nav-speed-val">–</div>
-        <div class="nav-speed-unit">km/h</div>
-      </div>
-      <div class="nav-spd-sep"></div>
-      <div class="nav-spd-lim" id="nav-speed-sign">
-        <div class="nav-speed-sign-val" id="nav-speed-sign-val">–</div>
-        <div class="nav-speed-sign-unit">limit</div>
-      </div>
-    </div>
   </div>
 
   <!-- TIR Safety bar — aktywny profil pojazdu -->
@@ -2352,9 +2345,22 @@ body.navigating .nav-pois-strip{display:none}
   <!-- Mapa wypełnia środek -->
   <div class="nav-spacer" style="flex:1;pointer-events:none"></div>
 
-  <!-- Fotoradar — pod kartą manewru, prawa strona -->
-  <div class="nav-cam-warn" id="nav-cam-warn">
-    📷 <span class="nav-cam-dist" id="nav-cam-dist"></span>
+  <!-- Speed pill + fotoradar — pod kartą, przypięty do prawej -->
+  <div class="nav-speed-row">
+    <div class="nav-cam-warn" id="nav-cam-warn">
+      📷 <span class="nav-cam-dist" id="nav-cam-dist"></span>
+    </div>
+    <div class="nav-speedometer" id="nav-speedometer">
+      <div class="nav-spd-cur">
+        <div class="nav-speed-val" id="nav-speed-val">–</div>
+        <div class="nav-speed-unit">km/h</div>
+      </div>
+      <div class="nav-spd-sep"></div>
+      <div class="nav-spd-lim" id="nav-speed-sign">
+        <div class="nav-speed-sign-val" id="nav-speed-sign-val">–</div>
+        <div class="nav-speed-sign-unit">limit</div>
+      </div>
+    </div>
   </div>
 
   <!-- Dół: ETA + głos + stop + hamburger -->
