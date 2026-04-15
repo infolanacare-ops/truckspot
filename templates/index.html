@@ -1184,6 +1184,8 @@ body.navigating .fab-ai{display:none}
   cursor:pointer;transition:background .18s,transform .12s;letter-spacing:.02em;
 }
 .nav-ai-group-btn:active{background:rgba(99,102,241,.35);transform:scale(.96)}
+.nav-ai-group-btn.active{background:rgba(16,185,129,.25);border-color:#10b981;color:#10b981}
+.nav-ai-group-btn.active .ai-gb-icon{filter:none}
 .nav-ai-group-btn .ai-gb-icon{font-size:1.4rem;line-height:1}
 /* AI Panel */
 .ai-panel{
@@ -2484,7 +2486,7 @@ body.navigating .nav-pois-strip{display:none}
   <div class="nav-sheet-handle"></div>
   <!-- AI — dwa guziki w obwódce -->
   <div class="nav-ai-group">
-    <button class="nav-ai-group-btn" onclick="closeNavSheet(); openAiAssistant()">
+    <button class="nav-ai-group-btn" id="nav-asystent-btn" onclick="closeNavSheet(); openAiAssistant()">
       <span class="ai-gb-icon">🎙</span>
       <span>Asystent</span>
     </button>
@@ -7205,53 +7207,88 @@ async function nextRadio(genre){
 
 // Tryb asystenta w tle — bez panelu, słucha głosu, odpowiada głosem
 let _bgAssistantActive = false;
+let _bgRestartPending  = false; // blokada podwójnego restartu
+
+function _setAssistantBtn(active){
+  // Przycisk w hamburger menu
+  const btn = document.getElementById('nav-asystent-btn');
+  if(btn) btn.classList.toggle('active', active);
+  // FAB poza nawigacją
+  const fab = document.getElementById('fab-ai');
+  if(fab) fab.classList.toggle('bg-active', active);
+}
 
 function openAiAssistant(){
   if(_bgAssistantActive){
-    // Już aktywny — wyłącz
     _bgAssistantActive = false;
-    stopAiMic();
+    _bgRestartPending  = false;
+    try{ window._bgRecognition?.stop(); }catch(e){}
+    window._bgRecognition = null;
+    _setAssistantBtn(false);
     document.getElementById('fab-ai')?.classList.remove('listening');
     return;
   }
   _bgAssistantActive = true;
-  // Powitanie głosowe (bez panelu)
+  _setAssistantBtn(true);
   const name = profile.name || localStorage.getItem('ts_driver_name') || '';
-  const greeting = name
-    ? `Hej ${name}, słucham!`
-    : `Słucham, mów!`;
-  speakAi(greeting);
-  // Uruchom nasłuchiwanie po zakończeniu powitania
-  setTimeout(() => { if(_bgAssistantActive) startBgListening(); }, 1200);
+  const greeting = name ? `Hej ${name}, słucham!` : `Słucham, mów!`;
+  // Poczekaj aż syntezator skończy (powitanie), potem włącz mikrofon
+  const utt = new SpeechSynthesisUtterance(greeting);
+  utt.lang = 'pl-PL'; utt.rate = 0.92;
+  const voice = getBestVoice('pl-PL');
+  if(voice) utt.voice = voice;
+  utt.onend = () => { if(_bgAssistantActive) startBgListening(); };
+  speechSynthesis.speak(utt);
 }
 
 function startBgListening(){
   if(!_bgAssistantActive) return;
+  // Nie uruchamiaj jeśli już zaplanowano restart
+  if(_bgRestartPending) return;
+  _bgRestartPending = true;
+
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR) return;
+  if(!SR){ _bgRestartPending = false; return; }
+
   const rec = new SR();
   rec.lang = 'pl-PL';
   rec.interimResults = false;
   rec.maxAlternatives = 1;
   window._bgRecognition = rec;
 
-  rec.onstart = () => document.getElementById('fab-ai')?.classList.add('listening');
-  rec.onresult = e => {
-    const transcript = e.results[0][0].transcript;
-    rec.stop();
-    sendAiMessage(transcript); // odpowie głosem, bez panelu
+  rec.onstart = () => {
+    _bgRestartPending = false;
+    document.getElementById('fab-ai')?.classList.add('listening');
   };
-  rec.onerror = () => {
-    document.getElementById('fab-ai')?.classList.remove('listening');
-    // Spróbuj ponownie po 2s
-    if(_bgAssistantActive) setTimeout(startBgListening, 2000);
+  rec.onresult = e => {
+    const transcript = e.results[0][0].transcript.trim();
+    rec.stop();
+    if(transcript) sendAiMessage(transcript);
+  };
+  rec.onerror = e => {
+    // 'no-speech' = normalne (cisza) — nie traktuj jako błąd, nie odpalaj sendAiMessage
+    // 'not-allowed' / 'service-not-allowed' = brak uprawnień — zatrzymaj asystenta
+    if(e.error === 'not-allowed' || e.error === 'service-not-allowed'){
+      _bgAssistantActive = false;
+      _setAssistantBtn(false);
+      document.getElementById('fab-ai')?.classList.remove('listening');
+    }
+    // onend i tak się wywoła — restart zrobi się tam
   };
   rec.onend = () => {
+    _bgRestartPending = false;
     document.getElementById('fab-ai')?.classList.remove('listening');
-    // Kontynuuj nasłuchiwanie po odpowiedzi
-    if(_bgAssistantActive) setTimeout(startBgListening, 1500);
+    if(!_bgAssistantActive) return;
+    // Jeśli AI właśnie odpowiada głosem — poczekaj aż skończy, potem wznów nasłuch
+    const resume = () => {
+      if(speechSynthesis.speaking) return setTimeout(resume, 500);
+      if(_bgAssistantActive) startBgListening();
+    };
+    setTimeout(resume, 800);
   };
-  rec.start();
+
+  try{ rec.start(); }
+  catch(e){ _bgRestartPending = false; }
 }
 
 function closeAiAssistant(){
