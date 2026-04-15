@@ -1467,22 +1467,23 @@ body.navigating .fab-ai{display:none}
   background:rgba(16,20,36,.98);backdrop-filter:blur(12px);
   border-top:1px solid rgba(255,255,255,.1);
   padding:.65rem 1rem calc(.65rem + env(safe-area-inset-bottom));
-  display:flex;align-items:center;gap:.7rem;
+  display:flex;align-items:center;justify-content:space-between;gap:.5rem;
 }
 /* ETA inline w pasku */
-.nav-eta-inline{display:flex;flex:1;gap:.4rem;min-width:0}
+.nav-eta-inline{display:flex;gap:.4rem}
 .nav-eta-cell{
-  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  background:rgba(255,255,255,.06);border-radius:14px;
-  padding:.5rem .4rem;border:1px solid rgba(255,255,255,.09);
-  min-width:0;overflow:hidden;
+  width:56px;height:56px;flex-shrink:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.06);border-radius:16px;
+  border:1.5px solid rgba(255,255,255,.09);
+  overflow:hidden;
 }
 .nav-eta-cell-val{
-  font-family:var(--font-head);font-size:clamp(.75rem,4.2vw,1.1rem);font-weight:900;
+  font-family:var(--font-head);font-size:clamp(.7rem,3.8vw,1rem);font-weight:900;
   color:#fff;line-height:1;white-space:nowrap;
 }
 .nav-eta-cell-lbl{
-  font-size:.48rem;color:rgba(255,255,255,.4);
+  font-size:.44rem;color:rgba(255,255,255,.4);
   text-transform:uppercase;font-weight:700;letter-spacing:.05em;margin-top:.25rem;
   white-space:nowrap;
 }
@@ -1699,6 +1700,8 @@ body.navigating .nav-pois-strip{display:none}
   .nav-speed-sign-val{font-size:1.0rem}
   .nav-cam-warn{top:calc(.5rem + 64px);left:.5rem}
   .nav-hamburger{width:38px;height:38px;border-radius:10px}
+  .nav-eta-cell{width:38px;height:38px;border-radius:10px}
+  .nav-btm-btn{width:38px;height:38px;border-radius:10px;font-size:1rem}
   /* Sheet — w landscape po prawej stronie ekranu */
   .nav-sheet{border-radius:20px 0 0 20px;bottom:auto;top:0;left:auto;
     right:0;width:260px;height:100%;transform:translateX(100%);
