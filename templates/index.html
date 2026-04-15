@@ -1065,6 +1065,45 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
   font-size:.65rem;color:rgba(234,179,8,.7);font-weight:600;
 }
 
+/* ══ KONWÓJ TOAST — chmurka z dołu lewego rogu ══ */
+.convoy-toast{
+  position:fixed;
+  bottom:calc(72px + env(safe-area-inset-bottom));
+  left:.85rem;z-index:1300;
+  background:rgba(16,20,36,.97);
+  border:1.5px solid rgba(255,255,255,.13);
+  border-radius:18px 18px 4px 18px;
+  padding:.6rem .85rem .6rem .7rem;
+  max-width:230px;min-width:160px;
+  display:flex;align-items:center;gap:.6rem;
+  box-shadow:0 8px 32px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.04);
+  transform:translateX(-130%) scale(.85);opacity:0;
+  transition:transform .38s cubic-bezier(.34,1.56,.64,1),opacity .28s;
+  pointer-events:none;cursor:pointer;
+}
+.convoy-toast.show{transform:translateX(0) scale(1);opacity:1;pointer-events:auto}
+/* ogon chmurki — skierowany w dół-lewo (strzałka w stronę hamburgera) */
+.convoy-toast::after{
+  content:'';position:absolute;bottom:-9px;left:18px;
+  border-left:9px solid rgba(16,20,36,.97);
+  border-bottom:9px solid transparent;
+}
+.ct-avatar{
+  width:38px;height:38px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:1.25rem;
+}
+.ct-body{flex:1;min-width:0}
+.ct-name{
+  font-family:var(--font-head);font-size:.9rem;font-weight:900;color:#fff;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.1;
+}
+.ct-msg{font-size:.72rem;color:rgba(255,255,255,.5);margin-top:.15rem;line-height:1.2}
+.ct-close{
+  width:20px;height:20px;flex-shrink:0;border:none;background:none;
+  color:rgba(255,255,255,.3);font-size:1rem;cursor:pointer;padding:0;line-height:1;
+  align-self:flex-start;
+}
+
 /* ══ KONWÓJ ══ */
 .convoy-btn{
   position:fixed;right:.5rem;bottom:9.5rem;z-index:600;
@@ -2194,6 +2233,16 @@ body.navigating .convoy-btn{display:none}
       🚛 Konwój <span id="nav-sheet-convoy-cnt" style="display:none;background:rgba(16,185,129,.25);border-radius:8px;padding:.05rem .35rem;font-size:.75rem;margin-left:.2rem">0</span>
     </button>
   </div>
+</div>
+
+<!-- CONVOY TOAST — chmurka z lewego dolnego rogu -->
+<div class="convoy-toast" id="convoy-toast" onclick="convoyToastClick()">
+  <div class="ct-avatar" id="ct-avatar">🚛</div>
+  <div class="ct-body">
+    <div class="ct-name" id="ct-name">Kierowca</div>
+    <div class="ct-msg" id="ct-msg">pojawił się w pobliżu</div>
+  </div>
+  <button class="ct-close" onclick="event.stopPropagation();hideConvoyToast()">✕</button>
 </div>
 
 <!-- PANEL KONWOJU -->
@@ -4654,7 +4703,54 @@ async function convoyPing(){
   } catch(e){}
 }
 
+// ── Convoy toast ──────────────────────────────────────────────────────────────
+let _convoyKnownIds = new Set();
+let _convoyToastTimer = null;
+
+function showConvoyToast(avatar, color, name, msg, onClickFn){
+  const toast = document.getElementById('convoy-toast');
+  if(!toast) return;
+  const av = document.getElementById('ct-avatar');
+  av.textContent = avatar || '🚛';
+  av.style.background = color || '#f59e0b';
+  document.getElementById('ct-name').textContent = name || 'Kierowca';
+  document.getElementById('ct-msg').textContent  = msg  || 'pojawił się w pobliżu';
+  toast._onClickFn = onClickFn || null;
+  toast.classList.add('show');
+  if(navigator.vibrate) navigator.vibrate([60, 40, 60]);
+  if(_convoyToastTimer) clearTimeout(_convoyToastTimer);
+  _convoyToastTimer = setTimeout(hideConvoyToast, 5000);
+}
+function hideConvoyToast(){
+  document.getElementById('convoy-toast')?.classList.remove('show');
+}
+// Zaproszenie na piwo — wywołaj gdy ktoś wyśle invite
+function showBeerInvite(driverName, driverAvatar, driverColor){
+  showConvoyToast(
+    driverAvatar || '🍺', driverColor || '#d97706',
+    driverName || 'Kierowca',
+    '🍺 zaprasza na piwo! Kliknij aby odpowiedzieć.',
+    () => toggleConvoyPanel()
+  );
+}
+function convoyToastClick(){
+  hideConvoyToast();
+  const fn = document.getElementById('convoy-toast')?._onClickFn;
+  if(fn) fn(); else toggleConvoyPanel();
+}
+
 function updateConvoyUI(drivers){
+  // Wykryj nowych kierowców i pokaż toast
+  const newOnes = drivers.filter(d => !_convoyKnownIds.has(d.voter_id));
+  if(newOnes.length === 1 && _convoyKnownIds.size >= 0){
+    const d = newOnes[0];
+    showConvoyToast(d.avatar||'🚛', d.avatar_color||'#f59e0b',
+      d.name||'Kierowca', '🚛 pojawił się w pobliżu');
+  } else if(newOnes.length > 1){
+    showConvoyToast('🚛','#f59e0b',`${newOnes.length} kierowców`,'pojawiło się w pobliżu');
+  }
+  _convoyKnownIds = new Set(drivers.map(d => d.voter_id));
+
   const cnt = document.getElementById('convoy-btn-count');
   if(cnt){
     cnt.textContent = drivers.length;
