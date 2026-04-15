@@ -5551,6 +5551,9 @@ function onNavPosition(pos){
     }
   }
 
+  // ── Detekcja zatrzymania → atrakcje w pobliżu ───────────────────────────────
+  checkNearbyAttractions(lat, lng);
+
   navLastLat=lat; navLastLng=lng;
 }
 
@@ -6692,6 +6695,132 @@ function checkNavReports(lat, lng){
       }
     }
   }
+}
+
+// ── Atrakcje przy zatrzymaniu ────────────────────────────────────────────────
+let _stopLat = null, _stopLng = null, _stopTimer = null, _lastAttrQuery = '';
+
+// Tagi OSM → emoji + polska nazwa
+const ATTR_TAGS = [
+  {tag:'tourism=viewpoint',     icon:'🏔', pl:'Punkt widokowy'},
+  {tag:'tourism=attraction',    icon:'⭐', pl:'Atrakcja turystyczna'},
+  {tag:'tourism=museum',        icon:'🏛', pl:'Muzeum'},
+  {tag:'tourism=theme_park',    icon:'🎡', pl:'Park rozrywki'},
+  {tag:'tourism=zoo',           icon:'🦁', pl:'Zoo'},
+  {tag:'historic=castle',       icon:'🏰', pl:'Zamek'},
+  {tag:'historic=monument',     icon:'🗿', pl:'Pomnik historyczny'},
+  {tag:'historic=ruins',        icon:'🏚', pl:'Ruiny'},
+  {tag:'leisure=park',          icon:'🌳', pl:'Park'},
+  {tag:'leisure=nature_reserve',icon:'🌿', pl:'Rezerwat przyrody'},
+  {tag:'natural=peak',          icon:'⛰', pl:'Szczyt'},
+  {tag:'natural=beach',         icon:'🏖', pl:'Plaża'},
+  {tag:'amenity=theatre',       icon:'🎭', pl:'Teatr'},
+  {tag:'shop=mall',             icon:'🛍', pl:'Galeria handlowa'},
+  {tag:'amenity=marketplace',   icon:'🛒', pl:'Targ/Jarmark'},
+];
+
+function checkNearbyAttractions(lat, lng){
+  if(!navActive) return;
+  // Aktywuj tylko gdy stoisz (< 5 km/h przez 8 sekund)
+  if(navSpeedKmh > 5){
+    _stopLat = null; _stopLng = null;
+    if(_stopTimer){ clearTimeout(_stopTimer); _stopTimer = null; }
+    return;
+  }
+  if(_stopLat === null){ _stopLat = lat; _stopLng = lng; }
+
+  if(!_stopTimer){
+    _stopTimer = setTimeout(() => {
+      _stopTimer = null;
+      const key = `${_stopLat.toFixed(3)},${_stopLng.toFixed(3)}`;
+      if(key === _lastAttrQuery) return; // już pytaliśmy o to miejsce
+      _lastAttrQuery = key;
+      fetchNearbyAttractions(_stopLat, _stopLng);
+    }, 8000);
+  }
+}
+
+async function fetchNearbyAttractions(lat, lng){
+  const R = 5000; // 5 km radius
+  // Overpass query — zbieramy wszystkie interesujące tagi
+  const unionParts = ATTR_TAGS.map(a => {
+    const [k,v] = a.tag.split('=');
+    return `node["${k}"="${v}"](around:${R},${lat},${lng});way["${k}"="${v}"](around:${R},${lat},${lng});`;
+  }).join('');
+  const query = `[out:json][timeout:10];(${unionParts});out center 12;`;
+  const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+
+  let elements;
+  try {
+    const r = await fetch(url);
+    const j = await r.json();
+    elements = j.elements || [];
+  } catch(e){ return; }
+  if(!elements.length) return;
+
+  // Mapuj na atrakcje z odległością
+  const attrs = [];
+  for(const el of elements){
+    const elLat = el.lat ?? el.center?.lat;
+    const elLng = el.lon ?? el.center?.lon;
+    if(!elLat) continue;
+    const name = el.tags?.name || el.tags?.['name:pl'] || null;
+    const dist = haversineKm(lat, lng, elLat, elLng);
+
+    // Znajdź pasujący tag
+    let matched = null;
+    for(const a of ATTR_TAGS){
+      const [k,v] = a.tag.split('=');
+      if(el.tags?.[k] === v){ matched = a; break; }
+    }
+    if(!matched) continue;
+    attrs.push({icon: matched.icon, label: matched.pl, name, dist});
+  }
+  if(!attrs.length) return;
+
+  // Posortuj po odległości, deduplikuj po typie (max 4)
+  attrs.sort((a,b) => a.dist - b.dist);
+  const seen = new Set();
+  const top = attrs.filter(a => {
+    if(seen.has(a.label)) return false;
+    seen.add(a.label); return true;
+  }).slice(0, 4);
+
+  showAttractionToast(top);
+}
+
+function showAttractionToast(attrs){
+  // Lista jako tekst do TTS
+  const ttsList = attrs.map(a => {
+    const d = a.dist < 1 ? Math.round(a.dist*1000)+' metrów' : a.dist.toFixed(1)+' km';
+    return `${a.name || a.label} — ${d}`;
+  }).join(', ');
+  const ttsText = `Zatrzymałeś się. W pobliżu: ${ttsList}.`;
+  speakNav(ttsText, false);
+
+  // Toast — używamy istniejącej funkcji convoy toast ze specjalną treścią
+  const first = attrs[0];
+  const moreCount = attrs.length - 1;
+  const distStr = first.dist < 1
+    ? Math.round(first.dist*1000)+'m'
+    : first.dist.toFixed(1)+'km';
+  const moreTxt = moreCount > 0 ? ` +${moreCount} więcej` : '';
+  const msg = `${first.name || first.label} · ${distStr}${moreTxt}`;
+
+  showConvoyToast(first.icon, '#1e3a2f', 'W pobliżu:', msg, () => {
+    // Kliknięcie → otwórz pełny panel atrakcji
+    showAttractionsPanel(attrs);
+  });
+}
+
+function showAttractionsPanel(attrs){
+  // Reuse convoy toast area — pokaż wszystkie atrakcje jako alerty kolejno
+  attrs.forEach((a, i) => {
+    setTimeout(() => {
+      const d = a.dist < 1 ? Math.round(a.dist*1000)+'m' : a.dist.toFixed(1)+'km';
+      showAlert(a.icon, a.name || a.label, `${a.label} · ${d} od Ciebie`);
+    }, i * 300);
+  });
 }
 
 function toggleScenic(){
