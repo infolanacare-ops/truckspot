@@ -1054,6 +1054,9 @@ Przykłady gatunków: rock, pop, jazz, classical, country, metal, reggae, electr
 Gdy kierowca chce zatrzymać muzykę/radio:
 {"action":"stop_radio"}
 
+Gdy kierowca chce zmienić stację / następna / inna / nudzi się:
+{"action":"next_radio","genre":"AKTUALNY_LUB_NOWY_GATUNEK"}
+
 Gdy kierowca mówi że chce muzyki ale NIE podał gatunku → zapytaj jaki gatunek lubi (zwykłym tekstem).
 Pytania informacyjne, rozmowa, emocje → odpowiedz zwykłym tekstem (NIE JSON).
 NIE mieszaj JSON z tekstem."""

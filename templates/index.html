@@ -7079,6 +7079,37 @@ function stopRadio(){
   const audio = document.getElementById('radio-audio');
   audio.pause(); audio.src = '';
   document.getElementById('radio-player').classList.remove('visible');
+  window._radioStationsCache = null;
+}
+
+async function nextRadio(genre){
+  const audio   = document.getElementById('radio-audio');
+  const nameEl  = document.getElementById('radio-station-name');
+  const genreEl = document.getElementById('radio-station-genre');
+  const currentSrc = audio.src;
+
+  nameEl.textContent = 'Szukam następnej...';
+
+  try {
+    const g = genre || (genreEl.textContent.toLowerCase()) || 'pop';
+    if(!window._radioStationsCache || window._radioGenreCache !== g){
+      const url = `https://de1.api.radio-browser.info/json/stations/bytag/${encodeURIComponent(g)}?limit=20&hidebroken=true&order=clickcount`;
+      const r = await fetch(url);
+      window._radioStationsCache = await r.json();
+      window._radioGenreCache = g;
+    }
+    const stations = window._radioStationsCache;
+    // Wybierz inną niż aktualna
+    const others = stations.filter(s => s.url_resolved && s.url_resolved !== currentSrc);
+    if(!others.length) throw new Error('Brak innych stacji');
+    const pick = others[Math.floor(Math.random() * Math.min(others.length, 8))];
+    audio.src = pick.url_resolved;
+    audio.play();
+    nameEl.textContent  = pick.name || g;
+    genreEl.textContent = g.toUpperCase();
+  } catch(e){
+    nameEl.textContent = 'Brak innych stacji';
+  }
 }
 
 function openAiAssistant(){
@@ -7195,6 +7226,8 @@ async function sendAiMessage(text){
       if(navMuted) toggleNavMute();
     } else if(act === 'play_radio'){
       playRadio(j.action.genre || 'pop');
+    } else if(act === 'next_radio'){
+      nextRadio(j.action.genre);
     } else if(act === 'stop_radio'){
       stopRadio();
     }
