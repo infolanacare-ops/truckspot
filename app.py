@@ -1047,6 +1047,14 @@ Wycisz / wyłącz głos:
 Włącz głos / odcisz:
 {"action":"unmute"}
 
+Gdy kierowca chce słuchać muzyki/radia i podał gatunek:
+{"action":"play_radio","genre":"GATUNEK_PO_ANGIELSKU"}
+Przykłady gatunków: rock, pop, jazz, classical, country, metal, reggae, electronic, folk, blues, hip-hop, polish
+
+Gdy kierowca chce zatrzymać muzykę/radio:
+{"action":"stop_radio"}
+
+Gdy kierowca mówi że chce muzyki ale NIE podał gatunku → zapytaj jaki gatunek lubi (zwykłym tekstem).
 Pytania informacyjne, rozmowa, emocje → odpowiedz zwykłym tekstem (NIE JSON).
 NIE mieszaj JSON z tekstem."""
 
