@@ -1463,6 +1463,8 @@ body.navigating .fab-ai{display:none}
 /* ── Unified speed pill — lewa strona, pod kartą manewru ── */
 /* Rząd pod kartą manewru: cam-warn po lewej, pill po prawej */
 .nav-speed-row{
+  position:fixed;right:0;bottom:calc(72px + env(safe-area-inset-bottom));
+  z-index:1202;
   display:flex;align-items:center;justify-content:flex-end;
   gap:.5rem;padding:.35rem .65rem .2rem;
   pointer-events:none;
