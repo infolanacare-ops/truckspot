@@ -1463,8 +1463,7 @@ body.navigating .fab-ai{display:none}
 /* ── Unified speed pill — lewa strona, pod kartą manewru ── */
 /* Rząd pod kartą manewru: cam-warn po lewej, pill po prawej */
 .nav-speed-row{
-  position:fixed;right:0;bottom:calc(72px + env(safe-area-inset-bottom));
-  z-index:1202;
+  align-self:flex-end;
   display:flex;align-items:center;justify-content:flex-end;
   gap:.5rem;padding:.35rem .65rem .2rem;
   pointer-events:none;
@@ -2371,14 +2370,7 @@ body.navigating .nav-pois-strip{display:none}
     <div class="nav-speed-limit" id="nav-speed-limit">–</div>
   </div>
 
-  <!-- POI strip -->
-  <div class="nav-pois-strip" id="nav-pois-strip">
-  </div>
-
-  <!-- Mapa wypełnia środek -->
-  <div class="nav-spacer" style="flex:1;pointer-events:none"></div>
-
-  <!-- Speed pill + fotoradar — pod kartą, przypięty do prawej -->
+  <!-- Speed pill — w flow, zjeżdża w dół gdy pojawia się lane guidance / next strip -->
   <div class="nav-speed-row">
     <div class="nav-cam-warn" id="nav-cam-warn">
       📷 <span class="nav-cam-dist" id="nav-cam-dist"></span>
@@ -2395,6 +2387,12 @@ body.navigating .nav-pois-strip{display:none}
       </div>
     </div>
   </div>
+
+  <!-- POI strip -->
+  <div class="nav-pois-strip" id="nav-pois-strip"></div>
+
+  <!-- Mapa wypełnia środek -->
+  <div class="nav-spacer" style="flex:1;pointer-events:none"></div>
 
   <!-- Dół: ETA + głos + stop + hamburger -->
   <div class="nav-bottom">
