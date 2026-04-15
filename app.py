@@ -1057,6 +1057,9 @@ Gdy kierowca chce zatrzymać muzykę/radio:
 Gdy kierowca chce zmienić stację / następna / inna / nudzi się:
 {"action":"next_radio","genre":"AKTUALNY_LUB_NOWY_GATUNEK"}
 
+Gdy kierowca chce włączyć ulubioną stację:
+{"action":"play_favorite_radio"}
+
 Gdy kierowca mówi że chce muzyki ale NIE podał gatunku → zapytaj jaki gatunek lubi (zwykłym tekstem).
 Pytania informacyjne, rozmowa, emocje → odpowiedz zwykłym tekstem (NIE JSON).
 NIE mieszaj JSON z tekstem."""
@@ -1126,16 +1129,18 @@ def api_ai_chat():
     if not message:
         return jsonify({"error": "empty"}), 400
 
-    driver_name = str(driver.get("name", "")).strip() or "Kierowco"
-    driver_mode = str(driver.get("mode", "tir"))
-    driver_pts  = int(driver.get("pts", 0))
+    driver_name  = str(driver.get("name", "")).strip() or "Kierowco"
+    driver_mode  = str(driver.get("mode", "tir"))
+    driver_pts   = int(driver.get("pts", 0))
+    fav_radio    = driver.get("favRadio")  # {name, url, genre} lub None
 
     mode_label = {"tir": "kierowca TIR", "bus": "kierowca busa/vana", "tourist": "turysta"}.get(driver_mode, "kierowca")
 
     # System prompt z danymi kierowcy
+    fav_txt = f", ulubione radio: {fav_radio['name']} ({fav_radio.get('genre','')})" if fav_radio else ""
     system = (
         SYSTEM_PROMPT_BASE +
-        f"\n\nKierowca: {driver_name} ({mode_label}), {driver_pts} punktów w TruckSpot."
+        f"\n\nKierowca: {driver_name} ({mode_label}), {driver_pts} punktów w TruckSpot{fav_txt}."
     )
 
     # Kontekst nawigacyjny

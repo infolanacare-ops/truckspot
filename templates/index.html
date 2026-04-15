@@ -1170,6 +1170,10 @@ body.navigating .fab-ai{display:none}
 .radio-player-info{flex:1;min-width:0}
 .radio-player-name{font-size:.8rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .radio-player-genre{font-size:.6rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.05em}
+.radio-player-fav{background:none;border:1.5px solid rgba(255,255,255,.15);
+  border-radius:10px;padding:.3rem .5rem;color:rgba(255,255,255,.35);font-size:1rem;cursor:pointer;
+  flex-shrink:0;transition:.2s}
+.radio-player-fav.active{color:#ef4444;border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.12)}
 .radio-player-stop{background:rgba(239,68,68,.2);border:1.5px solid rgba(239,68,68,.35);
   border-radius:10px;padding:.3rem .6rem;color:#ef4444;font-size:.75rem;font-weight:700;cursor:pointer;
   white-space:nowrap;flex-shrink:0}
@@ -2669,6 +2673,7 @@ body.navigating .nav-pois-strip{display:none}
     <div class="radio-player-name" id="radio-station-name">Radio</div>
     <div class="radio-player-genre" id="radio-station-genre"></div>
   </div>
+  <button class="radio-player-fav" id="radio-fav-btn" onclick="toggleFavoriteRadio()" title="Ulubiona stacja">♡</button>
   <button class="radio-player-stop" onclick="stopRadio()">■ Stop</button>
 </div>
 <audio id="radio-audio" preload="none"></audio>
@@ -7059,10 +7064,12 @@ async function playRadio(genre){
     const station = stations.find(s => s.url_resolved) || stations[0];
     const streamUrl = station.url_resolved || station.url;
 
+    _currentRadioStation = {name: station.name||genre, url: streamUrl, genre};
     audio.src = streamUrl;
     audio.play();
     nameEl.textContent  = station.name || genre;
     genreEl.textContent = genre.toUpperCase();
+    updateFavBtn();
 
     audio.onerror = () => {
       // Spróbuj następnej stacji
@@ -7075,11 +7082,60 @@ async function playRadio(genre){
   }
 }
 
+// Aktualnie grana stacja
+let _currentRadioStation = null;
+
 function stopRadio(){
   const audio = document.getElementById('radio-audio');
   audio.pause(); audio.src = '';
   document.getElementById('radio-player').classList.remove('visible');
   window._radioStationsCache = null;
+  _currentRadioStation = null;
+}
+
+function toggleFavoriteRadio(){
+  if(!_currentRadioStation) return;
+  const existing = profile.favoriteRadio;
+  const isSame = existing && existing.url === _currentRadioStation.url;
+  if(isSame){
+    // Odznacz
+    delete profile.favoriteRadio;
+    saveProfile();
+    document.getElementById('radio-fav-btn').classList.remove('active');
+    document.getElementById('radio-fav-btn').textContent = '♡';
+  } else {
+    // Zapisz
+    profile.favoriteRadio = {..._currentRadioStation};
+    saveProfile();
+    document.getElementById('radio-fav-btn').classList.add('active');
+    document.getElementById('radio-fav-btn').textContent = '♥';
+  }
+}
+
+function updateFavBtn(){
+  const btn = document.getElementById('radio-fav-btn');
+  if(!btn) return;
+  const fav = profile.favoriteRadio;
+  const isFav = fav && _currentRadioStation && fav.url === _currentRadioStation.url;
+  btn.classList.toggle('active', !!isFav);
+  btn.textContent = isFav ? '♥' : '♡';
+}
+
+function playFavoriteRadio(){
+  const fav = profile.favoriteRadio;
+  if(!fav) return false;
+  const audio  = document.getElementById('radio-audio');
+  const nameEl = document.getElementById('radio-station-name');
+  const genreEl= document.getElementById('radio-station-genre');
+  const player = document.getElementById('radio-player');
+  _currentRadioStation = fav;
+  audio.src = fav.url;
+  audio.play();
+  nameEl.textContent  = fav.name;
+  genreEl.textContent = (fav.genre||'').toUpperCase();
+  player.classList.add('visible');
+  updateFavBtn();
+  return true;
 }
 
 async function nextRadio(genre){
@@ -7103,10 +7159,12 @@ async function nextRadio(genre){
     const others = stations.filter(s => s.url_resolved && s.url_resolved !== currentSrc);
     if(!others.length) throw new Error('Brak innych stacji');
     const pick = others[Math.floor(Math.random() * others.length)];
+    _currentRadioStation = {name: pick.name||g, url: pick.url_resolved, genre: g};
     audio.src = pick.url_resolved;
     audio.play();
     nameEl.textContent  = pick.name || g;
     genreEl.textContent = g.toUpperCase();
+    updateFavBtn();
   } catch(e){
     nameEl.textContent = 'Brak innych stacji';
   }
@@ -7186,7 +7244,7 @@ async function sendAiMessage(text){
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         message: msg,
-        driver: { name: driverName, mode, pts },
+        driver: { name: driverName, mode, pts, favRadio: profile.favoriteRadio || null },
         history: _aiHistory.slice(-12), // ostatnie 6 par
         lat, lng,
         navigating: navActive,
@@ -7224,6 +7282,10 @@ async function sendAiMessage(text){
       if(!navMuted) toggleNavMute();
     } else if(act === 'unmute'){
       if(navMuted) toggleNavMute();
+    } else if(act === 'play_favorite_radio'){
+      if(!playFavoriteRadio()){
+        addAiMessage('Nie masz jeszcze ulubionej stacji. Najpierw włącz radio i kliknij ♡', 'bot');
+      }
     } else if(act === 'play_radio'){
       playRadio(j.action.genre || 'pop');
     } else if(act === 'next_radio'){
