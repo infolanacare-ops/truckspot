@@ -6985,11 +6985,26 @@ let _aiRecognition = null;
 let _aiListening = false;
 
 function openAiAssistant(){
-  document.getElementById('ai-panel').classList.add('open');
+  const panel = document.getElementById('ai-panel');
+  if(panel.classList.contains('open')) return;
+  panel.classList.add('open');
+  // Powitanie przy pierwszym otwarciu w sesji
+  if(!window._aiGreeted){
+    window._aiGreeted = true;
+    const name = localStorage.getItem('ts_driver_name') || '';
+    const msgs = document.getElementById('ai-messages');
+    msgs.innerHTML = ''; // czyść poprzednie
+    const greeting = name
+      ? `Cześć ${name}! Jestem TruckBot. Powiedz gdzie jechać, znajdę parking, stację, restaurację — albo zatrzymaj nawigację.`
+      : `Cześć! Jestem TruckBot. Powiedz gdzie jechać — np. "jedź do Warszawy" — a ja poprowadzę.`;
+    addAiMessage(greeting, 'bot');
+    speakNav(greeting, false);
+  }
 }
 function closeAiAssistant(){
   document.getElementById('ai-panel').classList.remove('open');
   stopAiMic();
+  window._aiGreeted = false;
 }
 
 function addAiMessage(text, role){
@@ -7038,19 +7053,24 @@ async function sendAiMessage(text){
     // Odczytaj głosem
     speakNav(j.text, false);
 
-    // Obsłuż akcję nawigacji
-    if(j.action?.action === 'navigate'){
+    // Obsłuż akcje TruckBot
+    const act = j.action?.action;
+    if(act === 'navigate'){
       const query = j.action.query;
       setTimeout(async () => {
         closeAiAssistant();
-        // Wpisz do pola celu i uruchom trasę
         const toField = document.getElementById('route-to');
-        if(toField){ toField.value = query; }
-        // Przełącz na zakładkę trasy i jedź
+        if(toField) toField.value = query;
         bnav(document.querySelector('.bnav-item:nth-child(2)'), 'route');
         await new Promise(r => setTimeout(r, 300));
         searchRoute(true);
       }, 1500);
+    } else if(act === 'stop_navigation'){
+      setTimeout(() => { closeAiAssistant(); stopNavigation(); }, 1200);
+    } else if(act === 'mute'){
+      if(!navMuted) toggleNavMute();
+    } else if(act === 'unmute'){
+      if(navMuted) toggleNavMute();
     }
   } catch(e){
     loading.textContent = 'Błąd połączenia z asystentem.';

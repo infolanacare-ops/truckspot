@@ -1028,17 +1028,27 @@ def api_convoy_leave():
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
-SYSTEM_PROMPT = """Jesteś TruckBot — przyjaznym asystentem kierowcy w aplikacji TruckSpot.
-Pomagasz kierowcom ciężarówek, busów i turystów w nawigacji po Europie.
-Odpowiadasz krótko (max 2 zdania, 30 słów), naturalnie po polsku, bez emoji.
+SYSTEM_PROMPT = """Jesteś TruckBot — asystentem kierowcy TIR w aplikacji TruckSpot.
+Odpowiadasz PO POLSKU, krótko (max 2 zdania).
 
-Gdy kierowca pyta o miejsce, restaurację, parking lub chce gdzieś pojechać — zwróć JSON:
-{"action":"navigate","query":"nazwa miejsca lub adres"}
+== KOMENDY NAWIGACYJNE — zwróć TYLKO czysty JSON, nic więcej ==
 
-Gdy pyta o coś informacyjnego — odpowiedz zwykłym tekstem.
-Gdy pytanie jest niejasne — dopytaj krótko.
+Gdy kierowca chce pojechać / nawigować / prowadź / jedź / znajdź miejsce:
+{"action":"navigate","query":"DOKŁADNA NAZWA MIEJSCA LUB ADRES"}
 
-Kontekst aplikacji TruckSpot: parkingi TIR, MOP-y, stacje paliw, miejsca widokowe w całej Europie."""
+Przykłady:
+- "jedź do Warszawy" → {"action":"navigate","query":"Warszawa"}
+- "prowadź do centrum Łodzi" → {"action":"navigate","query":"centrum Łodzi"}
+- "jedziemy do Łodzi do centrum" → {"action":"navigate","query":"centrum Łodzi"}
+- "znajdź parking w Krakowie" → {"action":"navigate","query":"parking Kraków"}
+- "stacja paliw Shell Gdańsk" → {"action":"navigate","query":"Shell Gdańsk"}
+
+Gdy kierowca chce zatrzymać/zakończyć/anulować nawigację:
+{"action":"stop_navigation"}
+
+Gdy kierowca pyta o prędkość, czas dojazdu, trasę — odpowiedz tekstem korzystając z kontekstu.
+Gdy pytanie jest inne (pogoda, żart, etc.) — odpowiedz krótko tekstem.
+NIE dodawaj nic poza JSON gdy to komenda nawigacyjna."""
 
 def call_gemini(prompt, temperature=0.7, max_tokens=150):
     url = (
@@ -1124,21 +1134,28 @@ def api_ai_chat():
     )
 
     try:
-        raw = call_gemini(prompt, temperature=0.75, max_tokens=150)
+        raw = call_gemini(prompt, temperature=0.3, max_tokens=150)
 
-        # Spróbuj sparsować jako JSON (akcja nawigacji)
         action = None
-        text = raw
-        import re
-        json_match = re.search(r'\{[^}]+\}', raw)
+        text = raw.strip()
+        import re as _re
+
+        # Wyciągnij JSON — szukaj { ... } nawet z białymi znakami
+        json_match = _re.search(r'\{[\s\S]*?\}', raw)
         if json_match:
             try:
                 obj = json.loads(json_match.group())
-                if obj.get("action") == "navigate":
+                act = obj.get("action", "")
+                if act == "navigate":
                     action = obj
-                    # Odpowiedź głosowa poza JSON-em
-                    text = raw[:json_match.start()].strip() or \
-                           f"Już prowadzę cię do: {obj.get('query','celu')}."
+                    before = raw[:json_match.start()].strip()
+                    text = before or f"Już prowadzę cię do: {obj.get('query','celu')}."
+                elif act == "stop_navigation":
+                    action = obj
+                    text = "Zatrzymuję nawigację."
+                elif act in ("mute", "unmute"):
+                    action = obj
+                    text = "Wyciszam." if act == "mute" else "Włączam głos."
             except Exception:
                 pass
 
