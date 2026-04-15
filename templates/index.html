@@ -1343,6 +1343,18 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .nav-sheet-btn.muted{background:rgba(239,68,68,.2);color:#ef4444;border-color:rgba(239,68,68,.3)}
 .nav-sheet-stop{background:rgba(239,68,68,.15);color:#ef4444;border-color:rgba(239,68,68,.3)}
 .nav-sheet-stop:active{background:rgba(239,68,68,.3)}
+/* Przyciski głos + stop w pasku (jak dawniej, tylko kompaktowe) */
+.nav-btm-btn{
+  width:42px;height:42px;border:none;border-radius:13px;cursor:pointer;
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  font-size:1.05rem;font-weight:900;transition:.15s;backdrop-filter:blur(4px);
+}
+.nav-btm-mute{background:rgba(255,255,255,.12);color:#fff;border:1.5px solid rgba(255,255,255,.14)}
+.nav-btm-mute:active{background:rgba(255,255,255,.24)}
+.nav-btm-mute.muted{background:rgba(239,68,68,.25);color:#ef4444;border-color:rgba(239,68,68,.35)}
+.nav-btm-stop{background:rgba(239,68,68,.2);color:#ef4444;border:1.5px solid rgba(239,68,68,.35)}
+.nav-btm-stop:active{background:rgba(239,68,68,.45);transform:scale(.92)}
+.nav-sheet-convoy{background:rgba(16,185,129,.12);color:#10b981;border-color:rgba(16,185,129,.25)!important}
 /* Overlay do zamknięcia sheet kliknięciem w mapę */
 .nav-sheet-backdrop{
   position:fixed;inset:0;z-index:1201;display:none;
@@ -1369,6 +1381,7 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 
 /* Ukryj zoom podczas nawigacji */
 body.navigating .mapboxgl-ctrl-top-left{display:none}
+body.navigating .convoy-btn{display:none}
 
 /* ══ LANDSCAPE NAVIGATION — panel po lewej, mapa po prawej ══ */
 @media (orientation:landscape) and (max-height:520px){
@@ -2140,6 +2153,9 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
       📷 <span class="nav-cam-dist" id="nav-cam-dist"></span>
     </div>
     <div class="nav-bottom-space"></div>
+    <!-- Głos i stop na wierzchu -->
+    <button class="nav-btm-btn nav-btm-mute" id="nav-mute-btn" onclick="toggleNavMute()" title="Wycisz głos">🔊</button>
+    <button class="nav-btm-btn nav-btm-stop" onclick="stopNavigation()" title="Zatrzymaj nawigację">✕</button>
     <!-- Hamburger -->
     <button class="nav-hamburger" id="nav-hamburger" onclick="toggleNavSheet()" aria-label="Menu nawigacji">
       <span></span><span></span><span></span>
@@ -2150,9 +2166,10 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
 <!-- Backdrop do zamknięcia sheet -->
 <div class="nav-sheet-backdrop" id="nav-sheet-backdrop" onclick="closeNavSheet()"></div>
 
-<!-- Slide-up sheet z ETA + opcjami -->
+<!-- Slide-up sheet: ETA + filtry + konwój -->
 <div class="nav-sheet" id="nav-sheet">
   <div class="nav-sheet-handle"></div>
+  <!-- ETA row -->
   <div class="nav-sheet-eta">
     <div class="nav-sheet-stat">
       <div class="nav-sheet-stat-val" id="nav-total-dist">–</div>
@@ -2167,10 +2184,15 @@ body.navigating .mapboxgl-ctrl-top-left{display:none}
       <div class="nav-sheet-stat-label">przyjazd</div>
     </div>
   </div>
+  <!-- Filtry + Konwój -->
   <div class="nav-sheet-actions">
-    <button class="nav-sheet-btn" id="nav-mute-btn" onclick="toggleNavMute()">🔊 Głos</button>
     <button class="nav-sheet-btn" id="nav-pitch-btn" onclick="cycleNavPitch()">3D</button>
-    <button class="nav-sheet-btn nav-sheet-stop" onclick="stopNavigation(); closeNavSheet()">✕ Zakończ</button>
+    <button class="nav-sheet-btn" onclick="closeNavSheet(); openFilters()">
+      <span style="font-size:1.1rem">⚙</span> Filtry
+    </button>
+    <button class="nav-sheet-btn nav-sheet-convoy" onclick="closeNavSheet(); toggleConvoyPanel()">
+      🚛 Konwój <span id="nav-sheet-convoy-cnt" style="display:none;background:rgba(16,185,129,.25);border-radius:8px;padding:.05rem .35rem;font-size:.75rem;margin-left:.2rem">0</span>
+    </button>
   </div>
 </div>
 
@@ -4499,7 +4521,7 @@ function toggleNavMute(){
   navMuted = !navMuted;
   if(navMuted) speechSynthesis.cancel();
   const btn = document.getElementById('nav-mute-btn');
-  if(btn){ btn.classList.toggle('muted', navMuted); btn.textContent = navMuted ? '🔇 Głos' : '🔊 Głos'; }
+  if(btn){ btn.classList.toggle('muted', navMuted); btn.textContent = navMuted ? '🔇' : '🔊'; }
 }
 
 function stripForTts(txt){
@@ -4637,6 +4659,12 @@ function updateConvoyUI(drivers){
   if(cnt){
     cnt.textContent = drivers.length;
     cnt.classList.toggle('visible', drivers.length > 0);
+  }
+  // sync licznik w nav-sheet hamburger
+  const sheetCnt = document.getElementById('nav-sheet-convoy-cnt');
+  if(sheetCnt){
+    sheetCnt.textContent = drivers.length;
+    sheetCnt.style.display = drivers.length > 0 ? 'inline' : 'none';
   }
   const sub = document.getElementById('convoy-panel-sub');
   if(sub) sub.textContent = drivers.length > 0
