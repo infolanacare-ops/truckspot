@@ -2459,6 +2459,7 @@ body.navigating .nav-pois-strip{display:none}
     <button class="nav-sheet-btn nav-sheet-convoy" onclick="closeNavSheet(); toggleConvoyPanel()">
       🚛 Konwój <span id="nav-sheet-convoy-cnt" style="display:none;background:rgba(16,185,129,.25);border-radius:8px;padding:.05rem .35rem;font-size:.75rem;margin-left:.2rem">0</span>
     </button>
+    <button class="nav-sheet-btn" id="nav-attr-btn" onclick="toggleAttractions()">🏛 Atrakcje</button>
   </div>
 </div>
 
@@ -5349,6 +5350,7 @@ function startNavigation(){
   if(!routeSteps.length){ showAlert('⚠️','','Najpierw oblicz trasę'); return; }
   navActive=true; navStepIdx=0; navCIdx=0; navLastLat=null; navLastLng=null;
   navAnnouncedPois=new Set(); navAnnouncedSteps=new Set(); navSpeedKmh=0;
+  window._lastPoiAnnounceTs = 0;
   navAnnouncedReports=new Set(); navRerouteWarned=false; navRerouteTs=0;
   // Usuń istniejącą kropkę GPS — setGpsArrow stworzy strzałkę
   if(gpsMarker){ gpsMarker.remove(); gpsMarker=null; }
@@ -5810,19 +5812,25 @@ function onNavPosition(pos){
     renderNavPois();
   }
 
-  const poiAlertDist = navSpeedKmh > 80 ? 4 : 2; // km
-  for(const p of getFilteredNavPois()){
-    if(navAnnouncedPois.has(p.id)) continue;
-    const d = haversineKm(lat, lng, p.lat, p.lng);
-    if(d < poiAlertDist){
-      navAnnouncedPois.add(p.id);
-      const dist = d < 1 ? Math.round(d*1000)+' metrów' : d.toFixed(1)+' km';
-      const poiTxt = currentLang==='pl'
-        ? `Za ${dist} ${p.name}.`
-        : `In ${dist}, ${p.name}.`;
-      speakNav(poiTxt, false);
-      showAlert(p.icon, p.name, `Za ${dist}`);
-      break;
+  // POI announcement — max 1 co 45s, nie kolejkuj gdy mowa aktywna
+  const now2 = Date.now();
+  if(!window._lastPoiAnnounceTs) window._lastPoiAnnounceTs = 0;
+  if(now2 - window._lastPoiAnnounceTs >= 45000 && !speechSynthesis.speaking){
+    const poiAlertDist = navSpeedKmh > 80 ? 3 : 1.5; // km — mniejszy zasięg
+    for(const p of getFilteredNavPois()){
+      if(navAnnouncedPois.has(p.id)) continue;
+      const d = haversineKm(lat, lng, p.lat, p.lng);
+      if(d < poiAlertDist){
+        navAnnouncedPois.add(p.id);
+        window._lastPoiAnnounceTs = now2;
+        const dist = d < 1 ? Math.round(d*1000)+' metrów' : d.toFixed(1)+' km';
+        const poiTxt = currentLang==='pl'
+          ? `Za ${dist} ${p.name}.`
+          : `In ${dist}, ${p.name}.`;
+        speakNav(poiTxt, false);
+        showAlert(p.icon, p.name, `Za ${dist}`);
+        break;
+      }
     }
   }
 
@@ -7092,6 +7100,16 @@ function stopAiMic(){
 
 // ── Atrakcje przy zatrzymaniu ────────────────────────────────────────────────
 let _stopLat = null, _stopLng = null, _stopTimer = null, _lastAttrQuery = '';
+let navAttractionsEnabled = false; // opt-in — domyślnie wyłączone
+
+function toggleAttractions(){
+  navAttractionsEnabled = !navAttractionsEnabled;
+  const btn = document.getElementById('nav-attr-btn');
+  if(btn){
+    btn.classList.toggle('muted', !navAttractionsEnabled);
+    btn.textContent = navAttractionsEnabled ? '🏛 Atrakcje ✓' : '🏛 Atrakcje';
+  }
+}
 
 // Tagi OSM → emoji + polska nazwa
 const ATTR_TAGS = [
@@ -7113,7 +7131,7 @@ const ATTR_TAGS = [
 ];
 
 function checkNearbyAttractions(lat, lng){
-  if(!navActive) return;
+  if(!navActive || !navAttractionsEnabled) return;
   // Aktywuj tylko gdy stoisz (< 5 km/h przez 8 sekund)
   if(navSpeedKmh > 5){
     _stopLat = null; _stopLng = null;
