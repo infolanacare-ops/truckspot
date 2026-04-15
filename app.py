@@ -1214,6 +1214,25 @@ def api_ai_chat():
                 elif act in ("mute", "unmute"):
                     action = obj
                     text = "Wyciszam." if act == "mute" else "Włączam głos."
+                elif act == "play_radio":
+                    action = obj
+                    genre = obj.get("genre", "pop")
+                    text = raw[:json_match.start()].strip() or f"Włączam {genre}!"
+                elif act == "next_radio":
+                    action = obj
+                    text = raw[:json_match.start()].strip() or "Zmieniam stację."
+                elif act == "pause_radio":
+                    action = obj
+                    text = raw[:json_match.start()].strip() or "Pauza."
+                elif act == "stop_radio":
+                    action = obj
+                    text = raw[:json_match.start()].strip() or "Wyłączam radio."
+                elif act == "play_favorite_radio":
+                    action = obj
+                    text = raw[:json_match.start()].strip() or "Włączam Twoją ulubioną stację!"
+                elif act == "remember":
+                    action = obj
+                    text = raw[:json_match.start()].strip() or "Zapamiętałam!"
             except Exception:
                 pass
 
