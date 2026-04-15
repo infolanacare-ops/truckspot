@@ -1442,19 +1442,23 @@ body.navigating .fab-ai{display:none}
   display:flex;align-items:center;gap:.7rem;
 }
 /* ETA inline w pasku */
-.nav-eta-inline{display:flex;flex:1;gap:.5rem;min-width:0}
+.nav-eta-inline{display:flex;flex:1;gap:.4rem;min-width:0}
 .nav-eta-cell{
-  flex:1;display:flex;flex-direction:column;align-items:center;
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
   background:rgba(255,255,255,.06);border-radius:14px;
-  padding:.55rem .3rem;border:1px solid rgba(255,255,255,.09);min-width:0;
+  padding:.5rem .4rem;border:1px solid rgba(255,255,255,.09);
+  min-width:0;overflow:hidden;
 }
 .nav-eta-cell-val{
-  font-family:var(--font-head);font-size:1.25rem;font-weight:900;
-  color:#fff;line-height:1;white-space:nowrap;
+  font-family:var(--font-head);font-size:1.15rem;font-weight:900;
+  color:#fff;line-height:1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  max-width:100%;
 }
 .nav-eta-cell-lbl{
-  font-size:.5rem;color:rgba(255,255,255,.4);
-  text-transform:uppercase;font-weight:700;letter-spacing:.06em;margin-top:.2rem;
+  font-size:.48rem;color:rgba(255,255,255,.4);
+  text-transform:uppercase;font-weight:700;letter-spacing:.05em;margin-top:.25rem;
+  white-space:nowrap;
 }
 /* spacer */
 .nav-bottom-space{flex:1}
@@ -1575,7 +1579,7 @@ body.navigating .fab-ai{display:none}
 /* ── Lane guidance — TomTom truck style ── */
 .nav-lanes{
   display:none;flex-direction:row;justify-content:stretch;align-items:stretch;
-  width:100%;height:90px;
+  width:100%;height:76px;
   background:#141828;
   border-top:3px solid #0a0e1a;
   border-bottom:3px solid #0a0e1a;
@@ -4703,7 +4707,42 @@ function setNavEta(secs){
   document.getElementById('nav-eta-arrival').textContent   = fmtArrival(secs);
 }
 
-let navRoutePois = [];     // POI wzdłuż trasy, posortowane po odległości od startu
+let navRoutePois = [];     // WSZYSTKIE POI wzdłuż trasy (niefiltrowane)
+
+// Mapowanie: typ POI z API/parkingów → id filtra
+const POI_TYPE_TO_FILTER = {
+  'fuel':       'fuel',
+  'restaurant': 'restaurant',
+  'truck_wash': 'truck_wash',
+  'shower':     'shower',
+  'toilet':     'toilet',
+  'hotel':      'hotel',
+  'shop':       'shop',
+  'truck':      'repair',
+  'wifi':       'wifi',
+  'water':      'water',
+  'parking':    null,   // parkingi - brak jednego filtra, sterowane przez amenities
+  'rest_area':  null,
+  'services':   null,
+};
+
+// Zwraca POI przefiltrowane wg aktywnych filtrów
+// Jeśli brak filtrów → wszystko; z filtrami → tylko pasujące typy
+function getFilteredNavPois(){
+  if(activeFilters.size === 0) return navRoutePois;
+  return navRoutePois.filter(p => {
+    // Parkingi własne (type==='parking') — filtruj po amenities
+    if(p.type === 'parking' || p.id?.startsWith('park_')){
+      const amen = p.amenities || [];
+      return [...activeFilters].some(f => amen.includes(f));
+    }
+    // POI z API — sprawdź mapowanie typu
+    const filterKey = POI_TYPE_TO_FILTER[p.type];
+    if(filterKey === undefined) return false; // nieznany typ — ukryj gdy filtry aktywne
+    if(filterKey === null) return false;       // rest_area/services — ukryj gdy filtry aktywne
+    return activeFilters.has(filterKey);
+  });
+}
 let navAnnouncedPois = new Set(); // ID już ogłoszonych
 let navCIdx = 0;           // indeks najbliższego punktu trasy (aktualizowany w onNavPosition)
 let _lastPoiRenderIdx = -99; // throttle renderNavPois — odśwież co ~5 punktów trasy
@@ -5435,13 +5474,13 @@ async function loadRoutePois(){
 function renderNavPois(){
   const strip = document.getElementById('nav-pois-strip');
   if(!strip) return;
-  if(!navRoutePois.length){
+  const filteredPois = getFilteredNavPois();
+  if(!filteredPois.length){
     strip.innerHTML = '<div style="font-size:.72rem;color:var(--muted);align-self:center;padding:.2rem">Brak POI na trasie</div>';
     return;
   }
 
   // Odległość przebyta wzdłuż trasy do bieżącej pozycji (km)
-  // navRouteDistances — metry; distFromStart — km → przelicz na km
   const myDistKm = (navActive && navRouteDistances.length > 0)
     ? (navRouteDistances[navCIdx] || 0) / 1000
     : null;
@@ -5451,7 +5490,7 @@ function renderNavPois(){
 
   if(myDistKm !== null){
     // Tylko POI PRZED nami w zasięgu navPoiRadius
-    pois = navRoutePois
+    pois = filteredPois
       .filter(p => typeof p.distFromStart === 'number' && p.distFromStart > myDistKm)
       .map(p => ({...p, distAhead: p.distFromStart - myDistKm}))
       .filter(p => p.distAhead <= maxDist)
@@ -5459,7 +5498,7 @@ function renderNavPois(){
       .slice(0, 10);
   } else {
     // Brak GPS — pokaż w kolejności trasy z uwzględnieniem zasięgu
-    pois = navRoutePois
+    pois = filteredPois
       .filter(p => typeof p.distFromStart === 'number' && p.distFromStart <= maxDist)
       .sort((a,b) => a.distFromStart - b.distFromStart)
       .slice(0, 10);
@@ -5773,7 +5812,7 @@ function onNavPosition(pos){
   }
 
   const poiAlertDist = navSpeedKmh > 80 ? 4 : 2; // km
-  for(const p of navRoutePois){
+  for(const p of getFilteredNavPois()){
     if(navAnnouncedPois.has(p.id)) continue;
     const d = haversineKm(lat, lng, p.lat, p.lng);
     if(d < poiAlertDist){
