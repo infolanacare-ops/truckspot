@@ -3754,7 +3754,7 @@ function setGpsArrow(lat, lng){
   if(!gpsMarker){
     const arrowColor = getComputedStyle(document.documentElement).getPropertyValue('--accent2').trim() || '#ffd700';
     const el = document.createElement('div');
-    el.innerHTML = `<svg class="nav-arrow" width="40" height="52" viewBox="0 0 40 52" xmlns="http://www.w3.org/2000/svg">
+    el.innerHTML = `<svg class="nav-arrow" width="56" height="72" viewBox="0 0 40 52" xmlns="http://www.w3.org/2000/svg">
       <polygon points="20,2 38,50 20,40 2,50" fill="${arrowColor}" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>
     </svg>`;
     el.style.cssText = 'line-height:0';
@@ -5412,9 +5412,14 @@ function onNavPosition(pos){
   // Centruj na snapCoord — ten sam punkt co marka → strzałka stoi, mapa płynie
   const camLat = snapCoord ? snapCoord[1] : lat;
   const camLng = snapCoord ? snapCoord[0] : lng;
-  if(!navOverviewMode && !navUserInteracting)
+  if(!navOverviewMode && !navUserInteracting){
+    // padding.top przesuwa centrum niżej — więcej mapy widoczne przed strzałką
+    const padTop = Math.round(window.innerHeight * 0.38);
+    const padBot = 80; // ~wysokość dolnego paska
     map.easeTo({center:[camLng, camLat], zoom:targetZoom, bearing:navHeading,
-                pitch:targetPitch, duration:camDuration});
+                pitch:targetPitch, duration:camDuration,
+                padding:{top:padTop, bottom:padBot, left:0, right:0}});
+  }
   // Upewnij się że trasa jest narysowana (może zniknąć po zmianie stylu)
   if(routeCoords.length && !map.getSource('ts-route')) drawRoute(routeCoords);
 
