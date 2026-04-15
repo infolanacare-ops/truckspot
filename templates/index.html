@@ -7050,7 +7050,7 @@ async function playRadio(genre){
 
   try {
     // radio-browser.info — darmowe, bez klucza API
-    const url = `https://de1.api.radio-browser.info/json/stations/bytag/${encodeURIComponent(genre)}?limit=10&hidebroken=true&order=clickcount`;
+    const url = `https://de1.api.radio-browser.info/json/stations/bytag/${encodeURIComponent(genre)}?limit=50&hidebroken=true&order=random`;
     const r = await fetch(url);
     const stations = await r.json();
     if(!stations.length) throw new Error('Brak stacji');
@@ -7093,7 +7093,7 @@ async function nextRadio(genre){
   try {
     const g = genre || (genreEl.textContent.toLowerCase()) || 'pop';
     if(!window._radioStationsCache || window._radioGenreCache !== g){
-      const url = `https://de1.api.radio-browser.info/json/stations/bytag/${encodeURIComponent(g)}?limit=20&hidebroken=true&order=clickcount`;
+      const url = `https://de1.api.radio-browser.info/json/stations/bytag/${encodeURIComponent(g)}?limit=50&hidebroken=true&order=random`;
       const r = await fetch(url);
       window._radioStationsCache = await r.json();
       window._radioGenreCache = g;
@@ -7102,7 +7102,7 @@ async function nextRadio(genre){
     // Wybierz inną niż aktualna
     const others = stations.filter(s => s.url_resolved && s.url_resolved !== currentSrc);
     if(!others.length) throw new Error('Brak innych stacji');
-    const pick = others[Math.floor(Math.random() * Math.min(others.length, 8))];
+    const pick = others[Math.floor(Math.random() * others.length)];
     audio.src = pick.url_resolved;
     audio.play();
     nameEl.textContent  = pick.name || g;
