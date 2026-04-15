@@ -1028,27 +1028,27 @@ def api_convoy_leave():
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
-SYSTEM_PROMPT = """Jesteś TruckBot — asystentem kierowcy TIR w aplikacji TruckSpot.
-Odpowiadasz PO POLSKU, krótko (max 2 zdania).
+SYSTEM_PROMPT_BASE = """Jesteś TruckBot — osobisty asystent i towarzysz kierowcy w aplikacji TruckSpot.
+Znasz kierowcę z imienia, pamiętasz o czym rozmawialiście i traktujesz go jak przyjaciela.
+Odpowiadasz PO POLSKU, ciepło, krótko (max 2-3 zdania). Mówisz do kierowcy po imieniu gdy to naturalne.
+Jeśli kierowca mówi że jest zmęczony, zatroskany lub potrzebuje wsparcia — okaż troskę i zaproponuj pomoc.
 
-== KOMENDY NAWIGACYJNE — zwróć TYLKO czysty JSON, nic więcej ==
+== KOMENDY — zwróć TYLKO czysty JSON, bez tekstu przed ani po ==
 
-Gdy kierowca chce pojechać / nawigować / prowadź / jedź / znajdź miejsce:
-{"action":"navigate","query":"DOKŁADNA NAZWA MIEJSCA LUB ADRES"}
+Nawigacja / jedź / prowadź / znajdź miejsce / adres:
+{"action":"navigate","query":"MIEJSCE LUB ADRES"}
 
-Przykłady:
-- "jedź do Warszawy" → {"action":"navigate","query":"Warszawa"}
-- "prowadź do centrum Łodzi" → {"action":"navigate","query":"centrum Łodzi"}
-- "jedziemy do Łodzi do centrum" → {"action":"navigate","query":"centrum Łodzi"}
-- "znajdź parking w Krakowie" → {"action":"navigate","query":"parking Kraków"}
-- "stacja paliw Shell Gdańsk" → {"action":"navigate","query":"Shell Gdańsk"}
-
-Gdy kierowca chce zatrzymać/zakończyć/anulować nawigację:
+Zatrzymaj / zakończ / anuluj nawigację:
 {"action":"stop_navigation"}
 
-Gdy kierowca pyta o prędkość, czas dojazdu, trasę — odpowiedz tekstem korzystając z kontekstu.
-Gdy pytanie jest inne (pogoda, żart, etc.) — odpowiedz krótko tekstem.
-NIE dodawaj nic poza JSON gdy to komenda nawigacyjna."""
+Wycisz / wyłącz głos:
+{"action":"mute"}
+
+Włącz głos / odcisz:
+{"action":"unmute"}
+
+Pytania informacyjne, rozmowa, emocje → odpowiedz zwykłym tekstem (NIE JSON).
+NIE mieszaj JSON z tekstem."""
 
 def call_gemini(prompt, temperature=0.7, max_tokens=150):
     url = (
@@ -1104,33 +1104,50 @@ def api_ai_chat():
 
     data = request.get_json(force=True)
     message  = str(data.get("message", "")).strip()[:500]
+    driver   = data.get("driver", {})          # {name, mode, pts}
+    history  = data.get("history", [])         # [{role, text}, ...]
     lat      = data.get("lat")
     lng      = data.get("lng")
-    nav      = data.get("navigating", False)   # czy jedziemy?
-    dest     = data.get("dest", "")            # cel nawigacji
+    nav      = data.get("navigating", False)
+    dest     = data.get("dest", "")
     speed    = data.get("speed", 0)
-    nearby   = data.get("nearby", [])          # pobliskie POI z apki
 
     if not message:
         return jsonify({"error": "empty"}), 400
 
-    # Zbuduj kontekst
+    driver_name = str(driver.get("name", "")).strip() or "Kierowco"
+    driver_mode = str(driver.get("mode", "tir"))
+    driver_pts  = int(driver.get("pts", 0))
+
+    mode_label = {"tir": "kierowca TIR", "bus": "kierowca busa/vana", "tourist": "turysta"}.get(driver_mode, "kierowca")
+
+    # System prompt z danymi kierowcy
+    system = (
+        SYSTEM_PROMPT_BASE +
+        f"\n\nKierowca: {driver_name} ({mode_label}), {driver_pts} punktów w TruckSpot."
+    )
+
+    # Kontekst nawigacyjny
     ctx_parts = []
     if lat and lng:
-        ctx_parts.append(f"Pozycja GPS: {lat:.4f}, {lng:.4f}")
+        ctx_parts.append(f"Pozycja: {lat:.4f}, {lng:.4f}")
     if nav and dest:
-        ctx_parts.append(f"Trwa nawigacja do: {dest}, prędkość: {speed} km/h")
+        ctx_parts.append(f"Nawigacja do: {dest}, prędkość: {speed} km/h")
     elif nav:
-        ctx_parts.append(f"Trwa nawigacja, prędkość: {speed} km/h")
-    if nearby:
-        near_txt = ", ".join([f"{p.get('name','?')} ({p.get('type','poi')})" for p in nearby[:5]])
-        ctx_parts.append(f"Pobliskie miejsca w apce: {near_txt}")
+        ctx_parts.append(f"Trwa nawigacja, {speed} km/h")
+    ctx = " | ".join(ctx_parts)
 
-    ctx = "\n".join(ctx_parts)
+    # Historia rozmów
+    history_txt = ""
+    for h in history[-12:]:
+        role_lbl = driver_name if h.get("role") == "user" else "TruckBot"
+        history_txt += f"{role_lbl}: {h.get('text','')}\n"
+
     prompt = (
-        f"{SYSTEM_PROMPT}\n\n"
-        + (f"Kontekst:\n{ctx}\n\n" if ctx else "")
-        + f"Kierowca mówi: {message}"
+        f"{system}\n\n"
+        + (f"Kontekst: {ctx}\n\n" if ctx else "")
+        + (f"Historia rozmowy:\n{history_txt}\n" if history_txt else "")
+        + f"{driver_name}: {message}"
     )
 
     try:

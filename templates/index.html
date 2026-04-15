@@ -1805,8 +1805,9 @@ body.navigating .nav-pois-strip{display:none}
       </div>
     </div>
     <div class="guest-input-wrap" id="guest-input-wrap" style="display:none">
-      <input class="guest-input" id="guest-name-input" placeholder="Your nickname" maxlength="30">
-      <button class="guest-go-btn" id="guest-go-btn" onclick="loginGuest()">Let's go →</button>
+      <div style="font-size:.75rem;color:rgba(255,255,255,.5);margin-bottom:.4rem;text-align:center">Jak masz na imię? TruckBot zapamięta Cię na zawsze 🤖</div>
+      <input class="guest-input" id="guest-name-input" placeholder="Twoje imię..." maxlength="30" autocomplete="given-name">
+      <button class="guest-go-btn" id="guest-go-btn" onclick="loginGuest()">Jedziemy →</button>
     </div>
   </div>
 
@@ -2871,20 +2872,19 @@ function showGuestInput(){
 }
 
 function loginGoogle(){
-  // Google Sign-In — requires Google Client ID configured
-  // For now: show as guest with "Google" prefix
-  const name = 'TruckDriver';
-  profile.name = name;
+  // Pokaż pole na imię zamiast od razu przechodzić
+  document.getElementById('guest-input-wrap').style.display = 'flex';
+  document.getElementById('guest-name-input').focus();
   profile.loginType = 'google';
-  saveProfile();
-  goToStep('step-mode');
 }
 
 function loginGuest(){
-  const name = document.getElementById('guest-name-input').value.trim() || 'TRUCKER';
-  profile.name = name.toUpperCase();
-  profile.loginType = 'guest';
+  const raw = document.getElementById('guest-name-input').value.trim();
+  const name = raw || 'Kierowco';
+  profile.name = name.charAt(0).toUpperCase() + name.slice(1); // Pierwsza litera wielka
+  profile.loginType = profile.loginType || 'guest';
   saveProfile();
+  localStorage.setItem('ts_driver_name', profile.name); // TruckBot zawsze wie
   goToStep('step-mode');
 }
 
@@ -2950,7 +2950,10 @@ const PROFILE_DEFAULTS = {name:'TRUCKER',pts:0,spots:0,comments:0,km:0,loginType
   joined: new Date().toISOString().slice(0,10)};
 let profile = Object.assign({}, PROFILE_DEFAULTS, (()=>{try{return JSON.parse(localStorage.getItem('ts_profile')||'{}')}catch(e){return {}}})());
 
-function saveProfile(){ localStorage.setItem('ts_profile', JSON.stringify(profile)); }
+function saveProfile(){
+  localStorage.setItem('ts_profile', JSON.stringify(profile));
+  if(profile.name) localStorage.setItem('ts_driver_name', profile.name);
+}
 
 function addPts(n){
   profile.pts += n; saveProfile(); updateProfileUI();
@@ -7017,6 +7020,9 @@ function addAiMessage(text, role){
   return div;
 }
 
+// Historia rozmów TruckBot — max 10 par (20 wiadomości)
+let _aiHistory = [];
+
 async function sendAiMessage(text){
   const input = document.getElementById('ai-input');
   const msg = text || input.value.trim();
@@ -7027,10 +7033,16 @@ async function sendAiMessage(text){
   const loading = addAiMessage('...', 'bot loading');
   document.getElementById('ai-panel-sub').textContent = 'Myślę...';
 
-  // Zbierz kontekst
-  const lat = navActive ? navLastLat : null;
-  const lng = navActive ? navLastLng : null;
-  const nearby = (allParkings || []).slice(0,5).map(p => ({name:p.name, type:'parking'}));
+  // Kontekst kierowcy
+  const driverName = profile.name || localStorage.getItem('ts_driver_name') || '';
+  const mode = profile.mode || 'tir';
+  const pts  = profile.pts  || 0;
+  const lat  = navActive ? navLastLat : null;
+  const lng  = navActive ? navLastLng : null;
+
+  // Dodaj do historii
+  _aiHistory.push({role:'user', text: msg});
+  if(_aiHistory.length > 20) _aiHistory.splice(0, 2);
 
   try {
     const r = await fetch('/api/ai-chat', {
@@ -7038,22 +7050,27 @@ async function sendAiMessage(text){
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         message: msg,
+        driver: { name: driverName, mode, pts },
+        history: _aiHistory.slice(-12), // ostatnie 6 par
         lat, lng,
         navigating: navActive,
         dest: navDestName || '',
         speed: navSpeedKmh || 0,
-        nearby,
       })
     });
     const j = await r.json();
     loading.classList.remove('loading');
-    loading.textContent = j.text || 'Przepraszam, nie rozumiem.';
+    const reply = j.text || 'Chwileczkę, coś poszło nie tak.';
+    loading.textContent = reply;
     document.getElementById('ai-panel-sub').textContent = 'Gotowy';
 
-    // Odczytaj głosem
-    speakNav(j.text, false);
+    // Dodaj odpowiedź bota do historii
+    _aiHistory.push({role:'bot', text: reply});
 
-    // Obsłuż akcje TruckBot
+    // Odczytaj głosem
+    speakNav(reply, false);
+
+    // Obsłuż akcje
     const act = j.action?.action;
     if(act === 'navigate'){
       const query = j.action.query;
