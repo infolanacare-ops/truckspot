@@ -1072,18 +1072,29 @@ NAturAlnie używaj zapamiętanych faktów w rozmowie — proponuj, nawiązuj, py
 NIE mieszaj JSON z tekstem."""
 
 def call_gemini(prompt, temperature=0.7, max_tokens=150):
+    """Prosty call — jeden tekst (używany przez ai-assist)."""
     url = (
         f"https://generativelanguage.googleapis.com/v1beta/models/"
         f"gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
     )
-    resp = _requests.post(
-        url,
-        json={
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {"maxOutputTokens": max_tokens, "temperature": temperature},
-        },
-        timeout=10,
+    resp = _requests.post(url, json={
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"maxOutputTokens": max_tokens, "temperature": temperature},
+    }, timeout=10)
+    result = resp.json()
+    return result["candidates"][0]["content"]["parts"][0]["text"].strip()
+
+def call_gemini_chat(system_instruction, user_message, temperature=0.3, max_tokens=200):
+    """Chat call — system instruction osobno, wiadomość użytkownika osobno."""
+    url = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/"
+        f"gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
     )
+    resp = _requests.post(url, json={
+        "systemInstruction": {"parts": [{"text": system_instruction}]},
+        "contents": [{"role": "user", "parts": [{"text": user_message}]}],
+        "generationConfig": {"maxOutputTokens": max_tokens, "temperature": temperature},
+    }, timeout=12)
     result = resp.json()
     return result["candidates"][0]["content"]["parts"][0]["text"].strip()
 
@@ -1172,15 +1183,16 @@ def api_ai_chat():
         role_lbl = driver_name if h.get("role") == "user" else "TruckBot"
         history_txt += f"{role_lbl}: {h.get('text','')}\n"
 
-    prompt = (
-        f"{system}\n\n"
-        + (f"Kontekst: {ctx}\n\n" if ctx else "")
-        + (f"Historia rozmowy:\n{history_txt}\n" if history_txt else "")
-        + f"{driver_name}: {message}"
-    )
+    # Wiadomość użytkownika z kontekstem i historią
+    user_msg = ""
+    if ctx:
+        user_msg += f"[Kontekst: {ctx}]\n"
+    if history_txt:
+        user_msg += f"[Historia:\n{history_txt}]\n"
+    user_msg += message
 
     try:
-        raw = call_gemini(prompt, temperature=0.3, max_tokens=150)
+        raw = call_gemini_chat(system, user_msg, temperature=0.25, max_tokens=200)
 
         action = None
         text = raw.strip()

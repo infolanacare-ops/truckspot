@@ -7152,38 +7152,80 @@ async function nextRadio(genre){
   }
 }
 
+// Tryb asystenta w tle — bez panelu, słucha głosu, odpowiada głosem
+let _bgAssistantActive = false;
+
 function openAiAssistant(){
-  const panel = document.getElementById('ai-panel');
-  if(panel.classList.contains('open')) return;
-  panel.classList.add('open');
-  // Powitanie przy pierwszym otwarciu w sesji
-  if(!window._aiGreeted){
-    window._aiGreeted = true;
-    const name = localStorage.getItem('ts_driver_name') || '';
-    const msgs = document.getElementById('ai-messages');
-    msgs.innerHTML = ''; // czyść poprzednie
-    const greeting = name
-      ? `Cześć ${name}! Jestem TruckBot. Powiedz gdzie jechać, znajdę parking, stację, restaurację — albo zatrzymaj nawigację.`
-      : `Cześć! Jestem TruckBot. Powiedz gdzie jechać — np. "jedź do Warszawy" — a ja poprowadzę.`;
-    addAiMessage(greeting, 'bot');
-    if(!window._aiChatMode) speakNav(greeting, false);
+  if(_bgAssistantActive){
+    // Już aktywny — wyłącz
+    _bgAssistantActive = false;
+    stopAiMic();
+    document.getElementById('fab-ai')?.classList.remove('listening');
+    return;
   }
+  _bgAssistantActive = true;
+  // Powitanie głosowe (bez panelu)
+  const name = profile.name || localStorage.getItem('ts_driver_name') || '';
+  const greeting = name
+    ? `Hej ${name}, słucham!`
+    : `Słucham, mów!`;
+  speakNav(greeting, false);
+  // Uruchom nasłuchiwanie po zakończeniu powitania
+  setTimeout(() => { if(_bgAssistantActive) startBgListening(); }, 1200);
 }
+
+function startBgListening(){
+  if(!_bgAssistantActive) return;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR) return;
+  const rec = new SR();
+  rec.lang = 'pl-PL';
+  rec.interimResults = false;
+  rec.maxAlternatives = 1;
+  window._bgRecognition = rec;
+
+  rec.onstart = () => document.getElementById('fab-ai')?.classList.add('listening');
+  rec.onresult = e => {
+    const transcript = e.results[0][0].transcript;
+    rec.stop();
+    sendAiMessage(transcript); // odpowie głosem, bez panelu
+  };
+  rec.onerror = () => {
+    document.getElementById('fab-ai')?.classList.remove('listening');
+    // Spróbuj ponownie po 2s
+    if(_bgAssistantActive) setTimeout(startBgListening, 2000);
+  };
+  rec.onend = () => {
+    document.getElementById('fab-ai')?.classList.remove('listening');
+    // Kontynuuj nasłuchiwanie po odpowiedzi
+    if(_bgAssistantActive) setTimeout(startBgListening, 1500);
+  };
+  rec.start();
+}
+
 function closeAiAssistant(){
+  _bgAssistantActive = false;
   document.getElementById('ai-panel').classList.remove('open');
   stopAiMic();
+  if(window._bgRecognition){ try{ window._bgRecognition.stop(); }catch(e){} window._bgRecognition = null; }
   window._aiGreeted = false;
 }
 
 function openAiChat(){
-  // Otwiera asystenta w trybie chat — fokus na input, bez głosowego powitania
-  window._aiChatMode = true;
-  openAiAssistant();
-  window._aiChatMode = false;
-  setTimeout(() => {
-    const inp = document.getElementById('ai-input');
-    if(inp) inp.focus();
-  }, 350);
+  // Chat — otwiera panel tekstowy
+  const panel = document.getElementById('ai-panel');
+  panel.classList.add('open');
+  if(!window._aiGreeted){
+    window._aiGreeted = true;
+    const name = profile.name || localStorage.getItem('ts_driver_name') || '';
+    const msgs = document.getElementById('ai-messages');
+    msgs.innerHTML = '';
+    const greeting = name
+      ? `Cześć ${name}! W czym mogę pomóc?`
+      : `Cześć! W czym mogę pomóc?`;
+    addAiMessage(greeting, 'bot');
+  }
+  setTimeout(() => document.getElementById('ai-input')?.focus(), 350);
 }
 
 function addAiMessage(text, role){
@@ -7205,9 +7247,10 @@ async function sendAiMessage(text){
   if(!msg) return;
   input.value = '';
 
-  addAiMessage(msg, 'user');
-  const loading = addAiMessage('...', 'bot loading');
-  document.getElementById('ai-panel-sub').textContent = 'Myślę...';
+  const inChat = document.getElementById('ai-panel').classList.contains('open');
+  if(inChat) addAiMessage(msg, 'user');
+  const loading = inChat ? addAiMessage('...', 'bot loading') : null;
+  if(inChat) document.getElementById('ai-panel-sub').textContent = 'Myślę...';
 
   // Kontekst kierowcy
   const driverName = profile.name || localStorage.getItem('ts_driver_name') || '';
@@ -7235,10 +7278,9 @@ async function sendAiMessage(text){
       })
     });
     const j = await r.json();
-    loading.classList.remove('loading');
     const reply = j.text || 'Chwileczkę, coś poszło nie tak.';
-    loading.textContent = reply;
-    document.getElementById('ai-panel-sub').textContent = 'Gotowy';
+    if(loading){ loading.classList.remove('loading'); loading.textContent = reply; }
+    if(inChat) document.getElementById('ai-panel-sub').textContent = 'Gotowy';
 
     // Dodaj odpowiedź bota do historii
     _aiHistory.push({role:'bot', text: reply});
@@ -7289,8 +7331,8 @@ async function sendAiMessage(text){
       stopRadio();
     }
   } catch(e){
-    loading.textContent = 'Błąd połączenia z asystentem.';
-    document.getElementById('ai-panel-sub').textContent = 'Błąd';
+    if(loading) loading.textContent = 'Błąd połączenia.';
+    if(inChat) document.getElementById('ai-panel-sub').textContent = 'Błąd';
   }
 }
 
