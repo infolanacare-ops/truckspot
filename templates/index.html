@@ -5217,9 +5217,15 @@ function startNavigation(){
       bar.classList.add('active');
     }
   }
-  navWatchId = navigator.geolocation.watchPosition(onNavPosition,
+  let _lastNavTick = 0;
+  navWatchId = navigator.geolocation.watchPosition(pos=>{
+    const now = Date.now();
+    if(now - _lastNavTick < 800) return; // throttle — max 1 tick/800ms
+    _lastNavTick = now;
+    onNavPosition(pos);
+  },
     e=>{ if(e.code!==e.TIMEOUT) showAlert('⚠️','GPS Error',''); },
-    {enableHighAccuracy:true, maximumAge:2000, timeout:15000});
+    {enableHighAccuracy:true, maximumAge:1000, timeout:15000});
 }
 
 async function loadRoutePois(){
@@ -5701,7 +5707,7 @@ let navUserInteractTimer = null;
 
 // Trzy poziomy perspektywy nawigacji
 const NAV_PITCH_MODES = [
-  {pitch:68, label:'3D',   zoomOff: +2},   // bliżej, ostry kąt
+  {pitch:45, label:'3D',   zoomOff: +1},   // lżejszy 3D — mniej GPU
   {pitch:50, label:'2.5D', zoomOff:  0},   // jak stare 3D
   {pitch:0,  label:'⊙',   zoomOff: -1},   // z góry
 ];
