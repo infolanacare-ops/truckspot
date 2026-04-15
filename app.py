@@ -1026,12 +1026,12 @@ def api_convoy_leave():
     return jsonify({"ok": True})
 
 
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
 @app.route("/api/ai-assist", methods=["POST"])
 def api_ai_assist():
-    """Generuje naturalną wypowiedź asystenta AI o atrakcjach w pobliżu."""
-    if not ANTHROPIC_API_KEY:
+    """Generuje naturalną wypowiedź asystenta AI o atrakcjach w pobliżu (Gemini free)."""
+    if not GEMINI_API_KEY:
         return jsonify({"error": "no_key"}), 503
 
     data = request.get_json(force=True)
@@ -1055,23 +1055,19 @@ def api_ai_assist():
         f"Atrakcje w pobliżu:\n{attrs_text}"
     )
 
+    url = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/"
+        f"gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
+    )
     try:
         resp = _requests.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={
-                "x-api-key": ANTHROPIC_API_KEY,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            },
-            json={
-                "model": "claude-haiku-4-5-20251001",
-                "max_tokens": 120,
-                "messages": [{"role": "user", "content": prompt}],
-            },
+            url,
+            json={"contents": [{"parts": [{"text": prompt}]}],
+                  "generationConfig": {"maxOutputTokens": 120, "temperature": 0.8}},
             timeout=8,
         )
         result = resp.json()
-        text = result["content"][0]["text"].strip()
+        text = result["candidates"][0]["content"]["parts"][0]["text"].strip()
         return jsonify({"text": text})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
