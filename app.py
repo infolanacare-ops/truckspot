@@ -1051,7 +1051,10 @@ Gdy kierowca chce słuchać muzyki/radia i podał gatunek:
 {"action":"play_radio","genre":"GATUNEK_PO_ANGIELSKU"}
 Przykłady gatunków: rock, pop, jazz, classical, country, metal, reggae, electronic, folk, blues, hip-hop, polish
 
-Gdy kierowca chce zatrzymać muzykę/radio:
+Gdy kierowca chce spauzować / chwilę ciszy / zatrzymać na chwilę:
+{"action":"pause_radio"}
+
+Gdy kierowca chce całkowicie zakończyć/wyłączyć radio:
 {"action":"stop_radio"}
 
 Gdy kierowca chce zmienić stację / następna / inna / nudzi się:

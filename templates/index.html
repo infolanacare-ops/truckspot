@@ -1152,31 +1152,23 @@ body.navigating .nav-tl-handle{display:block}
 .fab-ai.listening{animation:ai-pulse 1s infinite;background:linear-gradient(135deg,#ef4444,#f97316)}
 @keyframes ai-pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.5)}50%{box-shadow:0 0 0 12px rgba(239,68,68,0)}}
 body.navigating .fab-ai{display:none}
-/* ── Radio mini player ── */
-.radio-player{
-  position:fixed;bottom:5rem;left:50%;transform:translateX(-50%) translateY(120%);
-  z-index:1300;
-  display:flex;align-items:center;gap:.6rem;
-  background:rgba(14,18,32,.95);backdrop-filter:blur(16px);
-  border:1.5px solid rgba(99,102,241,.4);border-radius:20px;
-  padding:.5rem .8rem .5rem 1rem;
-  box-shadow:0 4px 24px rgba(0,0,0,.5);
-  transition:transform .3s cubic-bezier(.22,.9,.36,1);
-  pointer-events:auto;min-width:200px;max-width:80vw;
+/* ── Radio — mała pigułka ── */
+.radio-pill{
+  position:fixed;top:1rem;right:1rem;z-index:1300;
+  display:none;align-items:center;gap:.4rem;
+  background:rgba(14,18,32,.92);backdrop-filter:blur(12px);
+  border:1.5px solid rgba(99,102,241,.35);border-radius:50px;
+  padding:.3rem .55rem .3rem .45rem;
+  box-shadow:0 2px 12px rgba(0,0,0,.4);
+  pointer-events:auto;
 }
-.radio-player.visible{transform:translateX(-50%) translateY(0)}
-.radio-player-icon{font-size:1.3rem;animation:radio-spin 3s linear infinite}
-@keyframes radio-spin{0%,100%{opacity:1}50%{opacity:.5}}
-.radio-player-info{flex:1;min-width:0}
-.radio-player-name{font-size:.8rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.radio-player-genre{font-size:.6rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.05em}
-.radio-player-fav{background:none;border:1.5px solid rgba(255,255,255,.15);
-  border-radius:10px;padding:.3rem .5rem;color:rgba(255,255,255,.35);font-size:1rem;cursor:pointer;
-  flex-shrink:0;transition:.2s}
-.radio-player-fav.active{color:#ef4444;border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.12)}
-.radio-player-stop{background:rgba(239,68,68,.2);border:1.5px solid rgba(239,68,68,.35);
-  border-radius:10px;padding:.3rem .6rem;color:#ef4444;font-size:.75rem;font-weight:700;cursor:pointer;
-  white-space:nowrap;flex-shrink:0}
+.radio-pill.visible{display:flex}
+.radio-pill-dot{width:8px;height:8px;border-radius:50%;background:#6366f1;
+  animation:radio-pulse 1.2s ease infinite}
+@keyframes radio-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.7)}}
+.radio-pill-fav{background:none;border:none;font-size:.95rem;cursor:pointer;
+  color:rgba(255,255,255,.3);padding:0;line-height:1;transition:.15s}
+.radio-pill-fav.active{color:#ef4444}
 /* AI group — dwa guziki w obwódce */
 .nav-ai-group{
   display:flex;gap:.5rem;margin-bottom:.6rem;
@@ -2666,15 +2658,10 @@ body.navigating .nav-pois-strip{display:none}
 <button class="fab-add" id="fab-add" onclick="togglePicking()" style="display:none">＋</button>
 <button class="fab-ai" id="fab-ai" onclick="openAiAssistant()" title="Asystent AI">🎙</button>
 
-<!-- Radio mini player -->
-<div class="radio-player" id="radio-player">
-  <span class="radio-player-icon">📻</span>
-  <div class="radio-player-info">
-    <div class="radio-player-name" id="radio-station-name">Radio</div>
-    <div class="radio-player-genre" id="radio-station-genre"></div>
-  </div>
-  <button class="radio-player-fav" id="radio-fav-btn" onclick="toggleFavoriteRadio()" title="Ulubiona stacja">♡</button>
-  <button class="radio-player-stop" onclick="stopRadio()">■ Stop</button>
+<!-- Radio — mała pigułka -->
+<div class="radio-pill" id="radio-player">
+  <span class="radio-pill-dot"></span>
+  <button class="radio-pill-fav" id="radio-fav-btn" onclick="toggleFavoriteRadio()" title="Ulubiona stacja">♡</button>
 </div>
 <audio id="radio-audio" preload="none"></audio>
 
@@ -7046,39 +7033,30 @@ let _aiListening = false;
 async function playRadio(genre){
   const player = document.getElementById('radio-player');
   const audio  = document.getElementById('radio-audio');
-  const nameEl = document.getElementById('radio-station-name');
-  const genreEl= document.getElementById('radio-station-genre');
-
-  nameEl.textContent  = 'Szukam stacji...';
-  genreEl.textContent = genre;
-  player.classList.add('visible');
 
   try {
-    // radio-browser.info — darmowe, bez klucza API
     const url = `https://de1.api.radio-browser.info/json/stations/bytag/${encodeURIComponent(genre)}?limit=50&hidebroken=true&order=random`;
     const r = await fetch(url);
     const stations = await r.json();
     if(!stations.length) throw new Error('Brak stacji');
 
-    // Wybierz pierwszą z działającym streamem
     const station = stations.find(s => s.url_resolved) || stations[0];
     const streamUrl = station.url_resolved || station.url;
 
     _currentRadioStation = {name: station.name||genre, url: streamUrl, genre};
+    window._radioStationsCache = stations;
+    window._radioGenreCache = genre;
     audio.src = streamUrl;
     audio.play();
-    nameEl.textContent  = station.name || genre;
-    genreEl.textContent = genre.toUpperCase();
+    player.classList.add('visible');
     updateFavBtn();
 
     audio.onerror = () => {
-      // Spróbuj następnej stacji
       const next = stations.find(s => s.url_resolved && s.url_resolved !== streamUrl);
-      if(next){ audio.src = next.url_resolved; audio.play(); nameEl.textContent = next.name; }
+      if(next){ audio.src = next.url_resolved; audio.play(); }
     };
   } catch(e){
-    nameEl.textContent = 'Nie znaleziono stacji';
-    setTimeout(()=> player.classList.remove('visible'), 2500);
+    setTimeout(()=> player.classList.remove('visible'), 2000);
   }
 }
 
@@ -7091,6 +7069,12 @@ function stopRadio(){
   document.getElementById('radio-player').classList.remove('visible');
   window._radioStationsCache = null;
   _currentRadioStation = null;
+}
+
+function pauseRadio(){
+  const audio = document.getElementById('radio-audio');
+  if(audio.paused){ audio.play(); document.getElementById('radio-player').classList.add('visible'); }
+  else { audio.pause(); document.getElementById('radio-player').classList.remove('visible'); }
 }
 
 function toggleFavoriteRadio(){
@@ -7147,7 +7131,7 @@ async function nextRadio(genre){
   nameEl.textContent = 'Szukam następnej...';
 
   try {
-    const g = genre || (genreEl.textContent.toLowerCase()) || 'pop';
+    const g = genre || (window._radioGenreCache) || 'pop';
     if(!window._radioStationsCache || window._radioGenreCache !== g){
       const url = `https://de1.api.radio-browser.info/json/stations/bytag/${encodeURIComponent(g)}?limit=50&hidebroken=true&order=random`;
       const r = await fetch(url);
@@ -7162,8 +7146,6 @@ async function nextRadio(genre){
     _currentRadioStation = {name: pick.name||g, url: pick.url_resolved, genre: g};
     audio.src = pick.url_resolved;
     audio.play();
-    nameEl.textContent  = pick.name || g;
-    genreEl.textContent = g.toUpperCase();
     updateFavBtn();
   } catch(e){
     nameEl.textContent = 'Brak innych stacji';
@@ -7290,6 +7272,8 @@ async function sendAiMessage(text){
       playRadio(j.action.genre || 'pop');
     } else if(act === 'next_radio'){
       nextRadio(j.action.genre);
+    } else if(act === 'pause_radio'){
+      pauseRadio();
     } else if(act === 'stop_radio'){
       stopRadio();
     }
