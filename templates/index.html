@@ -1450,10 +1450,8 @@ body.navigating .fab-ai{display:none}
   min-width:0;overflow:hidden;
 }
 .nav-eta-cell-val{
-  font-family:var(--font-head);font-size:1.15rem;font-weight:900;
-  color:#fff;line-height:1;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  max-width:100%;
+  font-family:var(--font-head);font-size:clamp(.75rem,4.2vw,1.1rem);font-weight:900;
+  color:#fff;line-height:1;white-space:nowrap;
 }
 .nav-eta-cell-lbl{
   font-size:.48rem;color:rgba(255,255,255,.4);
@@ -4696,7 +4694,8 @@ function fmtDist(m){
 }
 function fmtDur(s){
   const m=Math.round(s/60);
-  return m>=60 ? Math.floor(m/60)+'h '+(m%60)+'min' : m+' min';
+  if(m>=60){ const h=Math.floor(m/60),mm=m%60; return mm>0 ? h+'h'+mm+'m' : h+'h'; }
+  return m+'min';
 }
 function fmtArrival(secs){
   const d = new Date(Date.now() + secs*1000);
