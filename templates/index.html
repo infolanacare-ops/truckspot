@@ -6789,16 +6789,7 @@ async function fetchNearbyAttractions(lat, lng){
   showAttractionToast(top);
 }
 
-function showAttractionToast(attrs){
-  // Lista jako tekst do TTS
-  const ttsList = attrs.map(a => {
-    const d = a.dist < 1 ? Math.round(a.dist*1000)+' metrów' : a.dist.toFixed(1)+' km';
-    return `${a.name || a.label} — ${d}`;
-  }).join(', ');
-  const ttsText = `Zatrzymałeś się. W pobliżu: ${ttsList}.`;
-  speakNav(ttsText, false);
-
-  // Toast — używamy istniejącej funkcji convoy toast ze specjalną treścią
+async function showAttractionToast(attrs){
   const first = attrs[0];
   const moreCount = attrs.length - 1;
   const distStr = first.dist < 1
@@ -6807,10 +6798,39 @@ function showAttractionToast(attrs){
   const moreTxt = moreCount > 0 ? ` +${moreCount} więcej` : '';
   const msg = `${first.name || first.label} · ${distStr}${moreTxt}`;
 
-  showConvoyToast(first.icon, '#1e3a2f', 'W pobliżu:', msg, () => {
-    // Kliknięcie → otwórz pełny panel atrakcji
-    showAttractionsPanel(attrs);
-  });
+  // Pokaż toast od razu
+  showConvoyToast(first.icon, '#1e3a2f', 'W pobliżu:', msg,
+    () => showAttractionsPanel(attrs));
+
+  // Zapytaj AI o naturalną wypowiedź
+  try {
+    const r = await fetch('/api/ai-assist', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({attrs: attrs.map(a => ({
+        icon: a.icon, label: a.label,
+        name: a.name || null,
+        dist: a.dist
+      }))}),
+    });
+    if(r.ok){
+      const j = await r.json();
+      if(j.text) speakNav(j.text, false);
+    } else {
+      // Fallback — szablon
+      const ttsList = attrs.map(a => {
+        const d = a.dist < 1 ? Math.round(a.dist*1000)+' metrów' : a.dist.toFixed(1)+' km';
+        return `${a.name || a.label} ${d}`;
+      }).join(', ');
+      speakNav(`Zatrzymałeś się. W pobliżu masz: ${ttsList}.`, false);
+    }
+  } catch(e){
+    const ttsList = attrs.map(a => {
+      const d = a.dist < 1 ? Math.round(a.dist*1000)+' metrów' : a.dist.toFixed(1)+' km';
+      return `${a.name || a.label} ${d}`;
+    }).join(', ');
+    speakNav(`Zatrzymałeś się. W pobliżu masz: ${ttsList}.`, false);
+  }
 }
 
 function showAttractionsPanel(attrs){
