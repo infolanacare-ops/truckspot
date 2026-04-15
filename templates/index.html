@@ -1466,6 +1466,51 @@ body.navigating .fab-ai{display:none}
   border-radius:6px;padding:.05rem .3rem;
   font-size:.58rem;font-weight:800;color:#10b981;white-space:nowrap;
 }
+/* Broadcast "I" — pulsujące złote kółko nad markerem */
+.convoy-broadcast-btn{
+  position:absolute;top:-18px;left:50%;transform:translateX(-50%);
+  width:20px;height:20px;border-radius:50%;
+  background:radial-gradient(circle,#ffd700,#f59e0b);
+  border:2px solid #ffd700;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.7rem;font-weight:900;color:#1a1200;
+  animation:broadcast-pulse 1.4s infinite;
+  cursor:pointer;box-shadow:0 0 10px #ffd700, 0 0 20px rgba(245,158,11,.5);
+  z-index:10;
+}
+@keyframes broadcast-pulse{
+  0%,100%{box-shadow:0 0 8px #ffd700,0 0 16px rgba(245,158,11,.4);transform:translateX(-50%) scale(1)}
+  50%{box-shadow:0 0 16px #ffd700,0 0 30px rgba(245,158,11,.7);transform:translateX(-50%) scale(1.18)}
+}
+/* Karta kierowcy — popup po kliknięciu markera */
+.driver-card{
+  position:fixed;bottom:0;left:0;right:0;z-index:2050;
+  background:var(--panel);border-top:2px solid #10b981;border-radius:20px 20px 0 0;
+  padding:1rem 1rem calc(1rem + env(safe-area-inset-bottom));
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+}
+.driver-card.open{transform:translateY(0)}
+.driver-card-top{display:flex;align-items:center;gap:.85rem;margin-bottom:.9rem}
+.driver-card-ava{
+  width:56px;height:56px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:1.8rem;
+  border:2px solid #10b981;
+}
+.driver-card-name{font-family:var(--font-head);font-size:1.1rem;font-weight:900;color:var(--text)}
+.driver-card-meta{font-size:.75rem;color:var(--muted);margin-top:.15rem}
+.driver-card-close{margin-left:auto;background:rgba(255,255,255,.1);border:none;color:var(--text);width:32px;height:32px;border-radius:50%;cursor:pointer}
+.driver-card-broadcast{
+  background:rgba(245,158,11,.12);border:1.5px solid rgba(245,158,11,.4);border-radius:14px;
+  padding:.65rem .9rem;margin-bottom:.8rem;font-size:.83rem;color:#fbbf24;line-height:1.4;
+}
+.driver-card-broadcast::before{content:'📢 ';font-size:.9rem}
+.driver-card-actions{display:flex;gap:.6rem}
+.driver-card-btn{
+  flex:1;padding:.7rem;border:none;border-radius:14px;cursor:pointer;
+  font-family:var(--font-head);font-size:.88rem;font-weight:800;transition:.15s;
+}
+.driver-card-btn-chat{background:#10b981;color:#fff}
+.driver-card-btn-map{background:var(--panel2);color:var(--text);border:1.5px solid var(--border)}
 
 /* TIR modal — wymuszony przed nawigacją */
 .tir-confirm-modal{
@@ -2667,11 +2712,37 @@ body.navigating .nav-pois-strip{display:none}
     </button>
   </div>
 
+  <!-- Broadcast — wiadomość do ogółu -->
+  <div style="display:flex;gap:.5rem;margin-bottom:.85rem;align-items:center">
+    <div style="font-size:1.1rem;flex-shrink:0">📢</div>
+    <input id="convoy-broadcast-input" placeholder="Wiadomość do wszystkich w pobliżu..." maxlength="80"
+      style="flex:1;padding:.5rem .75rem;border:1.5px solid rgba(245,158,11,.35);border-radius:12px;
+             background:rgba(245,158,11,.07);color:var(--text);font-size:.82rem;outline:none;"
+      oninput="scheduleConvoyBroadcast()">
+  </div>
+
   <!-- Lista kierowców w pobliżu -->
   <div id="convoy-drivers-list">
     <div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:.82rem">
       Włącz widoczność aby zobaczyć MOBILKI w pobliżu
     </div>
+  </div>
+</div>
+
+<!-- DRIVER CARD — karta kierowcy po kliknięciu markera -->
+<div class="driver-card" id="driver-card">
+  <div class="driver-card-top">
+    <div class="driver-card-ava" id="dcard-ava" style="background:#10b981">🚛</div>
+    <div>
+      <div class="driver-card-name" id="dcard-name">Kierowca</div>
+      <div class="driver-card-meta" id="dcard-meta"></div>
+    </div>
+    <button class="driver-card-close" onclick="closeDriverCard()">✕</button>
+  </div>
+  <div class="driver-card-broadcast" id="dcard-broadcast" style="display:none"></div>
+  <div class="driver-card-actions">
+    <button class="driver-card-btn driver-card-btn-chat" id="dcard-chat-btn">✉ Napisz wiadomość</button>
+    <button class="driver-card-btn driver-card-btn-map" id="dcard-map-btn">📍 Pokaż na mapie</button>
   </div>
 </div>
 
@@ -5249,6 +5320,8 @@ async function convoyPing(){
         avatar_color: profile.avatarColor || '#f59e0b',
         status:       convoyStatus,
         dest:         convoyDest,
+        broadcast:    (document.getElementById('convoy-broadcast-input')?.value||'').trim(),
+        vehicle:      profile.mode || 'tir',
         convoy_id:    '',
       })
     });
@@ -5460,7 +5533,9 @@ function renderConvoyMarkers(drivers){
     const el = document.createElement('div');
     el.className = 'convoy-marker';
     const sc = STATUS_CFG[d.status] || STATUS_CFG.driving;
+    const hasBroadcast = (d.broadcast||'').trim().length > 0;
     el.innerHTML = `
+      ${hasBroadcast ? `<div class="convoy-broadcast-btn" onclick="event.stopPropagation();showBroadcast('${d.voter_id}')">ℹ</div>` : ''}
       <svg class="convoy-marker-arrow" style="transform:rotate(${d.heading}deg)"
            viewBox="0 0 36 44" xmlns="http://www.w3.org/2000/svg">
         <polygon points="18,2 34,42 18,34 2,42"
@@ -5468,10 +5543,7 @@ function renderConvoyMarkers(drivers){
         <text x="18" y="28" text-anchor="middle" font-size="14">${d.avatar||'🚛'}</text>
       </svg>
       <div class="convoy-marker-label">${(d.name||'').substring(0,8)}</div>`;
-    el.addEventListener('click', () => {
-      toggleConvoyPanel();
-      focusConvoyDriver(d.lat, d.lng);
-    });
+    el.addEventListener('click', () => openDriverCard(d));
     if(convoyMarkers[d.voter_id]){
       convoyMarkers[d.voter_id].setLngLat([d.lng, d.lat]);
       convoyMarkers[d.voter_id].getElement().querySelector('.convoy-marker-arrow')
@@ -5583,6 +5655,57 @@ function showConvoyMsgBadge(count){
   const badge = document.getElementById('convoy-msg-badge');
   if(badge){ badge.textContent = count > 9 ? '9+' : count; badge.classList.add('show'); }
 }
+// ── Driver Card (popup po kliknięciu markera) ─────────────────────────────────
+let _dcardData = null;
+
+function openDriverCard(d){
+  _dcardData = d;
+  const sc = STATUS_CFG[d.status] || STATUS_CFG.driving;
+  const distTxt = d.dist_km < 1 ? Math.round(d.dist_km*1000)+'m' : d.dist_km+'km';
+  const vehicleLabel = {tir:'🚛 TIR', bus:'🚐 Bus/Van', tourist:'🧳 Turysta'}[d.vehicle||'tir'] || '🚛 TIR';
+
+  document.getElementById('dcard-ava').textContent = d.avatar||'🚛';
+  document.getElementById('dcard-ava').style.background = d.avatar_color||'#10b981';
+  document.getElementById('dcard-name').textContent = d.name||'TRUCKER';
+  document.getElementById('dcard-meta').textContent = `${sc.icon} ${sc.label} · ${vehicleLabel} · ${distTxt}`;
+
+  const bc = document.getElementById('dcard-broadcast');
+  if((d.broadcast||'').trim()){
+    bc.style.display = '';
+    bc.textContent = d.broadcast;
+  } else {
+    bc.style.display = 'none';
+  }
+
+  document.getElementById('dcard-chat-btn').onclick = () => {
+    closeDriverCard();
+    openDriverChat(d.voter_id, d.name||'TRUCKER', d.avatar||'🚛', d.avatar_color||'#10b981', `${sc.icon} ${sc.label}`);
+  };
+  document.getElementById('dcard-map-btn').onclick = () => {
+    closeDriverCard();
+    map.flyTo({center:[d.lng, d.lat], zoom:14, duration:1000});
+  };
+
+  document.getElementById('driver-card').classList.add('open');
+}
+
+function closeDriverCard(){
+  document.getElementById('driver-card').classList.remove('open');
+  _dcardData = null;
+}
+
+function showBroadcast(voterId){
+  const d = convoyNearby.find(x => x.voter_id === voterId);
+  if(!d || !d.broadcast) return;
+  showAlert('📢', d.name||'TRUCKER', d.broadcast);
+}
+
+let _broadcastDebounce = null;
+function scheduleConvoyBroadcast(){
+  if(_broadcastDebounce) clearTimeout(_broadcastDebounce);
+  _broadcastDebounce = setTimeout(() => { if(convoyVisible) convoyPing(); }, 1500);
+}
+
 function clearConvoyMsgBadge(){
   const badge = document.getElementById('convoy-msg-badge');
   if(badge) badge.classList.remove('show');
@@ -6340,8 +6463,12 @@ function stopNavigation(){
   // Zamień strzałkę z powrotem na kółko
   if(gpsMarker){ const ll = gpsMarker.getLngLat(); gpsMarker.remove(); gpsMarker=null;
     gpsMarker = mkGpsDotMarker(ll.lat, ll.lng); }
-  map.easeTo({pitch:0, bearing:0, duration:600});
+  map.easeTo({pitch:0, bearing:0, zoom:10, duration:800});
   releaseWakeLock();
+  // Jeśli MOBILKI włączone — pokaż kierowców na mapie po zakończeniu navi
+  if(convoyVisible && convoyNearby.length > 0){
+    setTimeout(() => showAlert('🚛','MOBILKI',`${convoyNearby.length} kierowców w pobliżu`), 1200);
+  }
   navUserInteracting = false; clearTimeout(navUserInteractTimer);
   navPitchMode = 0;
   const pb = document.getElementById('nav-pitch-btn');

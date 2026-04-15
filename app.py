@@ -977,8 +977,10 @@ def api_convoy_ping():
         "lng":        lng,
         "heading":    float(data.get("heading", 0)),
         "speed":      float(data.get("speed", 0)),
-        "status":     str(data.get("status", "driving"))[:20],  # driving/break/sleep/social
+        "status":     str(data.get("status", "driving"))[:20],
         "dest":       str(data.get("dest", ""))[:60],
+        "broadcast":  str(data.get("broadcast", ""))[:80],
+        "vehicle":    str(data.get("vehicle", "tir"))[:20],
         "convoy_id":  str(data.get("convoy_id", ""))[:32],
         "ts":         now,
     }
