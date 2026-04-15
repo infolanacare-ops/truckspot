@@ -5334,13 +5334,14 @@ function speakAi(txt){
     if(voice) utt.voice = voice;
     speechSynthesis.speak(utt);
   };
-  // Jeśli nawigacja właśnie mówi — poczekaj aż skończy (maks. ~8s)
+  // Jeśli nawigacja właśnie mówi — poczekaj aż skończy, potem 10s ciszy i powtórz
   if(_navSpeaking || speechSynthesis.speaking){
     let tries = 0;
     const wait = () => {
-      if((_navSpeaking || speechSynthesis.speaking) && tries++ < 12)
+      if((_navSpeaking || speechSynthesis.speaking) && tries++ < 20)
         return setTimeout(wait, 700);
-      _do();
+      // Nawigacja skończyła — odczekaj 10s i powtórz odpowiedź AI
+      setTimeout(_do, 10000);
     };
     setTimeout(wait, 700);
   } else {
