@@ -1351,6 +1351,58 @@ body.navigating .fab-ai{display:none}
   color:#10b981;margin-bottom:.2rem;display:flex;align-items:center;gap:.5rem;
 }
 .convoy-panel-sub{font-size:.75rem;color:var(--muted);margin-bottom:.9rem}
+/* Chat z kierowcą */
+.driver-chat{
+  position:fixed;bottom:0;left:0;right:0;z-index:2100;
+  background:var(--panel);border-top:2px solid #10b981;
+  border-radius:20px 20px 0 0;
+  display:flex;flex-direction:column;
+  max-height:70vh;
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+}
+.driver-chat.open{transform:translateY(0)}
+.driver-chat-header{
+  display:flex;align-items:center;gap:.7rem;
+  padding:.75rem 1rem;border-bottom:1px solid var(--border);
+}
+.driver-chat-avatar{
+  width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;
+}
+.driver-chat-name{font-family:var(--font-head);font-weight:800;font-size:.95rem;color:var(--text)}
+.driver-chat-status{font-size:.7rem;color:var(--muted)}
+.driver-chat-close{margin-left:auto;background:rgba(255,255,255,.1);border:none;color:var(--text);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:.9rem}
+.driver-chat-messages{
+  flex:1;overflow-y:auto;padding:.75rem 1rem;display:flex;flex-direction:column;gap:.5rem;
+  min-height:120px;
+}
+.driver-chat-msg{
+  max-width:78%;padding:.5rem .75rem;border-radius:14px;font-size:.83rem;line-height:1.4;
+}
+.driver-chat-msg.mine{align-self:flex-end;background:#10b981;color:#fff;border-radius:14px 14px 4px 14px}
+.driver-chat-msg.theirs{align-self:flex-start;background:var(--panel2);color:var(--text);border-radius:14px 14px 14px 4px}
+.driver-chat-msg-name{font-size:.65rem;color:rgba(255,255,255,.6);margin-bottom:.15rem}
+.driver-chat-input-row{
+  display:flex;gap:.5rem;padding:.65rem 1rem calc(.65rem + env(safe-area-inset-bottom));
+  border-top:1px solid var(--border);
+}
+.driver-chat-input{
+  flex:1;padding:.6rem .85rem;border:1.5px solid var(--border);border-radius:20px;
+  background:var(--input-bg);color:var(--text);font-size:.88rem;outline:none;
+}
+.driver-chat-input:focus{border-color:#10b981}
+.driver-chat-send{
+  width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;
+  background:#10b981;color:#fff;font-size:1rem;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+/* Badge nowych wiadomości na przycisku konwoju */
+.convoy-msg-badge{
+  position:absolute;top:-4px;right:-4px;width:16px;height:16px;
+  background:#ef4444;border-radius:50%;font-size:.6rem;font-weight:900;color:#fff;
+  display:none;align-items:center;justify-content:center;
+}
+.convoy-msg-badge.show{display:flex}
 /* Status switcher */
 .convoy-status-row{display:flex;gap:.4rem;margin-bottom:.9rem;flex-wrap:wrap}
 .convoy-status-btn{
@@ -1936,9 +1988,10 @@ body.navigating .nav-pois-strip{display:none}
 </div>
 
 <!-- KONWÓJ button -->
-<button class="convoy-btn" id="convoy-btn" onclick="toggleConvoyPanel()" title="MOBILKI">
+<button class="convoy-btn" id="convoy-btn" onclick="toggleConvoyPanel(); clearConvoyMsgBadge()" title="MOBILKI" style="position:relative">
   🚛
   <span class="convoy-btn-count" id="convoy-btn-count">0</span>
+  <span class="convoy-msg-badge" id="convoy-msg-badge"></span>
 </button>
 
 <!-- REPORT SPEED-DIAL (slide-up) -->
@@ -2588,9 +2641,14 @@ body.navigating .nav-pois-strip{display:none}
   <!-- Status kierowcy -->
   <div class="convoy-status-row">
     <button class="convoy-status-btn active" id="cs-driving" onclick="setConvoyStatus('driving')">🚛 Jadę</button>
-    <button class="convoy-status-btn" id="cs-break"   onclick="setConvoyStatus('break')">☕ Przerwa</button>
+    <button class="convoy-status-btn" id="cs-coffee"  onclick="setConvoyStatus('coffee')">☕ Kawa</button>
+    <button class="convoy-status-btn" id="cs-grill"   onclick="setConvoyStatus('grill')">🔥 Grill</button>
+    <button class="convoy-status-btn" id="cs-cooking" onclick="setConvoyStatus('cooking')">🍲 Gotuję</button>
+    <button class="convoy-status-btn" id="cs-chat"    onclick="setConvoyStatus('chat')">💬 Pogadam</button>
+    <button class="convoy-status-btn" id="cs-walk"    onclick="setConvoyStatus('walk')">🚶 Spacer</button>
+    <button class="convoy-status-btn" id="cs-run"     onclick="setConvoyStatus('run')">🏃 Ćwiczę</button>
     <button class="convoy-status-btn" id="cs-sleep"   onclick="setConvoyStatus('sleep')">🛌 Śpię</button>
-    <button class="convoy-status-btn" id="cs-social"  onclick="setConvoyStatus('social')">🃏 Towarzystwo</button>
+    <button class="convoy-status-btn" id="cs-family"  onclick="setConvoyStatus('family')">📞 Rodzina</button>
   </div>
 
   <!-- Cel podróży -->
@@ -2614,6 +2672,24 @@ body.navigating .nav-pois-strip{display:none}
     <div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:.82rem">
       Włącz widoczność aby zobaczyć MOBILKI w pobliżu
     </div>
+  </div>
+</div>
+
+<!-- DRIVER CHAT — bezpośrednia wiadomość do mobilki -->
+<div class="driver-chat" id="driver-chat">
+  <div class="driver-chat-header">
+    <div class="driver-chat-avatar" id="dc-avatar" style="background:#10b981">🚛</div>
+    <div>
+      <div class="driver-chat-name" id="dc-name">Kierowca</div>
+      <div class="driver-chat-status" id="dc-status"></div>
+    </div>
+    <button class="driver-chat-close" onclick="closeDriverChat()">✕</button>
+  </div>
+  <div class="driver-chat-messages" id="dc-messages"></div>
+  <div class="driver-chat-input-row">
+    <input class="driver-chat-input" id="dc-input" placeholder="Napisz wiadomość..."
+      maxlength="200" onkeydown="if(event.key==='Enter')sendDriverMessage()">
+    <button class="driver-chat-send" onclick="sendDriverMessage()">➤</button>
   </div>
 </div>
 
@@ -5089,10 +5165,18 @@ let convoyMarkers   = {};   // voter_id → mapboxgl.Marker
 let convoyNearby    = [];   // ostatnia lista z serwera
 
 const STATUS_CFG = {
-  driving: {icon:'🚛', label:'Jadę',       cls:'status-driving'},
-  break:   {icon:'☕', label:'Przerwa',     cls:'status-break'},
-  sleep:   {icon:'🛌', label:'Śpię',       cls:'status-sleep'},
-  social:  {icon:'🃏', label:'Towarzystwo', cls:'status-social'},
+  driving: {icon:'🚛', label:'Jadę',         cls:'status-driving'},
+  coffee:  {icon:'☕', label:'Robię kawę',   cls:'status-break'},
+  grill:   {icon:'🔥', label:'Grilluję',     cls:'status-social'},
+  cooking: {icon:'🍲', label:'Gotuję',       cls:'status-social'},
+  chat:    {icon:'💬', label:'Pogadam',      cls:'status-break'},
+  walk:    {icon:'🚶', label:'Na spacerze',  cls:'status-break'},
+  run:     {icon:'🏃', label:'Ćwiczę',       cls:'status-break'},
+  sleep:   {icon:'🛌', label:'Śpię',         cls:'status-sleep'},
+  family:  {icon:'📞', label:'Z rodziną',    cls:'status-sleep'},
+  // aliasy wsteczne
+  break:   {icon:'☕', label:'Przerwa',      cls:'status-break'},
+  social:  {icon:'🃏', label:'Towarzystwo',  cls:'status-social'},
 };
 
 function toggleConvoyPanel(){
@@ -5346,7 +5430,8 @@ function updateConvoyUI(drivers){
     const sc = STATUS_CFG[d.status] || STATUS_CFG.driving;
     const dest = d.dest ? `→ ${d.dest}` : '';
     const speed = d.speed > 5 ? `${Math.round(d.speed)} km/h` : '';
-    return `<div class="convoy-driver-card" onclick="focusConvoyDriver(${d.lat},${d.lng})">
+    const distTxt = d.dist_km < 1 ? Math.round(d.dist_km*1000)+'m' : d.dist_km+'km';
+    return `<div class="convoy-driver-card" onclick="openDriverChat('${d.voter_id}','${(d.name||'TRUCKER').replace(/'/g,"\\'")}','${d.avatar||'🚛'}','${d.avatar_color||'#f59e0b'}','${sc.icon} ${sc.label}')">
       <div class="convoy-driver-avatar" style="background:${d.avatar_color||'#f59e0b'}">${d.avatar||'🚛'}</div>
       <div class="convoy-driver-info">
         <div class="convoy-driver-name">${d.name||'TRUCKER'}</div>
@@ -5356,7 +5441,10 @@ function updateConvoyUI(drivers){
           ${speed ? `<span>${speed}</span>` : ''}
         </div>
       </div>
-      <div class="convoy-driver-dist">${d.dist_km < 1 ? Math.round(d.dist_km*1000)+'m' : d.dist_km+'km'}</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.3rem">
+        <div class="convoy-driver-dist">${distTxt}</div>
+        <div style="font-size:.65rem;color:#10b981;font-weight:700">✉ napisz</div>
+      </div>
     </div>`;
   }).join('');
 }
@@ -5398,6 +5486,107 @@ function renderConvoyMarkers(drivers){
 function focusConvoyDriver(lat, lng){
   map.flyTo({center:[lng,lat], zoom:13, duration:1200});
   document.getElementById('convoy-panel').classList.remove('open');
+}
+
+// ── Driver Chat ───────────────────────────────────────────────────────────────
+let _dcToId    = null;
+let _dcPollTimer = null;
+let _dcLastTs  = 0;
+
+function openDriverChat(toId, name, avatar, color, status){
+  _dcToId = toId;
+  _dcLastTs = Date.now() / 1000 - 300; // załaduj ostatnie 5 min
+  document.getElementById('dc-avatar').textContent = avatar;
+  document.getElementById('dc-avatar').style.background = color;
+  document.getElementById('dc-name').textContent = name;
+  document.getElementById('dc-status').textContent = status;
+  document.getElementById('dc-messages').innerHTML = '';
+  document.getElementById('driver-chat').classList.add('open');
+  document.getElementById('dc-input').focus();
+  // Zamknij panel konwoju
+  document.getElementById('convoy-panel').classList.remove('open');
+  document.getElementById('convoy-panel-backdrop').classList.remove('open');
+  // Polluj nowe wiadomości co 5s
+  _dcPollTimer = setInterval(pollDriverMessages, 5000);
+  pollDriverMessages();
+}
+
+function closeDriverChat(){
+  document.getElementById('driver-chat').classList.remove('open');
+  _dcToId = null;
+  if(_dcPollTimer){ clearInterval(_dcPollTimer); _dcPollTimer = null; }
+}
+
+function addChatBubble(text, mine, senderName){
+  const msgs = document.getElementById('dc-messages');
+  const div = document.createElement('div');
+  div.className = `driver-chat-msg ${mine ? 'mine' : 'theirs'}`;
+  div.innerHTML = mine ? text : `<div class="driver-chat-msg-name">${senderName}</div>${text}`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+async function sendDriverMessage(){
+  const input = document.getElementById('dc-input');
+  const text = input.value.trim();
+  if(!text || !_dcToId) return;
+  input.value = '';
+  addChatBubble(text, true);
+  try {
+    await fetch('/api/convoy/message', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        from_id: getVoterId(),
+        to_id:   _dcToId,
+        text,
+        name:   profile.name || 'TRUCKER',
+        avatar: profile.avatar || '🚛',
+      })
+    });
+  } catch(e){}
+}
+
+async function pollDriverMessages(){
+  if(!_dcToId) return;
+  try {
+    const r = await fetch(`/api/convoy/messages?voter_id=${getVoterId()}&since=${_dcLastTs}`);
+    const msgs = await r.json();
+    for(const m of msgs){
+      // Pokaż tylko wiadomości od aktualnie otwartego rozmówcy
+      if(m.from_id === _dcToId){
+        addChatBubble(m.text, false, m.name || 'TRUCKER');
+        _dcLastTs = Math.max(_dcLastTs, m.ts);
+      }
+    }
+    // Badge na przycisku konwoju — wiadomości od kogokolwiek
+    const anyNew = msgs.filter(m => m.from_id !== _dcToId);
+    if(anyNew.length) showConvoyMsgBadge(anyNew.length);
+  } catch(e){}
+}
+
+// Polluj wiadomości globalnie co 15s (gdy panel zamknięty)
+let _globalMsgLastTs = Date.now() / 1000;
+setInterval(async () => {
+  if(_dcPollTimer) return; // chat otwarty — już polluje
+  try {
+    const r = await fetch(`/api/convoy/messages?voter_id=${getVoterId()}&since=${_globalMsgLastTs}`);
+    const msgs = await r.json();
+    if(msgs.length){
+      _globalMsgLastTs = Math.max(...msgs.map(m => m.ts));
+      showConvoyMsgBadge(msgs.length);
+    }
+  } catch(e){}
+}, 15000);
+
+function showConvoyMsgBadge(count){
+  const badge = document.getElementById('convoy-msg-badge');
+  if(badge){ badge.textContent = count > 9 ? '9+' : count; badge.classList.add('show'); }
+}
+function clearConvoyMsgBadge(){
+  const badge = document.getElementById('convoy-msg-badge');
+  if(badge) badge.classList.remove('show');
+  _globalMsgLastTs = Date.now() / 1000;
 }
 
 // Głosy ładują się asynchronicznie — odśwież cache

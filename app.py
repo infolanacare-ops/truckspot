@@ -924,6 +924,18 @@ def api_cameras_vote(camera_id):
 # ── KONWÓJ — live pozycje kierowców ──────────────────────────────────────────
 CONVOY_PATH = os.path.join(DATA_DIR, "convoy.json")
 CONVOY_TTL  = 90  # sekund — kierowca znika jeśli nie pinguje 90s
+MESSAGES_PATH = os.path.join(DATA_DIR, "convoy_messages.json")
+MESSAGES_TTL  = 3600  # wiadomości żyją 1h
+
+def load_messages():
+    if not os.path.exists(MESSAGES_PATH):
+        return []
+    with open(MESSAGES_PATH, encoding="utf-8") as f:
+        return json.load(f)
+
+def save_messages(msgs):
+    with open(MESSAGES_PATH, "w", encoding="utf-8") as f:
+        json.dump(msgs, f, ensure_ascii=False)
 
 def load_convoy():
     if not os.path.exists(CONVOY_PATH):
@@ -1024,6 +1036,43 @@ def api_convoy_leave():
     drivers = [d for d in load_convoy() if d["voter_id"] != voter_id]
     save_convoy(drivers)
     return jsonify({"ok": True})
+
+
+@app.route("/api/convoy/message", methods=["POST"])
+def api_convoy_message():
+    """Wyślij wiadomość do konkretnego kierowcy."""
+    data = request.get_json(force=True)
+    from_id = str(data.get("from_id", ""))[:64]
+    to_id   = str(data.get("to_id", ""))[:64]
+    text    = str(data.get("text", ""))[:300]
+    name    = str(data.get("name", "TRUCKER"))[:30]
+    avatar  = str(data.get("avatar", "🚛"))[:8]
+    if not from_id or not to_id or not text:
+        return jsonify({"error": "missing fields"}), 400
+    msgs = load_messages()
+    now  = time.time()
+    # Wyczyść stare
+    msgs = [m for m in msgs if now - m.get("ts", 0) < MESSAGES_TTL]
+    msgs.append({"from_id": from_id, "to_id": to_id, "text": text,
+                 "name": name, "avatar": avatar, "ts": now, "id": f"{from_id}_{now}"})
+    save_messages(msgs)
+    return jsonify({"ok": True})
+
+@app.route("/api/convoy/messages")
+def api_convoy_messages():
+    """Pobierz wiadomości dla danego kierowcy (od określonego czasu)."""
+    voter_id = str(request.args.get("voter_id", ""))[:64]
+    since    = float(request.args.get("since", 0))
+    if not voter_id:
+        return jsonify([])
+    msgs = load_messages()
+    now  = time.time()
+    result = [m for m in msgs
+              if m.get("to_id") == voter_id
+              and m.get("ts", 0) > since
+              and now - m.get("ts", 0) < MESSAGES_TTL]
+    result.sort(key=lambda x: x["ts"])
+    return jsonify(result)
 
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
