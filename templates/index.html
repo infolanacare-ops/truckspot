@@ -1572,23 +1572,48 @@ body.navigating .fab-ai{display:none}
 .nav-overview-btn,.nav-mute-btn,.nav-pitch-btn,.nav-stop-btn,.nav-eta-block{display:none}
 
 /* — Pasy ruchu — */
+/* ── Lane guidance — styl TomTom/Waze ── */
 .nav-lanes{
-  display:none;flex-direction:row;justify-content:center;align-items:center;
-  gap:.4rem;padding:.55rem 1rem;
-  background:rgba(8,12,24,.82);backdrop-filter:blur(14px);
-  border-bottom:1px solid rgba(255,255,255,.07);pointer-events:none;
-  animation:lanesIn .22s ease}
-@keyframes lanesIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+  display:none;flex-direction:row;justify-content:stretch;align-items:stretch;
+  width:100%;height:72px;
+  background:#1c2030;
+  border-top:2px solid #2a3048;
+  border-bottom:2px solid #0a0e1a;
+  pointer-events:none;overflow:hidden;
+  animation:lanesIn .28s cubic-bezier(.22,.9,.36,1)}
+@keyframes lanesIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+/* każdy pas zajmuje równą część szerokości */
 .nav-lane{
-  width:46px;height:58px;border-radius:11px;
-  border:2px solid rgba(255,255,255,.15);
-  display:flex;align-items:center;justify-content:center;
-  background:rgba(255,255,255,.06);transition:all .25s}
-.nav-lane svg{width:28px;height:28px;opacity:.3;transition:opacity .25s}
-.nav-lane.active{
-  border-color:var(--accent2);background:rgba(255,215,0,.18);
-  box-shadow:0 0 16px rgba(255,215,0,.35)}
-.nav-lane.active svg{opacity:1;filter:drop-shadow(0 0 6px rgba(255,215,0,.6))}
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:5px;
+  border-right:1.5px dashed rgba(255,255,255,.12);
+  background:#1c2030;
+  position:relative;transition:background .2s}
+.nav-lane:last-child{border-right:none}
+/* linia "asfaltu" na dole każdego pasa */
+.nav-lane::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:4px;
+  background:#141828}
+.nav-lane svg{width:32px;height:32px;flex-shrink:0}
+.nav-lane-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:rgba(255,255,255,.18);flex-shrink:0}
+/* AKTYWNY PAS — niebieski, jak w Google/TomTom */
+.nav-lane.active{background:#1a3a6e}
+.nav-lane.active::after{background:#1d4a8c}
+.nav-lane.active .nav-lane-dot{background:#4a9eff;box-shadow:0 0 8px #4a9eff}
+/* dopuszczalny ale nieaktywny */
+.nav-lane.valid{background:#1e2438}
+.nav-lane.valid svg path,.nav-lane.valid svg line,.nav-lane.valid svg polygon{
+  stroke:rgba(255,255,255,.45)!important}
+.nav-lane.valid polygon{fill:rgba(255,255,255,.45)!important}
+/* nieaktywny — szary */
+.nav-lane svg path,.nav-lane svg line{stroke:rgba(255,255,255,.2)!important}
+.nav-lane svg polygon{fill:rgba(255,255,255,.2)!important;stroke:rgba(255,255,255,.2)!important}
+/* aktywny — jaskrawoniebieskie strzałki */
+.nav-lane.active svg path,.nav-lane.active svg line{stroke:#5bb3ff!important}
+.nav-lane.active svg polygon{fill:#5bb3ff!important;stroke:#5bb3ff!important}
+.nav-lane.active svg{filter:drop-shadow(0 0 5px rgba(91,179,255,.5))}
 
 /* Ukryj zoom podczas nawigacji */
 body.navigating .mapboxgl-ctrl-top-left{display:none}
@@ -5195,62 +5220,52 @@ function speakNav(txt, priority=false){
 }
 
 // ── Lane guidance — SVG arrows ────────────────────────────────────────────────
+// Grube, wypełnione strzałki pasów — styl TomTom/Waze
+// viewBox 24×36 — wąskie kafelki pasów
 function laneSvg(dir){
-  // All arrows drawn as SVG paths in 32×32 viewBox
-  // Arrow shaft bottom-center → head at top, then variants
-  const s = `stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"`;
-  const arrowHead = (x,y,rot) => `<polygon points="${x},${y} ${x-5},${y+9} ${x+5},${y+9}" fill="#fff" transform="rotate(${rot},${x},${y})"/>`;
-  switch(dir){
+  // Używa path z fill zamiast stroke — solidna, gruba strzałka
+  switch((dir||'straight').toLowerCase()){
     case 'straight':
-      return `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-        <line x1="16" y1="28" x2="16" y2="8" ${s}/>
-        ${arrowHead(16,5,0)}
+      return `<svg viewBox="0 0 24 36" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10,36 L10,14 L5,14 L12,2 L19,14 L14,14 L14,36 Z" fill="#fff"/>
       </svg>`;
     case 'left':
-      return `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-        <path d="M16,28 L16,14 Q16,6 8,6" ${s}/>
-        ${arrowHead(5,6,-90)}
+      return `<svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20,36 L20,20 Q20,12 12,12 L12,7 L2,14 L12,21 L12,18 Q16,18 16,22 L16,36 Z" fill="#fff"/>
       </svg>`;
     case 'right':
-      return `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-        <path d="M16,28 L16,14 Q16,6 24,6" ${s}/>
-        ${arrowHead(27,6,90)}
+      return `<svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+        <path d="M16,36 L16,22 Q16,18 20,18 L20,21 L30,14 L20,7 L20,12 Q12,12 12,20 L12,36 Z" fill="#fff"/>
       </svg>`;
     case 'slight left':
-      return `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-        <path d="M18,28 L18,18 Q17,8 9,5" ${s}/>
-        ${arrowHead(7,4,-50)}
+      return `<svg viewBox="0 0 32 36" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18,36 L18,20 Q18,10 8,8 L5,4 L3,13 L12,12 Q14,14 14,20 L14,36 Z" fill="#fff"/>
       </svg>`;
     case 'slight right':
-      return `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-        <path d="M14,28 L14,18 Q15,8 23,5" ${s}/>
-        ${arrowHead(25,4,50)}
+      return `<svg viewBox="0 0 32 36" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14,36 L14,20 Q14,14 20,12 L29,13 L27,4 L24,8 Q14,10 18,20 L18,36 Z" fill="#fff" transform="scale(-1,1) translate(-32,0)"/>
       </svg>`;
     case 'sharp left':
-      return `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-        <path d="M20,28 L20,16 Q20,8 10,8 Q5,8 5,12" ${s}/>
-        ${arrowHead(5,15,-90)}
+      return `<svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+        <path d="M22,36 L22,20 Q22,10 10,10 Q6,10 6,14 L6,9 L1,16 L6,23 L6,18 Q10,14 14,14 Q18,14 18,20 L18,36 Z" fill="#fff"/>
       </svg>`;
     case 'sharp right':
-      return `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12,28 L12,16 Q12,8 22,8 Q27,8 27,12" ${s}/>
-        ${arrowHead(27,15,90)}
+      return `<svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14,36 L14,20 Q14,14 22,14 Q26,14 26,18 L26,23 L31,16 L26,9 L26,14 Q26,10 22,10 Q10,10 10,20 L10,36 Z" fill="#fff"/>
       </svg>`;
     case 'uturn':
-      return `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-        <path d="M10,28 L10,14 Q10,5 22,5 Q28,5 28,12 Q28,19 22,19 L10,19" ${s}/>
-        ${arrowHead(7,19,-90)}
+      return `<svg viewBox="0 0 28 36" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12,36 L12,18 Q12,8 20,8 Q28,8 28,16 Q28,24 20,24 L16,24 L16,20 L8,26 L16,32 L16,28 Q24,28 28,22 Q34,18 28,10 Q24,4 18,4 Q8,4 8,14 L8,36 Z" fill="#fff"/>
       </svg>`;
     case 'roundabout':
     case 'rotary':
       return `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="16" cy="16" r="9" ${s} stroke-dasharray="28 8"/>
-        ${arrowHead(16,4,0)}
+        <path d="M16,4 C9.4,4 4,9.4 4,16 C4,22.6 9.4,28 16,28 C22.6,28 28,22.6 28,16 C28,9.4 22.6,4 16,4 Z M16,8 C20.4,8 24,11.6 24,16 C24,20.4 20.4,24 16,24 C11.6,24 8,20.4 8,16 C8,11.6 11.6,8 16,8 Z" fill="#fff" fill-rule="evenodd"/>
+        <path d="M13,3 L16,0 L19,3 Z" fill="#fff"/>
       </svg>`;
     default:
-      return `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-        <line x1="16" y1="28" x2="16" y2="8" ${s}/>
-        ${arrowHead(16,5,0)}
+      return `<svg viewBox="0 0 24 36" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10,36 L10,14 L5,14 L12,2 L19,14 L14,14 L14,36 Z" fill="#fff"/>
       </svg>`;
   }
 }
@@ -5271,7 +5286,9 @@ function updateLaneGuidance(dToManeuver){
   el.style.display = 'flex';
   el.innerHTML = lanes.map(l=>{
     const dir = (l.active_direction || l.directions?.[0] || 'straight').toLowerCase();
-    return `<div class="nav-lane${l.active?' active':''}">${laneSvg(dir)}</div>`;
+    // active = kierunek zgodny z manewrem; valid = dopuszczalny ale nie główny
+    const cls = l.active ? 'active' : (l.valid ? 'valid' : '');
+    return `<div class="nav-lane ${cls}">${laneSvg(dir)}<div class="nav-lane-dot"></div></div>`;
   }).join('');
 }
 
