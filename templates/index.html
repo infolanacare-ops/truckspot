@@ -2259,7 +2259,7 @@ body.navigating .nav-pois-strip{display:none}
   </div>
 
   <!-- Pasy ruchu -->
-  <div class="nav-lanes" id="nav-lanes"></div>
+  <div class="nav-lanes" id="nav-lanes" style="display:none!important"></div>
 
   <!-- Bieżąca droga + ograniczenie prędkości -->
   <div class="nav-road-strip" id="nav-road-strip">
@@ -4845,11 +4845,14 @@ function renderRouteTimeline(){
   const totalKm = navRouteDistances.length
     ? navRouteDistances[navRouteDistances.length-1] / 1000 : 0;
 
-  // Nadchodzące POI, posortowane po trasie
-  const upcoming = navRoutePois
-    .filter(p => typeof p.distFromStart === 'number' && p.distFromStart > myDistKm)
-    .sort((a,b) => a.distFromStart - b.distFromStart)
-    .slice(0, 6);
+  // Nadchodzące POI — tylko jeśli filtry są aktywne
+  // Brak filtrów = oś czasu pokazuje tylko start i meta
+  const upcoming = activeFilters.size > 0
+    ? navRoutePois
+        .filter(p => typeof p.distFromStart === 'number' && p.distFromStart > myDistKm)
+        .sort((a,b) => a.distFromStart - b.distFromStart)
+        .slice(0, 6)
+    : [];
 
   function distTxt(km){
     return km < 0.05 ? '<50m' : km < 1 ? Math.round(km*1000)+'m' : km.toFixed(1)+'km';
