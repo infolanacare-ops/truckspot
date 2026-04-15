@@ -1065,6 +1065,60 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
   font-size:.65rem;color:rgba(234,179,8,.7);font-weight:600;
 }
 
+/* ══ ROUTE TIMELINE — oś czasu z prawej krawędzi ══ */
+.nav-tl-handle{
+  position:fixed;right:0;top:50%;transform:translateY(-50%);
+  width:5px;height:52px;background:rgba(255,255,255,.18);
+  border-radius:3px 0 0 3px;z-index:1204;
+  display:none;cursor:pointer;transition:.2s;
+}
+body.navigating .nav-tl-handle{display:block}
+.nav-tl-handle:hover,.nav-tl-handle:active{background:rgba(255,215,0,.55);width:7px}
+.nav-route-tl{
+  position:fixed;right:0;
+  top:0;bottom:0;
+  width:162px;z-index:1205;
+  background:rgba(14,18,32,.96);backdrop-filter:blur(14px);
+  border-left:1px solid rgba(255,255,255,.1);
+  display:flex;flex-direction:column;
+  padding:calc(env(safe-area-inset-top,0px) + 1rem) .8rem
+          calc(env(safe-area-inset-bottom,0px) + 80px) .8rem;
+  transform:translateX(100%);
+  transition:transform .32s cubic-bezier(.4,0,.2,1);
+  pointer-events:none;overflow:hidden;
+}
+.nav-route-tl.open{transform:translateX(0);pointer-events:auto}
+/* Pionowa linia postępu */
+.nav-tl-line{
+  position:absolute;left:19px;top:1.5rem;bottom:1.5rem;
+  width:2px;background:linear-gradient(to bottom,
+    rgba(255,215,0,.15) 0%, rgba(255,215,0,.5) 40%,
+    rgba(96,165,250,.5) 80%, rgba(96,165,250,.15) 100%);
+  border-radius:1px;
+}
+.nav-tl-list{
+  flex:1;overflow:hidden;
+  display:flex;flex-direction:column;justify-content:space-between;
+  gap:.2rem;position:relative;
+}
+.nav-tl-item{
+  display:flex;align-items:center;gap:.5rem;
+  position:relative;z-index:2;padding:.15rem 0;flex-shrink:0;
+}
+.nav-tl-dot{
+  width:26px;height:26px;border-radius:50%;flex-shrink:0;
+  background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.2);
+  display:flex;align-items:center;justify-content:center;font-size:.8rem;
+}
+.nav-tl-dot.is-dest{background:rgba(255,215,0,.15);border-color:#ffd700}
+.nav-tl-dot.is-cur{background:rgba(96,165,250,.2);border-color:#60a5fa}
+.nav-tl-info{min-width:0;flex:1}
+.nav-tl-name{
+  font-size:.7rem;font-weight:700;color:#fff;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;
+}
+.nav-tl-dist{font-size:.6rem;color:#60a5fa;font-weight:700;margin-top:.05rem}
+
 /* ══ KONWÓJ TOAST — chmurka z dołu lewego rogu ══ */
 .convoy-toast{
   position:fixed;
@@ -1315,10 +1369,10 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 }
 /* spacer */
 .nav-bottom-space{flex:1}
-/* ── Unified speed pill — góra-lewo ── */
+/* ── Unified speed pill — lewa strona, pod kartą manewru ── */
 .nav-speedometer{
   position:fixed;
-  top:calc(.65rem + env(safe-area-inset-top));
+  top:calc(108px + env(safe-area-inset-top));
   left:.65rem;
   z-index:1202;
   display:flex;align-items:stretch;
@@ -1350,10 +1404,10 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .nav-speedometer.speeding .nav-spd-sep{background:rgba(239,68,68,.3)}
 .nav-speedometer.speeding .nav-spd-lim{background:rgba(239,68,68,.1)}
 .nav-speedometer.speeding .nav-speed-sign-val{color:#ef4444}
-/* Camera warning — pod pill, góra-lewo */
+/* Camera warning — pod pill */
 .nav-cam-warn{
   position:fixed;
-  top:calc(.65rem + env(safe-area-inset-top) + 70px);
+  top:calc(108px + env(safe-area-inset-top) + 68px);
   left:.65rem;
   z-index:1202;
   display:none;background:rgba(239,68,68,.15);
@@ -1445,6 +1499,7 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 /* Ukryj zoom podczas nawigacji */
 body.navigating .mapboxgl-ctrl-top-left{display:none}
 body.navigating .convoy-btn{display:none}
+body.navigating .nav-pois-strip{display:none}
 
 /* ══ LANDSCAPE NAVIGATION — panel po lewej, mapa po prawej ══ */
 @media (orientation:landscape) and (max-height:520px){
@@ -2258,6 +2313,13 @@ body.navigating .convoy-btn{display:none}
       🚛 Konwój <span id="nav-sheet-convoy-cnt" style="display:none;background:rgba(16,185,129,.25);border-radius:8px;padding:.05rem .35rem;font-size:.75rem;margin-left:.2rem">0</span>
     </button>
   </div>
+</div>
+
+<!-- ROUTE TIMELINE — wysuwa się z prawej krawędzi -->
+<div class="nav-tl-handle" id="nav-tl-handle" onclick="toggleRouteTimeline()" title="Oś czasu trasy"></div>
+<div class="nav-route-tl" id="nav-route-tl" onclick="if(event.target===this)hideRouteTimeline()">
+  <div class="nav-tl-line"></div>
+  <div class="nav-tl-list" id="nav-tl-list"></div>
 </div>
 
 <!-- CONVOY TOAST — chmurka z lewego dolnego rogu -->
@@ -4174,6 +4236,7 @@ async function searchRoute(navMode){
     });
     routeCircleMarkers.push(mkCircleMk(toGeo.lat,toGeo.lng,'#10b981',20));
     navDestLat = toGeo.lat; navDestLng = toGeo.lng; // zapamiętaj cel do reroutingu
+    navDestName = toVal; // zapamiętaj nazwę celu
     fitRouteCoords(routeCoords, 50);
 
     // Filter parkings on route
@@ -4238,6 +4301,7 @@ let navAnnouncedSteps = new Set(); // step indices already announced
 let navDistRemaining = 0;    // metres remaining along route
 let navRouteDistances = [];  // cumulative distances along routeCoords
 let navDestLat = null, navDestLng = null; // cel nawigacji (do reroutingu)
+let navDestName = '';
 let navRerouteTs = 0;        // timestamp ostatniego reroutingu (cooldown)
 let navRerouteWarned = false; // czy pokazano ostrzeżenie "zawróć"
 
@@ -4727,6 +4791,93 @@ async function convoyPing(){
     }
   } catch(e){}
 }
+
+// ── Route Timeline ────────────────────────────────────────────────────────────
+let _rtlTimer = null;
+
+function showRouteTimeline(){
+  renderRouteTimeline();
+  document.getElementById('nav-route-tl')?.classList.add('open');
+  if(_rtlTimer) clearTimeout(_rtlTimer);
+  _rtlTimer = setTimeout(hideRouteTimeline, 20000);
+}
+function hideRouteTimeline(){
+  document.getElementById('nav-route-tl')?.classList.remove('open');
+  if(_rtlTimer){ clearTimeout(_rtlTimer); _rtlTimer = null; }
+}
+function toggleRouteTimeline(){
+  const tl = document.getElementById('nav-route-tl');
+  if(!tl) return;
+  tl.classList.contains('open') ? hideRouteTimeline() : showRouteTimeline();
+}
+
+function renderRouteTimeline(){
+  const list = document.getElementById('nav-tl-list');
+  if(!list) return;
+
+  const myDistKm = (navActive && navRouteDistances.length > 0)
+    ? (navRouteDistances[navCIdx] || 0) / 1000 : 0;
+  const totalKm = navRouteDistances.length
+    ? navRouteDistances[navRouteDistances.length-1] / 1000 : 0;
+
+  // Nadchodzące POI, posortowane po trasie
+  const upcoming = navRoutePois
+    .filter(p => typeof p.distFromStart === 'number' && p.distFromStart > myDistKm)
+    .sort((a,b) => a.distFromStart - b.distFromStart)
+    .slice(0, 6);
+
+  function distTxt(km){
+    return km < 0.05 ? '<50m' : km < 1 ? Math.round(km*1000)+'m' : km.toFixed(1)+'km';
+  }
+
+  // Buduj od góry: CEL → POI → TUTAJ
+  const rows = [];
+
+  // Cel na górze
+  rows.push(`<div class="nav-tl-item">
+    <div class="nav-tl-dot is-dest">🏁</div>
+    <div class="nav-tl-info">
+      <div class="nav-tl-name">${(navDestName||'Cel').substring(0,16)}</div>
+      <div class="nav-tl-dist">${distTxt(navDistRemaining/1000)}</div>
+    </div>
+  </div>`);
+
+  // POI w kolejności od celu do nas (odwrócone)
+  [...upcoming].reverse().forEach(p => {
+    const d = p.distFromStart - myDistKm;
+    rows.push(`<div class="nav-tl-item" onclick="map.flyTo({center:[${p.lng},${p.lat}],zoom:15});hideRouteTimeline()">
+      <div class="nav-tl-dot">${p.icon}</div>
+      <div class="nav-tl-info">
+        <div class="nav-tl-name">${p.name.substring(0,16)}</div>
+        <div class="nav-tl-dist">${distTxt(d)}</div>
+      </div>
+    </div>`);
+  });
+
+  // Ty na dole
+  rows.push(`<div class="nav-tl-item">
+    <div class="nav-tl-dot is-cur">📍</div>
+    <div class="nav-tl-info">
+      <div class="nav-tl-name">Tutaj</div>
+      <div class="nav-tl-dist">${distTxt(myDistKm)} za sobą</div>
+    </div>
+  </div>`);
+
+  list.innerHTML = rows.join('');
+}
+
+// Swipe z prawej krawędzi → otwiera timeline
+let _rtlTouchX = 0;
+document.addEventListener('touchstart', e => {
+  if(!navActive) return;
+  _rtlTouchX = e.touches[0].clientX > window.innerWidth - 32 ? e.touches[0].clientX : 0;
+}, {passive:true});
+document.addEventListener('touchend', e => {
+  if(!navActive || !_rtlTouchX) return;
+  const dx = _rtlTouchX - e.changedTouches[0].clientX;
+  if(dx > 20) showRouteTimeline();
+  _rtlTouchX = 0;
+}, {passive:true});
 
 // ── Convoy toast ──────────────────────────────────────────────────────────────
 let _convoyKnownIds = new Set();
