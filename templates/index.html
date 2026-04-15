@@ -7253,11 +7253,44 @@ function addAiMessage(text, role){
 
 // Historia rozmów TruckBot — max 10 par (20 wiadomości)
 let _aiHistory = [];
+let _pendingNavQuery = null; // oczekuje na potwierdzenie trasy
 
 async function sendAiMessage(text){
   const input = document.getElementById('ai-input');
   const msg = text || input.value.trim();
   if(!msg) return;
+
+  // --- Obsługa potwierdzenia / odrzucenia trasy ---
+  if(_pendingNavQuery){
+    const m = msg.toLowerCase();
+    const isYes = /\b(tak|potwierdzam|jedź|jade|ok|dobra|super|zgadza|pewnie|tak jest|ruszamy)\b/.test(m);
+    const isNo  = /\b(nie|anuluj|cancel|stop|rezygnuję|zrezygnuj)\b/.test(m);
+    if(isYes){
+      const query = _pendingNavQuery;
+      _pendingNavQuery = null;
+      speakNav('Zaczynam nawigację!', false);
+      const inChat = document.getElementById('ai-panel').classList.contains('open');
+      if(inChat) addAiMessage('Zaczynam nawigację!', 'bot');
+      setTimeout(async () => {
+        closeAiAssistant();
+        const toField = document.getElementById('route-to');
+        if(toField) toField.value = query;
+        bnav(document.querySelector('.bnav-item:nth-child(2)'), 'route');
+        await new Promise(r => setTimeout(r, 300));
+        searchRoute(true);
+      }, 1000);
+      return;
+    }
+    if(isNo){
+      _pendingNavQuery = null;
+      speakNav('Okej, anulowałam.', false);
+      const inChat = document.getElementById('ai-panel').classList.contains('open');
+      if(inChat) addAiMessage('Okej, anulowałam.', 'bot');
+      return;
+    }
+    // Inna wypowiedź — kontynuuj normalnie i zresetuj oczekiwanie
+    _pendingNavQuery = null;
+  }
   input.value = '';
 
   const inChat = document.getElementById('ai-panel').classList.contains('open');
@@ -7304,15 +7337,8 @@ async function sendAiMessage(text){
     // Obsłuż akcje
     const act = j.action?.action;
     if(act === 'navigate'){
-      const query = j.action.query;
-      setTimeout(async () => {
-        closeAiAssistant();
-        const toField = document.getElementById('route-to');
-        if(toField) toField.value = query;
-        bnav(document.querySelector('.bnav-item:nth-child(2)'), 'route');
-        await new Promise(r => setTimeout(r, 300));
-        searchRoute(true);
-      }, 1500);
+      _pendingNavQuery = j.action.query;
+      // reply już zawiera pytanie potwierdzające od AI — nic nie robimy
     } else if(act === 'stop_navigation'){
       setTimeout(() => { closeAiAssistant(); stopNavigation(); }, 1200);
     } else if(act === 'mute'){

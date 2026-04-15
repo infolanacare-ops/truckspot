@@ -1036,7 +1036,9 @@ Jeśli kierowca mówi że jest zmęczony, zatroskany lub potrzebuje wsparcia —
 == KOMENDY — zwróć TYLKO czysty JSON, bez tekstu przed ani po ==
 
 Nawigacja / jedź / prowadź / znajdź miejsce / adres:
+Prowadzić cię do [MIEJSCE]? Powiedz: potwierdzam.
 {"action":"navigate","query":"MIEJSCE LUB ADRES"}
+(napisz pytanie potwierdzające PRZED JSON-em, np. "Prowadzić cię do Berlina? Powiedz: potwierdzam.")
 
 Zatrzymaj / zakończ / anuluj nawigację:
 {"action":"stop_navigation"}
