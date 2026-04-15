@@ -107,22 +107,46 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 .lang-card .ob-card-icon{font-size:1.6rem}
 
 /* ── STEP 2: Login ── */
-.login-card-google{border-color:#4285f4}
-.login-card-google:hover{background:rgba(66,133,244,.08)}
-.login-card-guest{border-color:var(--green)}
-.login-card-guest:hover{background:rgba(16,185,129,.08)}
-.guest-input-wrap{width:100%;max-width:340px;margin-top:.5rem}
-.guest-input{
+#step-login{ gap:.5rem }
+.auth-title{font-family:var(--font-head);font-size:1.5rem;font-weight:900;color:var(--text);margin-bottom:.15rem;text-align:center}
+.auth-sub{font-size:.78rem;color:var(--muted);text-align:center;margin-bottom:.9rem;line-height:1.5}
+/* OAuth buttons */
+.auth-btn{
+  width:100%;max-width:360px;display:flex;align-items:center;gap:.8rem;
+  padding:.75rem 1rem;border-radius:14px;border:1.5px solid var(--border);
+  background:var(--panel2);color:var(--text);font-family:var(--font);font-size:.88rem;font-weight:600;
+  cursor:pointer;transition:.15s;text-align:left;
+}
+.auth-btn:active{transform:scale(.97)}
+.auth-btn-icon{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.auth-btn-google{border-color:#4285f4;background:rgba(66,133,244,.07)}
+.auth-btn-google .auth-btn-icon{background:#4285f4}
+.auth-btn-facebook{border-color:#1877f2;background:rgba(24,119,242,.07)}
+.auth-btn-facebook .auth-btn-icon{background:#1877f2}
+.auth-btn-guest{border-color:rgba(255,255,255,.12)}
+/* separator */
+.auth-sep{display:flex;align-items:center;gap:.6rem;width:100%;max-width:360px;color:var(--muted);font-size:.72rem}
+.auth-sep::before,.auth-sep::after{content:'';flex:1;height:1px;background:var(--border)}
+/* email form */
+.auth-form{width:100%;max-width:360px;display:flex;flex-direction:column;gap:.5rem}
+.auth-input{
   width:100%;padding:.65rem .9rem;border:1.5px solid var(--border);border-radius:12px;
-  font-family:var(--font);font-size:.9rem;background:var(--input-bg);color:var(--text);outline:none;
+  font-family:var(--font);font-size:.88rem;background:var(--input-bg);color:var(--text);outline:none;transition:.15s;
+  box-sizing:border-box;
+}
+.auth-input:focus{border-color:var(--accent)}
+.auth-submit{
+  width:100%;padding:.75rem;border:none;border-radius:12px;cursor:pointer;
+  font-family:var(--font-head);font-size:.92rem;font-weight:800;
+  background:linear-gradient(135deg,var(--accent),#818cf8);color:#fff;margin-top:.2rem;
   transition:.15s;
 }
-.guest-input:focus{border-color:var(--green)}
-.guest-go-btn{
-  width:100%;margin-top:.6rem;padding:.75rem;border:none;border-radius:12px;cursor:pointer;
-  font-family:var(--font-head);font-size:.9rem;font-weight:800;
-  background:linear-gradient(135deg,var(--green),#34d399);color:#fff;
-}
+.auth-submit:active{transform:scale(.97)}
+.auth-toggle{font-size:.75rem;color:var(--muted);text-align:center;cursor:pointer;margin-top:.2rem}
+.auth-toggle span{color:var(--accent);font-weight:700;text-decoration:underline}
+/* name prompt (po OAuth) */
+.auth-name-wrap{width:100%;max-width:360px;display:none;flex-direction:column;gap:.5rem;align-items:center}
+.auth-name-wrap.visible{display:flex}
 
 /* ── STEP 3: Mode — PREMIUM ── */
 #step-mode{
@@ -1826,34 +1850,49 @@ body.navigating .nav-pois-strip{display:none}
 
   <!-- STEP 2 — Login -->
   <div class="ob-step" id="step-login">
-    <div style="font-size:2.8rem;margin-bottom:.5rem">👋</div>
-    <div class="ob-logo">TruckSpot</div>
-    <div class="ob-sub" id="ob-sub-login">Sign in to save your spots & points</div>
-    <div class="ob-dots">
+    <div style="font-size:2.6rem;margin-bottom:.3rem">🚛</div>
+    <div class="auth-title">Dołącz do TruckSpot</div>
+    <div class="auth-sub">Zaloguj się, aby AI pamiętała Cię na zawsze</div>
+    <div class="ob-dots" style="margin-bottom:.7rem">
       <div class="ob-dot"></div><div class="ob-dot active"></div><div class="ob-dot"></div>
     </div>
-    <div class="ob-cards">
-      <div class="ob-card login-card-google" onclick="loginGoogle()">
-        <div class="ob-card-icon" style="font-size:1.5rem">🔵</div>
-        <div class="ob-card-body">
-          <div class="ob-card-title" id="lbl-google">Continue with Google</div>
-          <div class="ob-card-desc" id="lbl-google-sub">Sync across devices</div>
-        </div>
-        <div class="ob-card-arrow">›</div>
-      </div>
-      <div class="ob-card login-card-guest" onclick="showGuestInput()">
-        <div class="ob-card-icon" style="font-size:1.5rem">👤</div>
-        <div class="ob-card-body">
-          <div class="ob-card-title" id="lbl-guest">Continue as Guest</div>
-          <div class="ob-card-desc" id="lbl-guest-sub">No account needed</div>
-        </div>
-        <div class="ob-card-arrow">›</div>
-      </div>
+
+    <!-- OAuth buttons -->
+    <button class="auth-btn auth-btn-google" onclick="loginWithGoogle()">
+      <div class="auth-btn-icon">G</div>
+      <div><div style="font-weight:700">Kontynuuj z Google</div><div style="font-size:.72rem;color:var(--muted);font-weight:400">Synchronizacja na wszystkich urządzeniach</div></div>
+    </button>
+    <button class="auth-btn auth-btn-facebook" onclick="loginWithFacebook()">
+      <div class="auth-btn-icon" style="color:#fff;font-weight:900;font-size:.9rem">f</div>
+      <div><div style="font-weight:700">Kontynuuj z Facebook</div><div style="font-size:.72rem;color:var(--muted);font-weight:400">Szybkie logowanie</div></div>
+    </button>
+
+    <!-- separator -->
+    <div class="auth-sep" style="margin:.2rem 0">lub</div>
+
+    <!-- Email form -->
+    <div class="auth-form" id="auth-email-form">
+      <input class="auth-input" id="auth-name"     type="text"     placeholder="Twoje imię"        maxlength="30"  autocomplete="given-name">
+      <input class="auth-input" id="auth-email"    type="email"    placeholder="E-mail"             maxlength="80"  autocomplete="email">
+      <input class="auth-input" id="auth-password" type="password" placeholder="Hasło (min. 6 znaków)" maxlength="60" autocomplete="new-password">
+      <button class="auth-submit" onclick="loginWithEmail()">Zarejestruj się →</button>
+      <div class="auth-toggle" id="auth-mode-toggle">Masz już konto? <span onclick="toggleAuthMode()">Zaloguj się</span></div>
     </div>
-    <div class="guest-input-wrap" id="guest-input-wrap" style="display:none">
-      <div style="font-size:.75rem;color:rgba(255,255,255,.5);margin-bottom:.4rem;text-align:center">Jak masz na imię? TruckBot zapamięta Cię na zawsze 🤖</div>
-      <input class="guest-input" id="guest-name-input" placeholder="Twoje imię..." maxlength="30" autocomplete="given-name">
-      <button class="guest-go-btn" id="guest-go-btn" onclick="loginGuest()">Jedziemy →</button>
+
+    <!-- separator -->
+    <div class="auth-sep" style="margin:.2rem 0">albo</div>
+
+    <!-- Guest -->
+    <button class="auth-btn auth-btn-guest" onclick="loginAsGuest()">
+      <div class="auth-btn-icon" style="background:rgba(255,255,255,.08);font-size:.9rem">👤</div>
+      <div><div style="font-weight:700">Kontynuuj jako Gość</div><div style="font-size:.72rem;color:var(--muted);font-weight:400">Bez konta — AI pamięta tylko na tym urządzeniu</div></div>
+    </button>
+
+    <!-- Name prompt po OAuth (pojawia się po kliknięciu Google/Facebook) -->
+    <div class="auth-name-wrap" id="auth-name-wrap">
+      <div style="font-size:.78rem;color:var(--muted);text-align:center">Jak masz na imię? TruckBot zapamięta Cię 🤖</div>
+      <input class="auth-input" id="auth-oauth-name" type="text" placeholder="Twoje imię..." maxlength="30" autocomplete="given-name">
+      <button class="auth-submit" onclick="finishOAuthLogin()">Jedziemy →</button>
     </div>
   </div>
 
@@ -2930,28 +2969,84 @@ function goToStep(stepId){
   document.getElementById(stepId).classList.add('active');
 }
 
-function showGuestInput(){
-  const w = document.getElementById('guest-input-wrap');
-  w.style.display = 'block';
-  document.getElementById('guest-name-input').focus();
+// ── Auth helpers ─────────────────────────────────────────────────────────────
+let _authIsLogin = false; // false = rejestracja, true = logowanie
+
+function toggleAuthMode(){
+  _authIsLogin = !_authIsLogin;
+  const nameField = document.getElementById('auth-name');
+  const toggle    = document.getElementById('auth-mode-toggle');
+  const submit    = document.querySelector('#auth-email-form .auth-submit');
+  const passField = document.getElementById('auth-password');
+  if(_authIsLogin){
+    nameField.style.display = 'none';
+    passField.placeholder = 'Hasło';
+    submit.textContent = 'Zaloguj się →';
+    toggle.innerHTML = 'Nie masz konta? <span onclick="toggleAuthMode()">Zarejestruj się</span>';
+  } else {
+    nameField.style.display = '';
+    passField.placeholder = 'Hasło (min. 6 znaków)';
+    submit.textContent = 'Zarejestruj się →';
+    toggle.innerHTML = 'Masz już konto? <span onclick="toggleAuthMode()">Zaloguj się</span>';
+  }
 }
 
-function loginGoogle(){
-  // Pokaż pole na imię zamiast od razu przechodzić
-  document.getElementById('guest-input-wrap').style.display = 'flex';
-  document.getElementById('guest-name-input').focus();
-  profile.loginType = 'google';
-}
-
-function loginGuest(){
-  const raw = document.getElementById('guest-name-input').value.trim();
-  const name = raw || 'Kierowco';
-  profile.name = name.charAt(0).toUpperCase() + name.slice(1); // Pierwsza litera wielka
-  profile.loginType = profile.loginType || 'guest';
+function _finishLogin(name, loginType){
+  const clean = (name || 'Kierowco').trim();
+  profile.name = clean.charAt(0).toUpperCase() + clean.slice(1);
+  profile.loginType = loginType;
   saveProfile();
-  localStorage.setItem('ts_driver_name', profile.name); // TruckBot zawsze wie
+  localStorage.setItem('ts_driver_name', profile.name);
   goToStep('step-mode');
 }
+
+function loginWithEmail(){
+  const name     = document.getElementById('auth-name').value.trim();
+  const email    = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  if(!email || !password){ showAlert('⚠️','','Podaj e-mail i hasło'); return; }
+  if(!_authIsLogin && password.length < 6){ showAlert('⚠️','','Hasło musi mieć min. 6 znaków'); return; }
+  const displayName = name || email.split('@')[0];
+  // TODO: Supabase Auth — na razie localStorage
+  profile.email = email;
+  _finishLogin(displayName, 'email');
+}
+
+function loginWithGoogle(){
+  // TODO: Google OAuth / Supabase OAuth — na razie pyta o imię
+  profile.loginType = 'google';
+  document.getElementById('auth-email-form').style.display = 'none';
+  document.querySelectorAll('.auth-btn').forEach(b => b.style.display='none');
+  document.querySelectorAll('.auth-sep').forEach(s => s.style.display='none');
+  const wrap = document.getElementById('auth-name-wrap');
+  wrap.classList.add('visible');
+  document.getElementById('auth-oauth-name').focus();
+}
+
+function loginWithFacebook(){
+  // TODO: Facebook Login SDK / Supabase OAuth
+  profile.loginType = 'facebook';
+  document.getElementById('auth-email-form').style.display = 'none';
+  document.querySelectorAll('.auth-btn').forEach(b => b.style.display='none');
+  document.querySelectorAll('.auth-sep').forEach(s => s.style.display='none');
+  const wrap = document.getElementById('auth-name-wrap');
+  wrap.classList.add('visible');
+  document.getElementById('auth-oauth-name').focus();
+}
+
+function finishOAuthLogin(){
+  const name = document.getElementById('auth-oauth-name').value.trim();
+  _finishLogin(name, profile.loginType || 'google');
+}
+
+function loginAsGuest(){
+  _finishLogin('', 'guest');
+}
+
+// Stare aliasy (kompatybilność)
+function showGuestInput(){ loginAsGuest(); }
+function loginGoogle()    { loginWithGoogle(); }
+function loginGuest()     { finishOAuthLogin(); }
 
 // ══════════════════════════════════════
 // APP CONFIG
