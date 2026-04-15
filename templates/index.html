@@ -1066,23 +1066,37 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 }
 
 /* ══ ROUTE TIMELINE — oś czasu z prawej krawędzi ══ */
-/* Handle — mały pasek po lewej, w połowie między pill a dolnym paskiem */
+/* Pionowa kreska-hint — prawie niewidoczna, wskazuje gdzie przesunąć palec */
+.nav-tl-hint{
+  position:fixed;left:0;
+  top:calc(108px + env(safe-area-inset-top,0px) + 72px);
+  bottom:calc(62px + env(safe-area-inset-bottom,0px));
+  width:2px;
+  background:linear-gradient(to bottom,
+    transparent 0%,
+    rgba(255,255,255,.12) 20%,
+    rgba(255,255,255,.18) 50%,
+    rgba(255,255,255,.12) 80%,
+    transparent 100%);
+  z-index:1204;display:none;pointer-events:none;
+}
+body.navigating .nav-tl-hint{display:block}
+/* Handle — szerszy obszar tapowania przy kresce */
 .nav-tl-handle{
   position:fixed;left:0;
   top:calc(108px + env(safe-area-inset-top,0px) + 72px);
-  width:5px;height:52px;background:rgba(255,255,255,.18);
-  border-radius:0 3px 3px 0;z-index:1204;
-  display:none;cursor:pointer;transition:.2s;
+  bottom:calc(62px + env(safe-area-inset-bottom,0px));
+  width:18px;z-index:1205;
+  display:none;cursor:pointer;
 }
 body.navigating .nav-tl-handle{display:block}
-.nav-tl-handle:hover,.nav-tl-handle:active{background:rgba(255,215,0,.55);width:7px}
-/* Panel — wysuwa się z lewej, między pill a dolnym paskiem */
+/* Panel — przeswitujący, wysuwa się z lewej */
 .nav-route-tl{
   position:fixed;left:0;
   top:calc(108px + env(safe-area-inset-top,0px) + 72px);
   bottom:calc(62px + env(safe-area-inset-bottom,0px));
-  width:168px;z-index:1205;
-  background:rgba(14,18,32,.96);backdrop-filter:blur(14px);
+  width:168px;z-index:1206;
+  background:rgba(14,18,32,.72);backdrop-filter:blur(18px);
   border:1px solid rgba(255,255,255,.1);
   border-left:none;
   border-radius:0 16px 16px 0;
@@ -2321,6 +2335,7 @@ body.navigating .nav-pois-strip{display:none}
 </div>
 
 <!-- ROUTE TIMELINE — wysuwa się z prawej krawędzi -->
+<div class="nav-tl-hint" id="nav-tl-hint"></div>
 <div class="nav-tl-handle" id="nav-tl-handle" onclick="toggleRouteTimeline()" title="Oś czasu trasy"></div>
 <div class="nav-route-tl" id="nav-route-tl" onclick="if(event.target===this)hideRouteTimeline()">
   <div class="nav-tl-line"></div>
