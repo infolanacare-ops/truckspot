@@ -1936,7 +1936,7 @@ body.navigating .nav-pois-strip{display:none}
 </div>
 
 <!-- KONWÓJ button -->
-<button class="convoy-btn" id="convoy-btn" onclick="toggleConvoyPanel()" title="TRUCKERS">
+<button class="convoy-btn" id="convoy-btn" onclick="toggleConvoyPanel()" title="MOBILKI">
   🚛
   <span class="convoy-btn-count" id="convoy-btn-count">0</span>
 </button>
@@ -2529,7 +2529,7 @@ body.navigating .nav-pois-strip{display:none}
 <!-- Backdrop do zamknięcia sheet -->
 <div class="nav-sheet-backdrop" id="nav-sheet-backdrop" onclick="closeNavSheet()"></div>
 
-<!-- Slide-up sheet: filtry + TRUCKERS -->
+<!-- Slide-up sheet: filtry + MOBILKI -->
 <div class="nav-sheet" id="nav-sheet">
   <div class="nav-sheet-handle"></div>
   <!-- AI — dwa guziki w obwódce -->
@@ -2551,7 +2551,7 @@ body.navigating .nav-pois-strip{display:none}
       <span style="font-size:1.1rem">⚙</span> Filtry
     </button>
     <button class="nav-sheet-btn nav-sheet-convoy" onclick="closeNavSheet(); toggleConvoyPanel()">
-      🚛 TRUCKERS <span id="nav-sheet-convoy-cnt" style="display:none;background:rgba(16,185,129,.25);border-radius:8px;padding:.05rem .35rem;font-size:.75rem;margin-left:.2rem">0</span>
+      🚛 MOBILKI <span id="nav-sheet-convoy-cnt" style="display:none;background:rgba(16,185,129,.25);border-radius:8px;padding:.05rem .35rem;font-size:.75rem;margin-left:.2rem">0</span>
     </button>
     <button class="nav-sheet-btn" id="nav-attr-btn" onclick="toggleAttractions()">🏛 Atrakcje</button>
   </div>
@@ -2580,10 +2580,10 @@ body.navigating .nav-pois-strip{display:none}
 <div class="convoy-panel" id="convoy-panel">
   <div class="convoy-panel-handle"></div>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
-    <div class="convoy-panel-title" style="margin-bottom:0">🚛 TRUCKERS</div>
+    <div class="convoy-panel-title" style="margin-bottom:0">🚛 MOBILKI</div>
     <button onclick="toggleConvoyPanel()" style="background:rgba(255,255,255,.1);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
   </div>
-  <div class="convoy-panel-sub" id="convoy-panel-sub">Dołącz do TRUCKERS — bądź widoczny na mapie</div>
+  <div class="convoy-panel-sub" id="convoy-panel-sub">Dołącz do MOBILKI — bądź widoczny na mapie</div>
 
   <!-- Status kierowcy -->
   <div class="convoy-status-row">
@@ -2612,7 +2612,7 @@ body.navigating .nav-pois-strip{display:none}
   <!-- Lista kierowców w pobliżu -->
   <div id="convoy-drivers-list">
     <div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:.82rem">
-      Włącz widoczność aby zobaczyć TRUCKERS w pobliżu
+      Włącz widoczność aby zobaczyć MOBILKI w pobliżu
     </div>
   </div>
 </div>
