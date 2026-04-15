@@ -5298,6 +5298,8 @@ if(typeof speechSynthesis !== 'undefined'){
   speechSynthesis.onvoiceschanged = () => { _navVoiceCache = {}; };
 }
 
+let _navSpeaking = false; // true gdy nawigacja właśnie mówi
+
 function speakNav(txt, priority=false){
   if(navMuted) return;
   if(!('speechSynthesis' in window)) return;
@@ -5307,13 +5309,43 @@ function speakNav(txt, priority=false){
   const lang = currentLang==='pl'?'pl-PL':currentLang==='de'?'de-DE':currentLang==='es'?'es-ES':'en-US';
   const utt = new SpeechSynthesisUtterance(clean);
   utt.lang = lang;
-  // Wolniejsze tempo — naturalne w głośnej kabinie TIR
   utt.rate   = 0.92;
   utt.pitch  = 1.0;
   utt.volume = 1.0;
   const voice = getBestVoice(lang);
   if(voice) utt.voice = voice;
+  utt.onstart = () => { _navSpeaking = true; };
+  utt.onend   = () => { _navSpeaking = false; };
+  utt.onerror = () => { _navSpeaking = false; };
   speechSynthesis.speak(utt);
+}
+
+/* Głos AI — czeka aż nawigacja skończy mówić */
+function speakAi(txt){
+  if(navMuted) return;
+  if(!('speechSynthesis' in window)) return;
+  const clean = stripForTts(txt);
+  if(!clean) return;
+  const lang = currentLang==='pl'?'pl-PL':currentLang==='de'?'de-DE':currentLang==='es'?'es-ES':'en-US';
+  const _do = () => {
+    const utt = new SpeechSynthesisUtterance(clean);
+    utt.lang = lang; utt.rate = 0.92; utt.pitch = 1.0; utt.volume = 1.0;
+    const voice = getBestVoice(lang);
+    if(voice) utt.voice = voice;
+    speechSynthesis.speak(utt);
+  };
+  // Jeśli nawigacja właśnie mówi — poczekaj aż skończy (maks. ~8s)
+  if(_navSpeaking || speechSynthesis.speaking){
+    let tries = 0;
+    const wait = () => {
+      if((_navSpeaking || speechSynthesis.speaking) && tries++ < 12)
+        return setTimeout(wait, 700);
+      _do();
+    };
+    setTimeout(wait, 700);
+  } else {
+    _do();
+  }
 }
 
 // ── Lane guidance — SVG arrows ────────────────────────────────────────────────
@@ -5884,7 +5916,7 @@ function onNavPosition(pos){
           const poiTxt = currentLang==='pl'
             ? `Za ${dist} ${p.name}.`
             : `In ${dist}, ${p.name}.`;
-          speakNav(poiTxt, false);
+          speakAi(poiTxt);
           showAlert(p.icon, p.name, `Za ${dist}`);
           break;
         }
@@ -7182,7 +7214,7 @@ function openAiAssistant(){
   const greeting = name
     ? `Hej ${name}, słucham!`
     : `Słucham, mów!`;
-  speakNav(greeting, false);
+  speakAi(greeting);
   // Uruchom nasłuchiwanie po zakończeniu powitania
   setTimeout(() => { if(_bgAssistantActive) startBgListening(); }, 1200);
 }
@@ -7268,7 +7300,7 @@ async function sendAiMessage(text){
     if(isYes){
       const query = _pendingNavQuery;
       _pendingNavQuery = null;
-      speakNav('Zaczynam nawigację!', false);
+      speakAi('Zaczynam nawigację!');
       const inChat = document.getElementById('ai-panel').classList.contains('open');
       if(inChat) addAiMessage('Zaczynam nawigację!', 'bot');
       setTimeout(async () => {
@@ -7283,7 +7315,7 @@ async function sendAiMessage(text){
     }
     if(isNo){
       _pendingNavQuery = null;
-      speakNav('Okej, anulowałam.', false);
+      speakAi('Okej, anulowałam.');
       const inChat = document.getElementById('ai-panel').classList.contains('open');
       if(inChat) addAiMessage('Okej, anulowałam.', 'bot');
       return;
@@ -7332,7 +7364,7 @@ async function sendAiMessage(text){
     _aiHistory.push({role:'bot', text: reply});
 
     // Odczytaj głosem
-    speakNav(reply, false);
+    speakAi(reply);
 
     // Obsłuż akcje
     const act = j.action?.action;
@@ -7543,21 +7575,21 @@ async function showAttractionToast(attrs){
     });
     if(r.ok){
       const j = await r.json();
-      if(j.text) speakNav(j.text, false);
+      if(j.text) speakAi(j.text);
     } else {
       // Fallback — szablon
       const ttsList = attrs.map(a => {
         const d = a.dist < 1 ? Math.round(a.dist*1000)+' metrów' : a.dist.toFixed(1)+' km';
         return `${a.name || a.label} ${d}`;
       }).join(', ');
-      speakNav(`Zatrzymałeś się. W pobliżu masz: ${ttsList}.`, false);
+      speakAi(`Zatrzymałeś się. W pobliżu masz: ${ttsList}.`);
     }
   } catch(e){
     const ttsList = attrs.map(a => {
       const d = a.dist < 1 ? Math.round(a.dist*1000)+' metrów' : a.dist.toFixed(1)+' km';
       return `${a.name || a.label} ${d}`;
     }).join(', ');
-    speakNav(`Zatrzymałeś się. W pobliżu masz: ${ttsList}.`, false);
+    speakAi(`Zatrzymałeś się. W pobliżu masz: ${ttsList}.`);
   }
 }
 
