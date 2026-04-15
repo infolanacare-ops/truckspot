@@ -1171,10 +1171,19 @@ body.navigating .fab-ai{display:none}
 .radio-pill-fav.active{color:#ef4444}
 /* AI group — dwa guziki w obwódce */
 .nav-ai-group{
-  display:flex;gap:.5rem;margin-bottom:.6rem;
+  position:relative;
+  display:flex;gap:.5rem;margin-bottom:.6rem;margin-top:.6rem;
   border:1.5px solid rgba(99,102,241,.35);border-radius:16px;
-  padding:.45rem .5rem;
+  padding:.9rem .5rem .45rem;
   background:linear-gradient(135deg,rgba(99,102,241,.08),rgba(139,92,246,.08));
+}
+.nav-ai-group-label{
+  position:absolute;top:-0.6rem;left:50%;transform:translateX(-50%);
+  background:linear-gradient(90deg,#6366f1,#8b5cf6);
+  color:#fff;font-size:.6rem;font-weight:800;letter-spacing:.1em;
+  padding:.15rem .7rem;border-radius:20px;
+  text-transform:uppercase;white-space:nowrap;
+  box-shadow:0 2px 8px rgba(99,102,241,.4);
 }
 .nav-ai-group-btn{
   flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -2486,6 +2495,7 @@ body.navigating .nav-pois-strip{display:none}
   <div class="nav-sheet-handle"></div>
   <!-- AI — dwa guziki w obwódce -->
   <div class="nav-ai-group">
+    <div class="nav-ai-group-label">✦ AI</div>
     <button class="nav-ai-group-btn" id="nav-asystent-btn" onclick="closeNavSheet(); openAiAssistant()">
       <span class="ai-gb-icon">🎙</span>
       <span>Asystent</span>
