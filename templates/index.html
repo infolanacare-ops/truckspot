@@ -4284,6 +4284,7 @@ function setNavEta(secs){
 let navRoutePois = [];     // POI wzdłuż trasy, posortowane po odległości od startu
 let navAnnouncedPois = new Set(); // ID już ogłoszonych
 let navCIdx = 0;           // indeks najbliższego punktu trasy (aktualizowany w onNavPosition)
+let _lastPoiRenderIdx = -99; // throttle renderNavPois — odśwież co ~5 punktów trasy
 
 async function startDriving(){
   if(currentMode === 'tir'){
@@ -4355,12 +4356,27 @@ function buildRouteDistances(){
   navDistRemaining = navRouteDistances[navRouteDistances.length-1];
 }
 
-// Closest point index on routeCoords to given lat/lng
+// Closest point index on routeCoords to given lat/lng (full scan — used on start)
 function closestRouteIdx(lat, lng){
   let minIdx=0, minD=Infinity;
   for(let i=0; i<routeCoords.length; i++){
     const d = haversineKm(lat,lng,routeCoords[i][1],routeCoords[i][0]);
     if(d<minD){ minD=d; minIdx=i; }
+  }
+  return minIdx;
+}
+
+// Forward-looking snap — searches only ±30 behind / +250 ahead of current position.
+// Prevents snapping to parallel roads going opposite direction (wrong-turn bug).
+function closestRouteIdxForward(lat, lng, fromIdx){
+  if(fromIdx == null || fromIdx < 0 || routeCoords.length === 0)
+    return closestRouteIdx(lat, lng);
+  const start = Math.max(0, fromIdx - 30);
+  const end   = Math.min(routeCoords.length - 1, fromIdx + 250);
+  let minIdx = fromIdx, minD = Infinity;
+  for(let i = start; i <= end; i++){
+    const d = haversineKm(lat, lng, routeCoords[i][1], routeCoords[i][0]);
+    if(d < minD){ minD = d; minIdx = i; }
   }
   return minIdx;
 }
@@ -4936,9 +4952,11 @@ function onNavPosition(pos){
   navSpeedKmh = rawSpeed != null ? Math.round(rawSpeed*3.6) : navSpeedKmh;
   setNavSpeed(navSpeedKmh, navCurrentSpeedLimit);
 
-  // GPS arrow — snap do trasy (wygląd na drodze) + smooth animation
-  const snapIdx = closestRouteIdx(lat, lng);
-  const snapCoord = routeCoords[snapIdx];
+  // GPS arrow — forward-looking snap (zapobiega snapowi do równoległych dróg)
+  // Jeden closestRouteIdxForward używany wszędzie — koniec duplikatu O(n)
+  const cIdx = closestRouteIdxForward(lat, lng, navCIdx);
+  navCIdx = cIdx;
+  const snapCoord = routeCoords[cIdx];
   setGpsArrow(snapCoord ? snapCoord[1] : lat, snapCoord ? snapCoord[0] : lng);
 
   // Heading: GPS native lub delta z poprzedniej pozycji
@@ -4982,8 +5000,7 @@ function onNavPosition(pos){
   if(routeCoords.length && !map.getSource('ts-route')) drawRoute(routeCoords);
 
   // ── Remaining distance along route ──────────────────────────────────
-  const cIdx = closestRouteIdx(lat, lng);
-  navCIdx = cIdx;
+  // cIdx + navCIdx już ustawione powyżej (forward-looking snap)
   navDistRemaining = navRouteDistances[navRouteDistances.length-1] - navRouteDistances[cIdx];
   setEl('nav-total-dist', fmtDist(navDistRemaining));
 
@@ -5088,7 +5105,11 @@ function onNavPosition(pos){
   checkNavReports(lat, lng);
 
   // ── POI strip + voice alerts ─────────────────────────────────────────
-  renderNavPois();
+  // Throttle: przerysuj pasek POI tylko gdy przesunęliśmy się o ≥5 punktów trasy
+  if(Math.abs(cIdx - _lastPoiRenderIdx) >= 5){
+    _lastPoiRenderIdx = cIdx;
+    renderNavPois();
+  }
 
   const poiAlertDist = navSpeedKmh > 80 ? 4 : 2; // km
   for(const p of navRoutePois){
@@ -5128,7 +5149,7 @@ async function rerouteNavigation(fromLat, fromLng){
     navMaxspeeds   = parseMaxspeeds(route);
 
     // Reset stanu nawigacji
-    navStepIdx = 0; navCIdx = 0;
+    navStepIdx = 0; navCIdx = 0; _lastPoiRenderIdx = -99;
     navAnnouncedSteps = new Set();
     navAnnouncedPois  = new Set();
     navAnnouncedReports = new Set();
