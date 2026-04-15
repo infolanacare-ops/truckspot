@@ -1063,8 +1063,12 @@ Gdy kierowca chce zmienić stację / następna / inna / nudzi się:
 Gdy kierowca chce włączyć ulubioną stację:
 {"action":"play_favorite_radio"}
 
+Gdy kierowca prosi żebyś zapamiętała coś o nim — lub sam coś o sobie mówi i warto zapamiętać:
+{"action":"remember","fact":"KRÓTKI FAKT (max 10 słów)"}
+
 Gdy kierowca mówi że chce muzyki ale NIE podał gatunku → zapytaj jaki gatunek lubi (zwykłym tekstem).
 Pytania informacyjne, rozmowa, emocje → odpowiedz zwykłym tekstem (NIE JSON).
+NAturAlnie używaj zapamiętanych faktów w rozmowie — proponuj, nawiązuj, pytaj.
 NIE mieszaj JSON z tekstem."""
 
 def call_gemini(prompt, temperature=0.7, max_tokens=150):
@@ -1140,10 +1144,16 @@ def api_ai_chat():
     mode_label = {"tir": "kierowca TIR", "bus": "kierowca busa/vana", "tourist": "turysta"}.get(driver_mode, "kierowca")
 
     # System prompt z danymi kierowcy
-    fav_txt = f", ulubione radio: {fav_radio['name']} ({fav_radio.get('genre','')})" if fav_radio else ""
+    fav_txt    = f", ulubione radio: {fav_radio['name']} ({fav_radio.get('genre','')})" if fav_radio else ""
+    memories   = driver.get("memories", [])  # lista faktów zapamiętanych o kierowcy
+    memory_txt = ""
+    if memories:
+        memory_txt = "\nCo wiem o tym kierowcy:\n" + "\n".join(f"- {m}" for m in memories[-20:])
+
     system = (
         SYSTEM_PROMPT_BASE +
         f"\n\nKierowca: {driver_name} ({mode_label}), {driver_pts} punktów w TruckSpot{fav_txt}."
+        + memory_txt
     )
 
     # Kontekst nawigacyjny

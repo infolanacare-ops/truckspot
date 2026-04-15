@@ -7226,7 +7226,7 @@ async function sendAiMessage(text){
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         message: msg,
-        driver: { name: driverName, mode, pts, favRadio: profile.favoriteRadio || null },
+        driver: { name: driverName, mode, pts, favRadio: profile.favoriteRadio || null, memories: profile.aiMemory || [] },
         history: _aiHistory.slice(-12), // ostatnie 6 par
         lat, lng,
         navigating: navActive,
@@ -7264,6 +7264,17 @@ async function sendAiMessage(text){
       if(!navMuted) toggleNavMute();
     } else if(act === 'unmute'){
       if(navMuted) toggleNavMute();
+    } else if(act === 'remember'){
+      const fact = j.action.fact;
+      if(fact){
+        if(!profile.aiMemory) profile.aiMemory = [];
+        // Nie duplikuj
+        if(!profile.aiMemory.includes(fact)){
+          profile.aiMemory.push(fact);
+          if(profile.aiMemory.length > 50) profile.aiMemory.shift();
+          saveProfile();
+        }
+      }
     } else if(act === 'play_favorite_radio'){
       if(!playFavoriteRadio()){
         addAiMessage('Nie masz jeszcze ulubionej stacji. Najpierw włącz radio i kliknij ♡', 'bot');
