@@ -1436,25 +1436,25 @@ body.navigating .fab-ai{display:none}
 /* — Dół: ETA + głos + stop + hamburger — */
 .nav-bottom{
   position:fixed;bottom:0;left:0;right:0;z-index:1201;
-  background:rgba(20,24,40,.97);backdrop-filter:blur(10px);
-  border-top:1px solid rgba(255,255,255,.08);
-  padding:.5rem .9rem calc(.5rem + env(safe-area-inset-bottom));
-  display:flex;align-items:center;gap:.6rem;
+  background:rgba(16,20,36,.98);backdrop-filter:blur(12px);
+  border-top:1px solid rgba(255,255,255,.1);
+  padding:.65rem 1rem calc(.65rem + env(safe-area-inset-bottom));
+  display:flex;align-items:center;gap:.7rem;
 }
 /* ETA inline w pasku */
-.nav-eta-inline{display:flex;flex:1;gap:.45rem;min-width:0}
+.nav-eta-inline{display:flex;flex:1;gap:.5rem;min-width:0}
 .nav-eta-cell{
   flex:1;display:flex;flex-direction:column;align-items:center;
-  background:rgba(255,255,255,.05);border-radius:12px;
-  padding:.38rem .3rem;border:1px solid rgba(255,255,255,.07);min-width:0;
+  background:rgba(255,255,255,.06);border-radius:14px;
+  padding:.55rem .3rem;border:1px solid rgba(255,255,255,.09);min-width:0;
 }
 .nav-eta-cell-val{
-  font-family:var(--font-head);font-size:.95rem;font-weight:900;
+  font-family:var(--font-head);font-size:1.25rem;font-weight:900;
   color:#fff;line-height:1;white-space:nowrap;
 }
 .nav-eta-cell-lbl{
-  font-size:.42rem;color:rgba(255,255,255,.35);
-  text-transform:uppercase;font-weight:700;letter-spacing:.05em;margin-top:.15rem;
+  font-size:.5rem;color:rgba(255,255,255,.4);
+  text-transform:uppercase;font-weight:700;letter-spacing:.06em;margin-top:.2rem;
 }
 /* spacer */
 .nav-bottom-space{flex:1}
@@ -1509,13 +1509,13 @@ body.navigating .fab-ai{display:none}
 /* Hamburger button */
 .nav-hamburger{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:5px;width:44px;height:44px;flex-shrink:0;
+  gap:6px;width:56px;height:56px;flex-shrink:0;
   background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.14);
-  border-radius:14px;cursor:pointer;padding:0;transition:.2s;
+  border-radius:16px;cursor:pointer;padding:0;transition:.2s;
 }
 .nav-hamburger:active{background:rgba(255,255,255,.22);transform:scale(.93)}
 .nav-hamburger span{
-  display:block;width:20px;height:2.5px;
+  display:block;width:24px;height:3px;
   background:#fff;border-radius:2px;transition:.25s;
 }
 .nav-hamburger.open span:nth-child(1){transform:translateY(7.5px) rotate(45deg)}
@@ -1552,9 +1552,9 @@ body.navigating .fab-ai{display:none}
 .nav-sheet-stop:active{background:rgba(239,68,68,.3)}
 /* Przyciski głos + stop w pasku (jak dawniej, tylko kompaktowe) */
 .nav-btm-btn{
-  width:42px;height:42px;border:none;border-radius:13px;cursor:pointer;
+  width:56px;height:56px;border:none;border-radius:16px;cursor:pointer;
   flex-shrink:0;display:flex;align-items:center;justify-content:center;
-  font-size:1.05rem;font-weight:900;transition:.15s;backdrop-filter:blur(4px);
+  font-size:1.3rem;font-weight:900;transition:.15s;backdrop-filter:blur(4px);
 }
 .nav-btm-mute{background:rgba(255,255,255,.12);color:#fff;border:1.5px solid rgba(255,255,255,.14)}
 .nav-btm-mute:active{background:rgba(255,255,255,.24)}
