@@ -1290,54 +1290,78 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
   overflow:hidden;text-overflow:ellipsis;max-width:68px;text-align:center}
 .nav-poi-chip-dist{font-size:.6rem;color:#60a5fa;font-weight:700}
 
-/* — Dół: slim pasek z unified speed pill + hamburger — */
+/* — Dół: ETA + głos + stop + hamburger — */
 .nav-bottom{
   position:fixed;bottom:0;left:0;right:0;z-index:1201;
   background:rgba(20,24,40,.97);backdrop-filter:blur(10px);
   border-top:1px solid rgba(255,255,255,.08);
-  padding:.55rem .9rem calc(.55rem + env(safe-area-inset-bottom));
-  display:flex;align-items:center;gap:.7rem;
+  padding:.5rem .9rem calc(.5rem + env(safe-area-inset-bottom));
+  display:flex;align-items:center;gap:.6rem;
 }
-/* Unified speed pill: moja prędkość | ograniczenie */
+/* ETA inline w pasku */
+.nav-eta-inline{display:flex;flex:1;gap:.45rem;min-width:0}
+.nav-eta-cell{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  background:rgba(255,255,255,.05);border-radius:12px;
+  padding:.38rem .3rem;border:1px solid rgba(255,255,255,.07);min-width:0;
+}
+.nav-eta-cell-val{
+  font-family:var(--font-head);font-size:.95rem;font-weight:900;
+  color:#fff;line-height:1;white-space:nowrap;
+}
+.nav-eta-cell-lbl{
+  font-size:.42rem;color:rgba(255,255,255,.35);
+  text-transform:uppercase;font-weight:700;letter-spacing:.05em;margin-top:.15rem;
+}
+/* spacer */
+.nav-bottom-space{flex:1}
+/* ── Unified speed pill — góra-lewo ── */
 .nav-speedometer{
+  position:fixed;
+  top:calc(.65rem + env(safe-area-inset-top));
+  left:.65rem;
+  z-index:1202;
   display:flex;align-items:stretch;
-  background:rgba(255,255,255,.06);
-  border:1.5px solid rgba(255,255,255,.12);
+  background:rgba(16,20,36,.95);
+  border:1.5px solid rgba(255,255,255,.14);
   border-radius:16px;overflow:hidden;
-  flex-shrink:0;transition:.2s;
+  box-shadow:0 4px 16px rgba(0,0,0,.4);
+  transition:.2s;pointer-events:none;
 }
 .nav-spd-cur{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:.4rem .85rem;min-width:52px;
+  padding:.4rem .8rem;min-width:50px;
 }
-.nav-speed-val{font-family:var(--font-head);font-size:1.55rem;font-weight:900;color:#fff;line-height:1}
-.nav-speed-unit{font-size:.42rem;color:rgba(255,255,255,.4);text-transform:uppercase;font-weight:700;letter-spacing:.05em;margin-top:.1rem}
+.nav-speed-val{font-family:var(--font-head);font-size:1.5rem;font-weight:900;color:#fff;line-height:1}
+.nav-speed-unit{font-size:.4rem;color:rgba(255,255,255,.4);text-transform:uppercase;font-weight:700;letter-spacing:.05em;margin-top:.1rem}
 .nav-spd-sep{width:1px;background:rgba(255,255,255,.1);align-self:stretch}
 .nav-spd-lim{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:.4rem .85rem;min-width:52px;
+  padding:.4rem .8rem;min-width:50px;
   background:rgba(255,255,255,.04);
   opacity:.35;transition:.2s;
 }
 .nav-spd-lim.visible{opacity:1}
-.nav-speed-sign-val{font-family:var(--font-head);font-size:1.35rem;font-weight:900;color:#fff;line-height:1;transition:color .2s}
-.nav-speed-sign-unit{font-size:.42rem;color:rgba(255,255,255,.35);text-transform:uppercase;font-weight:700;letter-spacing:.05em;margin-top:.1rem}
-/* Speeding: lewy panel czerwony, prawy pulsuje */
+.nav-speed-sign-val{font-family:var(--font-head);font-size:1.3rem;font-weight:900;color:#fff;line-height:1;transition:color .2s}
+.nav-speed-sign-unit{font-size:.4rem;color:rgba(255,255,255,.32);text-transform:uppercase;font-weight:700;letter-spacing:.05em;margin-top:.1rem}
+/* Speeding */
 .nav-speedometer.speeding .nav-spd-cur{background:rgba(239,68,68,.22)}
 .nav-speedometer.speeding .nav-speed-val{color:#ef4444}
 .nav-speedometer.speeding .nav-spd-sep{background:rgba(239,68,68,.3)}
 .nav-speedometer.speeding .nav-spd-lim{background:rgba(239,68,68,.1)}
 .nav-speedometer.speeding .nav-speed-sign-val{color:#ef4444}
-/* Camera warning — compact inline */
+/* Camera warning — pod pill, góra-lewo */
 .nav-cam-warn{
+  position:fixed;
+  top:calc(.65rem + env(safe-area-inset-top) + 70px);
+  left:.65rem;
+  z-index:1202;
   display:none;background:rgba(239,68,68,.15);
   border:1px solid rgba(239,68,68,.4);border-radius:12px;
-  padding:.35rem .65rem;font-size:.8rem;color:#ef4444;
-  font-weight:800;white-space:nowrap;flex-shrink:0;
+  padding:.3rem .6rem;font-size:.78rem;color:#ef4444;
+  font-weight:800;white-space:nowrap;pointer-events:none;
 }
 .nav-cam-warn.visible{display:flex;align-items:center;gap:.3rem}
-/* spacer */
-.nav-bottom-space{flex:1}
 /* Hamburger button */
 .nav-hamburger{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -1462,10 +1486,12 @@ body.navigating .convoy-btn{display:none}
     gap:.4rem;flex-wrap:wrap;
     border-top:1px solid rgba(255,255,255,.1);
   }
-  .nav-speedometer{border-radius:12px}
+  /* Pill w landscape — zostawić fixed top-left */
+  .nav-speedometer{top:.5rem;left:.5rem}
   .nav-spd-cur,.nav-spd-lim{padding:.3rem .6rem;min-width:42px}
   .nav-speed-val{font-size:1.15rem}
   .nav-speed-sign-val{font-size:1.0rem}
+  .nav-cam-warn{top:calc(.5rem + 64px);left:.5rem}
   .nav-hamburger{width:38px;height:38px;border-radius:10px}
   /* Sheet — w landscape po prawej stronie ekranu */
   .nav-sheet{border-radius:20px 0 0 20px;bottom:auto;top:0;left:auto;
@@ -2173,26 +2199,41 @@ body.navigating .convoy-btn{display:none}
   <!-- Mapa wypełnia środek -->
   <div class="nav-spacer" style="flex:1;pointer-events:none"></div>
 
-  <!-- Dół: unified speed pill + hamburger -->
+  <!-- Speed pill — góra-lewo (fixed, poza flow) -->
+  <div class="nav-speedometer" id="nav-speedometer">
+    <div class="nav-spd-cur">
+      <div class="nav-speed-val" id="nav-speed-val">–</div>
+      <div class="nav-speed-unit">km/h</div>
+    </div>
+    <div class="nav-spd-sep"></div>
+    <div class="nav-spd-lim" id="nav-speed-sign">
+      <div class="nav-speed-sign-val" id="nav-speed-sign-val">–</div>
+      <div class="nav-speed-sign-unit">limit</div>
+    </div>
+  </div>
+  <!-- Fotoradar — pod pill, góra-lewo (fixed) -->
+  <div class="nav-cam-warn" id="nav-cam-warn">
+    📷 <span class="nav-cam-dist" id="nav-cam-dist"></span>
+  </div>
+
+  <!-- Dół: ETA + głos + stop + hamburger -->
   <div class="nav-bottom">
-    <!-- Unified pill: moja prędkość | ograniczenie -->
-    <div class="nav-speedometer" id="nav-speedometer">
-      <div class="nav-spd-cur">
-        <div class="nav-speed-val" id="nav-speed-val">–</div>
-        <div class="nav-speed-unit">km/h</div>
+    <!-- ETA inline -->
+    <div class="nav-eta-inline">
+      <div class="nav-eta-cell">
+        <div class="nav-eta-cell-val" id="nav-total-dist">–</div>
+        <div class="nav-eta-cell-lbl">pozostało</div>
       </div>
-      <div class="nav-spd-sep"></div>
-      <div class="nav-spd-lim" id="nav-speed-sign">
-        <div class="nav-speed-sign-val" id="nav-speed-sign-val">–</div>
-        <div class="nav-speed-sign-unit">limit</div>
+      <div class="nav-eta-cell">
+        <div class="nav-eta-cell-val" id="nav-eta-remaining">–</div>
+        <div class="nav-eta-cell-lbl">czas</div>
+      </div>
+      <div class="nav-eta-cell">
+        <div class="nav-eta-cell-val" id="nav-eta-arrival">––:––</div>
+        <div class="nav-eta-cell-lbl">przyjazd</div>
       </div>
     </div>
-    <!-- Fotoradar — pojawia się gdy w pobliżu -->
-    <div class="nav-cam-warn" id="nav-cam-warn">
-      📷 <span class="nav-cam-dist" id="nav-cam-dist"></span>
-    </div>
-    <div class="nav-bottom-space"></div>
-    <!-- Głos i stop na wierzchu -->
+    <!-- Głos i stop -->
     <button class="nav-btm-btn nav-btm-mute" id="nav-mute-btn" onclick="toggleNavMute()" title="Wycisz głos">🔊</button>
     <button class="nav-btm-btn nav-btm-stop" onclick="stopNavigation()" title="Zatrzymaj nawigację">✕</button>
     <!-- Hamburger -->
@@ -2205,25 +2246,9 @@ body.navigating .convoy-btn{display:none}
 <!-- Backdrop do zamknięcia sheet -->
 <div class="nav-sheet-backdrop" id="nav-sheet-backdrop" onclick="closeNavSheet()"></div>
 
-<!-- Slide-up sheet: ETA + filtry + konwój -->
+<!-- Slide-up sheet: filtry + konwój -->
 <div class="nav-sheet" id="nav-sheet">
   <div class="nav-sheet-handle"></div>
-  <!-- ETA row -->
-  <div class="nav-sheet-eta">
-    <div class="nav-sheet-stat">
-      <div class="nav-sheet-stat-val" id="nav-total-dist">–</div>
-      <div class="nav-sheet-stat-label">pozostało</div>
-    </div>
-    <div class="nav-sheet-stat">
-      <div class="nav-sheet-stat-val" id="nav-eta-remaining">–</div>
-      <div class="nav-sheet-stat-label">czas</div>
-    </div>
-    <div class="nav-sheet-stat">
-      <div class="nav-sheet-stat-val" id="nav-eta-arrival">––:––</div>
-      <div class="nav-sheet-stat-label">przyjazd</div>
-    </div>
-  </div>
-  <!-- Filtry + Konwój -->
   <div class="nav-sheet-actions">
     <button class="nav-sheet-btn" id="nav-pitch-btn" onclick="cycleNavPitch()">3D</button>
     <button class="nav-sheet-btn" onclick="closeNavSheet(); openFilters()">
