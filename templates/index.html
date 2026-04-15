@@ -7221,8 +7221,8 @@ function openAiChat(){
     const msgs = document.getElementById('ai-messages');
     msgs.innerHTML = '';
     const greeting = name
-      ? `Cześć ${name}! W czym mogę pomóc?`
-      : `Cześć! W czym mogę pomóc?`;
+      ? `Cześć ${name}! 😊 Co słychać? W czym mogę Ci dziś pomóc?`
+      : `Cześć! Co słychać? W czym mogę Ci pomóc?`;
     addAiMessage(greeting, 'bot');
   }
   setTimeout(() => document.getElementById('ai-input')?.focus(), 350);
