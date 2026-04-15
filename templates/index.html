@@ -7206,8 +7206,9 @@ async function nextRadio(genre){
 }
 
 // Tryb asystenta w tle — bez panelu, słucha głosu, odpowiada głosem
-let _bgAssistantActive = false;
-let _bgRestartPending  = false; // blokada podwójnego restartu
+let _bgAssistantActive    = false;
+let _bgRestartPending     = false; // blokada podwójnego restartu
+let _navMutedByAssistant  = false; // czy asystent wyciszył navi (żeby przywrócić)
 
 function _setAssistantBtn(active){
   // Przycisk w hamburger menu
@@ -7220,19 +7221,30 @@ function _setAssistantBtn(active){
 
 function openAiAssistant(){
   if(_bgAssistantActive){
+    // Wyłącz asystenta
     _bgAssistantActive = false;
     _bgRestartPending  = false;
     try{ window._bgRecognition?.stop(); }catch(e){}
     window._bgRecognition = null;
     _setAssistantBtn(false);
     document.getElementById('fab-ai')?.classList.remove('listening');
+    // Przywróć głos navi jeśli to my go wyciszyliśmy
+    if(_navMutedByAssistant){
+      _navMutedByAssistant = false;
+      if(navMuted) toggleNavMute();
+    }
     return;
   }
+  // Włącz asystenta — wycisz navi jeśli aktywna
   _bgAssistantActive = true;
   _setAssistantBtn(true);
+  if(!navMuted){
+    _navMutedByAssistant = true;
+    toggleNavMute();
+  }
+  speechSynthesis.cancel(); // przerwij cokolwiek mówi nawi
   const name = profile.name || localStorage.getItem('ts_driver_name') || '';
   const greeting = name ? `Hej ${name}, słucham!` : `Słucham, mów!`;
-  // Poczekaj aż syntezator skończy (powitanie), potem włącz mikrofon
   const utt = new SpeechSynthesisUtterance(greeting);
   utt.lang = 'pl-PL'; utt.rate = 0.92;
   const voice = getBestVoice('pl-PL');
