@@ -3788,13 +3788,110 @@ function loadParkings(mode){
     });
 }
 
+// ── GL Cluster rendering ────────────────────────────────────────────────────
+let _clusterParkings = []; // aktualny zestaw (po filtrach)
+const CLUSTER_SRC  = 'ts-parkings-cluster';
+const CLUSTER_ZOOM = 13; // poniżej: clustry, powyżej: piny
+
+function _parkingsGeoJSON(parkings){
+  return {
+    type:'FeatureCollection',
+    features: parkings.map(p=>({
+      type:'Feature',
+      geometry:{type:'Point', coordinates:[parseFloat(p.lng), parseFloat(p.lat)]},
+      properties:{id:p.id, name:p.name||'', amenities:JSON.stringify(p.amenities||[])}
+    }))
+  };
+}
+
+function _clusterColor(count){
+  if(count >= 50) return '#7c3aed';
+  if(count >= 20) return '#ef4444';
+  if(count >= 10) return '#f97316';
+  return '#f59e0b';
+}
+
 function renderMarkers(parkings){
   markers.forEach(m=>m.remove()); markers=[];
-  const cfg=MODE_CONFIG[currentMode];
+  _clusterParkings = parkings;
+  const cfg = MODE_CONFIG[currentMode];
   const pinColor = (currentMode==='tir') ? (profile.tirPinColor||cfg.color) : cfg.color;
-  parkings.forEach(p=>{
-    markers.push(mkMbMarker(p.lat,p.lng,mkPinP(pinColor),()=>showDetail(p)));
-  });
+  const geojson = _parkingsGeoJSON(parkings);
+
+  const setup = () => {
+    // Usuń stare warstwy/źródło
+    ['ts-cluster-circles','ts-cluster-count','ts-uncluster-circles','ts-uncluster-labels']
+      .forEach(id=>{ if(map.getLayer(id)) map.removeLayer(id); });
+    if(map.getSource(CLUSTER_SRC)) map.removeSource(CLUSTER_SRC);
+
+    map.addSource(CLUSTER_SRC,{
+      type:'geojson', data: geojson,
+      cluster:true, clusterMaxZoom: CLUSTER_ZOOM - 1, clusterRadius:55
+    });
+
+    // ── Kółka klastrów ─────────────────────────────────────────
+    map.addLayer({id:'ts-cluster-circles', type:'circle', source:CLUSTER_SRC,
+      filter:['has','point_count'],
+      paint:{
+        'circle-color':['step',['get','point_count'],
+          '#f59e0b',10,'#f97316',20,'#ef4444',50,'#7c3aed'],
+        'circle-radius':['step',['get','point_count'], 22,10,28,20,34,50,40],
+        'circle-opacity':0.92,
+        'circle-stroke-width':3,'circle-stroke-color':'#fff',
+        'circle-stroke-opacity':0.9
+      }
+    });
+    // ── Liczba w klastrze ──────────────────────────────────────
+    map.addLayer({id:'ts-cluster-count', type:'symbol', source:CLUSTER_SRC,
+      filter:['has','point_count'],
+      layout:{
+        'text-field':'{point_count_abbreviated}',
+        'text-size':13,'text-font':['DIN Offc Pro Bold','Arial Unicode MS Bold']
+      },
+      paint:{'text-color':'#fff'}
+    });
+    // ── Pojedyncze punkty (zoom >= CLUSTER_ZOOM) ────────────────
+    map.addLayer({id:'ts-uncluster-circles', type:'circle', source:CLUSTER_SRC,
+      filter:['!',['has','point_count']],
+      paint:{
+        'circle-color': pinColor,
+        'circle-radius':['interpolate',['linear'],['zoom'],CLUSTER_ZOOM,8,16,14],
+        'circle-stroke-width':2.5,'circle-stroke-color':'#fff',
+        'circle-opacity':0.95
+      }
+    });
+    map.addLayer({id:'ts-uncluster-labels', type:'symbol', source:CLUSTER_SRC,
+      filter:['!',['has','point_count']],
+      layout:{
+        'text-field':'P','text-size':10,
+        'text-font':['DIN Offc Pro Bold','Arial Unicode MS Bold']
+      },
+      paint:{'text-color':'#fff'}
+    });
+
+    // Klik na klaster → zoom in
+    map.on('click','ts-cluster-circles', e=>{
+      const f = e.features[0];
+      const src = map.getSource(CLUSTER_SRC);
+      src.getClusterExpansionZoom(f.properties.cluster_id,(err,zoom)=>{
+        if(err) return;
+        map.easeTo({center:f.geometry.coordinates, zoom: zoom+0.5});
+      });
+    });
+    // Klik na pojedynczy punkt → detail
+    map.on('click','ts-uncluster-circles', e=>{
+      const props = e.features[0].properties;
+      const p = _clusterParkings.find(x=>String(x.id)===String(props.id));
+      if(p) showDetail(p);
+    });
+    map.on('mouseenter','ts-cluster-circles',()=>{ map.getCanvas().style.cursor='pointer'; });
+    map.on('mouseleave','ts-cluster-circles',()=>{ map.getCanvas().style.cursor=''; });
+    map.on('mouseenter','ts-uncluster-circles',()=>{ map.getCanvas().style.cursor='pointer'; });
+    map.on('mouseleave','ts-uncluster-circles',()=>{ map.getCanvas().style.cursor=''; });
+  };
+
+  if(map.isStyleLoaded()) setup();
+  else map.once('style.load', setup);
 }
 
 function loadOsmParkings(){
@@ -4694,15 +4791,13 @@ function updateFilterBadge(){
 
 function applyFilterToMarkers(){
   if(!allParkings.length) return;
-  if(activeFilters.size === 0){
-    renderMarkers(allParkings);
-    return;
-  }
-  const filtered = allParkings.filter(p => {
-    const amen = p.amenities || [];
-    return [...activeFilters].some(f => amen.includes(f));
-  });
-  renderMarkers(filtered);
+  const filtered = activeFilters.size === 0
+    ? allParkings
+    : allParkings.filter(p => [...activeFilters].some(f => (p.amenities||[]).includes(f)));
+  // Szybka aktualizacja źródła GL zamiast pełnego re-render
+  const src = map.getSource(CLUSTER_SRC);
+  if(src){ src.setData(_parkingsGeoJSON(filtered)); _clusterParkings = filtered; }
+  else renderMarkers(filtered);
   if(filtered.length === 0){
     showAlert('⚙️','Filtry','Brak parkingów spełniających kryteria');
   } else {
