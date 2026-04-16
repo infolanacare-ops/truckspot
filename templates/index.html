@@ -1077,7 +1077,7 @@ body.navigating .fab-layers{display:none}
 
 /* — Główna karta manewru (góra) — */
 .nav-maneuver-card{
-  background:#1c6ef3;
+  background:#006d77;
   margin:.6rem .6rem 0;
   border-radius:20px;
   padding:.75rem 1rem .65rem;
@@ -1114,7 +1114,7 @@ body.navigating .fab-layers{display:none}
 
 /* — Następny manewr (mini pasek pod głównym) — */
 .nav-next-strip{
-  background:#1557cc;
+  background:#005560;
   margin:0 .6rem;
   border-radius:16px;
   padding:.4rem 1rem .4rem 1.1rem;
@@ -1242,13 +1242,13 @@ body.navigating .nav-tl-handle{display:block}
   display:flex;align-items:center;justify-content:center;font-size:.8rem;
 }
 .nav-tl-dot.is-dest{background:rgba(255,215,0,.15);border-color:#ffd700}
-.nav-tl-dot.is-cur{background:rgba(96,165,250,.2);border-color:#60a5fa}
+.nav-tl-dot.is-cur{background:rgba(0,131,143,.2);border-color:#00838f}
 .nav-tl-info{min-width:0;flex:1}
 .nav-tl-name{
   font-size:.7rem;font-weight:700;color:#fff;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;
 }
-.nav-tl-dist{font-size:.6rem;color:#60a5fa;font-weight:700;margin-top:.05rem}
+.nav-tl-dist{font-size:.6rem;color:#4dd0e1;font-weight:700;margin-top:.05rem}
 
 /* ══ AI ASYSTENT ══ */
 .fab-ai{
@@ -1733,14 +1733,14 @@ body.navigating .fab-ai{display:none}
 }
 .nav-poi-current-dot{
   width:20px;height:20px;border-radius:50%;
-  background:#3b82f6;border:2px solid #fff;
-  box-shadow:0 0 8px rgba(59,130,246,.7);
+  background:#006d77;border:2px solid #fff;
+  box-shadow:0 0 8px rgba(0,109,119,.7);
   position:relative;z-index:2;
   animation:poi-pulse 2s ease-in-out infinite;
 }
 @keyframes poi-pulse{
-  0%,100%{box-shadow:0 0 8px rgba(59,130,246,.7)}
-  50%{box-shadow:0 0 16px rgba(59,130,246,.4),0 0 4px #3b82f6}
+  0%,100%{box-shadow:0 0 8px rgba(0,109,119,.7)}
+  50%{box-shadow:0 0 16px rgba(0,109,119,.4),0 0 4px #00838f}
 }
 
 /* Chip = jeden POI na osi */
@@ -4661,21 +4661,21 @@ function drawRoute(coords, splitIdx){
     // Zewnętrzny glow — subtelny, nie zakrywa mapy
     map.addLayer({id:'ts-route-glow',type:'line',source:'ts-route',
       layout:{'line-join':'round','line-cap':'round'},
-      paint:{'line-color':'#3b82f6',
+      paint:{'line-color':'#006d77',
         'line-width':['interpolate',['linear'],['zoom'],8,12,12,18,16,24],
-        'line-opacity':0.12,'line-blur':6}
+        'line-opacity':0.18,'line-blur':6}
     });
     // Ciemna obwódka — odcina trasę od mapy
     map.addLayer({id:'ts-route-casing',type:'line',source:'ts-route',
       layout:{'line-join':'round','line-cap':'round'},
-      paint:{'line-color':'#1a3560',
+      paint:{'line-color':'#003d44',
         'line-width':['interpolate',['linear'],['zoom'],8,8,12,12,16,16],
         'line-opacity':1}
     });
     // Główna linia — żywy niebieski
     map.addLayer({id:'ts-route-line',type:'line',source:'ts-route',
       layout:{'line-join':'round','line-cap':'round'},
-      paint:{'line-color':'#4a90e8',
+      paint:{'line-color':'#00838f',
         'line-width':['interpolate',['linear'],['zoom'],8,6,12,10,16,13],
         'line-opacity':0.92}
     });
