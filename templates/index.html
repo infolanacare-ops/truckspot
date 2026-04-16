@@ -4379,8 +4379,50 @@ function mkGpsDotMarker(lat, lng){
 }
 
 // Smooth marker animation state
-let _markerAnimId = null;
-let _markerFrom = null;
+let _markerAnimId    = null;
+let _markerFrom      = null;
+// Adaptacyjny pomiar interwału GPS — dopasowujemy długość animacji do rzeczywistego tempa GPS
+let _gpsIntervalSamples = [];
+let _gpsLastTickTime    = null;
+let _gpsAvgInterval     = 1000; // startowo zakładamy 1Hz (typowe mobile)
+
+function _updateGpsInterval(){
+  const now = performance.now();
+  if(_gpsLastTickTime !== null){
+    const interval = now - _gpsLastTickTime;
+    if(interval > 100 && interval < 4000){ // ignoruj outliers
+      _gpsIntervalSamples.push(interval);
+      if(_gpsIntervalSamples.length > 6) _gpsIntervalSamples.shift();
+      _gpsAvgInterval = _gpsIntervalSamples.reduce((a,b)=>a+b,0) / _gpsIntervalSamples.length;
+    }
+  }
+  _gpsLastTickTime = now;
+}
+
+// Dead reckoning — ekstrapolacja pozycji między tickami GPS
+let _drLat = null, _drLng = null;
+let _drSpeedMps = 0, _drBearing = 0;
+let _drLastRafTime = null;
+let _drRafId = null;
+
+const DEG_PER_M_LAT = 1 / 111320;
+function _startDeadReckoning(){
+  if(_drRafId) cancelAnimationFrame(_drRafId);
+  _drLastRafTime = performance.now();
+  function drStep(now){
+    if(!navActive || _drSpeedMps < 1){ _drRafId = null; return; }
+    const dt = (now - _drLastRafTime) / 1000; // sekundy
+    _drLastRafTime = now;
+    const bearRad = _drBearing * Math.PI / 180;
+    const distM   = _drSpeedMps * dt;
+    // Przesuń pozycję wg kursu i prędkości
+    _drLat += Math.cos(bearRad) * distM * DEG_PER_M_LAT;
+    _drLng += Math.sin(bearRad) * distM * (DEG_PER_M_LAT / Math.cos(_drLat * Math.PI / 180));
+    if(gpsMarker) gpsMarker.setLngLat([_drLng, _drLat]);
+    _drRafId = requestAnimationFrame(drStep);
+  }
+  _drRafId = requestAnimationFrame(drStep);
+}
 
 // Bearing EMA — wygładza szarpane odczyty heading GPS
 let _smoothBearing = null;
@@ -4393,7 +4435,6 @@ function calcSmoothedBearing(raw){
   return _smoothBearing;
 }
 
-// easeOutCubic — szybki start, łagodne dobicie (jak TomTom)
 function _easeOut(t){ return 1 - Math.pow(1-t, 3); }
 
 function setGpsArrow(lat, lng){
@@ -4408,22 +4449,30 @@ function setGpsArrow(lat, lng){
     gpsMarker = new mapboxgl.Marker({element:el, anchor:'center', rotationAlignment:'viewport', pitchAlignment:'map'})
       .setLngLat([lng,lat]).addTo(map);
     _markerFrom = {lat, lng};
+    _drLat = lat; _drLng = lng;
     return;
   }
-  // rAF interpolacja — płynne przesunięcie między tickami (jak TomTom)
-  if(_markerAnimId){ cancelAnimationFrame(_markerAnimId); _markerAnimId=null; }
+  // Pomiar rzeczywistego interwału GPS
+  _updateGpsInterval();
+
+  // Zatrzymaj dead reckoning — przyszedł prawdziwy GPS
+  if(_drRafId){ cancelAnimationFrame(_drRafId); _drRafId = null; }
+
+  // Snap marker do prawdziwej pozycji GPS (krótka animacja wyrównująca)
+  if(_markerAnimId){ cancelAnimationFrame(_markerAnimId); _markerAnimId = null; }
   const cur = gpsMarker.getLngLat();
   const fromLat = cur.lat, fromLng = cur.lng;
-  const dur = 260; // lekko dłużej niż tick 200ms → ciągły ruch
-  const t0  = performance.now();
-  function step(now){
-    const t = Math.min((now - t0) / dur, 1);
+  // Animacja wyrównująca: krótka (80ms) — tylko korekta, dead reckoning już był blisko
+  const corrDur = 80;
+  const t0c = performance.now();
+  function correctStep(now){
+    const t = Math.min((now - t0c) / corrDur, 1);
     const e = _easeOut(t);
-    gpsMarker.setLngLat([fromLng + (lng - fromLng) * e, fromLat + (lat - fromLat) * e]);
-    if(t < 1) _markerAnimId = requestAnimationFrame(step);
-    else _markerAnimId = null;
+    gpsMarker.setLngLat([fromLng+(lng-fromLng)*e, fromLat+(lat-fromLat)*e]);
+    if(t < 1) _markerAnimId = requestAnimationFrame(correctStep);
+    else{ _markerAnimId = null; _drLat = lat; _drLng = lng; _startDeadReckoning(); }
   }
-  _markerAnimId = requestAnimationFrame(step);
+  _markerAnimId = requestAnimationFrame(correctStep);
   _markerFrom = {lat, lng};
 }
 
@@ -6514,6 +6563,9 @@ function onNavPosition(pos){
   // EMA bearing — eliminuje szarpanie przy słabym GPS
   const navHeading = calcSmoothedBearing(rawH);
   navCurrentHeading = navHeading;
+  // Zaktualizuj parametry dead reckoning (prędkość + kurs)
+  _drSpeedMps  = (pos.coords.speed != null && pos.coords.speed >= 0) ? pos.coords.speed : navSpeedKmh / 3.6;
+  _drBearing   = navHeading;
 
   // ── TomTom-style camera — zoom + pitch zależny od odległości do manewru ──
   const baseZoom = navSpeedKmh > 80 ? 13 : navSpeedKmh > 40 ? 14 : 15;
@@ -6820,7 +6872,10 @@ function stopNavigation(){
   if(navWatchId){ navigator.geolocation.clearWatch(navWatchId); navWatchId=null; }
   if(_markerAnimId){ cancelAnimationFrame(_markerAnimId); _markerAnimId=null; }
   _markerFrom = null;
-  _smoothBearing = null; // reset EMA przy kolejnej nawigacji
+  _smoothBearing = null;
+  _drLat = null; _drLng = null; _drSpeedMps = 0; _drBearing = 0;
+  _gpsIntervalSamples = []; _gpsLastTickTime = null; _gpsAvgInterval = 1000;
+  if(_drRafId){ cancelAnimationFrame(_drRafId); _drRafId = null; }
   camerasVisible = false; navCIdx = 0;
   const tirBar = document.getElementById('nav-tir-bar');
   if(tirBar) tirBar.classList.remove('active');
