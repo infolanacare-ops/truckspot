@@ -1124,32 +1124,51 @@ Pytania informacyjne, rozmowa, emocje → odpowiedz zwykłym tekstem (NIE JSON).
 NAturAlnie używaj zapamiętanych faktów w rozmowie — proponuj, nawiązuj, pytaj.
 NIE mieszaj JSON z tekstem."""
 
-def call_gemini(prompt, temperature=0.7, max_tokens=150):
-    """Prosty call — jeden tekst (używany przez ai-assist)."""
-    url = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/"
-        f"gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
-    )
-    resp = _requests.post(url, json={
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"maxOutputTokens": max_tokens, "temperature": temperature},
-    }, timeout=10)
-    result = resp.json()
+GEMINI_MODELS = [
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-1.5-flash",
+]
+
+def _gemini_extract(result):
+    """Wyciągnij tekst z odpowiedzi Gemini, rzuć wyjątek z detalami jeśli błąd."""
+    if "candidates" not in result:
+        err = result.get("error", {})
+        raise RuntimeError(f"Gemini error {err.get('code','?')}: {err.get('message','no candidates')}")
     return result["candidates"][0]["content"]["parts"][0]["text"].strip()
 
+def call_gemini(prompt, temperature=0.7, max_tokens=150):
+    """Prosty call — jeden tekst. Próbuje kolejne modele jeśli pierwszy zawiedzie."""
+    for model in GEMINI_MODELS:
+        try:
+            url = (f"https://generativelanguage.googleapis.com/v1beta/models/"
+                   f"{model}:generateContent?key={GEMINI_API_KEY}")
+            resp = _requests.post(url, json={
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"maxOutputTokens": max_tokens, "temperature": temperature},
+            }, timeout=10)
+            return _gemini_extract(resp.json())
+        except Exception as e:
+            last_err = e
+            continue
+    raise last_err
+
 def call_gemini_chat(system_instruction, user_message, temperature=0.3, max_tokens=200):
-    """Chat call — system instruction osobno, wiadomość użytkownika osobno."""
-    url = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/"
-        f"gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
-    )
-    resp = _requests.post(url, json={
-        "systemInstruction": {"parts": [{"text": system_instruction}]},
-        "contents": [{"role": "user", "parts": [{"text": user_message}]}],
-        "generationConfig": {"maxOutputTokens": max_tokens, "temperature": temperature},
-    }, timeout=12)
-    result = resp.json()
-    return result["candidates"][0]["content"]["parts"][0]["text"].strip()
+    """Chat call — system instruction osobno. Próbuje kolejne modele jeśli pierwszy zawiedzie."""
+    for model in GEMINI_MODELS:
+        try:
+            url = (f"https://generativelanguage.googleapis.com/v1beta/models/"
+                   f"{model}:generateContent?key={GEMINI_API_KEY}")
+            resp = _requests.post(url, json={
+                "systemInstruction": {"parts": [{"text": system_instruction}]},
+                "contents": [{"role": "user", "parts": [{"text": user_message}]}],
+                "generationConfig": {"maxOutputTokens": max_tokens, "temperature": temperature},
+            }, timeout=12)
+            return _gemini_extract(resp.json())
+        except Exception as e:
+            last_err = e
+            continue
+    raise last_err
 
 
 @app.route("/api/ai-assist", methods=["POST"])
