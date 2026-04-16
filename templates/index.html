@@ -6283,19 +6283,14 @@ function renderNavPois(){
     ? Math.max(0, totalKm - myDistKm) : totalKm;
   const fmtD = d => d == null ? '' : d < 1 ? Math.round(d*1000)+'m' : d.toFixed(1)+'km';
 
-  // Wybierz POI: zawsze TIR + aktywne filtry
+  // Wybierz POI: zawsze TIR + aktywne filtry — WSZYSTKIE zostają na osi
   const timedPois = navRoutePois.filter(p =>
     TIR_TIMELINE_TYPES.has(p.type) ||
     (activeFilters.size > 0 && [...activeFilters].some(f => (p.amenities||[]).includes(f)))
-  );
+  ).slice(0, 14);
 
-  // Podział na przejechane (max 2) i nadchodzące (max 10)
-  const passed  = timedPois.filter(p => myDistKm !== null && (p.distFromStart||0) <= myDistKm)
-                           .slice(-2);
-  const ahead   = timedPois.filter(p => myDistKm === null || (p.distFromStart||0) > myDistKm)
-                           .slice(0, 10);
-  // Kolejność: META(góra) → [dalsze→bliższe] → [marker auto] → START(dół)
-  const orderedPois = [...ahead].reverse(); // odwróć: najdalszy na górze
+  // Sortuj: najdalszy na górze (index 0), najbliższy na dole
+  const sortedDesc = [...timedPois].sort((a,b) => (b.distFromStart||0) - (a.distFromStart||0));
 
   // META
   const metaHtml = `<div class="nav-poi-end">
@@ -6304,34 +6299,37 @@ function renderNavPois(){
     ${distToEnd != null ? `<div class="nav-poi-chip-dist">${fmtD(distToEnd)}</div>` : ''}
   </div>`;
 
-  // POI nadchodzące (od najdalszego do najbliższego)
-  const aheadHtml = orderedPois.map(p => {
+  // Wszystkie POI — przejechane (.passed) i nadchodzące, z markerem pozycji wstawionym między nimi
+  let poisHtml = '';
+  let currentInserted = false;
+  for(const p of sortedDesc){
+    const isPassed = myDistKm !== null && (p.distFromStart||0) <= myDistKm;
     const distAhead = myDistKm !== null ? (p.distFromStart||0) - myDistKm : (p.distFromStart||0);
-    const distTxt   = fmtD(distAhead > 0 ? distAhead : null);
-    const near      = distAhead > 0 && distAhead < 2;
-    return `<div class="nav-poi-chip${near?' near':''}"
+    const near = !isPassed && distAhead > 0 && distAhead < 2;
+    const distTxt = isPassed ? fmtD(p.distFromStart) : fmtD(distAhead > 0 ? distAhead : null);
+
+    // Wstaw marker pozycji tuż przed pierwszym nadchodzącym (przejście passed→ahead)
+    if(!currentInserted && navActive && !isPassed){
+      poisHtml += `<div class="nav-poi-current" id="nav-poi-current">
+        <div class="nav-poi-current-dot"></div>
+      </div>`;
+      currentInserted = true;
+    }
+
+    poisHtml += `<div class="nav-poi-chip${isPassed?' passed':''}${near?' near':''}"
       onclick="map.flyTo({center:[${p.lng},${p.lat}],zoom:15})" title="${p.name}">
       <div class="nav-poi-chip-icon">${p.icon}</div>
       <div class="nav-poi-chip-name">${p.name.substring(0,12)}</div>
       ${distTxt ? `<div class="nav-poi-chip-dist">${distTxt}</div>` : ''}
     </div>`;
-  }).join('');
-
-  // Marker bieżącej pozycji (niebieski pulsujący) — tylko podczas nawigacji
-  const currentHtml = navActive
-    ? `<div class="nav-poi-current" id="nav-poi-current">
-        <div class="nav-poi-current-dot"></div>
-       </div>`
-    : '';
-
-  // POI przejechane (przyciemnione, nad STARTem)
-  const passedHtml = [...passed].reverse().map(p => {
-    return `<div class="nav-poi-chip passed"
-      onclick="map.flyTo({center:[${p.lng},${p.lat}],zoom:15})" title="${p.name}">
-      <div class="nav-poi-chip-icon">${p.icon}</div>
-      <div class="nav-poi-chip-name">${p.name.substring(0,12)}</div>
-    </div>`;
-  }).join('');
+  }
+  // Jeśli wszystkie przejechane (blisko mety) — marker na górze listy
+  if(!currentInserted && navActive){
+    metaHtml; // marker tuż pod META — obsłużone przez kolejność
+    poisHtml = `<div class="nav-poi-current" id="nav-poi-current">
+      <div class="nav-poi-current-dot"></div>
+    </div>` + poisHtml;
+  }
 
   // START
   const startHtml = `<div class="nav-poi-start">
@@ -6339,11 +6337,11 @@ function renderNavPois(){
     <div class="nav-poi-start-lbl">Start</div>
   </div>`;
 
-  strip.innerHTML = metaHtml + aheadHtml + currentHtml + passedHtml + startHtml;
+  strip.innerHTML = metaHtml + poisHtml + startHtml;
 
-  // Auto-scroll: pokaż marker aktualnej pozycji (środek stripu)
+  // Auto-scroll: marker aktualnej pozycji zawsze widoczny
   const curEl = document.getElementById('nav-poi-current');
-  if(curEl) curEl.scrollIntoView({block:'center',behavior:'smooth'});
+  if(curEl) curEl.scrollIntoView({block:'nearest',behavior:'smooth'});
 }
 
 function hideRouteTimeline(){
