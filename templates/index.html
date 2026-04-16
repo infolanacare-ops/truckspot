@@ -443,6 +443,55 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
   padding:.15rem .4rem;border-radius:6px;
   pointer-events:none;
 }
+/* ── Camera type picker sheet ── */
+.cam-type-sheet{
+  position:fixed;bottom:0;left:0;right:0;z-index:700;
+  background:rgba(16,20,36,.98);backdrop-filter:blur(16px);
+  border-radius:22px 22px 0 0;border-top:1px solid rgba(255,255,255,.1);
+  padding:0 1.2rem calc(1.4rem + env(safe-area-inset-bottom));
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  pointer-events:none;
+}
+.cam-type-sheet.open{transform:translateY(0);pointer-events:auto}
+.cam-type-handle{width:40px;height:4px;background:rgba(255,255,255,.18);border-radius:2px;margin:.75rem auto .9rem}
+.cam-type-title{font-size:.95rem;font-weight:700;color:#fff;text-align:center;margin-bottom:1rem}
+.cam-type-options{display:flex;gap:.8rem;justify-content:center;margin-bottom:1rem}
+.cam-type-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:.4rem;
+  background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);
+  border-radius:16px;padding:.9rem .5rem;cursor:pointer;transition:.15s;
+}
+.cam-type-btn:active{background:rgba(255,255,255,.15);transform:scale(.96)}
+.cam-type-icon{font-size:1.8rem;line-height:1}
+.cam-type-lbl{font-size:.72rem;font-weight:700;color:#fff}
+.cam-type-cancel{
+  width:100%;padding:.75rem;border:none;border-radius:14px;
+  background:rgba(255,255,255,.07);color:rgba(255,255,255,.5);
+  font-size:.85rem;font-weight:600;cursor:pointer;
+}
+/* ── Camera confirm popup ── */
+.cam-confirm-popup{
+  position:fixed;bottom:5rem;left:50%;transform:translateX(-50%) translateY(20px);
+  z-index:700;min-width:280px;max-width:90vw;
+  background:rgba(16,20,36,.98);backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.12);border-radius:18px;
+  padding:1rem 1rem .9rem;
+  opacity:0;pointer-events:none;transition:.2s;
+}
+.cam-confirm-popup.open{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
+.cam-confirm-info{font-size:.82rem;color:rgba(255,255,255,.8);text-align:center;margin-bottom:.75rem;line-height:1.4}
+.cam-confirm-btns{display:flex;gap:.6rem}
+.cam-confirm-yes,.cam-confirm-no{
+  flex:1;padding:.6rem;border:none;border-radius:12px;
+  font-size:.8rem;font-weight:700;cursor:pointer;transition:.15s;
+}
+.cam-confirm-yes{background:rgba(34,197,94,.2);color:#22c55e;border:1px solid rgba(34,197,94,.3)}
+.cam-confirm-no {background:rgba(239,68,68,.2);color:#ef4444;border:1px solid rgba(239,68,68,.3)}
+.cam-confirm-yes:active,.cam-confirm-no:active{transform:scale(.95)}
+.cam-confirm-close{
+  position:absolute;top:.5rem;right:.6rem;
+  background:none;border:none;color:rgba(255,255,255,.35);font-size:1rem;cursor:pointer;
+}
 /* report markers on map */
 .rpt-marker{
   display:flex;align-items:center;justify-content:center;
@@ -2091,7 +2140,7 @@ body.navigating .nav-pois-strip{display:none}
     <button class="report-dial-item" onclick="submitReport('place');closeReportDial()" title="Fajne miejsce">
       ⭐<span class="rdi-lbl">Fajne miejsce</span>
     </button>
-    <button class="report-dial-item" onclick="submitReport('camera');closeReportDial()" title="Fotoradar">
+    <button class="report-dial-item" onclick="openCamTypePicker()" title="Fotoradar">
       📸<span class="rdi-lbl">Fotoradar</span>
     </button>
     <button class="report-dial-item" onclick="submitReport('police');closeReportDial()" title="Kontrola">
@@ -2109,6 +2158,41 @@ body.navigating .nav-pois-strip{display:none}
 <!-- backdrop do zamknięcia diala -->
 <div id="report-dial-backdrop" onclick="closeReportDial()"
   style="display:none;position:fixed;inset:0;z-index:599"></div>
+
+<!-- CAMERA TYPE PICKER SHEET -->
+<div id="cam-type-sheet" class="cam-type-sheet">
+  <div class="cam-type-handle"></div>
+  <div class="cam-type-title">Jaki fotoradar?</div>
+  <div class="cam-type-options">
+    <button class="cam-type-btn" onclick="submitCamTyped('fixed')">
+      <span class="cam-type-icon">📸</span>
+      <span class="cam-type-lbl">Stały</span>
+    </button>
+    <button class="cam-type-btn" onclick="submitCamTyped('mobile')">
+      <span class="cam-type-icon">🚐</span>
+      <span class="cam-type-lbl">Mobilny</span>
+    </button>
+    <button class="cam-type-btn" onclick="submitCamTyped('average')">
+      <span class="cam-type-icon">📏</span>
+      <span class="cam-type-lbl">Odcinkowy</span>
+    </button>
+  </div>
+  <button class="cam-type-cancel" onclick="closeCamTypeSheet()">Anuluj</button>
+</div>
+<div id="cam-type-backdrop" onclick="closeCamTypeSheet()"
+  style="display:none;position:fixed;inset:0;z-index:699;background:rgba(0,0,0,.45)"></div>
+
+<!-- CAMERA CONFIRM POPUP -->
+<div id="cam-confirm-popup" class="cam-confirm-popup">
+  <div class="cam-confirm-info" id="cam-confirm-info"></div>
+  <div class="cam-confirm-btns">
+    <button class="cam-confirm-yes" id="cam-confirm-yes">✅ Nadal tu jest</button>
+    <button class="cam-confirm-no"  id="cam-confirm-no" >❌ Już nie ma</button>
+  </div>
+  <button class="cam-confirm-close" onclick="closeCamConfirm()">✕</button>
+</div>
+<div id="cam-confirm-backdrop" onclick="closeCamConfirm()"
+  style="display:none;position:fixed;inset:0;z-index:699;background:rgba(0,0,0,.45)"></div>
 
 <!-- UPDATE BANNER -->
 <div class="update-banner" id="update-banner">
@@ -7470,6 +7554,14 @@ function buildRouteSegmentBboxes(segmentKm){
   return bboxes;
 }
 
+// Konfiguracja typów kamer
+const CAM_TYPE_CFG = {
+  fixed:   {color:'#ef4444', badge:'',  label:'Stały',      icon:'📸'},
+  mobile:  {color:'#f97316', badge:'M', label:'Mobilny',    icon:'🚐'},
+  average: {color:'#8b5cf6', badge:'↔', label:'Odcinkowy',  icon:'📏'},
+  speed:   {color:'#ef4444', badge:'',  label:'Stały',      icon:'📸'},
+};
+
 function renderCameraMarkers(elements){
   cameraMarkers.forEach(m=>m.remove()); cameraMarkers=[];
   camerasVisible = true;
@@ -7477,26 +7569,113 @@ function renderCameraMarkers(elements){
   if(cnt) cnt.textContent = elements.length ? `· ${elements.length}` : '';
   elements.forEach(el=>{
     if(!el.lat || !el.lon) return;
-    const maxspeed = el.tags?.maxspeed || '';
-    const isUser = el.tags?.source === 'user';
-    const confirms = el.tags?.confirms || 0;
-    // Kolor: user zgłoszony=pomarańczowy, OSM=czerwony, user potwierdzony 3+= czerwony
-    const color = isUser && confirms < 3 ? '#f97316' : '#ef4444';
+    const maxspeed = el.tags?.maxspeed || el.maxspeed || '';
+    const isUser   = el.tags?.source === 'user' || el.source === 'user';
+    const confirms = el.tags?.confirms ?? el.confirms ?? 0;
+    const camType  = el.type || el.tags?.camera_type || 'fixed';
+    const cfg      = CAM_TYPE_CFG[camType] || CAM_TYPE_CFG.fixed;
+    // Kolor: mobilny=pomarańczowy, odcinkowy=fioletowy, stały=czerwony
+    // Niezweryfikowany user=jaśniejszy, potwierdzony 3+=pełny kolor
+    const color = (isUser && confirms < 3) ? cfg.color+'cc' : cfg.color;
     const label = maxspeed
       ? `<text x="20" y="23" text-anchor="middle" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="9" fill="${color}">${maxspeed.replace(' mph','').replace('km/h','')}</text>`
       : '';
-    const badge = isUser && confirms > 0
-      ? `<text x="32" y="8" text-anchor="middle" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="7" fill="#22c55e">×${confirms}</text>`
+    const typeBadge = cfg.badge
+      ? `<text x="32" y="10" text-anchor="middle" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="7" fill="${cfg.color}">${cfg.badge}</text>`
+      : '';
+    const confirmBadge = (isUser && confirms > 0)
+      ? `<text x="32" y="18" text-anchor="middle" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="6.5" fill="#22c55e">✓${confirms}</text>`
       : '';
     const html = mkPin(color,
       `<g transform="translate(8,7)" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <svg width="24" height="24" viewBox="0 0 24 24">${CAMERA_SVG}</svg></g>${label}${badge}`);
-    cameraMarkers.push(mkMbMarker(el.lat, el.lon, html, ()=>{
-      const sp = maxspeed ? ` · ${maxspeed}` : '';
-      const src = isUser ? ` · zgłoszony przez kierowców (${confirms} potwierdzeń)` : '';
-      showAlert('📷','Fotoradar'+sp, (el.tags?.direction ? '→ '+el.tags.direction : 'Zwolnij!')+src);
-    }));
+        <svg width="24" height="24" viewBox="0 0 24 24">${CAMERA_SVG}</svg></g>${label}${typeBadge}${confirmBadge}`);
+    const mk = mkMbMarker(el.lat, el.lon, html, ()=>{
+      if(isUser && el.id){
+        openCamConfirm(el);
+      } else {
+        const sp = maxspeed ? ` · ${maxspeed} km/h` : '';
+        showAlert(cfg.icon, cfg.label + sp, el.tags?.direction ? '→ '+el.tags.direction : 'Zwolnij!');
+      }
+    });
+    mk._camData = el; // zachowaj dane do checkNavCameras
+    cameraMarkers.push(mk);
   });
+}
+
+// ── Camera type picker ──────────────────────────────────────────────────────
+function openCamTypePicker(){
+  closeReportDial();
+  document.getElementById('cam-type-sheet').classList.add('open');
+  document.getElementById('cam-type-backdrop').style.display='block';
+}
+function closeCamTypeSheet(){
+  document.getElementById('cam-type-sheet').classList.remove('open');
+  document.getElementById('cam-type-backdrop').style.display='none';
+}
+async function submitCamTyped(type){
+  closeCamTypeSheet();
+  const voterID = getVoterId();
+  let lat, lng;
+  if(gpsMarker){ const ll=gpsMarker.getLngLat(); lat=ll.lat; lng=ll.lng; }
+  else { const c=map.getCenter(); lat=c.lat; lng=c.lng; }
+  try {
+    const resp = await fetch('/api/cameras', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({lat, lng, type, user: profile.name||'Anonim', voter_id: voterID})
+    });
+    const data = await resp.json();
+    const cfg = CAM_TYPE_CFG[type] || CAM_TYPE_CFG.fixed;
+    if(data.ok && !data.duplicate){
+      addPts(20);
+      showAlert(cfg.icon, '+20 pkt!', cfg.label+' dodany do bazy!');
+      loadUserCameras();
+    } else if(data.merged){
+      addPts(5);
+      showAlert(cfg.icon, '+5 pkt!', `${cfg.label} potwierdzony (${data.confirms}×)`);
+      loadUserCameras();
+    } else if(data.duplicate){
+      showAlert('ℹ️','','Już zgłosiłeś fotoradar w tym miejscu');
+    }
+  } catch(e){ showAlert('⚠️','','Błąd zgłoszenia'); }
+}
+
+// ── Camera confirm/deny popup ───────────────────────────────────────────────
+function openCamConfirm(cam){
+  const cfg = CAM_TYPE_CFG[cam.type || 'fixed'] || CAM_TYPE_CFG.fixed;
+  const sp = cam.maxspeed ? ` · ${cam.maxspeed} km/h` : '';
+  const confirms = cam.confirms ?? 0;
+  document.getElementById('cam-confirm-info').innerHTML =
+    `${cfg.icon} <strong>${cfg.label}${sp}</strong><br>` +
+    `Zgłoszony przez kierowców · ${confirms} potwierdzeń<br>` +
+    `<small style="color:rgba(255,255,255,.45)">Czy fotoradar nadal tu jest?</small>`;
+  const popup = document.getElementById('cam-confirm-popup');
+  popup.classList.add('open');
+  document.getElementById('cam-confirm-backdrop').style.display='block';
+  document.getElementById('cam-confirm-yes').onclick = ()=>voteCam(cam.id, 1);
+  document.getElementById('cam-confirm-no').onclick  = ()=>voteCam(cam.id, -1);
+}
+function closeCamConfirm(){
+  document.getElementById('cam-confirm-popup').classList.remove('open');
+  document.getElementById('cam-confirm-backdrop').style.display='none';
+}
+async function voteCam(id, vote){
+  closeCamConfirm();
+  try {
+    const resp = await fetch(`/api/cameras/${id}/vote`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({voter_id: getVoterId(), vote})
+    });
+    const data = await resp.json();
+    if(data.ok){
+      if(vote === 1){
+        addPts(3);
+        showAlert('✅','+3 pkt!',`Potwierdzono! (${data.confirms} łącznie)`);
+      } else {
+        showAlert('❌','Zgłoszono','Dziękujemy za aktualizację');
+      }
+      loadUserCameras();
+    }
+  } catch(e){}
 }
 
 // Krótki dźwięk ostrzegawczy (Web Audio)
@@ -7546,14 +7725,20 @@ function checkNavCameras(lat, lng){
 
     const base = `${pos.lat.toFixed(5)},${pos.lng.toFixed(5)}`;
 
+    // Pobierz typ z danych markera (przechowywanych w _camData)
+    const camData = mk._camData || {};
+    const camType = camData.type || camData.tags?.camera_type || 'fixed';
+    const cfg = CAM_TYPE_CFG[camType] || CAM_TYPE_CFG.fixed;
+    const typeLabel = currentLang==='pl' ? cfg.label+' fotoradar' : cfg.label+' speed camera';
+
     // Komunikat + dźwięk przy 500m
     const key500 = `${base}_0`;
     if(d < 500 && !navAnnouncedCameras.has(key500)){
       navAnnouncedCameras.add(key500);
-      const txt = currentLang==='pl' ? 'Fotoradar za 500 m' : 'Speed camera in 500 m';
+      const txt = currentLang==='pl' ? `${typeLabel} za 500 m` : `${typeLabel} in 500 m`;
       speakNav(txt, true);
       playBeep(880, 0.22);
-      showAlert('📷','⚠️ FOTORADAR', 'Za 500 m · Zwolnij!');
+      showAlert(cfg.icon, `⚠️ ${typeLabel.toUpperCase()}`, 'Za 500 m · Zwolnij!');
       setTimeout(closeAlert, 4000);
     }
     // Ostry sygnał przy 100m
