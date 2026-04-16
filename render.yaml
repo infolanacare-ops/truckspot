@@ -2,7 +2,7 @@ services:
   - type: web
     name: truckspot
     runtime: python
-    buildCommand: pip install -r requirements.txt && python scripts/import_cameras.py --countries PL,DE,FR,CZ,AT,HU,RO,SK,NL,BE,IT,ES,CH,HR,SI,BG,RS || true
+    buildCommand: pip install -r requirements.txt && python scripts/import_cameras.py --countries PL,DE,FR,CZ,AT,HU,RO,SK,NL,BE,IT,ES,CH,HR,SI,BG,RS || true && python scripts/import_osm_parkings.py --countries PL,DE,FR,CZ,AT,HU,RO,SK,NL,BE,IT,ES,CH,HR,SI,BG,RS || true
     startCommand: gunicorn app:app
     envVars:
       - key: SECRET_KEY
