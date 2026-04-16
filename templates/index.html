@@ -46,7 +46,7 @@
   --text:#e8eaf6;--muted:#8890a8;--shadow:rgba(0,0,0,.35);
   --card-bg:#242938;--input-bg:#2d3347;
   --font:'Inter',sans-serif;--font-head:'Montserrat',sans-serif;
-  --accent:#f59e0b;--accent2:#fbbf24;--accent-bg:rgba(245,158,11,.15);
+  --accent:#d4af37;--accent2:#e8c84a;--accent-bg:rgba(212,175,55,.15);
   --green:#10b981;--blue:#3b82f6;--purple:#8b5cf6;
 }
 
@@ -241,14 +241,14 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 .drawer-header{background:var(--panel2);padding:2rem 1.2rem 1.2rem;
   border-bottom:1px solid var(--border);position:relative;overflow:hidden}
 .drawer-header::before{content:'';position:absolute;top:-40px;right:-40px;width:120px;height:120px;
-  border-radius:50%;background:radial-gradient(circle,rgba(245,158,11,.12) 0%,transparent 70%)}
+  border-radius:50%;background:radial-gradient(circle,rgba(212,175,55,.12) 0%,transparent 70%)}
 .profile-row{display:flex;align-items:center;gap:.9rem;margin-bottom:.9rem;cursor:pointer}
 .profile-row:active{opacity:.8}
 .avatar{width:52px;height:52px;border-radius:50%;
   background:linear-gradient(135deg,var(--accent),var(--accent2));
   display:flex;align-items:center;justify-content:center;
   font-size:1.6rem;font-weight:900;color:#fff;
-  flex-shrink:0;box-shadow:0 4px 12px rgba(245,158,11,.3);
+  flex-shrink:0;box-shadow:0 4px 12px rgba(212,175,55,.3);
   transition:.2s;user-select:none}
 .avatar.letter{font-family:var(--font-head);font-size:1.3rem;color:#000}
 .avatar-edit-hint{font-size:.62rem;color:var(--accent);margin-top:.1rem;font-weight:600}
@@ -271,7 +271,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 }
 .pp-header::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);
   width:200px;height:200px;border-radius:50%;
-  background:radial-gradient(circle,rgba(245,158,11,.15) 0%,transparent 70%)}
+  background:radial-gradient(circle,rgba(212,175,55,.15) 0%,transparent 70%)}
 .pp-close{position:absolute;top:1rem;left:1rem;width:36px;height:36px;border-radius:10px;
   background:var(--panel);border:1px solid var(--border);cursor:pointer;
   display:flex;align-items:center;justify-content:center;z-index:1}
@@ -571,9 +571,9 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
   width:100%;padding:.85rem;border:none;border-radius:16px;cursor:pointer;
   font-family:var(--font-head);font-size:1rem;font-weight:900;letter-spacing:.03em;
   background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;
-  box-shadow:0 4px 20px rgba(245,158,11,.35);transition:.15s;margin-bottom:.5rem;
+  box-shadow:0 4px 20px rgba(212,175,55,.35);transition:.15s;margin-bottom:.5rem;
   display:flex;align-items:center;justify-content:center;gap:.5rem}
-.nav-btn:active{transform:scale(.97);box-shadow:0 2px 10px rgba(245,158,11,.25)}
+.nav-btn:active{transform:scale(.97);box-shadow:0 2px 10px rgba(212,175,55,.25)}
 /* ══ MAP MESSAGES (CB RADIO) ══ */
 .msg-bubble{width:36px;height:36px;border-radius:50% 50% 50% 4px;display:flex;align-items:center;justify-content:center;
   font-size:1rem;box-shadow:0 2px 8px rgba(0,0,0,.4);cursor:pointer;border:2px solid rgba(255,255,255,.35);
@@ -760,7 +760,7 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .r-station-icon{font-size:1.3rem;flex-shrink:0;width:34px;text-align:center}
 .r-station-name{flex:1;font-size:.85rem;font-weight:600;color:var(--text)}
 .r-station-fav{background:none;border:none;font-size:1rem;cursor:pointer;color:var(--muted);padding:.2rem;flex-shrink:0}
-.r-station-fav.starred{color:#f59e0b}
+.r-station-fav.starred{color:#d4af37}
 .r-station-play{width:28px;height:28px;border-radius:50%;border:none;flex-shrink:0;
   background:var(--accent-bg);color:var(--accent);cursor:pointer;font-size:.75rem;
   display:flex;align-items:center;justify-content:center}
@@ -783,7 +783,7 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .rank-list{flex:1;overflow-y:auto;padding:1rem}
 .rank-item{display:flex;align-items:center;gap:.8rem;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:.7rem 1rem;margin-bottom:.5rem}
 .rank-pos{font-family:var(--font-head);font-size:1rem;font-weight:900;width:24px;text-align:center;color:var(--muted)}
-.rank-pos.gold{color:#f59e0b}.rank-pos.silver{color:#94a3b8}.rank-pos.bronze{color:#cd7c40}
+.rank-pos.gold{color:#d4af37}.rank-pos.silver{color:#94a3b8}.rank-pos.bronze{color:#cd7c40}
 .rank-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.9rem;color:#000;flex-shrink:0}
 .rank-name{flex:1;font-weight:600;font-size:.88rem;color:var(--text)}
 .rank-pts{font-family:var(--font-head);font-size:.9rem;font-weight:800;color:var(--accent)}
@@ -880,8 +880,8 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .weather-wind{font-size:.7rem;color:var(--muted)}
 
 /* ══ FUEL PRICE ══ */
-.fuel-row{display:flex;align-items:center;gap:.5rem;background:rgba(245,158,11,.08);
-  border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:.45rem .8rem;margin-bottom:.8rem;font-size:.8rem}
+.fuel-row{display:flex;align-items:center;gap:.5rem;background:rgba(212,175,55,.08);
+  border:1px solid rgba(212,175,55,.25);border-radius:10px;padding:.45rem .8rem;margin-bottom:.8rem;font-size:.8rem}
 .fuel-row span{font-family:var(--font-head);font-weight:800;color:var(--accent)}
 
 /* ══ OCCUPANCY ══ */
@@ -907,7 +907,7 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
   padding:.6rem .8rem;margin-bottom:.4rem}
 .comment-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem}
 .comment-user{font-size:.78rem;font-weight:700;color:var(--text)}
-.comment-stars{font-size:.75rem;color:#f59e0b}
+.comment-stars{font-size:.75rem;color:#d4af37}
 .comment-date{font-size:.65rem;color:var(--muted)}
 .comment-text{font-size:.8rem;color:var(--muted);line-height:1.45}
 .comment-form{margin-top:.7rem;display:flex;flex-direction:column;gap:.5rem}
@@ -1171,7 +1171,7 @@ body.navigating .fab-layers{display:none}
 .nav-tir-bar-param{
   background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.35);
   border-radius:6px;padding:.1rem .35rem;font-size:.68rem;font-weight:800;
-  color:#fbbf24;letter-spacing:.02em;
+  color:#e8c84a;letter-spacing:.02em;
 }
 .nav-tir-bar-warn{
   font-size:.65rem;color:rgba(234,179,8,.7);font-weight:600;
@@ -1556,17 +1556,17 @@ body.navigating .fab-ai{display:none}
 .convoy-broadcast-btn{
   position:absolute;top:-18px;left:50%;transform:translateX(-50%);
   width:20px;height:20px;border-radius:50%;
-  background:radial-gradient(circle,#ffd700,#f59e0b);
+  background:radial-gradient(circle,#ffd700,#d4af37);
   border:2px solid #ffd700;
   display:flex;align-items:center;justify-content:center;
   font-size:.7rem;font-weight:900;color:#1a1200;
   animation:broadcast-pulse 1.4s infinite;
-  cursor:pointer;box-shadow:0 0 10px #ffd700, 0 0 20px rgba(245,158,11,.5);
+  cursor:pointer;box-shadow:0 0 10px #ffd700, 0 0 20px rgba(212,175,55,.5);
   z-index:10;
 }
 @keyframes broadcast-pulse{
-  0%,100%{box-shadow:0 0 8px #ffd700,0 0 16px rgba(245,158,11,.4);transform:translateX(-50%) scale(1)}
-  50%{box-shadow:0 0 16px #ffd700,0 0 30px rgba(245,158,11,.7);transform:translateX(-50%) scale(1.18)}
+  0%,100%{box-shadow:0 0 8px #ffd700,0 0 16px rgba(212,175,55,.4);transform:translateX(-50%) scale(1)}
+  50%{box-shadow:0 0 16px #ffd700,0 0 30px rgba(212,175,55,.7);transform:translateX(-50%) scale(1.18)}
 }
 /* Karta kierowcy — popup po kliknięciu markera */
 .driver-card{
@@ -1586,8 +1586,8 @@ body.navigating .fab-ai{display:none}
 .driver-card-meta{font-size:.75rem;color:var(--muted);margin-top:.15rem}
 .driver-card-close{margin-left:auto;background:rgba(255,255,255,.1);border:none;color:var(--text);width:32px;height:32px;border-radius:50%;cursor:pointer}
 .driver-card-broadcast{
-  background:rgba(245,158,11,.12);border:1.5px solid rgba(245,158,11,.4);border-radius:14px;
-  padding:.65rem .9rem;margin-bottom:.8rem;font-size:.83rem;color:#fbbf24;line-height:1.4;
+  background:rgba(212,175,55,.12);border:1.5px solid rgba(212,175,55,.4);border-radius:14px;
+  padding:.65rem .9rem;margin-bottom:.8rem;font-size:.83rem;color:#e8c84a;line-height:1.4;
 }
 .driver-card-broadcast::before{content:'📢 ';font-size:.9rem}
 .driver-card-actions{display:flex;gap:.6rem}
@@ -2091,7 +2091,7 @@ body.navigating .convoy-btn{display:none}
   outline:none;margin-bottom:.4rem;transition:.15s}
 .comment-nick:focus{border-color:var(--accent)}
 .comment-avg{display:inline-flex;align-items:center;gap:.25rem;font-size:.75rem;
-  color:#f59e0b;font-weight:700;background:rgba(245,158,11,.12);
+  color:#d4af37;font-weight:700;background:rgba(212,175,55,.12);
   border-radius:8px;padding:.15rem .5rem;margin-left:.4rem}
 </style>
 </head>
@@ -2363,12 +2363,12 @@ body.navigating .convoy-btn{display:none}
     <div class="menu-item" onclick="drawerAction('cbradio')"><div class="menu-icon" style="background:rgba(59,130,246,.12);border-color:#3b82f6"><span class="si"><svg viewBox="0 0 24 24"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg></span></div><span class="menu-label">CB Radio — mapa wiadomości</span><span class="menu-badge" id="msgs-count-badge" style="display:none">0</span></div>
     <div class="menu-item" onclick="drawerAction('add')"><div class="menu-icon" style="background:rgba(139,92,246,.12);border-color:#8b5cf6"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></span></div><span class="menu-label" data-i="menu_add">Add a spot</span><span class="menu-badge">+10 pts</span></div>
     <div class="menu-item" onclick="drawerAction('myspots')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg></span></div><span class="menu-label" data-i="menu_myspots">My spots</span></div>
-    <div class="menu-item" onclick="drawerAction('favs')"><div class="menu-icon" style="background:rgba(245,158,11,.12);border-color:#f59e0b"><span class="si"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span></div><span class="menu-label">Ulubione parkingi</span><span class="menu-badge" id="favs-count" style="display:none">0</span></div>
-    <div class="menu-item" onclick="drawerAction('rank')"><div class="menu-icon" style="background:rgba(245,158,11,.12);border-color:#f59e0b"><span class="si"><svg viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg></span></div><span class="menu-label" data-i="menu_rank">Ranking</span></div>
+    <div class="menu-item" onclick="drawerAction('favs')"><div class="menu-icon" style="background:rgba(212,175,55,.12);border-color:#d4af37"><span class="si"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span></div><span class="menu-label">Ulubione parkingi</span><span class="menu-badge" id="favs-count" style="display:none">0</span></div>
+    <div class="menu-item" onclick="drawerAction('rank')"><div class="menu-icon" style="background:rgba(212,175,55,.12);border-color:#d4af37"><span class="si"><svg viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg></span></div><span class="menu-label" data-i="menu_rank">Ranking</span></div>
     <div class="menu-item" onclick="drawerAction('share')"><div class="menu-icon" style="background:rgba(16,185,129,.12);border-color:#10b981"><span class="si"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></span></div><span class="menu-label" data-i="menu_share">Recommend TruckSpot</span><span class="menu-badge green">+50 pts</span></div>
     <div class="menu-sep"></div>
     <div class="menu-section" data-i="sec_tools">Tools</div>
-    <div class="menu-item" onclick="drawerAction('tacho')"><div class="menu-icon" style="background:rgba(245,158,11,.12);border-color:#f59e0b"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span></div><span class="menu-label">Tachograf EU</span><span class="menu-badge" id="tacho-badge" style="display:none">ON</span></div>
+    <div class="menu-item" onclick="drawerAction('tacho')"><div class="menu-icon" style="background:rgba(212,175,55,.12);border-color:#d4af37"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span></div><span class="menu-label">Tachograf EU</span><span class="menu-badge" id="tacho-badge" style="display:none">ON</span></div>
     <div class="menu-item" onclick="drawerAction('gps')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg></span></div><span class="menu-label" data-i="menu_gps">GPS Alerts</span><span class="menu-badge" id="gps-badge" style="display:none">ON</span></div>
     <div class="menu-item" onclick="drawerAction('radio')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg></span></div><span class="menu-label" data-i="menu_radio">Radio</span></div>
     <div class="menu-sep"></div>
@@ -2545,7 +2545,7 @@ body.navigating .convoy-btn{display:none}
       <svg width="200" height="200" viewBox="0 0 200 200">
         <circle class="tacho-ring-bg" cx="100" cy="100" r="88"/>
         <circle class="tacho-ring-fill" id="tacho-ring" cx="100" cy="100" r="88"
-          stroke="#f59e0b" stroke-dasharray="552.9" stroke-dashoffset="552.9"/>
+          stroke="#d4af37" stroke-dasharray="552.9" stroke-dashoffset="552.9"/>
       </svg>
       <div class="tacho-center">
         <div class="tacho-time-big" id="tacho-disp">0:00</div>
@@ -2953,8 +2953,8 @@ body.navigating .convoy-btn{display:none}
   <div style="display:flex;gap:.5rem;margin-bottom:.85rem;align-items:center">
     <div style="font-size:1.1rem;flex-shrink:0">📢</div>
     <input id="convoy-broadcast-input" placeholder="Wiadomość do wszystkich w pobliżu..." maxlength="80"
-      style="flex:1;padding:.5rem .75rem;border:1.5px solid rgba(245,158,11,.35);border-radius:12px;
-             background:rgba(245,158,11,.07);color:var(--text);font-size:.82rem;outline:none;"
+      style="flex:1;padding:.5rem .75rem;border:1.5px solid rgba(212,175,55,.35);border-radius:12px;
+             background:rgba(212,175,55,.07);color:var(--text);font-size:.82rem;outline:none;"
       oninput="scheduleConvoyBroadcast()">
   </div>
 
@@ -3457,7 +3457,7 @@ function amenityHtml(key){
     toilet:     {icon:'🚽',label:'Toaleta',     bg:'rgba(20,184,166,.18)',  c:'#14b8a6'},
     truck_wash: {icon:'🧼',label:'Myjnia TIR',  bg:'rgba(59,130,246,.18)',  c:'#3b82f6'},
     repair:     {icon:'🔧',label:'Warsztat',    bg:'rgba(156,163,175,.18)', c:'#9ca3af'},
-    fuel:       {icon:'⛽',label:'Paliwo',      bg:'rgba(245,158,11,.18)',  c:'#f59e0b'},
+    fuel:       {icon:'⛽',label:'Paliwo',      bg:'rgba(212,175,55,.18)',  c:'#d4af37'},
     adblue:     {icon:'🟦',label:'AdBlue',      bg:'rgba(59,130,246,.18)',  c:'#3b82f6'},
     secured:    {icon:'🔒',label:'Ochrona',     bg:'rgba(16,185,129,.18)',  c:'#10b981'},
     monitored:  {icon:'📹',label:'Monitoring',  bg:'rgba(99,102,241,.18)',  c:'#6366f1'},
@@ -3490,7 +3490,7 @@ let alertedIds=new Set();
 // PROFILE
 // ══════════════════════════════════════
 const PROFILE_DEFAULTS = {name:'TRUCKER',pts:0,spots:0,comments:0,km:0,loginType:'guest',
-  avatar:'🚛',avatarColor:'#f59e0b',bio:'',country:'',homeBase:'',tirPinColor:'#d4af37',
+  avatar:'🚛',avatarColor:'#d4af37',bio:'',country:'',homeBase:'',tirPinColor:'#d4af37',
   joined: new Date().toISOString().slice(0,10)};
 let profile = Object.assign({}, PROFILE_DEFAULTS, (()=>{try{return JSON.parse(localStorage.getItem('ts_profile')||'{}')}catch(e){return {}}})());
 
@@ -3509,7 +3509,7 @@ const AVATAR_EMOJIS = [
   '🧳','🗺️','⛺','🏕️','🌍','🗻','🏖️','🌅','🏔️','🌄',
   '👨‍✈️','👷','🦺','🧢','⭐','🔥','💎','🎯','🏆','⚡'
 ];
-const AVATAR_COLORS = ['#f59e0b','#3b82f6','#10b981','#8b5cf6','#ef4444','#06b6d4','#f97316','#ec4899','#6366f1','#84cc16'];
+const AVATAR_COLORS = ['#d4af37','#3b82f6','#10b981','#8b5cf6','#ef4444','#06b6d4','#f97316','#ec4899','#6366f1','#84cc16'];
 
 function renderAvatarEl(emoji, color, size=52){
   const el = document.createElement('div');
@@ -3549,7 +3549,7 @@ function openProfile(){
   pp.classList.add('open');
   // wypełnij dane
   const bigAv = document.getElementById('pp-avatar-big');
-  bigAv.style.background = profile.avatarColor || '#f59e0b';
+  bigAv.style.background = profile.avatarColor || '#d4af37';
   bigAv.style.backgroundImage = '';
   const emojiSpan = document.getElementById('pp-avatar-emoji');
   emojiSpan.style.display = '';
@@ -3849,7 +3849,7 @@ function _clusterColor(count){
   if(count >= 50) return '#7c3aed';
   if(count >= 20) return '#ef4444';
   if(count >= 10) return '#f97316';
-  return '#f59e0b';
+  return '#d4af37';
 }
 
 function renderMarkers(parkings){
@@ -3875,7 +3875,7 @@ function renderMarkers(parkings){
       filter:['has','point_count'],
       paint:{
         'circle-color':['step',['get','point_count'],
-          '#f59e0b',10,'#f97316',20,'#ef4444',50,'#7c3aed'],
+          '#d4af37',10,'#f97316',20,'#ef4444',50,'#7c3aed'],
         'circle-radius':['step',['get','point_count'], 22,10,28,20,34,50,40],
         'circle-opacity':0.92,
         'circle-stroke-width':3,'circle-stroke-color':'#fff',
@@ -5755,7 +5755,7 @@ async function convoyPing(){
         speed:        navSpeedKmh || 0,
         name:         profile.name || 'TRUCKER',
         avatar:       profile.avatar || '🚛',
-        avatar_color: profile.avatarColor || '#f59e0b',
+        avatar_color: profile.avatarColor || '#d4af37',
         status:       convoyStatus,
         dest:         convoyDest,
         broadcast:    (document.getElementById('convoy-broadcast-input')?.value||'').trim(),
@@ -5876,7 +5876,7 @@ function showConvoyToast(avatar, color, name, msg, onClickFn){
   if(!toast) return;
   const av = document.getElementById('ct-avatar');
   av.textContent = avatar || '🚛';
-  av.style.background = color || '#f59e0b';
+  av.style.background = color || '#d4af37';
   document.getElementById('ct-name').textContent = name || 'Kierowca';
   document.getElementById('ct-msg').textContent  = msg  || 'pojawił się w pobliżu';
   toast._onClickFn = onClickFn || null;
@@ -5908,10 +5908,10 @@ function updateConvoyUI(drivers){
   const newOnes = drivers.filter(d => !_convoyKnownIds.has(d.voter_id));
   if(newOnes.length === 1 && _convoyKnownIds.size >= 0){
     const d = newOnes[0];
-    showConvoyToast(d.avatar||'🚛', d.avatar_color||'#f59e0b',
+    showConvoyToast(d.avatar||'🚛', d.avatar_color||'#d4af37',
       d.name||'Kierowca', '🚛 pojawił się w pobliżu');
   } else if(newOnes.length > 1){
-    showConvoyToast('🚛','#f59e0b',`${newOnes.length} kierowców`,'pojawiło się w pobliżu');
+    showConvoyToast('🚛','#d4af37',`${newOnes.length} kierowców`,'pojawiło się w pobliżu');
   }
   _convoyKnownIds = new Set(drivers.map(d => d.voter_id));
 
@@ -5942,8 +5942,8 @@ function updateConvoyUI(drivers){
     const dest = d.dest ? `→ ${d.dest}` : '';
     const speed = d.speed > 5 ? `${Math.round(d.speed)} km/h` : '';
     const distTxt = d.dist_km < 1 ? Math.round(d.dist_km*1000)+'m' : d.dist_km+'km';
-    return `<div class="convoy-driver-card" onclick="openDriverChat('${d.voter_id}','${(d.name||'TRUCKER').replace(/'/g,"\\'")}','${d.avatar||'🚛'}','${d.avatar_color||'#f59e0b'}','${sc.icon} ${sc.label}')">
-      <div class="convoy-driver-avatar" style="background:${d.avatar_color||'#f59e0b'}">${d.avatar||'🚛'}</div>
+    return `<div class="convoy-driver-card" onclick="openDriverChat('${d.voter_id}','${(d.name||'TRUCKER').replace(/'/g,"\\'")}','${d.avatar||'🚛'}','${d.avatar_color||'#d4af37'}','${sc.icon} ${sc.label}')">
+      <div class="convoy-driver-avatar" style="background:${d.avatar_color||'#d4af37'}">${d.avatar||'🚛'}</div>
       <div class="convoy-driver-info">
         <div class="convoy-driver-name">${d.name||'TRUCKER'}</div>
         <div class="convoy-driver-meta">
@@ -7824,7 +7824,7 @@ const SCENIC_TYPE_ICONS = {
 };
 const SCENIC_COLORS = {
   viewpoint:'#10b981', mountain_pass:'#6366f1', waterfall:'#3b82f6',
-  coastal:'#0ea5e9', gorge:'#f59e0b', lake:'#06b6d4', forest:'#22c55e',
+  coastal:'#0ea5e9', gorge:'#d4af37', lake:'#06b6d4', forest:'#22c55e',
 };
 const COUNTRY_FLAGS_SCENIC = {AT:'🇦🇹',CH:'🇨🇭',IT:'🇮🇹',FR:'🇫🇷',DE:'🇩🇪',PL:'🇵🇱',CZ:'🇨🇿',HR:'🇭🇷',SI:'🇸🇮',RO:'🇷🇴',HU:'🇭🇺',SK:'🇸🇰',GR:'🇬🇷',NO:'🇳🇴',GB:'🇬🇧',IS:'🇮🇸',ES:'🇪🇸',PT:'🇵🇹',BG:'🇧🇬',IE:'🇮🇪'};
 
@@ -9154,7 +9154,7 @@ function commentsHtml(comments, parkingId){
   const avgHtml = avg ? `<span class="comment-avg">⭐ ${avg}</span>` : '';
 
   function commentAvatar(user){
-    const colors = ['#f59e0b','#3b82f6','#10b981','#8b5cf6','#ef4444','#06b6d4','#f97316'];
+    const colors = ['#d4af37','#3b82f6','#10b981','#8b5cf6','#ef4444','#06b6d4','#f97316'];
     const col = colors[(user||'?').charCodeAt(0)%colors.length];
     return `<div class="c-avatar letter" style="background:${col}">${(user||'?')[0].toUpperCase()}</div>`;
   }
