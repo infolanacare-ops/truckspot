@@ -1125,9 +1125,11 @@ NAturAlnie używaj zapamiętanych faktów w rozmowie — proponuj, nawiązuj, py
 NIE mieszaj JSON z tekstem."""
 
 GEMINI_MODELS = [
+    "gemini-2.5-flash-preview-04-17",
     "gemini-2.0-flash",
     "gemini-2.0-flash-lite",
     "gemini-1.5-flash",
+    "gemini-1.5-flash-latest",
 ]
 
 def _gemini_extract(result):
@@ -1311,6 +1313,30 @@ def api_ai_chat():
         return jsonify({"text": text, "action": action})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/ai-ping")
+def api_ai_ping():
+    """Diagnostyka — sprawdź który model Gemini działa."""
+    if not GEMINI_API_KEY:
+        return jsonify({"error": "no key"})
+    results = {}
+    for model in GEMINI_MODELS:
+        try:
+            url = (f"https://generativelanguage.googleapis.com/v1beta/models/"
+                   f"{model}:generateContent?key={GEMINI_API_KEY}")
+            resp = _requests.post(url, json={
+                "contents": [{"parts": [{"text": "Hi"}]}],
+                "generationConfig": {"maxOutputTokens": 10},
+            }, timeout=8)
+            j = resp.json()
+            if "candidates" in j:
+                results[model] = "OK"
+            else:
+                results[model] = j.get("error", {}).get("message", "no candidates")
+        except Exception as e:
+            results[model] = str(e)
+    return jsonify(results)
 
 
 if __name__ == "__main__":
