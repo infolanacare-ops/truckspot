@@ -4363,6 +4363,20 @@ function mkGpsDotMarker(lat, lng){
 let _markerAnimId = null;
 let _markerFrom = null;
 
+// Bearing EMA — wygładza szarpane odczyty heading GPS
+let _smoothBearing = null;
+function calcSmoothedBearing(raw){
+  if(_smoothBearing === null){ _smoothBearing = raw; return raw; }
+  let diff = raw - _smoothBearing;
+  if(diff >  180) diff -= 360;
+  if(diff < -180) diff += 360;
+  _smoothBearing = (_smoothBearing + diff * 0.22 + 360) % 360;
+  return _smoothBearing;
+}
+
+// easeOutCubic — szybki start, łagodne dobicie (jak TomTom)
+function _easeOut(t){ return 1 - Math.pow(1-t, 3); }
+
 function setGpsArrow(lat, lng){
   if(!gpsMarker){
     const arrowColor = getComputedStyle(document.documentElement).getPropertyValue('--accent2').trim() || '#ffd700';
@@ -4373,13 +4387,23 @@ function setGpsArrow(lat, lng){
     el.style.cssText = 'line-height:0';
     gpsMarker = new mapboxgl.Marker({element:el, anchor:'center', rotationAlignment:'viewport', pitchAlignment:'map'})
       .setLngLat([lng,lat]).addTo(map);
-  } else {
-    // Bez własnej animacji — marka ustawiana natychmiast na snapCoord,
-    // płynność zapewnia easeTo które centruje mapę na tym samym punkcie.
-    // Efekt: strzałka stoi w miejscu, mapa płynie wokół niej (jak Waze/Google Maps).
-    if(_markerAnimId){ cancelAnimationFrame(_markerAnimId); _markerAnimId=null; }
-    gpsMarker.setLngLat([lng, lat]);
+    _markerFrom = {lat, lng};
+    return;
   }
+  // rAF interpolacja — płynne przesunięcie między tickami (jak TomTom)
+  if(_markerAnimId){ cancelAnimationFrame(_markerAnimId); _markerAnimId=null; }
+  const cur = gpsMarker.getLngLat();
+  const fromLat = cur.lat, fromLng = cur.lng;
+  const dur = 260; // lekko dłużej niż tick 200ms → ciągły ruch
+  const t0  = performance.now();
+  function step(now){
+    const t = Math.min((now - t0) / dur, 1);
+    const e = _easeOut(t);
+    gpsMarker.setLngLat([fromLng + (lng - fromLng) * e, fromLat + (lat - fromLat) * e]);
+    if(t < 1) _markerAnimId = requestAnimationFrame(step);
+    else _markerAnimId = null;
+  }
+  _markerAnimId = requestAnimationFrame(step);
   _markerFrom = {lat, lng};
 }
 
@@ -6124,12 +6148,12 @@ function startNavigation(){
   let _lastNavTick = 0;
   navWatchId = navigator.geolocation.watchPosition(pos=>{
     const now = Date.now();
-    if(now - _lastNavTick < 800) return; // throttle — max 1 tick/800ms
+    if(now - _lastNavTick < 200) return; // throttle — max 5 ticków/s (jak TomTom)
     _lastNavTick = now;
     onNavPosition(pos);
   },
     e=>{ if(e.code!==e.TIMEOUT) showAlert('⚠️','GPS Error',''); },
-    {enableHighAccuracy:true, maximumAge:1000, timeout:15000});
+    {enableHighAccuracy:true, maximumAge:0, timeout:15000});
 }
 
 async function loadRoutePois(){
@@ -6399,58 +6423,75 @@ function onNavPosition(pos){
   navSpeedKmh = rawSpeed != null ? Math.round(rawSpeed*3.6) : navSpeedKmh;
   setNavSpeed(navSpeedKmh, navCurrentSpeedLimit);
 
-  // GPS arrow — forward-looking snap (zapobiega snapowi do równoległych dróg)
-  // Jeden closestRouteIdxForward używany wszędzie — koniec duplikatu O(n)
+  // GPS arrow — forward-looking snap do najbliższego punktu trasy
   const cIdx = closestRouteIdxForward(lat, lng, navCIdx);
   navCIdx = cIdx;
-  const snapCoord = routeCoords[cIdx];
-  setGpsArrow(snapCoord ? snapCoord[1] : lat, snapCoord ? snapCoord[0] : lng);
 
-  // Heading: GPS native lub delta z poprzedniej pozycji
-  const rawHeading = pos.coords.heading;
-  let navHeading = 0;
-  if(rawHeading != null && !isNaN(rawHeading) && navSpeedKmh > 3){
-    navHeading = rawHeading;
-  } else if(navLastLat != null){
-    navHeading = Math.atan2(lng - navLastLng, lat - navLastLat) * 180 / Math.PI;
-    if(navHeading < 0) navHeading += 360;
+  // Segment projection — interpoluj pozycję na odcinku między cIdx a cIdx+1
+  // zamiast skakać między dyskretnymi punktami (sub-point precision jak TomTom)
+  let snapLat, snapLng;
+  if(routeCoords[cIdx] && routeCoords[cIdx+1]){
+    const ax=routeCoords[cIdx][0],   ay=routeCoords[cIdx][1];
+    const bx=routeCoords[cIdx+1][0], by=routeCoords[cIdx+1][1];
+    const dx=bx-ax, dy=by-ay;
+    const lenSq=dx*dx+dy*dy;
+    const t = lenSq>0 ? Math.max(0,Math.min(1,((lng-ax)*dx+(lat-ay)*dy)/lenSq)) : 0;
+    snapLat = ay + t*dy;
+    snapLng = ax + t*dx;
+  } else if(routeCoords[cIdx]){
+    snapLat = routeCoords[cIdx][1];
+    snapLng = routeCoords[cIdx][0];
+  } else {
+    snapLat = lat; snapLng = lng;
   }
-  navCurrentHeading = navHeading; // zapamiętaj globalnie do reroutingu
+  setGpsArrow(snapLat, snapLng);
+
+  // Heading: GPS native (preferowane) lub delta z poprzedniej pozycji
+  const rawHeading = pos.coords.heading;
+  let rawH = 0;
+  if(rawHeading != null && !isNaN(rawHeading) && navSpeedKmh > 3){
+    rawH = rawHeading;
+  } else if(navLastLat != null){
+    rawH = Math.atan2(lng - navLastLng, lat - navLastLat) * 180 / Math.PI;
+    if(rawH < 0) rawH += 360;
+  }
+  // EMA bearing — eliminuje szarpanie przy słabym GPS
+  const navHeading = calcSmoothedBearing(rawH);
+  navCurrentHeading = navHeading;
 
   // ── TomTom-style camera — zoom + pitch zależny od odległości do manewru ──
   const baseZoom = navSpeedKmh > 80 ? 13 : navSpeedKmh > 40 ? 14 : 15;
   const pm = NAV_PITCH_MODES[navPitchMode];
 
-  // Oblicz dystans do następnego manewru (wcześniej niż pętla kroków)
+  // Oblicz dystans do następnego manewru
   let dToNextManeuver = Infinity;
   {
     const loc = routeSteps[navStepIdx]?.maneuver?.location;
     if(loc) dToNextManeuver = haversineKm(lat, lng, loc[1], loc[0]) * 1000;
   }
 
-  // Im bliżej manewru — większy zoom, płaszy pitch (lepiej widać skrzyżowanie)
-  // duration >= GPS interval (1000ms) → animacja zawsze "w ruchu", bez szarpnięć
-  let zoomBoost = 0, pitchFactor = 1.0, camDuration = 1050;
+  // Im bliżej manewru — większy zoom, płaszy pitch
+  // camDuration = lekko powyżej ticku (260ms) → animacja zawsze "w locie", bez dziur
+  let zoomBoost = 0, pitchFactor = 1.0, camDuration = 280;
   if(dToNextManeuver < 700){
-    if     (dToNextManeuver < 80) { zoomBoost=4.0; pitchFactor=0.35; camDuration=700; }
-    else if(dToNextManeuver < 150){ zoomBoost=3.2; pitchFactor=0.50; camDuration=750; }
-    else if(dToNextManeuver < 250){ zoomBoost=2.2; pitchFactor=0.65; camDuration=850; }
-    else if(dToNextManeuver < 400){ zoomBoost=1.2; pitchFactor=0.80; camDuration=950; }
-    else                          { zoomBoost=0.4; pitchFactor=0.92; camDuration=1000; }
+    if     (dToNextManeuver < 80) { zoomBoost=4.0; pitchFactor=0.35; camDuration=220; }
+    else if(dToNextManeuver < 150){ zoomBoost=3.2; pitchFactor=0.50; camDuration=240; }
+    else if(dToNextManeuver < 250){ zoomBoost=2.2; pitchFactor=0.65; camDuration=250; }
+    else if(dToNextManeuver < 400){ zoomBoost=1.2; pitchFactor=0.80; camDuration=260; }
+    else                          { zoomBoost=0.4; pitchFactor=0.92; camDuration=270; }
   }
 
   const targetZoom  = Math.min(baseZoom + pm.zoomOff + zoomBoost, 18.5);
   const targetPitch = pm.pitch * pitchFactor;
 
-  // Centruj na snapCoord — ten sam punkt co marka → strzałka stoi, mapa płynie
-  const camLat = snapCoord ? snapCoord[1] : lat;
-  const camLng = snapCoord ? snapCoord[0] : lng;
+  // Centruj na snapCoord — strzałka stoi, mapa płynie wokół niej (Waze/Google style)
+  const camLat = snapLat, camLng = snapLng;
   if(!navOverviewMode && !navUserInteracting){
-    // padding.top przesuwa centrum niżej — więcej mapy widoczne przed strzałką
     const padTop = Math.round(window.innerHeight * 0.38);
-    const padBot = 80; // ~wysokość dolnego paska
+    const padBot = 80;
     map.easeTo({center:[camLng, camLat], zoom:targetZoom, bearing:navHeading,
                 pitch:targetPitch, duration:camDuration,
+                easing: t => t < 0.5 ? 2*t*t : -1+(4-2*t)*t, // smooth ease-in-out
                 padding:{top:padTop, bottom:padBot, left:0, right:0}});
   }
   // Upewnij się że trasa jest narysowana (może zniknąć po zmianie stylu)
@@ -6723,6 +6764,7 @@ function stopNavigation(){
   if(navWatchId){ navigator.geolocation.clearWatch(navWatchId); navWatchId=null; }
   if(_markerAnimId){ cancelAnimationFrame(_markerAnimId); _markerAnimId=null; }
   _markerFrom = null;
+  _smoothBearing = null; // reset EMA przy kolejnej nawigacji
   camerasVisible = false; navCIdx = 0;
   const tirBar = document.getElementById('nav-tir-bar');
   if(tirBar) tirBar.classList.remove('active');
