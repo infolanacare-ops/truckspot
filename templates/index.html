@@ -1586,20 +1586,57 @@ body.navigating .fab-ai{display:none}
 }
 
 /* — Pasek POI — */
+/* ── POI timeline — pionowa oś po prawej stronie mapy (TomTom style) ── */
 .nav-pois-strip{
-  background:rgba(15,18,30,.78);backdrop-filter:blur(4px);
-  padding:.4rem .8rem;display:flex;gap:.5rem;
-  overflow-x:auto;scrollbar-width:none;flex-shrink:0
+  position:absolute;right:0;top:140px;bottom:76px;
+  width:66px;
+  background:rgba(12,16,28,.88);backdrop-filter:blur(8px);
+  border-left:1px solid rgba(255,255,255,.1);
+  border-radius:14px 0 0 14px;
+  padding:.5rem 0;
+  display:flex;flex-direction:column;align-items:center;
+  gap:0;overflow-y:auto;scrollbar-width:none;
+  pointer-events:auto;z-index:1201;
 }
+.nav-pois-strip:empty{display:none}
 .nav-pois-strip::-webkit-scrollbar{display:none}
-.nav-poi-chip{display:flex;flex-direction:column;align-items:center;gap:.12rem;
-  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:12px;
-  padding:.38rem .6rem;flex-shrink:0;cursor:pointer;transition:background .15s;min-width:60px}
-.nav-poi-chip:hover,.nav-poi-chip.near{background:rgba(34,197,94,.22);border-color:#22c55e}
-.nav-poi-chip-icon{font-size:1.05rem;line-height:1}
-.nav-poi-chip-name{font-size:.58rem;font-weight:700;color:#fff;white-space:nowrap;
-  overflow:hidden;text-overflow:ellipsis;max-width:68px;text-align:center}
-.nav-poi-chip-dist{font-size:.6rem;color:#60a5fa;font-weight:700}
+
+/* Chip = jeden punkt na osi */
+.nav-poi-chip{
+  display:flex;flex-direction:column;align-items:center;gap:.18rem;
+  width:100%;padding:.45rem 0;
+  position:relative;cursor:pointer;transition:background .15s;
+}
+/* Pionowa linia łącząca punkty */
+.nav-poi-chip::before{
+  content:'';position:absolute;top:0;left:50%;
+  width:2px;height:100%;
+  background:rgba(255,255,255,.13);
+  transform:translateX(-50%);z-index:0;
+}
+.nav-poi-chip:first-child::before{top:50%;height:50%}
+.nav-poi-chip:last-child::before{height:50%}
+/* Ikona — kółko na osi */
+.nav-poi-chip-icon{
+  position:relative;z-index:1;
+  width:34px;height:34px;border-radius:50%;
+  background:rgba(20,26,48,.95);
+  border:1.5px solid rgba(255,255,255,.22);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1rem;line-height:1;
+  transition:border-color .15s,background .15s;
+}
+.nav-poi-chip.near .nav-poi-chip-icon{
+  background:rgba(34,197,94,.25);border-color:#22c55e;
+}
+.nav-poi-chip-name{
+  font-size:.5rem;font-weight:700;color:rgba(255,255,255,.75);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  max-width:58px;text-align:center;padding:0 .2rem;
+}
+.nav-poi-chip-dist{
+  font-size:.58rem;color:#60a5fa;font-weight:800;
+}
 
 /* — Dół: ETA + głos + stop + hamburger — */
 .nav-bottom{
@@ -1827,17 +1864,10 @@ body.navigating .nav-pois-strip{display:none}
   .nav-maneuver-label{font-size:.62rem}
   /* Następny manewr — kompaktowy */
   .nav-next-strip{padding:.3rem .7rem}
-  /* POI strip — pionowy pasek w kolumnie */
-  .nav-pois-strip{
-    flex-direction:column;
-    overflow-x:hidden;overflow-y:auto;
-    flex:1;min-height:0;
-    padding:.3rem .4rem;
-    gap:.3rem;
-  }
-  .nav-poi-chip{flex-direction:row;min-width:unset;width:100%;padding:.3rem .5rem;gap:.4rem;justify-content:flex-start}
-  .nav-poi-chip-name{max-width:80px;text-align:left}
-  /* Spacer znika — POI wypełnia */
+  /* POI strip — zostaje absolutny po prawej, tylko mniejszy na mobile */
+  .nav-pois-strip{width:58px;top:120px}
+  .nav-poi-chip-icon{width:30px;height:30px;font-size:.9rem}
+  /* Spacer znika */
   .nav-overlay .nav-spacer{display:none}
   /* Bottom bar — kompaktowy, przyklejony do dołu kolumny */
   .nav-bottom{
