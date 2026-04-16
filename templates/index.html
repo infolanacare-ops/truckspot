@@ -1642,7 +1642,7 @@ body.navigating .fab-ai{display:none}
 /* ── POI timeline — pionowa oś po prawej stronie mapy (TomTom style) ── */
 /* ── POI timeline — lewa strona, od obliczenia trasy ── */
 .nav-pois-strip{
-  position:fixed;left:0;top:12%;
+  position:fixed;left:0;top:10px;
   width:64px;
   background:rgba(12,16,28,.9);backdrop-filter:blur(10px);
   border-right:1px solid rgba(255,255,255,.08);
@@ -1651,7 +1651,7 @@ body.navigating .fab-ai{display:none}
   display:none;flex-direction:column;align-items:center;
   gap:0;overflow-y:auto;scrollbar-width:none;
   pointer-events:auto;z-index:500;
-  max-height:76vh;
+  max-height:calc(100vh - 100px);
 }
 .nav-pois-strip.route-ready{display:flex}
 .nav-pois-strip::-webkit-scrollbar{display:none}
@@ -6224,12 +6224,34 @@ async function loadRoutePois(){
   renderNavPois();
 }
 
+// Ustawia top POI stripu tuż pod ostatnim widocznym elementem nawigacyjnym
+function updatePoiStripTop(){
+  const strip = document.getElementById('nav-pois-strip');
+  if(!strip) return;
+  // Szukaj najniżej położonego widocznego elementu nawigacyjnego (karta + next-strip)
+  let bottomPx = 8;
+  const card = document.querySelector('.nav-maneuver-card');
+  if(card){
+    const r = card.getBoundingClientRect();
+    if(r.height > 0) bottomPx = r.bottom + 6;
+  }
+  const next = document.getElementById('nav-next-strip');
+  if(next && next.style.display !== 'none' && !next.classList.contains('hidden')){
+    const r = next.getBoundingClientRect();
+    if(r.height > 0) bottomPx = r.bottom + 6;
+  }
+  strip.style.top = bottomPx + 'px';
+  // max-height żeby nie wychodził poza dolny pasek (~80px)
+  strip.style.maxHeight = (window.innerHeight - bottomPx - 90) + 'px';
+}
+
 function renderNavPois(){
   const strip = document.getElementById('nav-pois-strip');
   if(!strip || !routeCoords.length) return;
 
   // Pokaż strip gdy jest trasa (niezależnie od filtrów)
   strip.classList.add('route-ready');
+  updatePoiStripTop();
 
   const myDistKm = (navActive && navRouteDistances.length > 0)
     ? (navRouteDistances[navCIdx] || 0) / 1000
@@ -6351,15 +6373,18 @@ function updateNavStep(idx, flash=false){
     setEl('nav-next-dist', fmtDist(next.distance||0));
     nextStrip.style.display = 'flex';
     nextStrip.classList.remove('hidden');
+    requestAnimationFrame(updatePoiStripTop);
     // Ukryj po 9s jeśli następny manewr jest dalej niż 1.5 km
     const nextDist = next.distance || 0;
     if(nextDist > 1500){
       _nextStripHideTimer = setTimeout(() => {
         nextStrip.classList.add('hidden');
+        requestAnimationFrame(updatePoiStripTop);
       }, 9000);
     }
   } else if(nextStrip){
     nextStrip.style.display = 'none';
+    requestAnimationFrame(updatePoiStripTop);
   }
 
   // Current road name (from step)
