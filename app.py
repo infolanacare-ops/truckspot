@@ -1125,12 +1125,11 @@ NAturAlnie używaj zapamiętanych faktów w rozmowie — proponuj, nawiązuj, py
 NIE mieszaj JSON z tekstem."""
 
 GEMINI_MODELS = [
-    ("v1",     "gemini-2.5-flash-preview-04-17"),
-    ("v1beta", "gemini-2.5-flash-preview-04-17"),
-    ("v1",     "gemini-2.0-flash"),
-    ("v1",     "gemini-2.0-flash-lite"),
-    ("v1beta", "gemini-2.0-flash"),
-    ("v1",     "gemini-1.5-flash"),
+    ("v1beta", "gemini-2.5-flash"),
+    ("v1beta", "gemini-2.0-flash-001"),
+    ("v1beta", "gemini-2.0-flash-lite-001"),
+    ("v1beta", "gemini-flash-latest"),
+    ("v1beta", "gemini-pro-latest"),
 ]
 
 def _gemini_extract(result):
