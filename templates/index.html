@@ -1656,72 +1656,91 @@ body.navigating .fab-ai{display:none}
 .nav-pois-strip.route-ready{display:flex}
 .nav-pois-strip::-webkit-scrollbar{display:none}
 
-/* START chip */
-.nav-poi-start,.nav-poi-end{
-  display:flex;flex-direction:column;align-items:center;gap:.15rem;
-  width:100%;padding:.4rem 0;position:relative;
+/* ── POI Timeline — oś trasy (META góra, START dół) ── */
+
+/* Ciągła linia osi biegnąca przez cały strip */
+.nav-pois-strip{position:relative}
+.nav-pois-strip::before{
+  content:'';position:absolute;top:0;bottom:0;left:50%;
+  width:2px;
+  background:linear-gradient(to bottom,rgba(239,68,68,.5) 0%,rgba(255,255,255,.12) 30%,rgba(255,255,255,.12) 70%,rgba(34,197,94,.5) 100%);
+  transform:translateX(-50%);z-index:0;pointer-events:none;
 }
-.nav-poi-start::after{
-  content:'';position:absolute;bottom:0;left:50%;
-  width:2px;height:50%;background:rgba(255,255,255,.15);
-  transform:translateX(-50%);
-}
-.nav-poi-end::before{
-  content:'';position:absolute;top:0;left:50%;
-  width:2px;height:50%;background:rgba(255,255,255,.15);
-  transform:translateX(-50%);
-}
-.nav-poi-start-dot{
-  width:32px;height:32px;border-radius:50%;
-  background:rgba(34,197,94,.2);border:2px solid #22c55e;
-  display:flex;align-items:center;justify-content:center;
-  font-size:.95rem;position:relative;z-index:1;
+
+/* META (góra) */
+.nav-poi-end{
+  display:flex;flex-direction:column;align-items:center;gap:.18rem;
+  width:100%;padding:.55rem 0 .3rem;position:relative;z-index:1;
 }
 .nav-poi-end-dot{
-  width:32px;height:32px;border-radius:50%;
-  background:rgba(239,68,68,.2);border:2px solid #ef4444;
+  width:34px;height:34px;border-radius:50%;
+  background:rgba(239,68,68,.25);border:2.5px solid #ef4444;
   display:flex;align-items:center;justify-content:center;
-  font-size:.95rem;position:relative;z-index:1;
+  font-size:1rem;position:relative;z-index:1;
+  box-shadow:0 0 10px rgba(239,68,68,.35);
+}
+
+/* START (dół) */
+.nav-poi-start{
+  display:flex;flex-direction:column;align-items:center;gap:.18rem;
+  width:100%;padding:.3rem 0 .55rem;position:relative;z-index:1;
+}
+.nav-poi-start-dot{
+  width:34px;height:34px;border-radius:50%;
+  background:rgba(34,197,94,.25);border:2.5px solid #22c55e;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1rem;position:relative;z-index:1;
+  box-shadow:0 0 10px rgba(34,197,94,.35);
 }
 .nav-poi-start-lbl,.nav-poi-end-lbl{
   font-size:.42rem;font-weight:700;text-transform:uppercase;
   letter-spacing:.05em;color:rgba(255,255,255,.45);
 }
 
+/* Pozycja aktualna (samochód) */
+.nav-poi-current{
+  display:flex;flex-direction:column;align-items:center;gap:.1rem;
+  width:100%;padding:.2rem 0;position:relative;z-index:2;
+}
+.nav-poi-current-dot{
+  width:20px;height:20px;border-radius:50%;
+  background:#3b82f6;border:2px solid #fff;
+  box-shadow:0 0 8px rgba(59,130,246,.7);
+  position:relative;z-index:2;
+  animation:poi-pulse 2s ease-in-out infinite;
+}
+@keyframes poi-pulse{
+  0%,100%{box-shadow:0 0 8px rgba(59,130,246,.7)}
+  50%{box-shadow:0 0 16px rgba(59,130,246,.4),0 0 4px #3b82f6}
+}
+
 /* Chip = jeden POI na osi */
 .nav-poi-chip{
   display:flex;flex-direction:column;align-items:center;gap:.15rem;
-  width:100%;padding:.4rem 0;
-  position:relative;cursor:pointer;transition:background .15s;
-}
-.nav-poi-chip::before{
-  content:'';position:absolute;top:0;left:50%;
-  width:2px;height:100%;
-  background:rgba(255,255,255,.12);
-  transform:translateX(-50%);z-index:0;
+  width:100%;padding:.35rem 0;
+  position:relative;z-index:1;cursor:pointer;
 }
 .nav-poi-chip-icon{
   position:relative;z-index:1;
-  width:32px;height:32px;border-radius:50%;
-  background:rgba(20,26,48,.95);
-  border:1.5px solid rgba(255,255,255,.2);
+  width:30px;height:30px;border-radius:50%;
+  background:rgba(12,16,28,.98);
+  border:1.5px solid rgba(255,255,255,.25);
   display:flex;align-items:center;justify-content:center;
-  font-size:.95rem;line-height:1;
-  transition:border-color .15s,background .15s;
+  font-size:.85rem;line-height:1;
+  transition:border-color .2s,background .2s,transform .2s;
 }
 .nav-poi-chip.near .nav-poi-chip-icon{
-  background:rgba(34,197,94,.25);border-color:#22c55e;
+  background:rgba(34,197,94,.2);border-color:#22c55e;
+  transform:scale(1.15);box-shadow:0 0 10px rgba(34,197,94,.4);
 }
-.nav-poi-chip.passed .nav-poi-chip-icon{
-  opacity:.35;
-}
+.nav-poi-chip.passed{opacity:.32}
 .nav-poi-chip-name{
-  font-size:.44rem;font-weight:700;color:rgba(255,255,255,.65);
+  font-size:.42rem;font-weight:700;color:rgba(255,255,255,.7);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  max-width:56px;text-align:center;padding:0 .2rem;
+  max-width:58px;text-align:center;padding:0 .2rem;position:relative;z-index:1;
 }
 .nav-poi-chip-dist{
-  font-size:.55rem;color:#60a5fa;font-weight:800;
+  font-size:.52rem;color:#60a5fa;font-weight:800;position:relative;z-index:1;
 }
 
 /* — Dół: ETA + głos + stop + hamburger — */
@@ -6246,24 +6265,73 @@ function updatePoiStripTop(){
   strip.style.maxHeight = (window.innerHeight - bottomPx - 90) + 'px';
 }
 
+// Typy zawsze widoczne na osi TIR (niezależnie od filtrów)
+const TIR_TIMELINE_TYPES = new Set(['fuel','gas_station','rest_area','services','parking','charging_station']);
+
 function renderNavPois(){
   const strip = document.getElementById('nav-pois-strip');
   if(!strip || !routeCoords.length) return;
 
-  // Pokaż strip gdy jest trasa (niezależnie od filtrów)
   strip.classList.add('route-ready');
   updatePoiStripTop();
 
   const myDistKm = (navActive && navRouteDistances.length > 0)
     ? (navRouteDistances[navCIdx] || 0) / 1000
     : null;
-  const totalKm = routeTotalDist ? routeTotalDist / 1000 : null;
-
-  // Dystans do mety
+  const totalKm  = routeTotalDist ? routeTotalDist / 1000 : null;
   const distToEnd = totalKm !== null && myDistKm !== null
     ? Math.max(0, totalKm - myDistKm) : totalKm;
-  const endDistTxt = distToEnd !== null
-    ? (distToEnd < 1 ? Math.round(distToEnd*1000)+'m' : distToEnd.toFixed(1)+'km') : '';
+  const fmtD = d => d == null ? '' : d < 1 ? Math.round(d*1000)+'m' : d.toFixed(1)+'km';
+
+  // Wybierz POI: zawsze TIR + aktywne filtry
+  const timedPois = navRoutePois.filter(p =>
+    TIR_TIMELINE_TYPES.has(p.type) ||
+    (activeFilters.size > 0 && [...activeFilters].some(f => (p.amenities||[]).includes(f)))
+  );
+
+  // Podział na przejechane (max 2) i nadchodzące (max 10)
+  const passed  = timedPois.filter(p => myDistKm !== null && (p.distFromStart||0) <= myDistKm)
+                           .slice(-2);
+  const ahead   = timedPois.filter(p => myDistKm === null || (p.distFromStart||0) > myDistKm)
+                           .slice(0, 10);
+  // Kolejność: META(góra) → [dalsze→bliższe] → [marker auto] → START(dół)
+  const orderedPois = [...ahead].reverse(); // odwróć: najdalszy na górze
+
+  // META
+  const metaHtml = `<div class="nav-poi-end">
+    <div class="nav-poi-end-dot">🏁</div>
+    <div class="nav-poi-end-lbl">Meta</div>
+    ${distToEnd != null ? `<div class="nav-poi-chip-dist">${fmtD(distToEnd)}</div>` : ''}
+  </div>`;
+
+  // POI nadchodzące (od najdalszego do najbliższego)
+  const aheadHtml = orderedPois.map(p => {
+    const distAhead = myDistKm !== null ? (p.distFromStart||0) - myDistKm : (p.distFromStart||0);
+    const distTxt   = fmtD(distAhead > 0 ? distAhead : null);
+    const near      = distAhead > 0 && distAhead < 2;
+    return `<div class="nav-poi-chip${near?' near':''}"
+      onclick="map.flyTo({center:[${p.lng},${p.lat}],zoom:15})" title="${p.name}">
+      <div class="nav-poi-chip-icon">${p.icon}</div>
+      <div class="nav-poi-chip-name">${p.name.substring(0,12)}</div>
+      ${distTxt ? `<div class="nav-poi-chip-dist">${distTxt}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  // Marker bieżącej pozycji (niebieski pulsujący) — tylko podczas nawigacji
+  const currentHtml = navActive
+    ? `<div class="nav-poi-current" id="nav-poi-current">
+        <div class="nav-poi-current-dot"></div>
+       </div>`
+    : '';
+
+  // POI przejechane (przyciemnione, nad STARTem)
+  const passedHtml = [...passed].reverse().map(p => {
+    return `<div class="nav-poi-chip passed"
+      onclick="map.flyTo({center:[${p.lng},${p.lat}],zoom:15})" title="${p.name}">
+      <div class="nav-poi-chip-icon">${p.icon}</div>
+      <div class="nav-poi-chip-name">${p.name.substring(0,12)}</div>
+    </div>`;
+  }).join('');
 
   // START
   const startHtml = `<div class="nav-poi-start">
@@ -6271,47 +6339,11 @@ function renderNavPois(){
     <div class="nav-poi-start-lbl">Start</div>
   </div>`;
 
-  // POI środkowe (tylko gdy filtry aktywne)
-  let poisHtml = '';
-  if(activeFilters.size > 0){
-    const filteredPois = getFilteredNavPois();
-    const maxDist = navPoiRadius < 999 ? navPoiRadius : Infinity;
-    let pois;
-    if(myDistKm !== null){
-      pois = filteredPois
-        .filter(p => typeof p.distFromStart === 'number' && p.distFromStart > myDistKm)
-        .map(p => ({...p, distAhead: p.distFromStart - myDistKm}))
-        .filter(p => p.distAhead <= maxDist)
-        .sort((a,b) => a.distAhead - b.distAhead)
-        .slice(0, 8);
-    } else {
-      pois = filteredPois
-        .filter(p => typeof p.distFromStart === 'number' && p.distFromStart <= maxDist)
-        .sort((a,b) => a.distFromStart - b.distFromStart)
-        .slice(0, 8);
-    }
-    poisHtml = pois.map(p => {
-      const dist = p.distAhead ?? p.distFromStart ?? 0;
-      const distTxt = dist < 0.05 ? '<50m' : dist < 1 ? Math.round(dist*1000)+'m' : dist.toFixed(1)+'km';
-      const near   = dist > 0 && dist < 1;
-      const passed = myDistKm !== null && (p.distFromStart ?? 0) <= myDistKm;
-      return `<div class="nav-poi-chip${near?' near':''}${passed?' passed':''}"
-        onclick="map.flyTo({center:[${p.lng},${p.lat}],zoom:15})" title="${p.name}">
-        <div class="nav-poi-chip-icon">${p.icon}</div>
-        <div class="nav-poi-chip-name">${p.name.substring(0,12)}</div>
-        <div class="nav-poi-chip-dist">${distTxt}</div>
-      </div>`;
-    }).join('');
-  }
+  strip.innerHTML = metaHtml + aheadHtml + currentHtml + passedHtml + startHtml;
 
-  // META
-  const endHtml = `<div class="nav-poi-end">
-    <div class="nav-poi-end-dot">🏁</div>
-    <div class="nav-poi-start-lbl">Meta</div>
-    ${endDistTxt ? `<div class="nav-poi-chip-dist">${endDistTxt}</div>` : ''}
-  </div>`;
-
-  strip.innerHTML = startHtml + poisHtml + endHtml;
+  // Auto-scroll: pokaż marker aktualnej pozycji (środek stripu)
+  const curEl = document.getElementById('nav-poi-current');
+  if(curEl) curEl.scrollIntoView({block:'center',behavior:'smooth'});
 }
 
 function hideRouteTimeline(){
