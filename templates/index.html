@@ -5957,6 +5957,12 @@ function speakAi(txt){
     utt.lang = lang; utt.rate = 0.92; utt.pitch = 1.0; utt.volume = 1.0;
     const voice = getBestVoice(lang);
     if(voice) utt.voice = voice;
+    utt.onend = () => {
+      // Wznów nasłuchiwanie asystenta po skończeniu mówienia
+      if(_bgAssistantActive && !window._bgRecognition){
+        setTimeout(() => { if(_bgAssistantActive) startBgListening(); }, 400);
+      }
+    };
     speechSynthesis.speak(utt);
   };
   const navRecentlySilent = () =>
@@ -8134,7 +8140,12 @@ async function sendAiMessage(text){
   const input = document.getElementById('ai-input');
   const msg = text || input.value.trim();
   if(!msg) return;
-  _aiProcessing = true; // zablokuj mic podczas przetwarzania
+  _aiProcessing = true;
+  // Zatrzymaj mic TERAZ — nie czekaj na onend, unikamy klikania
+  if(window._bgRecognition){
+    try{ window._bgRecognition.abort(); }catch(e){}
+    window._bgRecognition = null;
+  }
 
   // --- Obsługa potwierdzenia / odrzucenia trasy ---
   if(_pendingNavQuery){
@@ -8144,6 +8155,7 @@ async function sendAiMessage(text){
     if(isYes){
       const query = _pendingNavQuery;
       _pendingNavQuery = null;
+      _aiProcessing = false;
       speakAi('Zaczynam nawigację!');
       const inChat = document.getElementById('ai-panel').classList.contains('open');
       if(inChat) addAiMessage('Zaczynam nawigację!', 'bot');
@@ -8159,6 +8171,7 @@ async function sendAiMessage(text){
     }
     if(isNo){
       _pendingNavQuery = null;
+      _aiProcessing = false;
       speakAi('Okej, anulowałam.');
       const inChat = document.getElementById('ai-panel').classList.contains('open');
       if(inChat) addAiMessage('Okej, anulowałam.', 'bot');
