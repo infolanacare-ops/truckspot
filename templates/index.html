@@ -793,7 +793,9 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
   position:fixed;bottom:0;left:0;right:0;z-index:2000;
   background:linear-gradient(135deg,var(--accent),var(--accent2));
   color:#000;display:flex;align-items:center;gap:.8rem;
-  padding:.75rem 1rem;transform:translateY(100%);
+  padding:.75rem 1rem;
+  padding-bottom:calc(.75rem + env(safe-area-inset-bottom, 0px));
+  transform:translateY(100%);
   transition:transform .4s cubic-bezier(.34,1.56,.64,1);
   box-shadow:0 -4px 24px rgba(0,0,0,.3)}
 .update-banner.show{transform:translateY(0)}
