@@ -1126,8 +1126,6 @@ NIE mieszaj JSON z tekstem."""
 
 GEMINI_MODELS = [
     ("v1beta", "gemini-2.5-flash"),
-    ("v1beta", "gemini-2.0-flash-001"),
-    ("v1beta", "gemini-2.0-flash-lite-001"),
     ("v1beta", "gemini-flash-latest"),
     ("v1beta", "gemini-pro-latest"),
 ]
