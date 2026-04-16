@@ -379,10 +379,8 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .report-dial{
   position:fixed;right:.5rem;bottom:5.5rem;z-index:600;
   width:64px;
-  display:none; /* ukryty poza nawigacją */
 }
 .navigating .report-dial{
-  display:block;
   bottom:calc(80px + env(safe-area-inset-bottom) + .6rem);
   z-index:1202;
 }
@@ -2011,8 +2009,13 @@ body.navigating .convoy-btn{display:none}
 }
 /* Ukryj logo Mapbox i "Improve this map" */
 .mapboxgl-ctrl-logo{display:none!important}
-.mapboxgl-ctrl-attrib a[href*="improve-map"],
-.mapboxgl-ctrl-attrib a[href*="feedback"]{display:none!important}
+.mapboxgl-ctrl-attrib{display:none!important}
+/* Statyczna atybucja Mapbox (wymagana ToS) */
+.map-attrib{
+  position:fixed;bottom:52px;right:4px;z-index:100;
+  font-size:9px;color:rgba(255,255,255,.35);
+  pointer-events:none;line-height:1.2;text-align:right;
+}
 /* ══ NAV POI STRIP ══ */
 /* old nav-pois styles removed — replaced by TomTom nav styles above */
 /* ══ JEDŹ BUTTON ══ */
@@ -2281,6 +2284,7 @@ body.navigating .convoy-btn{display:none}
     <div class="topbar-search" onclick="openSearch()"><span class="si"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span></div>
   </div>
   <div id="map"></div>
+  <div class="map-attrib">© Mapbox © OpenStreetMap</div>
   <div class="bottom-nav">
     <div class="bnav-item active" onclick="bnav(this,'map')"><span class="bnav-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="M3 7l6-4 6 4 6-4v14l-6 4-6-4-6 4V7z"/><path d="M9 3v14M15 7v14"/></svg></span></span><span class="bnav-lbl" data-i="nav_map">Map</span></div>
     <div class="bnav-item" onclick="bnav(this,'route')"><span class="bnav-icon"><span class="si"><svg viewBox="0 0 24 24"><polygon points="12 2 19 21 12 17 5 21 12 2"/></svg></span></span><span class="bnav-lbl" data-i="nav_route">Route</span></div>
@@ -3687,7 +3691,6 @@ function enterMode(mode){
       attributionControl: false
     });
     map.addControl(new mapboxgl.NavigationControl({showCompass:false}), 'top-left');
-    map.addControl(new mapboxgl.AttributionControl({compact:true}), 'bottom-right');
     map.on('click', (e)=>{ onMapClickForMsg(e); onMapClick(e); });
     map.on('moveend', ()=>{ if(map.getZoom()>=8) loadOsmParkings(); loadReports(); });
     // Wykryj ręczne operacje na mapie podczas nawigacji
