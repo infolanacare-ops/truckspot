@@ -379,8 +379,10 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .report-dial{
   position:fixed;right:.5rem;bottom:5.5rem;z-index:600;
   width:64px;
+  display:none; /* ukryty poza nawigacją */
 }
 .navigating .report-dial{
+  display:block;
   bottom:calc(80px + env(safe-area-inset-bottom) + .6rem);
   z-index:1202;
 }
