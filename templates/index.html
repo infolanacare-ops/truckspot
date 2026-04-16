@@ -1637,50 +1637,48 @@ body.navigating .fab-ai{display:none}
   gap:.5rem;padding:.35rem .65rem .2rem;
   pointer-events:none;
 }
-/* ── Speed combo: pill + znak jako jeden spójny element ── */
+/* ── Speed combo: TomTom style — znak limitu po lewej + pill po prawej ── */
 .nav-speed-combo{
   display:flex;align-items:center;flex-shrink:0;
-  position:relative;
   filter:drop-shadow(0 3px 14px rgba(0,0,0,.55));
 }
-/* Ciemny pill — aktualna prędkość */
-.nav-speedometer{
-  display:flex;align-items:stretch;flex-shrink:0;
-  background:rgba(14,18,32,.95);
-  border:1.5px solid rgba(255,255,255,.18);
-  border-right:none;
-  border-radius:16px 0 0 16px;
-  padding-right:18px; /* miejsce na overlap znaku */
-  transition:.2s;
-}
-.nav-spd-cur{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:.45rem .75rem .45rem .9rem;min-width:50px;
-}
-.nav-speed-val{font-family:var(--font-head);font-size:1.7rem;font-weight:900;color:#fff;line-height:1}
-.nav-speed-unit{font-size:.42rem;color:rgba(255,255,255,.45);text-transform:uppercase;font-weight:700;letter-spacing:.05em;margin-top:.1rem}
-/* Okrągły znak — nakłada się na prawy bok pilla */
+/* Okrągły znak limitu — po lewej, dominujący */
 .nav-spd-lim{
-  width:64px;height:64px;border-radius:50%;
+  width:68px;height:68px;border-radius:50%;
   background:#fff;
-  border:5px solid #cc0000;
+  border:6px solid #cc0000;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   flex-shrink:0;
-  margin-left:-18px; /* overlap na pill */
   z-index:2;
   opacity:0;transition:opacity .25s;
   pointer-events:none;
 }
 .nav-spd-lim.visible{opacity:1}
-/* Gdy znak ukryty — pill ma pełne zaokrąglenie */
-.nav-speedometer:not(:has(+ .nav-spd-lim.visible)){
-  border-radius:16px;border-right:1.5px solid rgba(255,255,255,.18);padding-right:0;
-}
-.nav-speed-sign-val{font-family:var(--font-head);font-size:1.45rem;font-weight:900;color:#111;line-height:1;transition:color .2s}
+.nav-speed-sign-val{font-family:var(--font-head);font-size:1.5rem;font-weight:900;color:#111;line-height:1;transition:color .2s}
 .nav-speed-sign-unit{font-size:.38rem;color:#666;text-transform:uppercase;font-weight:700;letter-spacing:.04em;margin-top:.1rem}
+/* Ciemny pill — aktualna prędkość, nachodzi na znak od prawej */
+.nav-speedometer{
+  display:flex;align-items:stretch;flex-shrink:0;
+  background:rgba(14,18,32,.95);
+  border:1.5px solid rgba(255,255,255,.18);
+  border-left:none;
+  border-radius:0 16px 16px 0;
+  margin-left:-16px; /* overlap na znak */
+  transition:.2s;
+}
+/* Gdy znak niewidoczny — pill staje się pełnym pill */
+.nav-spd-lim:not(.visible) + .nav-speedometer{
+  border-radius:16px;border-left:1.5px solid rgba(255,255,255,.18);margin-left:0;
+}
+.nav-spd-cur{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:.45rem .85rem .45rem 1rem;min-width:52px;
+}
+.nav-speed-val{font-family:var(--font-head);font-size:1.7rem;font-weight:900;color:#fff;line-height:1}
+.nav-speed-unit{font-size:.42rem;color:rgba(255,255,255,.45);text-transform:uppercase;font-weight:700;letter-spacing:.05em;margin-top:.1rem}
 /* Speeding */
-.nav-speedometer.speeding .nav-spd-cur{background:rgba(239,68,68,.2)}
-.nav-speedometer.speeding .nav-speed-val{color:#ef4444}
+.nav-speedometer.speeding{background:rgba(180,20,20,.92);border-color:rgba(255,80,80,.35)}
+.nav-speedometer.speeding .nav-speed-val{color:#fff}
 .nav-spd-lim.speeding{background:#cc0000;border-color:#fff}
 .nav-spd-lim.speeding .nav-speed-sign-val{color:#fff}
 .nav-spd-lim.speeding .nav-speed-sign-unit{color:rgba(255,255,255,.65)}
@@ -2578,15 +2576,15 @@ body.navigating .nav-pois-strip{display:none}
       📷 <span class="nav-cam-dist" id="nav-cam-dist"></span>
     </div>
     <div class="nav-speed-combo">
+      <div class="nav-spd-lim" id="nav-speed-sign">
+        <div class="nav-speed-sign-val" id="nav-speed-sign-val">–</div>
+        <div class="nav-speed-sign-unit">km/h</div>
+      </div>
       <div class="nav-speedometer" id="nav-speedometer">
         <div class="nav-spd-cur">
           <div class="nav-speed-val" id="nav-speed-val">–</div>
           <div class="nav-speed-unit">km/h</div>
         </div>
-      </div>
-      <div class="nav-spd-lim" id="nav-speed-sign">
-        <div class="nav-speed-sign-val" id="nav-speed-sign-val">–</div>
-        <div class="nav-speed-sign-unit">km/h</div>
       </div>
     </div>
   </div>
