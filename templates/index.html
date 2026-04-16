@@ -828,7 +828,7 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .gps-dot{width:14px;height:14px;background:#3b82f6;border-radius:50%;border:3px solid #fff;
   box-shadow:0 0 0 4px rgba(59,130,246,.3);animation:pulse-gps 2s infinite}
 @keyframes pulse-gps{0%,100%{box-shadow:0 0 0 4px rgba(59,130,246,.3)}50%{box-shadow:0 0 0 10px rgba(59,130,246,.06)}}
-.nav-arrow{width:40px;height:52px;display:block;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));}
+.nav-arrow{width:72px;height:92px;display:block;}
 .mk-user{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
   background:var(--purple);border:3px solid #fff;box-shadow:0 3px 10px rgba(139,92,246,.5);font-size:.95rem}
 
@@ -4345,7 +4345,7 @@ const MAPBOX_TOKEN = '{{ mapbox_token }}';
 function mkMbMarker(lat, lng, html, onClick){
   const el = document.createElement('div');
   el.innerHTML = html;
-  el.style.cssText = 'cursor:pointer;line-height:0;user-select:none';
+  el.style.cssText = 'cursor:pointer;line-height:0;user-select:none;z-index:200';
   const mk = new mapboxgl.Marker({element:el, anchor:'bottom'}).setLngLat([lng,lat]).addTo(map);
   if(onClick) el.addEventListener('click', e=>{ e.stopPropagation(); onClick(); });
   return mk;
@@ -4381,10 +4381,11 @@ function setGpsArrow(lat, lng){
   if(!gpsMarker){
     const arrowColor = getComputedStyle(document.documentElement).getPropertyValue('--accent2').trim() || '#ffd700';
     const el = document.createElement('div');
-    el.innerHTML = `<svg class="nav-arrow" width="56" height="72" viewBox="0 0 40 52" xmlns="http://www.w3.org/2000/svg">
+    el.innerHTML = `<svg class="nav-arrow" width="72" height="92" viewBox="0 0 40 52" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 3px 8px rgba(0,0,0,.65)) drop-shadow(0 1px 3px rgba(0,0,0,.5))">
       <polygon points="20,2 38,50 20,40 2,50" fill="${arrowColor}" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>
+      <polygon points="20,2 38,50 20,40 2,50" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1" stroke-linejoin="round"/>
     </svg>`;
-    el.style.cssText = 'line-height:0';
+    el.style.cssText = 'line-height:0;z-index:10';
     gpsMarker = new mapboxgl.Marker({element:el, anchor:'center', rotationAlignment:'viewport', pitchAlignment:'map'})
       .setLngLat([lng,lat]).addTo(map);
     _markerFrom = {lat, lng};
@@ -4449,32 +4450,32 @@ function drawRoute(coords, splitIdx){
     // ── Pozostała trasa (niebieska, ładna) ────────────────
     map.addSource('ts-route',{type:'geojson',data:geoAhead});
 
-    // Zewnętrzny glow — mglisty niebieski
+    // Zewnętrzny glow — subtelny, nie zakrywa mapy
     map.addLayer({id:'ts-route-glow',type:'line',source:'ts-route',
       layout:{'line-join':'round','line-cap':'round'},
       paint:{'line-color':'#3b82f6',
-        'line-width':['interpolate',['linear'],['zoom'],8,18,12,28,16,38],
-        'line-opacity':0.15,'line-blur':8}
+        'line-width':['interpolate',['linear'],['zoom'],8,12,12,18,16,24],
+        'line-opacity':0.12,'line-blur':6}
     });
     // Ciemna obwódka — odcina trasę od mapy
     map.addLayer({id:'ts-route-casing',type:'line',source:'ts-route',
       layout:{'line-join':'round','line-cap':'round'},
-      paint:{'line-color':'#1e3a6e',
-        'line-width':['interpolate',['linear'],['zoom'],8,11,12,17,16,23],
+      paint:{'line-color':'#1a3560',
+        'line-width':['interpolate',['linear'],['zoom'],8,8,12,12,16,16],
         'line-opacity':1}
     });
-    // Główna linia — żywy niebieski gradient
+    // Główna linia — żywy niebieski
     map.addLayer({id:'ts-route-line',type:'line',source:'ts-route',
       layout:{'line-join':'round','line-cap':'round'},
-      paint:{'line-color':'#3b82f6',
-        'line-width':['interpolate',['linear'],['zoom'],8,8,12,13,16,18],
-        'line-opacity':1}
+      paint:{'line-color':'#4a90e8',
+        'line-width':['interpolate',['linear'],['zoom'],8,6,12,10,16,13],
+        'line-opacity':0.92}
     });
     // Biały centralny pasek — efekt "świecącej drogi"
     map.addLayer({id:'ts-route-shine',type:'line',source:'ts-route',
       layout:{'line-join':'round','line-cap':'round'},
-      paint:{'line-color':'rgba(255,255,255,0.55)',
-        'line-width':['interpolate',['linear'],['zoom'],8,2,12,4,16,6],
+      paint:{'line-color':'rgba(255,255,255,0.5)',
+        'line-width':['interpolate',['linear'],['zoom'],8,1.5,12,3,16,4.5],
         'line-opacity':1}
     });
   });
