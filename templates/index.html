@@ -6275,7 +6275,8 @@ function updateLaneGuidance(dToManeuver){
   const el = document.getElementById('nav-lanes');
   if(!el) return;
   const step = routeSteps[navStepIdx];
-  if(!step || dToManeuver > 400 || dToManeuver < 20){
+  const laneShowDist = navSpeedKmh > 70 ? 800 : 600;
+  if(!step || dToManeuver > laneShowDist || dToManeuver < 20){
     el.style.display='none'; return;
   }
   let lanes = null;
@@ -6709,8 +6710,13 @@ function onNavPosition(pos){
   _drSpeedMps  = (pos.coords.speed != null && pos.coords.speed >= 0) ? pos.coords.speed : navSpeedKmh / 3.6;
   _drBearing   = navHeading;
 
-  // ── TomTom-style camera — zoom + pitch zależny od odległości do manewru ──
-  const baseZoom = navSpeedKmh > 80 ? 13 : navSpeedKmh > 40 ? 14 : 15;
+  // ── TomTom-style camera — zoom + pitch zależny od prędkości i odległości do manewru ──
+  // Bazowy zoom zależy od prędkości — autostrada: dalszy widok, miasto: bliższy
+  const baseZoom = navSpeedKmh > 110 ? 12.5
+                 : navSpeedKmh > 80  ? 13.0
+                 : navSpeedKmh > 50  ? 13.8
+                 : navSpeedKmh > 25  ? 14.5
+                 : 15.2;
   const pm = NAV_PITCH_MODES[navPitchMode];
 
   // Oblicz dystans do następnego manewru
@@ -6721,14 +6727,17 @@ function onNavPosition(pos){
   }
 
   // Im bliżej manewru — większy zoom, płaszy pitch
-  // camDuration = lekko powyżej ticku (260ms) → animacja zawsze "w locie", bez dziur
+  // Na szybkich drogach — wcześniej zaczynamy zoom-in
+  const isHighSpeed = navSpeedKmh > 70;
   let zoomBoost = 0, pitchFactor = 1.0, camDuration = 280;
-  if(dToNextManeuver < 700){
-    if     (dToNextManeuver < 80) { zoomBoost=4.0; pitchFactor=0.35; camDuration=220; }
-    else if(dToNextManeuver < 150){ zoomBoost=3.2; pitchFactor=0.50; camDuration=240; }
-    else if(dToNextManeuver < 250){ zoomBoost=2.2; pitchFactor=0.65; camDuration=250; }
-    else if(dToNextManeuver < 400){ zoomBoost=1.2; pitchFactor=0.80; camDuration=260; }
-    else                          { zoomBoost=0.4; pitchFactor=0.92; camDuration=270; }
+  const d = dToNextManeuver;
+  if(d < (isHighSpeed ? 1200 : 700)){
+    if     (d < 60)  { zoomBoost=4.5; pitchFactor=0.25; camDuration=210; }
+    else if(d < 120) { zoomBoost=3.5; pitchFactor=0.40; camDuration=230; }
+    else if(d < 200) { zoomBoost=2.5; pitchFactor=0.55; camDuration=245; }
+    else if(d < 350) { zoomBoost=1.5; pitchFactor=0.72; camDuration=260; }
+    else if(d < 600) { zoomBoost=0.7; pitchFactor=0.88; camDuration=270; }
+    else             { zoomBoost=0.2; pitchFactor=0.96; camDuration=275; }
   }
 
   const targetZoom  = Math.min(baseZoom + pm.zoomOff + zoomBoost, 18.5);
