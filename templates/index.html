@@ -7568,15 +7568,23 @@ function renderCameraMarkers(elements){
   const cnt = document.getElementById('cameras-count');
   if(cnt) cnt.textContent = elements.length ? `· ${elements.length}` : '';
   elements.forEach(el=>{
-    if(!el.lat || !el.lon) return;
+    if(!el.lat) return;
+    const lon = el.lon ?? el.lng;
+    if(!lon) return;
+    el.lon = lon; el.lng = lon; // normalizuj
     const maxspeed = el.tags?.maxspeed || el.maxspeed || '';
-    const isUser   = el.tags?.source === 'user' || el.source === 'user';
+    const source   = el.source || el.tags?.source || 'osm';
+    const isUser   = source === 'user';
+    const isStatic = ['lufop','opengatso','osm'].includes(source); // import statyczny
     const confirms = el.tags?.confirms ?? el.confirms ?? 0;
     const camType  = el.type || el.tags?.camera_type || 'fixed';
     const cfg      = CAM_TYPE_CFG[camType] || CAM_TYPE_CFG.fixed;
-    // Kolor: mobilny=pomarańczowy, odcinkowy=fioletowy, stały=czerwony
-    // Niezweryfikowany user=jaśniejszy, potwierdzony 3+=pełny kolor
-    const color = (isUser && confirms < 3) ? cfg.color+'cc' : cfg.color;
+    // Kolor: statyczne=pełny, niezweryfikowany user=półprzezroczysty
+    const color = (isUser && confirms < 3) ? cfg.color+'bb' : cfg.color;
+    // Ikona źródła: Lufop/OpenGATSO = mała gwiazdka, OSM = bez
+    const srcBadge = source === 'lufop' || source === 'opengatso'
+      ? `<text x="6" y="10" font-family="'Inter',Arial,sans-serif" font-size="7" fill="#60a5fa">★</text>`
+      : '';
     const label = maxspeed
       ? `<text x="20" y="23" text-anchor="middle" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="9" fill="${color}">${maxspeed.replace(' mph','').replace('km/h','')}</text>`
       : '';
@@ -7588,16 +7596,17 @@ function renderCameraMarkers(elements){
       : '';
     const html = mkPin(color,
       `<g transform="translate(8,7)" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <svg width="24" height="24" viewBox="0 0 24 24">${CAMERA_SVG}</svg></g>${label}${typeBadge}${confirmBadge}`);
-    const mk = mkMbMarker(el.lat, el.lon, html, ()=>{
+        <svg width="24" height="24" viewBox="0 0 24 24">${CAMERA_SVG}</svg></g>${label}${typeBadge}${confirmBadge}${srcBadge}`);
+    const mk = mkMbMarker(el.lat, lon, html, ()=>{
       if(isUser && el.id){
         openCamConfirm(el);
       } else {
         const sp = maxspeed ? ` · ${maxspeed} km/h` : '';
-        showAlert(cfg.icon, cfg.label + sp, el.tags?.direction ? '→ '+el.tags.direction : 'Zwolnij!');
+        const srcLabel = source === 'lufop' ? ' · Lufop' : source === 'opengatso' ? ' · OpenGATSO' : '';
+        showAlert(cfg.icon, cfg.label + sp, (el.tags?.direction ? '→ '+el.tags.direction : 'Zwolnij!') + srcLabel);
       }
     });
-    mk._camData = el; // zachowaj dane do checkNavCameras
+    mk._camData = el;
     cameraMarkers.push(mk);
   });
 }

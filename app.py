@@ -816,6 +816,9 @@ def api_reports_confirm(report_id):
 # ── Baza fotoradarów zgłoszonych przez użytkowników ──────────────────────────
 # Permanentne (nie wygasają), usuwane tylko gdy confirms < -3 (zbyt wiele odrzuceń)
 
+CAMERAS_STATIC_PATH = os.path.join(DATA_DIR, "cameras_static.json")
+_cameras_static_cache = None   # cache w pamięci — plik duży, nie czytaj co request
+
 def load_cameras():
     if not os.path.exists(CAMERAS_PATH):
         return []
@@ -826,9 +829,22 @@ def save_cameras(cameras):
     with open(CAMERAS_PATH, "w", encoding="utf-8") as f:
         json.dump(cameras, f, ensure_ascii=False, indent=2)
 
+def load_cameras_static():
+    global _cameras_static_cache
+    if _cameras_static_cache is not None:
+        return _cameras_static_cache
+    if not os.path.exists(CAMERAS_STATIC_PATH):
+        return []
+    with open(CAMERAS_STATIC_PATH, encoding="utf-8") as f:
+        _cameras_static_cache = json.load(f)
+    return _cameras_static_cache
+
+def _in_bbox(lat, lng, south, west, north, east):
+    return south <= lat <= north and west <= lng <= east
+
 @app.route("/api/cameras")
 def api_cameras_get():
-    """Fotoradary zgłoszone przez kierowców — bbox query."""
+    """Fotoradary: user-zgłoszone + statyczne (Lufop/OSM) — bbox query."""
     try:
         south = float(request.args.get("south", -90))
         west  = float(request.args.get("west",  -180))
@@ -837,13 +853,35 @@ def api_cameras_get():
     except ValueError:
         return jsonify({"error": "bad params"}), 400
 
-    cameras = load_cameras()
-    result = [
-        c for c in cameras
-        if south <= c.get("lat", 0) <= north
-        and west  <= c.get("lng", 0) <= east
-        and c.get("confirms", 0) >= -2  # ukryj odrzucone
-    ]
+    now = time.time()
+    result = []
+
+    # 1. Kamery zgłoszone przez użytkowników
+    for c in load_cameras():
+        lat = c.get("lat", 0); lng = c.get("lng", 0)
+        if not _in_bbox(lat, lng, south, west, north, east):
+            continue
+        if c.get("confirms", 0) < -2:   # odrzucone
+            continue
+        # Auto-wygasanie: mobilny 24h, niezweryfikowany 30 dni
+        age = now - c.get("ts", now)
+        if c.get("type") == "mobile" and age > 86400:
+            continue
+        if c.get("source") == "user" and c.get("confirms", 0) < 1 and age > 30 * 86400:
+            continue
+        result.append(c)
+
+    # 2. Kamery statyczne (Lufop / OSM import)
+    for c in load_cameras_static():
+        lat = c.get("lat", 0); lng = c.get("lon", c.get("lng", 0))
+        if not _in_bbox(lat, lng, south, west, north, east):
+            continue
+        # Normalizuj klucz lon→lng dla frontendu
+        entry = dict(c)
+        if "lon" in entry and "lng" not in entry:
+            entry["lng"] = entry.pop("lon")
+        result.append(entry)
+
     return jsonify(result)
 
 
@@ -919,6 +957,15 @@ def api_cameras_vote(camera_id):
             return jsonify({"ok": True, "confirms": c["confirms"]})
 
     return jsonify({"error": "not found"}), 404
+
+
+@app.route("/api/cameras/reload-static", methods=["POST"])
+def api_cameras_reload_static():
+    """Wyczyść cache statycznych kamer (po ponownym imporcie)."""
+    global _cameras_static_cache
+    _cameras_static_cache = None
+    count = len(load_cameras_static())
+    return jsonify({"ok": True, "count": count})
 
 
 # ── KONWÓJ — live pozycje kierowców ──────────────────────────────────────────
