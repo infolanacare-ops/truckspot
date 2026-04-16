@@ -1125,25 +1125,25 @@ NAturAlnie używaj zapamiętanych faktów w rozmowie — proponuj, nawiązuj, py
 NIE mieszaj JSON z tekstem."""
 
 GEMINI_MODELS = [
-    "gemini-2.5-flash-preview-04-17",
-    "gemini-2.0-flash",
-    "gemini-2.0-flash-lite",
-    "gemini-1.5-flash",
-    "gemini-1.5-flash-latest",
+    ("v1",     "gemini-2.5-flash-preview-04-17"),
+    ("v1beta", "gemini-2.5-flash-preview-04-17"),
+    ("v1",     "gemini-2.0-flash"),
+    ("v1",     "gemini-2.0-flash-lite"),
+    ("v1beta", "gemini-2.0-flash"),
+    ("v1",     "gemini-1.5-flash"),
 ]
 
 def _gemini_extract(result):
-    """Wyciągnij tekst z odpowiedzi Gemini, rzuć wyjątek z detalami jeśli błąd."""
     if "candidates" not in result:
         err = result.get("error", {})
         raise RuntimeError(f"Gemini error {err.get('code','?')}: {err.get('message','no candidates')}")
     return result["candidates"][0]["content"]["parts"][0]["text"].strip()
 
 def call_gemini(prompt, temperature=0.7, max_tokens=150):
-    """Prosty call — jeden tekst. Próbuje kolejne modele jeśli pierwszy zawiedzie."""
-    for model in GEMINI_MODELS:
+    last_err = RuntimeError("no models tried")
+    for api_ver, model in GEMINI_MODELS:
         try:
-            url = (f"https://generativelanguage.googleapis.com/v1beta/models/"
+            url = (f"https://generativelanguage.googleapis.com/{api_ver}/models/"
                    f"{model}:generateContent?key={GEMINI_API_KEY}")
             resp = _requests.post(url, json={
                 "contents": [{"parts": [{"text": prompt}]}],
@@ -1152,14 +1152,13 @@ def call_gemini(prompt, temperature=0.7, max_tokens=150):
             return _gemini_extract(resp.json())
         except Exception as e:
             last_err = e
-            continue
     raise last_err
 
 def call_gemini_chat(system_instruction, user_message, temperature=0.3, max_tokens=200):
-    """Chat call — system instruction osobno. Próbuje kolejne modele jeśli pierwszy zawiedzie."""
-    for model in GEMINI_MODELS:
+    last_err = RuntimeError("no models tried")
+    for api_ver, model in GEMINI_MODELS:
         try:
-            url = (f"https://generativelanguage.googleapis.com/v1beta/models/"
+            url = (f"https://generativelanguage.googleapis.com/{api_ver}/models/"
                    f"{model}:generateContent?key={GEMINI_API_KEY}")
             resp = _requests.post(url, json={
                 "systemInstruction": {"parts": [{"text": system_instruction}]},
@@ -1169,7 +1168,6 @@ def call_gemini_chat(system_instruction, user_message, temperature=0.3, max_toke
             return _gemini_extract(resp.json())
         except Exception as e:
             last_err = e
-            continue
     raise last_err
 
 
@@ -1321,21 +1319,19 @@ def api_ai_ping():
     if not GEMINI_API_KEY:
         return jsonify({"error": "no key"})
     results = {}
-    for model in GEMINI_MODELS:
+    for api_ver, model in GEMINI_MODELS:
+        key = f"{api_ver}/{model}"
         try:
-            url = (f"https://generativelanguage.googleapis.com/v1beta/models/"
+            url = (f"https://generativelanguage.googleapis.com/{api_ver}/models/"
                    f"{model}:generateContent?key={GEMINI_API_KEY}")
             resp = _requests.post(url, json={
                 "contents": [{"parts": [{"text": "Hi"}]}],
                 "generationConfig": {"maxOutputTokens": 10},
             }, timeout=8)
             j = resp.json()
-            if "candidates" in j:
-                results[model] = "OK"
-            else:
-                results[model] = j.get("error", {}).get("message", "no candidates")
+            results[key] = "OK" if "candidates" in j else j.get("error", {}).get("message", "no candidates")
         except Exception as e:
-            results[model] = str(e)
+            results[key] = str(e)
     return jsonify(results)
 
 
