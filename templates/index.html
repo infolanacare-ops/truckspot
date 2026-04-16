@@ -6690,16 +6690,20 @@ function onNavPosition(pos){
   setGpsArrow(snapLat, snapLng);
 
   // Heading: GPS native (preferowane) lub delta z poprzedniej pozycji
+  // Gdy auto stoi (< 4 km/h) — zamrażamy ostatni dobry bearing, ignorujemy noise GPS
   const rawHeading = pos.coords.heading;
-  let rawH = 0;
-  if(rawHeading != null && !isNaN(rawHeading) && navSpeedKmh > 3){
-    rawH = rawHeading;
-  } else if(navLastLat != null){
-    rawH = Math.atan2(lng - navLastLng, lat - navLastLat) * 180 / Math.PI;
-    if(rawH < 0) rawH += 360;
+  let navHeading = navCurrentHeading || 0;
+  if(navSpeedKmh >= 4){
+    let rawH = 0;
+    if(rawHeading != null && !isNaN(rawHeading)){
+      rawH = rawHeading;
+    } else if(navLastLat != null){
+      rawH = Math.atan2(lng - navLastLng, lat - navLastLat) * 180 / Math.PI;
+      if(rawH < 0) rawH += 360;
+    }
+    // EMA bearing — eliminuje szarpanie przy słabym GPS
+    navHeading = calcSmoothedBearing(rawH);
   }
-  // EMA bearing — eliminuje szarpanie przy słabym GPS
-  const navHeading = calcSmoothedBearing(rawH);
   navCurrentHeading = navHeading;
   // Zaktualizuj parametry dead reckoning (prędkość + kurs)
   _drSpeedMps  = (pos.coords.speed != null && pos.coords.speed >= 0) ? pos.coords.speed : navSpeedKmh / 3.6;
@@ -6735,9 +6739,11 @@ function onNavPosition(pos){
   if(!navOverviewMode && !navUserInteracting){
     const padTop = Math.round(window.innerHeight * 0.38);
     const padBot = 80;
-    map.easeTo({center:[camLng, camLat], zoom:targetZoom, bearing:navHeading,
+    // Gdy auto stoi — nie obracamy mapy, tylko centrujemy (bearing freeze)
+    const camBearing = navSpeedKmh >= 4 ? navHeading : map.getBearing();
+    map.easeTo({center:[camLng, camLat], zoom:targetZoom, bearing:camBearing,
                 pitch:targetPitch, duration:camDuration,
-                easing: t => t < 0.5 ? 2*t*t : -1+(4-2*t)*t, // smooth ease-in-out
+                easing: t => t < 0.5 ? 2*t*t : -1+(4-2*t)*t,
                 padding:{top:padTop, bottom:padBot, left:0, right:0}});
   }
   // Upewnij się że trasa jest narysowana (może zniknąć po zmianie stylu)
