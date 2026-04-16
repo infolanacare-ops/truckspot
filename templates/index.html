@@ -4845,6 +4845,7 @@ let navDestLat = null, navDestLng = null; // cel nawigacji (do reroutingu)
 let navDestName = '';
 let navRerouteTs = 0;        // timestamp ostatniego reroutingu (cooldown)
 let navRerouteWarned = false; // czy pokazano ostrzeżenie "zawróć"
+let navOffRouteTicks = 0;    // ile kolejnych GPS ticków poza trasą (histereza)
 
 // SVG paths for TomTom-style arrows
 const NAV_SVG_PATHS = {
@@ -5197,6 +5198,30 @@ function closestRouteIdxForward(lat, lng, fromIdx){
     if(d < minD){ minD = d; minIdx = i; }
   }
   return minIdx;
+}
+
+// Odległość od punktu do odcinka (w metrach) — dokładniejsza niż do punktu
+function distToSegmentM(lat, lng, lat1, lng1, lat2, lng2){
+  const dlat = lat2 - lat1, dlng = lng2 - lng1;
+  if(Math.abs(dlat) < 1e-9 && Math.abs(dlng) < 1e-9)
+    return haversineKm(lat, lng, lat1, lng1) * 1000;
+  const t = Math.max(0, Math.min(1,
+    ((lat - lat1) * dlat + (lng - lng1) * dlng) / (dlat*dlat + dlng*dlng)));
+  return haversineKm(lat, lng, lat1 + t*dlat, lng1 + t*dlng) * 1000;
+}
+// Najlepsza prostopadła odległość od użytkownika do trasy wokół indeksu idx
+function perpendicularDistFromRoute(lat, lng, idx){
+  if(!routeCoords || routeCoords.length < 2) return 0;
+  const start = Math.max(0, idx - 8);
+  const end   = Math.min(routeCoords.length - 2, idx + 8);
+  let minD = Infinity;
+  for(let i = start; i <= end; i++){
+    const d = distToSegmentM(lat, lng,
+      routeCoords[i][1],   routeCoords[i][0],
+      routeCoords[i+1][1], routeCoords[i+1][0]);
+    if(d < minD) minD = d;
+  }
+  return minD;
 }
 
 // ── Wake Lock ────────────────────────────────────────────────────────────────
@@ -5913,7 +5938,7 @@ function startNavigation(){
   navActive=true; navStepIdx=0; navCIdx=0; navLastLat=null; navLastLng=null;
   navAnnouncedPois=new Set(); navAnnouncedSteps=new Set(); navSpeedKmh=0;
   window._lastPoiAnnounceTs = 0;
-  navAnnouncedReports=new Set(); navRerouteWarned=false; navRerouteTs=0;
+  navAnnouncedReports=new Set(); navRerouteWarned=false; navRerouteTs=0; navOffRouteTicks=0;
   // Usuń istniejącą kropkę GPS — setGpsArrow stworzy strzałkę
   if(gpsMarker){ gpsMarker.remove(); gpsMarker=null; }
   document.getElementById('nav-overlay').classList.add('active');
@@ -6341,24 +6366,29 @@ function onNavPosition(pos){
     return;
   }
 
-  // ── Off-route detection ──────────────────────────────────────────────
-  const distFromRoute = haversineKm(lat, lng, routeCoords[cIdx][1], routeCoords[cIdx][0]) * 1000;
-  const rerouteCooldown = 10000; // 10 sekund między reroutingami
-  if(navDestLat !== null && navSpeedKmh > 2){
+  // ── Off-route detection (TomTom-style: prostopadła odległość + histereza) ──
+  const distFromRoute = perpendicularDistFromRoute(lat, lng, cIdx);
+  const rerouteCooldown = 25000; // 25s między reroutingami (było 10s)
+  if(navDestLat !== null && navSpeedKmh > 5){
     const now = Date.now();
-    if(distFromRoute > 150 && now - navRerouteTs > rerouteCooldown){
-      // Powyżej 150m — przelicz trasę
+    if(distFromRoute > 100){
+      navOffRouteTicks++;          // zliczaj kolejne ticki poza trasą
+    } else {
+      navOffRouteTicks = 0;        // wróciłeś — zeruj
+      navRerouteWarned = false;
+    }
+    if(navOffRouteTicks >= 5 && now - navRerouteTs > rerouteCooldown){
+      // 5 ticków × 800ms ≈ 4s poza trasą → pewna detekcja, przelicz
+      navOffRouteTicks = 0;
       navRerouteTs = now;
       navRerouteWarned = false;
       rerouteNavigation(lat, lng);
       return;
-    } else if(distFromRoute > 80 && !navRerouteWarned && now - navRerouteTs > rerouteCooldown){
-      // 80-150m — ostrzeżenie głosowe "zawróć"
+    } else if(navOffRouteTicks >= 3 && !navRerouteWarned && now - navRerouteTs > rerouteCooldown){
+      // 3 ticki → ostrzeżenie, ale jeszcze nie przeliczaj
       navRerouteWarned = true;
-      speakNav(currentLang==='pl' ? 'Zboczyłeś z trasy. Zawróć, gdy będzie to możliwe.' : 'You are off route. Turn around when possible.', true);
-      setEl('nav-street-name', currentLang==='pl' ? '↩ Zawróć gdy możliwe' : '↩ Turn around when possible');
-    } else if(distFromRoute < 40){
-      navRerouteWarned = false; // wróciłeś na trasę — reset
+      speakNav(currentLang==='pl' ? 'Zboczyłeś z trasy. Przeliczam...' : 'Off route. Recalculating...', true);
+      setEl('nav-street-name', currentLang==='pl' ? '🔄 Przeliczam trasę' : '🔄 Recalculating');
     }
   }
 
