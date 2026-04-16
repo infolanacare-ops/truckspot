@@ -4520,7 +4520,7 @@ function buildRouteUrlTirFallback(coordStr, mode){
   return `https://api.mapbox.com/directions/v5/mapbox/driving/${coordStr}?${params}`;
 }
 
-function buildRouteUrl(coordStr){
+function buildRouteUrl(coordStr, fromBearing = null){
   // TIR wymaga profilu 'driving' — max_height/width/weight/length nie działają z driving-traffic
   const profile = (currentMode === 'tir' || routeType === 'short') ? 'driving' : 'driving-traffic';
   const excl = [];
@@ -4535,6 +4535,11 @@ function buildRouteUrl(coordStr){
     overview:'full', access_token:MAPBOX_TOKEN
   });
   if(excl.length) params.set('exclude', excl.join(','));
+  // bearing — kierunek jazdy przy reroutingu, żeby Mapbox nie kazał zawracać
+  if(fromBearing !== null){
+    // Format: "bearing,tolerance;," — ostatni waypoint (cel) bez ograniczenia
+    params.set('bearings', `${Math.round(fromBearing)},45;,`);
+  }
   // TIR vehicle params — zawsze z bezpiecznymi wartościami domyślnymi
   if(currentMode === 'tir'){
     const h  = parseFloat(document.getElementById('tir-height')?.value)  || 4.0;
@@ -4846,6 +4851,7 @@ let navDestName = '';
 let navRerouteTs = 0;        // timestamp ostatniego reroutingu (cooldown)
 let navRerouteWarned = false; // czy pokazano ostrzeżenie "zawróć"
 let navOffRouteTicks = 0;    // ile kolejnych GPS ticków poza trasą (histereza)
+let navCurrentHeading = 0;   // aktualny kierunek jazdy (stopnie, 0=N) — do reroutingu forward
 
 // SVG paths for TomTom-style arrows
 const NAV_SVG_PATHS = {
@@ -6244,6 +6250,7 @@ function onNavPosition(pos){
     navHeading = Math.atan2(lng - navLastLng, lat - navLastLat) * 180 / Math.PI;
     if(navHeading < 0) navHeading += 360;
   }
+  navCurrentHeading = navHeading; // zapamiętaj globalnie do reroutingu
 
   // ── TomTom-style camera — zoom + pitch zależny od odległości do manewru ──
   const baseZoom = navSpeedKmh > 80 ? 13 : navSpeedKmh > 40 ? 14 : 15;
@@ -6433,17 +6440,31 @@ function onNavPosition(pos){
 }
 
 async function rerouteNavigation(fromLat, fromLng){
-  const txt = currentLang==='pl' ? 'Przeliczam trasę...' : 'Recalculating...';
-  speakNav(txt, true);
-  setEl('nav-street-name', '🔄 ' + txt);
+  // TomTom-style: używamy aktualnego kierunku jazdy (bearing)
+  // żeby Mapbox nie proponował zawracania — szuka trasy NAPRZÓD
+  const heading = navCurrentHeading;
+
+  setEl('nav-street-name', currentLang==='pl' ? '🔄 Przeliczam trasę...' : '🔄 Recalculating...');
 
   try {
-    const mbUrl = buildRouteUrl(`${fromLng},${fromLat};${navDestLng},${navDestLat}`);
+    const mbUrl = buildRouteUrl(
+      `${fromLng},${fromLat};${navDestLng},${navDestLat}`,
+      heading
+    );
     const r = await fetch(mbUrl);
     const data = await r.json();
-    if(!data.routes?.length) return;
+    if(!data.routes?.length){
+      // Fallback bez bearing — ostatnia deska ratunku
+      const mbUrl2 = buildRouteUrl(`${fromLng},${fromLat};${navDestLng},${navDestLat}`);
+      const r2 = await fetch(mbUrl2);
+      const data2 = await r2.json();
+      if(!data2.routes?.length) return;
+      data.routes = data2.routes;
+    }
 
-    const route = data.routes[0];
+    const oldDur = routeTotalDur || 0;
+    const route  = data.routes[0];
+
     routeCoords    = route.geometry.coordinates;
     routeTotalDist = route.distance;
     routeTotalDur  = route.duration;
@@ -6452,25 +6473,34 @@ async function rerouteNavigation(fromLat, fromLng){
 
     // Reset stanu nawigacji
     navStepIdx = 0; navCIdx = 0; _lastPoiRenderIdx = -99;
-    navAnnouncedSteps = new Set();
-    navAnnouncedPois  = new Set();
+    navAnnouncedSteps  = new Set();
+    navAnnouncedPois   = new Set();
     navAnnouncedReports = new Set();
+    navOffRouteTicks   = 0;
+    navRerouteWarned   = false;
 
-    // Przelicz dystanse wzdłuż trasy
     buildRouteDistances();
-
-    // Odrysuj trasę i POI
     clearRouteLayer();
     drawRoute(routeCoords);
     loadRoutePois();
-
-    // Zaktualizuj UI
     updateNavStep(0);
-    const distKm = Math.round(routeTotalDist/1000);
-    const durMin = Math.round(routeTotalDur/60);
-    const durTxt = durMin>=60 ? Math.floor(durMin/60)+'h '+(durMin%60)+'min' : durMin+' min';
-    setEl('nav-total-dist', distKm+' km');
+    setEl('nav-total-dist', Math.round(routeTotalDist/1000)+' km');
     setNavEta(routeTotalDur);
+
+    // TomTom-style komunikat:
+    // • znalazł lepszą trasę → informuje ile minut zaoszczędzi
+    // • trasa podobna lub dłuższa → cicha aktualizacja bez mówienia "zawróć"
+    const savedMin = Math.round((oldDur - routeTotalDur) / 60);
+    if(savedMin >= 2){
+      const msg = currentLang==='pl'
+        ? `Znalazłem lepszą trasę. Oszczędność ${savedMin} minut.`
+        : `Better route found. Save ${savedMin} minutes.`;
+      speakNav(msg, true);
+    } else {
+      // Cicha aktualizacja — tylko krótki sygnał w UI, brak "zawracaj"
+      const msg = currentLang==='pl' ? 'Trasa zaktualizowana' : 'Route updated';
+      setEl('nav-street-name', msg);
+    }
 
   } catch(e) {
     console.warn('[Nav] Reroute failed:', e);
