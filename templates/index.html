@@ -5849,8 +5849,10 @@ let _selectedVoiceName = localStorage.getItem(VOICE_STORAGE_KEY) || null;
 function _fillVoiceList(voices){
   const list = document.getElementById('voice-picker-list');
   if(!list) return;
-  const lang = currentLang==='pl'?'pl':currentLang==='de'?'de':currentLang==='es'?'es':'en';
-  const filtered = voices.filter(v => v.lang.startsWith(lang) || v.lang.startsWith('en'));
+  if(!Array.isArray(voices)) voices = [];
+  const lang = (typeof currentLang !== 'undefined' && currentLang) === 'pl' ? 'pl'
+             : (typeof currentLang !== 'undefined' && currentLang) === 'de' ? 'de' : 'en';
+  const filtered = voices.filter(v => v && v.lang && (v.lang.startsWith(lang) || v.lang.startsWith('en')));
 
   list.innerHTML = '';
 
@@ -5890,19 +5892,32 @@ function openVoicePicker(){
   closeDrawer();
   const panel   = document.getElementById('voice-picker-panel');
   const overlay = document.getElementById('voice-picker-overlay');
-  if(!panel) return;
+  if(!panel || !overlay) return;
 
-  // Otwórz panel od razu — głosy ładuj asynchronicznie
-  _fillVoiceList(speechSynthesis.getVoices());
+  // Załaduj głosy (bezpieczne na Android WebView gdzie speechSynthesis może być brak)
+  try {
+    if(typeof speechSynthesis !== 'undefined' && speechSynthesis){
+      _fillVoiceList(speechSynthesis.getVoices());
+      speechSynthesis.onvoiceschanged = () => {
+        try { _fillVoiceList(speechSynthesis.getVoices()); } catch(e){}
+      };
+    } else {
+      const list = document.getElementById('voice-picker-list');
+      if(list) list.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:.5rem;text-align:center">TTS niedostępny na tym urządzeniu.<br><small>Sprawdź ustawienia → Dostępność → TTS</small></div>';
+    }
+  } catch(e){
+    const list = document.getElementById('voice-picker-list');
+    if(list) list.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:.5rem;text-align:center">Błąd ładowania głosów: '+e.message+'</div>';
+  }
 
-  // Jeśli głosy jeszcze nie załadowane, odśwież gdy będą gotowe
-  speechSynthesis.onvoiceschanged = () => { _fillVoiceList(speechSynthesis.getVoices()); };
-
+  // Panel zawsze się otwiera — niezależnie od błędów TTS
   overlay.style.display='block'; overlay.style.opacity='0';
   panel.style.transform='translateY(100%)';
   requestAnimationFrame(()=>{
-    overlay.style.transition='opacity .3s'; overlay.style.opacity='1';
-    panel.style.transform='translateY(0)';
+    requestAnimationFrame(()=>{
+      overlay.style.transition='opacity .3s'; overlay.style.opacity='1';
+      panel.style.transform='translateY(0)';
+    });
   });
 }
 
