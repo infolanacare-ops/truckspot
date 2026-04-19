@@ -4664,6 +4664,7 @@ function _hermite(p0, v0, p1, v1, t){
 }
 
 function _startDeadReckoning(){
+  return; // uproszczony marker lerp zastępuje dead reckoning
   if(_drRafId) cancelAnimationFrame(_drRafId);
   _drLastRafTime = performance.now();
   _drTickElapsed = 0;
@@ -4760,32 +4761,22 @@ function setGpsArrow(lat, lng){
     el.style.cssText = 'line-height:0;z-index:10';
     gpsMarker = new mapboxgl.Marker({element:el, anchor:'center', rotationAlignment:'viewport', pitchAlignment:'map'})
       .setLngLat([lng,lat]).addTo(map);
-    _markerFrom = {lat, lng};
-    _drLat = lat; _drLng = lng;
     return;
   }
-  // Pomiar rzeczywistego interwału GPS
-  _updateGpsInterval();
-
-  // Zatrzymaj dead reckoning — przyszedł prawdziwy GPS
-  if(_drRafId){ cancelAnimationFrame(_drRafId); _drRafId = null; }
-
-  // Snap marker do prawdziwej pozycji GPS (krótka animacja wyrównująca)
+  // Prosta animacja lerp między pozycjami — bez dead reckoning
   if(_markerAnimId){ cancelAnimationFrame(_markerAnimId); _markerAnimId = null; }
   const cur = gpsMarker.getLngLat();
   const fromLat = cur.lat, fromLng = cur.lng;
-  // Animacja wyrównująca: krótka (80ms) — tylko korekta, dead reckoning już był blisko
-  const corrDur = 80;
-  const t0c = performance.now();
-  function correctStep(now){
-    const t = Math.min((now - t0c) / corrDur, 1);
-    const e = _easeOut(t);
+  const dur = 700;
+  const t0 = performance.now();
+  function lerpStep(now){
+    const p = Math.min((now - t0) / dur, 1);
+    const e = p < 0.5 ? 2*p*p : -1+(4-2*p)*p;
     gpsMarker.setLngLat([fromLng+(lng-fromLng)*e, fromLat+(lat-fromLat)*e]);
-    if(t < 1) _markerAnimId = requestAnimationFrame(correctStep);
-    else{ _markerAnimId = null; _drLat = lat; _drLng = lng; _startDeadReckoning(); }
+    if(p < 1) _markerAnimId = requestAnimationFrame(lerpStep);
+    else _markerAnimId = null;
   }
-  _markerAnimId = requestAnimationFrame(correctStep);
-  _markerFrom = {lat, lng};
+  _markerAnimId = requestAnimationFrame(lerpStep);
 }
 
 // Mały kołowy marker (zastępuje L.circleMarker)
@@ -7129,19 +7120,15 @@ function onNavPosition(pos){
     if(loc) dToNextManeuver = haversineKm(lat, lng, loc[1], loc[0]) * 1000;
   }
 
-  // Im bliżej manewru — większy zoom, płaszy pitch
-  // Na szybkich drogach — wcześniej zaczynamy zoom-in
-  const isHighSpeed = navSpeedKmh > 70;
-  let zoomBoost = 0, pitchFactor = 1.0, camDuration = 280;
+  // Im bliżej manewru — minimalny zoom-in + spłaszczenie pitch
+  let zoomBoost = 0, pitchFactor = 1.0;
   const d = dToNextManeuver;
-  if(d < (isHighSpeed ? 1200 : 700)){
-    if     (d < 60)  { zoomBoost=4.5; pitchFactor=0.25; camDuration=210; }
-    else if(d < 120) { zoomBoost=3.5; pitchFactor=0.40; camDuration=230; }
-    else if(d < 200) { zoomBoost=2.5; pitchFactor=0.55; camDuration=245; }
-    else if(d < 350) { zoomBoost=1.5; pitchFactor=0.72; camDuration=260; }
-    else if(d < 600) { zoomBoost=0.7; pitchFactor=0.88; camDuration=270; }
-    else             { zoomBoost=0.2; pitchFactor=0.96; camDuration=275; }
+  if(d < 600){
+    if     (d < 80)  { zoomBoost=0.8; pitchFactor=0.5; }
+    else if(d < 200) { zoomBoost=0.4; pitchFactor=0.7; }
+    else if(d < 400) { zoomBoost=0.2; pitchFactor=0.9; }
   }
+  const camDuration = 750;
 
   const targetZoom  = Math.min(baseZoom + pm.zoomOff + zoomBoost, 18.5);
   const targetPitch = pm.pitch * pitchFactor;
@@ -7170,7 +7157,7 @@ function onNavPosition(pos){
     const camBearing = navSpeedKmh >= 4 ? navHeading : map.getBearing();
     map.easeTo({center:[camLng, camLat], zoom:finalZoom, bearing:camBearing,
                 pitch:targetPitch, duration:camDuration,
-                easing: t => t < 0.5 ? 2*t*t : -1+(4-2*t)*t,
+                easing: t => t*(2-t),
                 padding:{top:padTop, bottom:padBot, left:0, right:0}});
   }
   // Upewnij się że trasa jest narysowana (może zniknąć po zmianie stylu)
