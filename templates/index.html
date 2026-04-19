@@ -1219,7 +1219,8 @@ body.navigating .nav-tl-hint{display:block}
   display:none;cursor:pointer;
 }
 body.navigating .nav-tl-handle{display:block}
-/* Panel — swobodnie przeciągalny widget */
+/* Panel nav-route-tl nieużywany — zastąpiony przez nav-pois-strip */
+#nav-route-tl{display:none!important}
 .nav-route-tl{
   position:fixed;left:8px;
   top:calc(190px + env(safe-area-inset-top,0px));
@@ -2961,7 +2962,7 @@ body.navigating .convoy-btn{display:none}
     <button class="nav-sheet-btn" id="nav-mute-btn" onclick="toggleNavMute()">🔊 Głos</button>
     <button class="nav-sheet-btn" id="nav-pitch-btn" onclick="cycleNavPitch()">3D</button>
     <button class="nav-sheet-btn" id="mod-speed-btn" onclick="toggleSpeedModule()">✅ Prędkość</button>
-    <button class="nav-sheet-btn" onclick="closeNavSheet(); toggleRouteTimeline()">📍 Oś trasy</button>
+    <button class="nav-sheet-btn" onclick="closeNavSheet(); togglePoisStrip()">📍 Oś trasy</button>
     <button class="nav-sheet-btn" onclick="closeNavSheet(); toggleNavOverview()">🗺️ Widok</button>
     <button class="nav-sheet-btn nav-sheet-convoy" onclick="closeNavSheet(); toggleConvoyPanel()">
       🚛 MOBILKI <span id="nav-sheet-convoy-cnt" style="display:none;background:rgba(16,185,129,.25);border-radius:8px;padding:.05rem .35rem;font-size:.75rem;margin-left:.2rem">0</span>
@@ -6073,26 +6074,18 @@ const MOD_TL_KEY = 'ts_mod_tl_pos';
 let _rtlTimer = null;
 let _rtlDragInited = false;
 
-function showRouteTimeline(){
-  renderRouteTimeline();
-  const tl = document.getElementById('nav-route-tl');
-  if(!tl) return;
-  tl.classList.add('open');
-  if(_rtlTimer) clearTimeout(_rtlTimer);
-  // Inicjuj drag tylko raz — przez handle u góry
-  if(!_rtlDragInited){
-    _rtlDragInited = true;
-    _makeDraggableModule(tl, MOD_TL_KEY);
+function showRouteTimeline(){ /* nav-route-tl nieużywany — zastąpiony przez nav-pois-strip */ }
+function hideRouteTimeline(){ }
+function toggleRouteTimeline(){ togglePoisStrip(); }
+
+function togglePoisStrip(){
+  const strip = document.getElementById('nav-pois-strip');
+  if(!strip) return;
+  if(strip.classList.contains('route-ready')){
+    strip.classList.remove('route-ready');
+  } else {
+    strip.classList.add('route-ready');
   }
-}
-function hideRouteTimeline(){
-  document.getElementById('nav-route-tl')?.classList.remove('open');
-  if(_rtlTimer){ clearTimeout(_rtlTimer); _rtlTimer = null; }
-}
-function toggleRouteTimeline(){
-  const tl = document.getElementById('nav-route-tl');
-  if(!tl) return;
-  tl.classList.contains('open') ? hideRouteTimeline() : showRouteTimeline();
 }
 
 function renderRouteTimeline(){
@@ -6836,64 +6829,8 @@ function updatePoiStripTop(){
 
 function _initPoiDrag(){
   const strip = document.getElementById('nav-pois-strip');
-  const handle = document.getElementById('nav-pois-drag');
-  if(!strip || !handle) return;
-
-  // Wczytaj zapisaną pozycję
-  try{
-    const saved = JSON.parse(localStorage.getItem(POIS_WIDGET_KEY)||'null');
-    if(saved){
-      strip.style.left = Math.min(saved.x, window.innerWidth-70) + 'px';
-      strip.style.top  = Math.min(saved.y, window.innerHeight-100) + 'px';
-    }
-  }catch(e){}
-
-  let dragging=false, startX=0, startY=0, origX=0, origY=0;
-
-  function onStart(cx,cy){
-    dragging=true;
-    const r = strip.getBoundingClientRect();
-    origX=r.left; origY=r.top;
-    startX=cx; startY=cy;
-    strip.classList.add('dragging');
-    strip.style.maxHeight = (window.innerHeight-80)+'px';
-  }
-  function onMove(cx,cy){
-    if(!dragging) return;
-    let nx = origX + (cx-startX);
-    let ny = origY + (cy-startY);
-    // Ogranicz do ekranu
-    nx = Math.max(0, Math.min(nx, window.innerWidth-strip.offsetWidth));
-    ny = Math.max(0, Math.min(ny, window.innerHeight-80));
-    strip.style.left = nx+'px';
-    strip.style.top  = ny+'px';
-  }
-  function onEnd(){
-    if(!dragging) return;
-    dragging=false;
-    strip.classList.remove('dragging');
-    const r = strip.getBoundingClientRect();
-    localStorage.setItem(POIS_WIDGET_KEY, JSON.stringify({x:r.left,y:r.top}));
-  }
-
-  // Touch
-  handle.addEventListener('touchstart',e=>{
-    e.preventDefault();
-    const t=e.touches[0]; onStart(t.clientX,t.clientY);
-  },{passive:false});
-  window.addEventListener('touchmove',e=>{
-    if(!dragging) return;
-    e.preventDefault();
-    const t=e.touches[0]; onMove(t.clientX,t.clientY);
-  },{passive:false});
-  window.addEventListener('touchend', onEnd);
-
-  // Mouse (desktop/devtools)
-  handle.addEventListener('mousedown',e=>{
-    e.preventDefault(); onStart(e.clientX,e.clientY);
-  });
-  window.addEventListener('mousemove',e=>{ if(dragging) onMove(e.clientX,e.clientY); });
-  window.addEventListener('mouseup', onEnd);
+  if(!strip) return;
+  _makeDraggableModule(strip, POIS_WIDGET_KEY);
 }
 
 // Typy zawsze widoczne na osi TIR (niezależnie od filtrów)
