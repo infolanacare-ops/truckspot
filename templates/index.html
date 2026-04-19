@@ -6000,10 +6000,16 @@ function _fillVoiceList(voices){
       _selectedVoiceName = v.name;
       localStorage.setItem(VOICE_STORAGE_KEY, v.name);
       _navVoiceCache = {};
-      const utt = new SpeechSynthesisUtterance(lngLocal==='pl' ? 'Za 300 metrów skręć w prawo' : 'In 300 meters, turn right');
-      utt.voice = v; utt.lang = v.lang; utt.rate=0.92;
-      speechSynthesis.cancel(); speechSynthesis.speak(utt);
       closeVoicePicker(); updateVoiceBadge();
+      // Opóźnienie: najpierw zamknij panel, potem odtwórz — unikamy freeze Android WebView
+      setTimeout(() => {
+        try {
+          const utt = new SpeechSynthesisUtterance(lngLocal==='pl' ? 'Za 300 metrów skręć w prawo' : 'In 300 meters, turn right');
+          utt.voice = v; utt.lang = v.lang; utt.rate=0.92;
+          speechSynthesis.cancel();
+          setTimeout(() => { try { speechSynthesis.speak(utt); } catch(e){} }, 80);
+        } catch(e){}
+      }, 350);
     };
     list.appendChild(div);
   });
@@ -6015,13 +6021,23 @@ function openVoicePicker(){
   const overlay = document.getElementById('voice-picker-overlay');
   if(!panel || !overlay) return;
 
-  // Załaduj głosy (bezpieczne na Android WebView gdzie speechSynthesis może być brak)
+  // Dodaj transition jeśli jeszcze nie ma
+  if(!panel.style.transition) panel.style.transition = 'transform .3s cubic-bezier(.4,0,.2,1)';
+
+  // Załaduj głosy — z zabezpieczeniem przed pętlą onvoiceschanged
   try {
     if(typeof speechSynthesis !== 'undefined' && speechSynthesis){
-      _fillVoiceList(speechSynthesis.getVoices());
-      speechSynthesis.onvoiceschanged = () => {
-        try { _fillVoiceList(speechSynthesis.getVoices()); } catch(e){}
-      };
+      const voices = speechSynthesis.getVoices();
+      if(voices.length > 0){
+        _fillVoiceList(voices);
+        speechSynthesis.onvoiceschanged = null; // nie potrzeba, mamy już głosy
+      } else {
+        _fillVoiceList([]); // pokaż "ładowanie..."
+        speechSynthesis.onvoiceschanged = () => {
+          speechSynthesis.onvoiceschanged = null; // odpal tylko raz
+          try { _fillVoiceList(speechSynthesis.getVoices()); } catch(e){}
+        };
+      }
     } else {
       const list = document.getElementById('voice-picker-list');
       if(list) list.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:.5rem;text-align:center">TTS niedostępny na tym urządzeniu.<br><small>Sprawdź ustawienia → Dostępność → TTS</small></div>';
@@ -6031,7 +6047,6 @@ function openVoicePicker(){
     if(list) list.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:.5rem;text-align:center">Błąd ładowania głosów: '+e.message+'</div>';
   }
 
-  // Panel zawsze się otwiera — niezależnie od błędów TTS
   overlay.style.display='block'; overlay.style.opacity='0';
   panel.style.transform='translateY(100%)';
   requestAnimationFrame(()=>{
