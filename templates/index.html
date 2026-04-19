@@ -3379,7 +3379,7 @@ function setAccentColor(name){
     MODE_CONFIG.tir.color  = p.a;
     MODE_CONFIG.tir.color2 = p.a2;
     profile.tirPinColor = p.a;
-    renderMarkers(allParkings||[]);
+    if(activeFilters.size > 0) applyFilterToMarkers(); else renderMarkers([]);
   }
   // odśwież strzałkę nawigacji jeśli aktywna
   if(gpsMarker){
@@ -3697,7 +3697,7 @@ function setTirPinColor(col){
   document.querySelectorAll('.tir-pin-opt').forEach(el=>{
     el.classList.toggle('selected', el.dataset.col===col);
   });
-  if(currentMode==='tir') renderMarkers(allParkings||[]);
+  if(currentMode==='tir'){ if(activeFilters.size > 0) applyFilterToMarkers(); else renderMarkers([]); }
 }
 
 function closeProfile(){
@@ -3919,8 +3919,9 @@ function loadParkings(mode){
   fetch(`/api/parkings?mode=${MODE_CONFIG[mode].apiMode}`)
     .then(r=>r.json()).then(data=>{
       allParkings=data;
+      // Parkingi widoczne tylko gdy aktywny filtr
       if(activeFilters.size > 0) applyFilterToMarkers();
-      else renderMarkers(data);
+      else renderMarkers([]);
       checkParkingDeeplink(); // retry after data loaded
     });
 }
@@ -4998,15 +4999,16 @@ function updateFilterBadge(){
 }
 
 function applyFilterToMarkers(){
-  if(!allParkings.length) return;
+  // Brak filtrów = ukryj wszystkie parkingi
   const filtered = activeFilters.size === 0
-    ? allParkings
+    ? []
     : allParkings.filter(p => [...activeFilters].some(f => (p.amenities||[]).includes(f)));
-  // Szybka aktualizacja źródła GL zamiast pełnego re-render
   const src = map.getSource(CLUSTER_SRC);
   if(src){ src.setData(_parkingsGeoJSON(filtered)); _clusterParkings = filtered; }
   else renderMarkers(filtered);
-  if(filtered.length === 0){
+  if(activeFilters.size === 0){
+    showAlert('⚙️','Filtry','Parkingi ukryte — wybierz filtr aby je pokazać');
+  } else if(filtered.length === 0){
     showAlert('⚙️','Filtry','Brak parkingów spełniających kryteria');
   } else {
     showAlert('⚙️','Filtry',filtered.length+' parkingów');
@@ -7503,7 +7505,7 @@ function stopNavigation(){
     ? LAYER_STYLES[_currentLayer]()
     : 'mapbox://styles/mapbox/streets-v12';
   map.setStyle(baseStyle);
-  map.once('style.load', ()=>{ renderMarkers(allParkings||[]); });
+  map.once('style.load', ()=>{ if(activeFilters.size>0) applyFilterToMarkers(); else renderMarkers([]); });
   showAlert('🏁','','Navigation stopped');
 }
 
@@ -7548,7 +7550,7 @@ function setMapLayer(layer){
   });
   const style = LAYER_STYLES[layer]();
   map.setStyle(style);
-  map.once('style.load', ()=>{ renderMarkers(allParkings||[]); });
+  map.once('style.load', ()=>{ if(activeFilters.size>0) applyFilterToMarkers(); else renderMarkers([]); });
 }
 
 function toggleReportDial(){
