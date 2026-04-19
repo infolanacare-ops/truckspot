@@ -4540,39 +4540,119 @@ function _updateGpsInterval(){
 }
 
 // Dead reckoning — ekstrapolacja pozycji między tickami GPS
+// Używa kubicznych splajnów Hermite'a dla płynniejszej krzywej między tickami
 let _drLat = null, _drLng = null;
 let _drSpeedMps = 0, _drBearing = 0;
 let _drLastRafTime = null;
 let _drRafId = null;
+// Dla splajnu: poprzedni i aktualny tick GPS
+let _drPrevLat = null, _drPrevLng = null;
+let _drPrevVLat = 0, _drPrevVLng = 0;  // prędkość wektorem przy poprzednim ticku
+let _drVLat = 0, _drVLng = 0;          // prędkość wektorem przy aktualnym ticku
+let _drTickDur = 1.0;   // czas między ostatnimi dwoma tickami GPS [s]
+let _drTickElapsed = 0; // czas od ostatniego ticka [s]
 
 const DEG_PER_M_LAT = 1 / 111320;
+
+function _velFromBearing(speedMps, bearDeg){
+  const r = bearDeg * Math.PI / 180;
+  const vLat = Math.cos(r) * speedMps * DEG_PER_M_LAT;
+  const vLng = Math.sin(r) * speedMps * (DEG_PER_M_LAT / Math.cos((_drLat||0) * Math.PI / 180));
+  return {vLat, vLng};
+}
+
+// Kubiczny splajn Hermite'a: h00, h10, h01, h11
+function _hermite(p0, v0, p1, v1, t){
+  const t2 = t*t, t3 = t2*t;
+  const h00 =  2*t3 - 3*t2 + 1;
+  const h10 =    t3 - 2*t2 + t;
+  const h01 = -2*t3 + 3*t2;
+  const h11 =    t3 -   t2;
+  return h00*p0 + h10*v0 + h01*p1 + h11*v1;
+}
+
 function _startDeadReckoning(){
   if(_drRafId) cancelAnimationFrame(_drRafId);
   _drLastRafTime = performance.now();
+  _drTickElapsed = 0;
   function drStep(now){
     if(!navActive || _drSpeedMps < 1){ _drRafId = null; return; }
-    const dt = (now - _drLastRafTime) / 1000; // sekundy
+    const dt = (now - _drLastRafTime) / 1000;
     _drLastRafTime = now;
-    const bearRad = _drBearing * Math.PI / 180;
-    const distM   = _drSpeedMps * dt;
-    // Przesuń pozycję wg kursu i prędkości
-    _drLat += Math.cos(bearRad) * distM * DEG_PER_M_LAT;
-    _drLng += Math.sin(bearRad) * distM * (DEG_PER_M_LAT / Math.cos(_drLat * Math.PI / 180));
-    if(gpsMarker) gpsMarker.setLngLat([_drLng, _drLat]);
+    _drTickElapsed += dt;
+
+    // Splajn Hermite: interpoluj między _drPrev → _dr przez czas ticka
+    if(_drPrevLat != null && _drTickDur > 0){
+      const t = Math.min(_drTickElapsed / _drTickDur, 1);
+      const scale = _drTickDur; // skalujemy wektory prędkości przez czas ticka
+      const lat = _hermite(_drPrevLat, _drPrevVLat*scale, _drLat, _drVLat*scale, t);
+      const lng = _hermite(_drPrevLng, _drPrevVLng*scale, _drLng, _drVLng*scale, t);
+      if(gpsMarker) gpsMarker.setLngLat([lng, lat]);
+    } else {
+      // Fallback: liniowe gdy brak poprzedniego ticka
+      const bearRad = _drBearing * Math.PI / 180;
+      const distM   = _drSpeedMps * dt;
+      _drLat += Math.cos(bearRad) * distM * DEG_PER_M_LAT;
+      _drLng += Math.sin(bearRad) * distM * (DEG_PER_M_LAT / Math.cos(_drLat * Math.PI / 180));
+      if(gpsMarker) gpsMarker.setLngLat([_drLng, _drLat]);
+    }
     _drRafId = requestAnimationFrame(drStep);
   }
   _drRafId = requestAnimationFrame(drStep);
 }
 
 // Bearing EMA — wygładza szarpane odczyty heading GPS
+// Dynamic alpha: przy niskiej prędkości wolniejszy EMA (mniej reaguje na szum),
+// przy wysokiej szybszy (szybciej reaguje na skręty)
 let _smoothBearing = null;
-function calcSmoothedBearing(raw){
+function calcSmoothedBearing(raw, speedKmh){
   if(_smoothBearing === null){ _smoothBearing = raw; return raw; }
+  // alpha: 0.10 przy staniu → 0.35 przy 120km/h
+  const alpha = Math.min(0.35, Math.max(0.10, 0.10 + (speedKmh / 120) * 0.25));
   let diff = raw - _smoothBearing;
   if(diff >  180) diff -= 360;
   if(diff < -180) diff += 360;
-  _smoothBearing = (_smoothBearing + diff * 0.22 + 360) % 360;
+  _smoothBearing = (_smoothBearing + diff * alpha + 360) % 360;
   return _smoothBearing;
+}
+
+// ── GIROSKOP / KOMPAS — heading bez lagów GPS ────────────────────────────────
+let _gyroHeading = null;   // ostatni odczyt kompasu z sensora
+let _gyroActive  = false;
+
+function _startGyro(){
+  // iOS 13+ wymaga requestPermission
+  if(typeof DeviceOrientationEvent !== 'undefined' &&
+     typeof DeviceOrientationEvent.requestPermission === 'function'){
+    DeviceOrientationEvent.requestPermission().then(state => {
+      if(state === 'granted') _bindGyro();
+    }).catch(()=>{});
+  } else if(typeof DeviceOrientationEvent !== 'undefined'){
+    _bindGyro();
+  }
+}
+
+function _bindGyro(){
+  window.addEventListener('deviceorientationabsolute', _onOrientation, true);
+  window.addEventListener('deviceorientation', _onOrientation, true);
+  _gyroActive = true;
+}
+
+function _onOrientation(e){
+  // iOS: webkitCompassHeading (0-360, N=0) — najdokładniejsze
+  if(e.webkitCompassHeading != null && e.webkitCompassHeading >= 0){
+    _gyroHeading = e.webkitCompassHeading;
+    return;
+  }
+  // Android absolute: alpha to heading od N (ale odwrócony)
+  if(e.absolute && e.alpha != null){
+    _gyroHeading = (360 - e.alpha) % 360;
+    return;
+  }
+  // Fallback: nieabsolutna orientacja — tylko gdy brak lepszego
+  if(_gyroHeading == null && e.alpha != null){
+    _gyroHeading = (360 - e.alpha) % 360;
+  }
 }
 
 function _easeOut(t){ return 1 - Math.pow(1-t, 3); }
@@ -6309,6 +6389,8 @@ function updateLaneGuidance(dToManeuver){
 function startNavigation(){
   if(!routeSteps.length){ showAlert('⚠️','','Najpierw oblicz trasę'); return; }
   navActive=true; navStepIdx=0; navCIdx=0; navLastLat=null; navLastLng=null;
+  // Uruchom giroskop dla precyzyjnego headingu
+  _gyroHeading = null; _startGyro();
   navAnnouncedPois=new Set(); navAnnouncedSteps=new Set(); navSpeedKmh=0;
   window._lastPoiAnnounceTs = 0;
   navAnnouncedReports=new Set(); navRerouteWarned=false; navRerouteTs=0; navOffRouteTicks=0;
@@ -6690,25 +6772,43 @@ function onNavPosition(pos){
   }
   setGpsArrow(snapLat, snapLng);
 
-  // Heading: GPS native (preferowane) lub delta z poprzedniej pozycji
-  // Gdy auto stoi (< 4 km/h) — zamrażamy ostatni dobry bearing, ignorujemy noise GPS
+  // Heading: giroskop (najlepszy) → GPS native → delta pozycji
+  // Gdy auto stoi (< 4 km/h) — zamrażamy ostatni dobry bearing
   const rawHeading = pos.coords.heading;
   let navHeading = navCurrentHeading || 0;
   if(navSpeedKmh >= 4){
     let rawH = 0;
-    if(rawHeading != null && !isNaN(rawHeading)){
+    // 1. Giroskop — najszybszy, bez lagów GPS
+    if(_gyroActive && _gyroHeading != null){
+      rawH = _gyroHeading;
+    }
+    // 2. GPS heading (mniej dokładny, z lagiem)
+    else if(rawHeading != null && !isNaN(rawHeading)){
       rawH = rawHeading;
-    } else if(navLastLat != null){
+    }
+    // 3. Delta pozycji — fallback gdy brak sensora
+    else if(navLastLat != null){
       rawH = Math.atan2(lng - navLastLng, lat - navLastLat) * 180 / Math.PI;
       if(rawH < 0) rawH += 360;
     }
-    // EMA bearing — eliminuje szarpanie przy słabym GPS
-    navHeading = calcSmoothedBearing(rawH);
+    navHeading = calcSmoothedBearing(rawH, navSpeedKmh);
   }
   navCurrentHeading = navHeading;
+
   // Zaktualizuj parametry dead reckoning (prędkość + kurs)
-  _drSpeedMps  = (pos.coords.speed != null && pos.coords.speed >= 0) ? pos.coords.speed : navSpeedKmh / 3.6;
-  _drBearing   = navHeading;
+  const newSpeedMps = (pos.coords.speed != null && pos.coords.speed >= 0) ? pos.coords.speed : navSpeedKmh / 3.6;
+  // Wektory prędkości dla splajnu Hermite'a
+  const {vLat: newVLat, vLng: newVLng} = _velFromBearing(newSpeedMps, navHeading);
+  // Przesuń poprzedni tick
+  if(_drLat != null){
+    _drPrevLat = _drLat; _drPrevLng = _drLng;
+    _drPrevVLat = _drVLat; _drPrevVLng = _drVLng;
+    // Czas między tickami
+    if(_drTickElapsed > 0) _drTickDur = Math.min(_drTickElapsed, 2.0);
+  }
+  _drVLat = newVLat; _drVLng = newVLng;
+  _drSpeedMps = newSpeedMps;
+  _drBearing  = navHeading;
 
   // ── TomTom-style camera — zoom + pitch zależny od prędkości i odległości do manewru ──
   // Bazowy zoom zależy od prędkości — autostrada: dalszy widok, miasto: bliższy
@@ -6746,8 +6846,11 @@ function onNavPosition(pos){
   // Centruj na snapCoord — strzałka stoi, mapa płynie wokół niej (Waze/Google style)
   const camLat = snapLat, camLng = snapLng;
   if(!navOverviewMode && !navUserInteracting){
-    const padTop = Math.round(window.innerHeight * 0.38);
-    const padBot = 80;
+    // Camera offset: strzałka na ~35% od dołu ekranu (więcej drogi przed, mniej za)
+    // TomTom/Google Maps używają 30-40% od dołu
+    const navBarH = document.getElementById('nav-bottom')?.offsetHeight || 100;
+    const padBot  = Math.round(window.innerHeight * 0.35) + navBarH;
+    const padTop  = Math.round(window.innerHeight * 0.12);
     // Gdy auto stoi — nie obracamy mapy, tylko centrujemy (bearing freeze)
     const camBearing = navSpeedKmh >= 4 ? navHeading : map.getBearing();
     map.easeTo({center:[camLng, camLat], zoom:targetZoom, bearing:camBearing,
@@ -7020,6 +7123,14 @@ function toggleNavOverview(){
 
 function stopNavigation(){
   navActive=false; navOverviewMode=false;
+  // Zatrzymaj giroskop
+  if(_gyroActive){
+    window.removeEventListener('deviceorientationabsolute', _onOrientation, true);
+    window.removeEventListener('deviceorientation', _onOrientation, true);
+    _gyroActive=false; _gyroHeading=null;
+  }
+  // Reset splajnu
+  _drPrevLat=null; _drPrevLng=null; _drTickElapsed=0; _drTickDur=1.0;
   const ob = document.getElementById('nav-overview-btn');
   if(ob) ob.classList.remove('active');
   if(navWatchId){ navigator.geolocation.clearWatch(navWatchId); navWatchId=null; }
