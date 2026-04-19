@@ -117,6 +117,15 @@ def load_parkings():
     with open(PARKINGS_PATH, encoding="utf-8") as f:
         return json.load(f)
 
+@app.after_request
+def add_no_cache_headers(resp):
+    """HTML zawsze swiezy — WebView nigdy nie cachuje strony glownej."""
+    if resp.content_type and 'text/html' in resp.content_type:
+        resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        resp.headers['Pragma'] = 'no-cache'
+        resp.headers['Expires'] = '0'
+    return resp
+
 @app.route("/sw.js")
 def service_worker():
     resp = send_from_directory('static', 'sw.js')
