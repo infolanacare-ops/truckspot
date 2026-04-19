@@ -1388,5 +1388,69 @@ def api_ai_ping():
     return jsonify(results)
 
 
+@app.route("/api/fuel-stations")
+def api_fuel_stations():
+    """Stacje paliw dla TIR z Overpass — filtrowane po kartach płatniczych."""
+    try:
+        south = float(request.args.get('south', 0))
+        west  = float(request.args.get('west',  0))
+        north = float(request.args.get('north', 0))
+        east  = float(request.args.get('east',  0))
+        cards = request.args.get('cards', 'hgv')  # dkv,uta,as24,e100,shell,adblue,hgv
+    except (ValueError, TypeError):
+        return jsonify([])
+
+    bbox = f"({south},{west},{north},{east})"
+    card_list = [c.strip() for c in cards.split(',') if c.strip()]
+
+    parts = []
+    for card in card_list:
+        if card == 'hgv':
+            parts.append(f'node[amenity=fuel][hgv=yes]{bbox};')
+            parts.append(f'node[amenity=fuel]["fuel:HGV_diesel"=yes]{bbox};')
+        elif card == 'adblue':
+            parts.append(f'node[amenity=fuel]["fuel:adblue"=yes]{bbox};')
+        else:
+            parts.append(f'node[amenity=fuel]["payment:{card}"=yes]{bbox};')
+
+    if not parts:
+        return jsonify([])
+
+    q = f'[out:json][timeout:20];({" ".join(parts)});out body;'
+    try:
+        r = _requests.post('https://overpass-api.de/api/interpreter',
+                           data={'data': q}, timeout=22,
+                           headers={'User-Agent': 'TruckSpot/1.0'})
+        elements = r.json().get('elements', [])
+    except Exception:
+        return jsonify([])
+
+    seen = set()
+    stations = []
+    for e in elements:
+        eid = e.get('id')
+        if eid in seen:
+            continue
+        seen.add(eid)
+        t = e.get('tags', {})
+        pays = [k.replace('payment:', '') for k, v in t.items()
+                if k.startswith('payment:') and v == 'yes']
+        stations.append({
+            'id':           'fuel_' + str(eid),
+            'lat':          e.get('lat'),
+            'lng':          e.get('lon'),
+            'name':         t.get('name') or t.get('brand') or 'Stacja TIR',
+            'brand':        t.get('brand', ''),
+            'adblue':       t.get('fuel:adblue') == 'yes',
+            'hgv_diesel':   t.get('fuel:HGV_diesel') == 'yes',
+            'hgv':          t.get('hgv') == 'yes',
+            'opening_hours': t.get('opening_hours', ''),
+            'phone':        t.get('phone', ''),
+            'payments':     pays,
+        })
+
+    return jsonify(stations)
+
+
 if __name__ == "__main__":
     app.run(debug=True, port=5002)

@@ -3574,6 +3574,9 @@ let map = null;
 let markers=[], osmMarkers=[], userSpotMarkers=[];
 let allParkings=[], userSpots=[];
 let osmLoading=false;
+let fuelStationMarkers=[], allFuelStations=[], _fuelLoading=false;
+const FUEL_FILTER_IDS = new Set(['fs_hgv','fs_dkv','fs_uta','fs_as24','fs_e100','fs_shell','fs_adblue']);
+const FUEL_CARD_MAP = {fs_hgv:'hgv',fs_dkv:'dkv',fs_uta:'uta',fs_as24:'as24',fs_e100:'e100',fs_shell:'shell',fs_adblue:'adblue'};
 let pickingMode=false, spotLat=null, spotLng=null;
 let spotStars=1, spotCat='parking', spotTempMarker=null;
 let gpsActive=false, gpsWatchId=null, gpsMarker=null;
@@ -3822,7 +3825,7 @@ function enterMode(mode){
     });
     map.addControl(new mapboxgl.NavigationControl({showCompass:false}), 'top-left');
     map.on('click', (e)=>{ onMapClickForMsg(e); onMapClick(e); });
-    map.on('moveend', ()=>{ if(map.getZoom()>=8) loadOsmParkings(); loadReports(); });
+    map.on('moveend', ()=>{ if(map.getZoom()>=8) loadOsmParkings(); loadReports(); if(activeFuelCards().length>0) loadFuelStations(); });
     // Inicjalizuj draggable widget osi trasy
     _initPoiDrag();
     // Wykryj ręczne operacje na mapie podczas nawigacji
@@ -4044,6 +4047,79 @@ function loadOsmParkings(){
       osmMarkers.push(mkMbMarker(p.lat,p.lng,mkPinP(cfg.color+'cc','P',28),()=>showOsmDetail(p)));
     });
   }).catch(()=>{ osmLoading=false; });
+}
+
+// ══════════════════════════════════════
+// STACJE TIR — fuel stations from Overpass
+// ══════════════════════════════════════
+function activeFuelCards(){
+  return [...activeFilters].filter(id=>FUEL_FILTER_IDS.has(id)).map(id=>FUEL_CARD_MAP[id]);
+}
+
+function loadFuelStations(){
+  const cards = activeFuelCards();
+  if(!cards.length){ renderFuelStations([]); return; }
+  if(_fuelLoading) return;
+  _fuelLoading = true;
+  const b = map.getBounds();
+  const params = new URLSearchParams({
+    south: b.getSouth().toFixed(5), west: b.getWest().toFixed(5),
+    north: b.getNorth().toFixed(5), east: b.getEast().toFixed(5),
+    cards: cards.join(',')
+  });
+  fetch(`/api/fuel-stations?${params}`)
+    .then(r=>r.json()).then(data=>{
+      _fuelLoading=false;
+      allFuelStations = Array.isArray(data) ? data : [];
+      renderFuelStations(allFuelStations);
+    }).catch(()=>{ _fuelLoading=false; });
+}
+
+function renderFuelStations(stations){
+  fuelStationMarkers.forEach(m=>m.remove()); fuelStationMarkers=[];
+  if(!stations.length) return;
+  stations.forEach(s=>{
+    if(!s.lat||!s.lng) return;
+    const pays = (s.payments||[]).filter(p=>['dkv','uta','as24','e100','shell'].some(c=>p.toLowerCase().includes(c)));
+    const payBadges = pays.slice(0,3).map(p=>`<span style="font-size:9px;background:rgba(255,255,255,.15);border-radius:4px;padding:1px 4px;margin-right:2px">${p.toUpperCase()}</span>`).join('');
+    const adblueIcon = s.adblue ? '<span style="color:#60a5fa;font-size:9px;margin-left:2px">AdBlue</span>' : '';
+    const el = document.createElement('div');
+    el.innerHTML = `<div style="
+      background:linear-gradient(135deg,#065f46,#047857);
+      border:2px solid rgba(52,211,153,.6);
+      border-radius:10px;padding:4px 7px 3px;
+      box-shadow:0 3px 12px rgba(0,0,0,.45);
+      cursor:pointer;min-width:36px;text-align:center;
+      display:flex;flex-direction:column;align-items:center;gap:1px;
+      transition:transform .15s">
+      <span style="font-size:17px;line-height:1">⛽</span>
+      ${pays.length||s.adblue ? `<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:2px;margin-top:1px">${payBadges}${adblueIcon}</div>` : ''}
+    </div>`;
+    el.querySelector('div').addEventListener('mouseenter', e=>{ e.currentTarget.style.transform='scale(1.08)'; });
+    el.querySelector('div').addEventListener('mouseleave', e=>{ e.currentTarget.style.transform=''; });
+    el.style.cssText='cursor:pointer;line-height:0;user-select:none;z-index:190';
+    const mk = new mapboxgl.Marker({element:el, anchor:'bottom'}).setLngLat([s.lng,s.lat]).addTo(map);
+    el.addEventListener('click', ev=>{ ev.stopPropagation(); showFuelStationDetail(s); });
+    fuelStationMarkers.push(mk);
+  });
+}
+
+function showFuelStationDetail(s){
+  const pays = (s.payments||[]);
+  const cardList = pays.length ? pays.map(p=>`<span style="background:var(--panel2);border-radius:6px;padding:3px 8px;font-size:.78rem;font-weight:700">${p.toUpperCase()}</span>`).join(' ') : '—';
+  const hours = s.opening_hours ? `<div style="margin:.4rem 0;font-size:.8rem;color:var(--muted)">⏰ ${s.opening_hours}</div>` : '';
+  const phone = s.phone ? `<div style="font-size:.8rem;color:var(--muted)">📞 ${s.phone}</div>` : '';
+  const adblue = s.adblue ? '<div style="color:#60a5fa;font-size:.78rem;margin-top:.3rem">✓ AdBlue dostępny</div>' : '';
+  // Build alert with HTML content
+  alertParking = null;
+  document.getElementById('alert-icon').textContent = '⛽';
+  document.getElementById('alert-title').textContent = s.name || 'Stacja TIR';
+  document.getElementById('alert-desc').innerHTML =
+    `<div style="margin:.3rem 0;display:flex;flex-wrap:wrap;gap:4px">${cardList}</div>${adblue}${hours}${phone}`;
+  const t2 = document.getElementById('alert-toast');
+  t2.classList.add('show');
+  t2.onclick = (e)=>{ if(e.target.className==='alert-close') return; closeAlert(); };
+  clearTimeout(alertTimer); alertTimer = setTimeout(closeAlert, 8000);
 }
 
 // ══════════════════════════════════════
@@ -4911,6 +4987,15 @@ const FILTER_DEFS = [
     { id:'hotel',      pl:'Hotel',           en:'Hotel',       icon:'🏨' },
     { id:'pool',       pl:'Basen',           en:'Pool',        icon:'🏊' },
   ]},
+  { section: { pl:'⛽ Stacje TIR', en:'⛽ TIR Fuel Stations', de:'⛽ TIR-Tankstellen', es:'⛽ Gasolineras TIR' }, chips: [
+    { id:'fs_hgv',    pl:'Wszystkie TIR',  en:'All TIR',      icon:'🚛' },
+    { id:'fs_dkv',    pl:'DKV',            en:'DKV',          icon:'💳' },
+    { id:'fs_uta',    pl:'UTA',            en:'UTA',          icon:'💳' },
+    { id:'fs_as24',   pl:'AS24',           en:'AS24',         icon:'💳' },
+    { id:'fs_e100',   pl:'E100',           en:'E100',         icon:'💳' },
+    { id:'fs_shell',  pl:'Shell Card',     en:'Shell Card',   icon:'🐚' },
+    { id:'fs_adblue', pl:'AdBlue TIR',     en:'AdBlue TIR',   icon:'🟦' },
+  ]},
 ];
 
 let activeFilters = new Set();
@@ -4948,13 +5033,17 @@ function renderFilterPanel(){
 
   const amenityHtml = FILTER_DEFS.map(group => {
     const title = group.section[lang] || group.section.en;
+    const isFuelSection = group.chips.some(c=>FUEL_FILTER_IDS.has(c.id));
     const chips = group.chips.map(c => {
       const label = c[lang] || c.en;
       const active = tempFilters.has(c.id) ? 'active' : '';
       return `<div class="fchip ${active}" data-fid="${c.id}" onclick="toggleFilterChip(this,'${c.id}')">
         <span class="fchip-icon">${c.icon}</span>${label}</div>`;
     }).join('');
-    return `<div class="filter-section">
+    const sectionStyle = isFuelSection
+      ? 'background:linear-gradient(135deg,rgba(6,95,70,.25),rgba(4,120,87,.15));border:1px solid rgba(52,211,153,.2);border-radius:12px;padding:.7rem .8rem;margin-top:.3rem'
+      : '';
+    return `<div class="filter-section" style="${sectionStyle}">
       <div class="filter-section-title">${title}</div>
       <div class="filter-chips">${chips}</div>
     </div>`;
@@ -4999,17 +5088,26 @@ function updateFilterBadge(){
 }
 
 function applyFilterToMarkers(){
-  // Brak filtrów = ukryj wszystkie parkingi
-  const filtered = activeFilters.size === 0
+  // Filtry parkingów = tylko nie-fs_ filtry
+  const parkingFilters = [...activeFilters].filter(id=>!FUEL_FILTER_IDS.has(id));
+  const filtered = parkingFilters.length === 0
     ? []
-    : allParkings.filter(p => [...activeFilters].some(f => (p.amenities||[]).includes(f)));
+    : allParkings.filter(p => parkingFilters.some(f => (p.amenities||[]).includes(f)));
   const src = map.getSource(CLUSTER_SRC);
   if(src){ src.setData(_parkingsGeoJSON(filtered)); _clusterParkings = filtered; }
   else renderMarkers(filtered);
+
+  // Fuel stations
+  const hasFuelFilter = activeFuelCards().length > 0;
+  if(hasFuelFilter) loadFuelStations();
+  else renderFuelStations([]);
+
   if(activeFilters.size === 0){
     showAlert('⚙️','Filtry','Parkingi ukryte — wybierz filtr aby je pokazać');
-  } else if(filtered.length === 0){
+  } else if(!hasFuelFilter && filtered.length === 0){
     showAlert('⚙️','Filtry','Brak parkingów spełniających kryteria');
+  } else if(hasFuelFilter && !parkingFilters.length){
+    showAlert('⛽','Stacje TIR','Ładowanie stacji...');
   } else {
     showAlert('⚙️','Filtry',filtered.length+' parkingów');
   }
