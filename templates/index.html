@@ -5297,6 +5297,7 @@ function clearRoute(){
 let navActive=false, navWatchId=null, navStepIdx=0, navLastLat=null, navLastLng=null;
 let navSpeedKmh = 0;
 let _zuptSnapLat = null, _zuptSnapLng = null; // ZUPT: pozycja zamrożona gdy < 1 km/h
+let _navLockedZoom = null; // Zoom lock: zamrożony zoom gdy < 5 km/h (TomTom standard)
 let navCurrentSpeedLimit = 0;
 let navVoiceQueue = [];      // look-ahead announcements
 let navAnnouncedSteps = new Set(); // step indices already announced
@@ -6955,6 +6956,17 @@ function onNavPosition(pos){
   const targetZoom  = Math.min(baseZoom + pm.zoomOff + zoomBoost, 18.5);
   const targetPitch = pm.pitch * pitchFactor;
 
+  // Zoom lock: gdy < 5 km/h — trzymaj ostatni zoom, nie skacz (TomTom standard)
+  // Eliminuje oscylację zoomu na światłach / w korku
+  let finalZoom;
+  if(navSpeedKmh < 5){
+    if(_navLockedZoom === null) _navLockedZoom = map.getZoom();
+    finalZoom = _navLockedZoom;
+  } else {
+    _navLockedZoom = null;
+    finalZoom = targetZoom;
+  }
+
   // Centruj na snapCoord — strzałka stoi, mapa płynie wokół niej (Waze/Google style)
   const camLat = snapLat, camLng = snapLng;
   if(!navOverviewMode && !navUserInteracting){
@@ -6965,7 +6977,7 @@ function onNavPosition(pos){
     const padTop  = Math.round(window.innerHeight * 0.12);
     // Gdy auto stoi — nie obracamy mapy, tylko centrujemy (bearing freeze)
     const camBearing = navSpeedKmh >= 4 ? navHeading : map.getBearing();
-    map.easeTo({center:[camLng, camLat], zoom:targetZoom, bearing:camBearing,
+    map.easeTo({center:[camLng, camLat], zoom:finalZoom, bearing:camBearing,
                 pitch:targetPitch, duration:camDuration,
                 easing: t => t < 0.5 ? 2*t*t : -1+(4-2*t)*t,
                 padding:{top:padTop, bottom:padBot, left:0, right:0}});
@@ -7245,6 +7257,7 @@ function stopNavigation(){
   // Reset splajnu + ZUPT
   _drPrevLat=null; _drPrevLng=null; _drTickElapsed=0; _drTickDur=1.0;
   _zuptSnapLat=null; _zuptSnapLng=null;
+  _navLockedZoom=null;
   const ob = document.getElementById('nav-overview-btn');
   if(ob) ob.classList.remove('active');
   if(navWatchId){ navigator.geolocation.clearWatch(navWatchId); navWatchId=null; }
