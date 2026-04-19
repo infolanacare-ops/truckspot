@@ -7312,7 +7312,7 @@ function onNavPosition(pos){
                    + (document.getElementById('nav-next-strip')?.offsetHeight || 0)
                    + (document.getElementById('nav-lanes')?.offsetHeight || 0)
                    + (document.getElementById('nav-road-strip')?.offsetHeight || 0);
-    const padTop = navCardH + 8;
+    const padTop = navCardH + 8 + Math.round(window.innerHeight * 0.18);
     const padBot = navBarH + 8;
     const camBearing = navNorthUp ? 0 : (navSpeedKmh >= 8 ? navHeading : map.getBearing());
     map.easeTo({center:[camLng, camLat], zoom:finalZoom, bearing:camBearing,
