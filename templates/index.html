@@ -5756,7 +5756,7 @@ function closestRouteIdx(lat, lng){
 function closestRouteIdxForward(lat, lng, fromIdx){
   if(fromIdx == null || fromIdx < 0 || routeCoords.length === 0)
     return closestRouteIdx(lat, lng);
-  const start = Math.max(0, fromIdx - 30);
+  const start = Math.max(0, fromIdx - 5);  // max 5 punktów wstecz — bez dużych skoków
   const end   = Math.min(routeCoords.length - 1, fromIdx + 250);
   let minIdx = fromIdx, minD = Infinity;
   for(let i = start; i <= end; i++){
@@ -6673,6 +6673,7 @@ function _updateSpeedModuleBtn(){
 function startNavigation(){
   if(!routeSteps.length){ showAlert('⚠️','','Najpierw oblicz trasę'); return; }
   navActive=true; navStepIdx=0; navCIdx=0; navLastLat=null; navLastLng=null;
+  _smoothBearing=null; _navLockedZoom=null; _zuptSnapLat=null; _zuptSnapLng=null;
   // Uruchom giroskop dla precyzyjnego headingu
   _gyroHeading = null; _startGyro();
   // Zastosuj paletę kolorów dla aktywnego trybu
@@ -6734,7 +6735,7 @@ function startNavigation(){
     onNavPosition(pos);
   },
     e=>{ if(e.code!==e.TIMEOUT) showAlert('⚠️','GPS Error',''); },
-    {enableHighAccuracy:true, maximumAge:0, timeout:15000});
+    {enableHighAccuracy:true, maximumAge:3000, timeout:15000});
 }
 
 async function loadRoutePois(){
@@ -7055,9 +7056,9 @@ function onNavPosition(pos){
   } else {
     snapLat = lat; snapLng = lng;
   }
-  // ZUPT — Zero Velocity Update (TomTom standard: freeze below ~1 km/h)
-  // Eliminuje drżenie strzałki i pozycji od szumu GPS na postoju
-  if(navSpeedKmh < 1){
+  // ZUPT — freeze tylko gdy naprawdę stoimy i mamy już zablokowaną pozycję
+  // navLastLat==null oznacza że GPS dopiero startuje — nie blokujemy
+  if(navSpeedKmh < 2 && navLastLat !== null){
     if(_zuptSnapLat === null){ _zuptSnapLat = snapLat; _zuptSnapLng = snapLng; }
     snapLat = _zuptSnapLat; snapLng = _zuptSnapLng;
   } else {
