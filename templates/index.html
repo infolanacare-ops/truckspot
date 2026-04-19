@@ -1923,12 +1923,20 @@ body.navigating .fab-ai{display:none}
 }
 .nav-sheet-stat-val{font-family:var(--font-head);font-size:1.1rem;font-weight:900;color:#fff;line-height:1.1}
 .nav-sheet-stat-label{font-size:.5rem;color:rgba(255,255,255,.35);text-transform:uppercase;font-weight:700;margin-top:.2rem;letter-spacing:.05em}
-.nav-sheet-actions{display:flex;gap:.55rem}
+.nav-sheet-actions{
+  display:flex;gap:.55rem;
+  overflow-x:auto;scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;padding-bottom:2px;
+}
+.nav-sheet-actions::-webkit-scrollbar{display:none}
 .nav-sheet-btn{
-  flex:1;padding:.75rem .5rem;border:none;border-radius:14px;cursor:pointer;
+  flex:0 0 auto;scroll-snap-align:start;
+  padding:.75rem .75rem;border:none;border-radius:14px;cursor:pointer;
   background:rgba(255,255,255,.09);color:#fff;
   font-family:var(--font-head);font-size:.85rem;font-weight:800;
   border:1px solid rgba(255,255,255,.08);transition:.15s;
+  white-space:nowrap;
 }
 .nav-sheet-btn:active{background:rgba(255,255,255,.18)}
 .nav-sheet-btn.muted{background:rgba(239,68,68,.2);color:#ef4444;border-color:rgba(239,68,68,.3)}
