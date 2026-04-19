@@ -5296,6 +5296,7 @@ function clearRoute(){
 // ══════════════════════════════════════
 let navActive=false, navWatchId=null, navStepIdx=0, navLastLat=null, navLastLng=null;
 let navSpeedKmh = 0;
+let _zuptSnapLat = null, _zuptSnapLng = null; // ZUPT: pozycja zamrożona gdy < 1 km/h
 let navCurrentSpeedLimit = 0;
 let navVoiceQueue = [];      // look-ahead announcements
 let navAnnouncedSteps = new Set(); // step indices already announced
@@ -6869,6 +6870,14 @@ function onNavPosition(pos){
   } else {
     snapLat = lat; snapLng = lng;
   }
+  // ZUPT — Zero Velocity Update (TomTom standard: freeze below ~1 km/h)
+  // Eliminuje drżenie strzałki i pozycji od szumu GPS na postoju
+  if(navSpeedKmh < 1){
+    if(_zuptSnapLat === null){ _zuptSnapLat = snapLat; _zuptSnapLng = snapLng; }
+    snapLat = _zuptSnapLat; snapLng = _zuptSnapLng;
+  } else {
+    _zuptSnapLat = null; _zuptSnapLng = null;
+  }
   setGpsArrow(snapLat, snapLng);
 
   // Heading: giroskop (najlepszy) → GPS native → delta pozycji
@@ -6905,8 +6914,10 @@ function onNavPosition(pos){
     // Czas między tickami
     if(_drTickElapsed > 0) _drTickDur = Math.min(_drTickElapsed, 2.0);
   }
-  _drVLat = newVLat; _drVLng = newVLng;
-  _drSpeedMps = newSpeedMps;
+  // ZUPT: na postoju zerujemy prędkość DR — nie kumulujemy błędu
+  _drVLat = navSpeedKmh < 1 ? 0 : newVLat;
+  _drVLng = navSpeedKmh < 1 ? 0 : newVLng;
+  _drSpeedMps = navSpeedKmh < 1 ? 0 : newSpeedMps;
   _drBearing  = navHeading;
 
   // ── TomTom-style camera — zoom + pitch zależny od prędkości i odległości do manewru ──
@@ -7228,8 +7239,9 @@ function stopNavigation(){
     window.removeEventListener('deviceorientation', _onOrientation, true);
     _gyroActive=false; _gyroHeading=null;
   }
-  // Reset splajnu
+  // Reset splajnu + ZUPT
   _drPrevLat=null; _drPrevLng=null; _drTickElapsed=0; _drTickDur=1.0;
+  _zuptSnapLat=null; _zuptSnapLng=null;
   const ob = document.getElementById('nav-overview-btn');
   if(ob) ob.classList.remove('active');
   if(navWatchId){ navigator.geolocation.clearWatch(navWatchId); navWatchId=null; }
