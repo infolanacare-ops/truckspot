@@ -980,17 +980,17 @@ def api_cameras_reload_static():
 # ── KONWÓJ — live pozycje kierowców ──────────────────────────────────────────
 CONVOY_PATH = os.path.join(DATA_DIR, "convoy.json")
 CONVOY_TTL  = 90  # sekund — kierowca znika jeśli nie pinguje 90s
-MESSAGES_PATH = os.path.join(DATA_DIR, "convoy_messages.json")
+CONVOY_MESSAGES_PATH = os.path.join(DATA_DIR, "convoy_messages.json")
 MESSAGES_TTL  = 3600  # wiadomości żyją 1h
 
 def load_messages():
-    if not os.path.exists(MESSAGES_PATH):
+    if not os.path.exists(CONVOY_MESSAGES_PATH):
         return []
-    with open(MESSAGES_PATH, encoding="utf-8") as f:
+    with open(CONVOY_MESSAGES_PATH, encoding="utf-8") as f:
         return json.load(f)
 
 def save_messages(msgs):
-    with open(MESSAGES_PATH, "w", encoding="utf-8") as f:
+    with open(CONVOY_MESSAGES_PATH, "w", encoding="utf-8") as f:
         json.dump(msgs, f, ensure_ascii=False)
 
 def load_convoy():
@@ -1242,7 +1242,7 @@ def api_ai_assist():
         lines.append(f"- {a.get('icon','')} {name} ({dist_str})")
 
     prompt = (
-        f"{SYSTEM_PROMPT}\n\n"
+        f"{SYSTEM_PROMPT_BASE}\n\n"
         "Kierowca właśnie się zatrzymał. Powiedz mu przyjaźnie co ciekawego jest w pobliżu.\n\n"
         f"Atrakcje:\n" + "\n".join(lines)
     )

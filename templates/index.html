@@ -4363,8 +4363,8 @@ function closeRank(){ document.getElementById('rank-panel').classList.remove('op
 // SHARE
 // ══════════════════════════════════════
 function shareApp(){
-  const txt='🚛 TruckSpot — command center for drivers & travelers! truckspot.onrender.com';
-  if(navigator.share) navigator.share({title:'TruckSpot',text:txt,url:'https://truckspot.onrender.com'}).then(()=>addPts(50)).catch(()=>{});
+  const txt='🚛 TruckSpot — command center for drivers & travelers! truckspot.pl';
+  if(navigator.share) navigator.share({title:'TruckSpot',text:txt,url:'https://truckspot.pl'}).then(()=>addPts(50)).catch(()=>{});
   else { navigator.clipboard.writeText(txt); addPts(50); showAlert('📣','Copied!','Link copied to clipboard'); }
 }
 function showMySpots(){
@@ -7272,7 +7272,7 @@ function onNavPosition(pos){
   const camLat = snapLat + (lookaheadM / mPerDeg) * Math.cos(bearingRad);
   const camLng = snapLng + (lookaheadM / (mPerDeg * Math.cos(snapLat * Math.PI / 180))) * Math.sin(bearingRad);
   if(!navOverviewMode && !navUserInteracting){
-    const camBearing = navSpeedKmh >= 4 ? navHeading : map.getBearing();
+    const camBearing = navSpeedKmh >= 8 ? navHeading : map.getBearing();
     map.easeTo({center:[camLng, camLat], zoom:finalZoom, bearing:camBearing,
                 pitch:targetPitch, duration:camDuration,
                 easing: t => t*(2-t),
