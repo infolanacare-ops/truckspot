@@ -2880,7 +2880,20 @@ body.navigating .convoy-btn{display:none}
 <!-- Slide-up sheet: filtry + MOBILKI -->
 <div class="nav-sheet" id="nav-sheet">
   <div class="nav-sheet-handle"></div>
-  <!-- AI — dwa guziki w obwódce -->
+
+  <!-- MODUŁY NAWIGACJI -->
+  <div style="font-size:.6rem;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:.5rem;padding:0 .1rem">Moduły</div>
+  <div class="nav-sheet-actions" style="margin-bottom:.7rem">
+    <button class="nav-sheet-btn" id="nav-mute-btn" onclick="toggleNavMute()">🔊 Głos</button>
+    <button class="nav-sheet-btn" id="nav-pitch-btn" onclick="cycleNavPitch()">3D</button>
+    <button class="nav-sheet-btn" onclick="closeNavSheet(); toggleRouteTimeline()">📍 Oś trasy</button>
+    <button class="nav-sheet-btn" onclick="closeNavSheet(); toggleNavOverview()">🗺️ Widok</button>
+    <button class="nav-sheet-btn nav-sheet-convoy" onclick="closeNavSheet(); toggleConvoyPanel()">
+      🚛 MOBILKI <span id="nav-sheet-convoy-cnt" style="display:none;background:rgba(16,185,129,.25);border-radius:8px;padding:.05rem .35rem;font-size:.75rem;margin-left:.2rem">0</span>
+    </button>
+  </div>
+
+  <!-- AI -->
   <div class="nav-ai-group">
     <div class="nav-ai-group-label">✦ AI</div>
     <button class="nav-ai-group-btn" id="nav-asystent-btn" onclick="closeNavSheet(); openAiAssistant()">
@@ -2891,17 +2904,6 @@ body.navigating .convoy-btn{display:none}
       <span class="ai-gb-icon">💬</span>
       <span>Chat</span>
     </button>
-  </div>
-  <div class="nav-sheet-actions">
-    <button class="nav-sheet-btn" id="nav-mute-btn" onclick="toggleNavMute()">🔊 Głos</button>
-    <button class="nav-sheet-btn" id="nav-pitch-btn" onclick="cycleNavPitch()">3D</button>
-    <button class="nav-sheet-btn" onclick="closeNavSheet(); openFilters()">
-      <span style="font-size:1.1rem">⚙</span> Filtry
-    </button>
-    <button class="nav-sheet-btn nav-sheet-convoy" onclick="closeNavSheet(); toggleConvoyPanel()">
-      🚛 MOBILKI <span id="nav-sheet-convoy-cnt" style="display:none;background:rgba(16,185,129,.25);border-radius:8px;padding:.05rem .35rem;font-size:.75rem;margin-left:.2rem">0</span>
-    </button>
-    <button class="nav-sheet-btn" id="nav-attr-btn" onclick="toggleAttractions()">🏛 Atrakcje</button>
   </div>
 </div>
 
@@ -6454,6 +6456,9 @@ function startNavigation(){
   // Ukryj msg-fab podczas nawigacji (report-dial zostaje)
   const msgFab = document.getElementById('msg-fab');
   if(msgFab) msgFab.style.display='none';
+  // Ukryj klastry parkingów — nie zaśmiecają mapy nawi jak w TomTom
+  ['ts-cluster-circles','ts-cluster-count','ts-uncluster-circles','ts-uncluster-labels']
+    .forEach(id=>{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility','none'); });
   closeRoute();
   buildRouteDistances();
   updateNavStep(0);
@@ -6957,10 +6962,11 @@ function onNavPosition(pos){
   const targetPitch = pm.pitch * pitchFactor;
 
   // Zoom lock: gdy < 5 km/h — trzymaj ostatni zoom, nie skacz (TomTom standard)
-  // Eliminuje oscylację zoomu na światłach / w korku
+  // Lockuj tylko jeśli zoom jest już "nawigacyjny" (>= 12) — nie lockuj na "cała Polska"
   let finalZoom;
   if(navSpeedKmh < 5){
-    if(_navLockedZoom === null) _navLockedZoom = map.getZoom();
+    const curZ = map.getZoom();
+    if(_navLockedZoom === null) _navLockedZoom = curZ >= 12 ? curZ : targetZoom;
     finalZoom = _navLockedZoom;
   } else {
     _navLockedZoom = null;
@@ -7296,6 +7302,9 @@ function stopNavigation(){
   if(mb){ mb.classList.remove('muted'); mb.textContent='🔊'; }
   const lanesEl = document.getElementById('nav-lanes');
   if(lanesEl) lanesEl.style.display='none';
+  // Przywróć klastry parkingów
+  ['ts-cluster-circles','ts-cluster-count','ts-uncluster-circles','ts-uncluster-labels']
+    .forEach(id=>{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility','visible'); });
   // Przywróć styl mapy (respektuj wybrany layer)
   const baseStyle = (typeof LAYER_STYLES !== 'undefined' && _currentLayer)
     ? LAYER_STYLES[_currentLayer]()
