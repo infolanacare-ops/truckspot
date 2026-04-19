@@ -1817,11 +1817,15 @@ body.navigating .fab-ai{display:none}
 /* ── Unified speed pill — lewa strona, pod kartą manewru ── */
 /* Rząd pod kartą manewru: cam-warn po lewej, pill po prawej */
 .nav-speed-row{
-  align-self:flex-end;
-  display:flex;align-items:center;justify-content:flex-end;
-  gap:.5rem;padding:.35rem .65rem .2rem;
-  pointer-events:none;
+  position:fixed;z-index:1210;
+  display:flex;align-items:center;gap:.5rem;
+  pointer-events:auto;
+  touch-action:none;
+  cursor:grab;
+  right:12px;bottom:130px; /* pozycja domyślna — nadpisywana przez JS */
 }
+.nav-speed-row:active{cursor:grabbing}
+.nav-speed-row.mod-hidden{display:none!important}
 /* ── Speed combo: TomTom style — znak limitu po lewej + pill po prawej ── */
 .nav-speed-combo{
   display:flex;align-items:center;flex-shrink:0;
@@ -2801,8 +2805,8 @@ body.navigating .convoy-btn{display:none}
     <div class="nav-speed-limit" id="nav-speed-limit">–</div>
   </div>
 
-  <!-- Speed pill — w flow, zjeżdża w dół gdy pojawia się lane guidance / next strip -->
-  <div class="nav-speed-row">
+  <!-- Speed module — przeciągalny widget prędkości + limitu (Moduł HUD) -->
+  <div class="nav-speed-row" id="speed-module">
     <div class="nav-cam-warn" id="nav-cam-warn">
       📷 <span class="nav-cam-dist" id="nav-cam-dist"></span>
     </div>
@@ -2886,6 +2890,7 @@ body.navigating .convoy-btn{display:none}
   <div class="nav-sheet-actions" style="margin-bottom:.7rem">
     <button class="nav-sheet-btn" id="nav-mute-btn" onclick="toggleNavMute()">🔊 Głos</button>
     <button class="nav-sheet-btn" id="nav-pitch-btn" onclick="cycleNavPitch()">3D</button>
+    <button class="nav-sheet-btn" id="mod-speed-btn" onclick="toggleSpeedModule()">✅ Prędkość</button>
     <button class="nav-sheet-btn" onclick="closeNavSheet(); toggleRouteTimeline()">📍 Oś trasy</button>
     <button class="nav-sheet-btn" onclick="closeNavSheet(); toggleNavOverview()">🗺️ Widok</button>
     <button class="nav-sheet-btn nav-sheet-convoy" onclick="closeNavSheet(); toggleConvoyPanel()">
@@ -6439,6 +6444,72 @@ function updateLaneGuidance(dToManeuver){
   }).join('');
 }
 
+// ── MODUŁY HUD — system przeciągania ─────────────────────────────────────────
+// Reużywalna funkcja: dowolny element fixed → przeciągalny, pozycja w localStorage
+function _makeDraggableModule(el, storageKey, defaultRight, defaultBottom){
+  // Przywróć pozycję
+  try {
+    const saved = JSON.parse(localStorage.getItem(storageKey)||'null');
+    if(saved){ el.style.left=saved.x+'px'; el.style.top=saved.y+'px'; el.style.right='auto'; el.style.bottom='auto'; }
+  } catch(e){}
+
+  let dragging=false, ox=0, oy=0;
+
+  function onStart(cx, cy){
+    dragging=true;
+    const r=el.getBoundingClientRect();
+    ox=cx-r.left; oy=cy-r.top;
+    el.style.transition='none';
+    el.style.right='auto'; el.style.bottom='auto';
+  }
+  function onMove(cx, cy){
+    if(!dragging) return;
+    const x=Math.max(0,Math.min(cx-ox, window.innerWidth-el.offsetWidth));
+    const y=Math.max(0,Math.min(cy-oy, window.innerHeight-el.offsetHeight));
+    el.style.left=x+'px'; el.style.top=y+'px';
+  }
+  function onEnd(){
+    if(!dragging) return; dragging=false;
+    const r=el.getBoundingClientRect();
+    try{ localStorage.setItem(storageKey,JSON.stringify({x:r.left,y:r.top})); }catch(e){}
+  }
+  el.addEventListener('mousedown', e=>{ e.preventDefault(); onStart(e.clientX,e.clientY); });
+  window.addEventListener('mousemove', e=>{ if(dragging) onMove(e.clientX,e.clientY); });
+  window.addEventListener('mouseup', onEnd);
+  el.addEventListener('touchstart', e=>{ e.preventDefault(); onStart(e.touches[0].clientX,e.touches[0].clientY); },{passive:false});
+  window.addEventListener('touchmove', e=>{ if(dragging){ e.preventDefault(); onMove(e.touches[0].clientX,e.touches[0].clientY); } },{passive:false});
+  window.addEventListener('touchend', onEnd);
+}
+
+const MOD_SPEED_KEY   = 'ts_mod_speed_pos';
+const MOD_SPEED_VIS   = 'ts_mod_speed_vis';
+
+function _initSpeedModule(){
+  const el = document.getElementById('speed-module');
+  if(!el) return;
+  _makeDraggableModule(el, MOD_SPEED_KEY, 12, 130);
+  // Przywróć widoczność
+  const hidden = localStorage.getItem(MOD_SPEED_VIS) === 'hidden';
+  el.classList.toggle('mod-hidden', hidden);
+  _updateSpeedModuleBtn();
+}
+
+function toggleSpeedModule(){
+  const el = document.getElementById('speed-module');
+  if(!el) return;
+  const nowHidden = el.classList.toggle('mod-hidden');
+  try{ localStorage.setItem(MOD_SPEED_VIS, nowHidden ? 'hidden' : 'visible'); }catch(e){}
+  _updateSpeedModuleBtn();
+}
+
+function _updateSpeedModuleBtn(){
+  const btn = document.getElementById('mod-speed-btn');
+  if(!btn) return;
+  const hidden = document.getElementById('speed-module')?.classList.contains('mod-hidden');
+  btn.style.opacity = hidden ? '0.45' : '1';
+  btn.textContent = (hidden ? '🚫 ' : '✅ ') + 'Prędkość';
+}
+
 function startNavigation(){
   if(!routeSteps.length){ showAlert('⚠️','','Najpierw oblicz trasę'); return; }
   navActive=true; navStepIdx=0; navCIdx=0; navLastLat=null; navLastLng=null;
@@ -6452,6 +6523,8 @@ function startNavigation(){
   // Usuń istniejącą kropkę GPS — setGpsArrow stworzy strzałkę
   if(gpsMarker){ gpsMarker.remove(); gpsMarker=null; }
   document.getElementById('nav-overlay').classList.add('active');
+  // Inicjuj przeciągalne moduły HUD
+  setTimeout(_initSpeedModule, 100);
   document.body.classList.add('navigating');
   // Ukryj msg-fab podczas nawigacji (report-dial zostaje)
   const msgFab = document.getElementById('msg-fab');
