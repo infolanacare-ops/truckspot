@@ -5413,11 +5413,13 @@ function exitOrdinal(n){
 }
 
 function fmtDistTts(m){
-  // Naturalny format dystansu dla TTS
-  if(m >= 900)  return `za ${Math.round(m/100)*100} metrów`;
-  if(m >= 400)  return `za ${Math.round(m/50)*50} metrów`;
-  if(m >= 180)  return `za ${Math.round(m/10)*10} metrów`;
-  if(m >= 80)   return `za ${Math.round(m/10)*10} metrów`;
+  // TomTom-style naturalny format dystansu dla TTS
+  if(m >= 1800) return `za ${Math.round(m/1000)} kilometry`;
+  if(m >= 1100) return `za ${Math.round(m/1000)} kilometr`;
+  if(m >= 850)  return `za 1 kilometr`;
+  if(m >= 400)  return `za ${Math.round(m/100)*100} metrów`;
+  if(m >= 150)  return `za ${Math.round(m/50)*50} metrów`;
+  if(m >= 60)   return `za ${Math.round(m/10)*10} metrów`;
   return 'teraz';
 }
 
@@ -7021,12 +7023,13 @@ function onNavPosition(pos){
       const cStep = routeSteps[navStepIdx];
       if(cStep) setEl('nav-road-name', cStep.name||cStep.ref||'');
 
-      // Look-ahead voice — pełne zdania TTS z dystansem
-      // Prędkość > 80 km/h (autostrada): 1200m + 400m + 100m
-      // Miasto < 50 km/h: 400m + 120m
-      const announceAt = navSpeedKmh > 80 ? [1200, 400, 100]
-                       : navSpeedKmh > 50 ? [600, 200, 80]
-                       :                    [400, 120, 50];
+      // Look-ahead voice — TomTom standard: 3 etapy zapowiedzi
+      // Autostrada (>80): 900m + 300m + 100m
+      // Droga (>50):      500m + 200m + 60m
+      // Miasto (<50):     300m + 100m + 40m
+      const announceAt = navSpeedKmh > 80 ? [900, 300, 100]
+                       : navSpeedKmh > 50 ? [500, 200, 60]
+                       :                    [300, 100, 40];
       for(const dist of announceAt){
         const key = `${navStepIdx}_${dist}`;
         if(!navAnnouncedSteps.has(key) && dToManeuver < dist && dToManeuver > dist * 0.25){
