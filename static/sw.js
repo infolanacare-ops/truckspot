@@ -1,8 +1,8 @@
 // TruckSpot Service Worker — v9
 // Kluczowa zmiana: HTML zawsze network-first → apka zawsze ładuje świeży kod
-const STATIC_CACHE = 'ts-static-v9';  // ikony, manifest (rzadko się zmieniają)
-const DATA_CACHE   = 'ts-data-v9';    // API responses
-const TILE_CACHE   = 'ts-tiles-v9';   // kafelki mapy
+const STATIC_CACHE = 'ts-static-v10';  // ikony, manifest (rzadko się zmieniają)
+const DATA_CACHE   = 'ts-data-v10';    // API responses
+const TILE_CACHE   = 'ts-tiles-v10';   // kafelki mapy
 
 // Tylko naprawdę statyczne assety — NIE cachujemy HTML
 const STATIC_ASSETS = [
@@ -42,7 +42,18 @@ self.addEventListener('activate', e => {
       ))
       .then(() => self.clients.claim())
       .then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
-      .then(clients => clients.forEach(c => c.postMessage({ type: 'UPDATE_AVAILABLE' })))
+      .then(clients => {
+        // Jeśli żaden klient nie jest aktywny (app była w tle/zamknięta)
+        // — przeładuj cicho bez bannera
+        const activeClients = clients.filter(c => c.visibilityState === 'visible');
+        if(activeClients.length === 0){
+          // Nikt nie patrzy — przeładuj wszystkich po cichu
+          clients.forEach(c => c.navigate(c.url));
+        } else {
+          // Ktoś jest aktywnie w apce — pokaż banner
+          activeClients.forEach(c => c.postMessage({ type: 'UPDATE_AVAILABLE' }));
+        }
+      })
   );
 });
 

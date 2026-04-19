@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TruckSpot</string>
+    <string name="title_activity_main">TruckSpot</string>
+    <string name="package_name">com.truckspot.app</string>
+    <string name="custom_url_scheme">com.truckspot.app</string>
+</resources>
