@@ -3432,6 +3432,7 @@ function applyLang(){
 }
 
 function setEl(id, val){ const el=document.getElementById(id); if(el) el.textContent=val; }
+function setElH(id, val){ const el=document.getElementById(id); if(el) el.innerHTML=val; }
 
 function setLang(lang){
   currentLang = lang;
@@ -5719,19 +5720,25 @@ function stepArrow(step){
 }
 
 function fmtDist(m){
-  return m>=1000 ? (m/1000).toFixed(1)+' km' : Math.round(m)+' m';
+  return m>=1000
+    ? `<span style="font-size:1.3em">${(m/1000).toFixed(1)}</span><span style="font-size:.55em;opacity:.7"> km</span>`
+    : `<span style="font-size:1.3em">${Math.round(m)}</span><span style="font-size:.55em;opacity:.7"> m</span>`;
 }
 function fmtDur(s){
   const m=Math.round(s/60);
-  if(m>=60){ const h=Math.floor(m/60),mm=m%60; return mm>0 ? h+'h'+mm+'m' : h+'h'; }
-  return m+'min';
+  if(m>=60){ const h=Math.floor(m/60),mm=m%60;
+    return mm>0
+      ? `<span style="font-size:1.3em">${h}</span><span style="font-size:.55em;opacity:.7">h</span><span style="font-size:1.3em">${mm}</span><span style="font-size:.55em;opacity:.7">m</span>`
+      : `<span style="font-size:1.3em">${h}</span><span style="font-size:.55em;opacity:.7">h</span>`;
+  }
+  return `<span style="font-size:1.3em">${m}</span><span style="font-size:.55em;opacity:.7">min</span>`;
 }
 function fmtArrival(secs){
   const d = new Date(Date.now() + secs*1000);
   return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
 }
 function setNavEta(secs){
-  document.getElementById('nav-eta-remaining').textContent = fmtDur(secs);
+  document.getElementById('nav-eta-remaining').innerHTML = fmtDur(secs);
   document.getElementById('nav-eta-arrival').textContent   = fmtArrival(secs);
 }
 
@@ -6815,7 +6822,7 @@ function startNavigation(){
   closeRoute();
   buildRouteDistances();
   updateNavStep(0);
-  setEl('nav-total-dist', fmtDist(navDistRemaining));
+  setElH('nav-total-dist', fmtDist(navDistRemaining));
   setNavEta(routeTotalDur);
   speakNav(stepInstruction(routeSteps[0], true), true);
   // Auto tryb dzienny/nocny mapy
@@ -7290,7 +7297,7 @@ function onNavPosition(pos){
   // ── Remaining distance along route ──────────────────────────────────
   // cIdx + navCIdx już ustawione powyżej (forward-looking snap)
   navDistRemaining = navRouteDistances[navRouteDistances.length-1] - navRouteDistances[cIdx];
-  setEl('nav-total-dist', fmtDist(navDistRemaining));
+  setElH('nav-total-dist', fmtDist(navDistRemaining));
 
   // Ograniczenie prędkości z annotations Mapbox
   if(navMaxspeeds.length > 0){
