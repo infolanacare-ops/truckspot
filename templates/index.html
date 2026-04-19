@@ -1671,17 +1671,28 @@ body.navigating .fab-ai{display:none}
 /* ── POI timeline — pionowa oś po prawej stronie mapy (TomTom style) ── */
 /* ── POI timeline — lewa strona, od obliczenia trasy ── */
 .nav-pois-strip{
-  position:fixed;left:0;top:10px;
+  position:fixed;left:8px;top:120px;
   width:64px;
-  background:rgba(12,16,28,.9);backdrop-filter:blur(10px);
-  border-right:1px solid rgba(255,255,255,.08);
-  border-radius:0 14px 14px 0;
-  padding:.4rem 0;
+  background:rgba(12,16,28,.92);backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:16px;
+  padding:.3rem 0 .5rem;
   display:none;flex-direction:column;align-items:center;
   gap:0;overflow-y:auto;scrollbar-width:none;
   pointer-events:auto;z-index:500;
-  max-height:calc(100vh - 100px);
+  max-height:calc(100vh - 180px);
+  box-shadow:0 8px 32px rgba(0,0,0,.5);
+  touch-action:none;
+  user-select:none;
 }
+/* Drag handle na górze widgetu */
+.nav-pois-drag{
+  width:32px;height:4px;border-radius:2px;
+  background:rgba(255,255,255,.25);
+  margin:.2rem auto .4rem;
+  cursor:grab;flex-shrink:0;
+}
+.nav-pois-strip.dragging{ opacity:.85; cursor:grabbing; box-shadow:0 12px 40px rgba(0,0,0,.7); }
 .nav-pois-strip.route-ready{display:flex}
 .nav-pois-strip::-webkit-scrollbar{display:none}
 
@@ -2810,7 +2821,9 @@ body.navigating .convoy-btn{display:none}
   </div>
 
   <!-- POI strip -->
-  <div class="nav-pois-strip" id="nav-pois-strip"></div>
+  <div class="nav-pois-strip" id="nav-pois-strip">
+    <div class="nav-pois-drag" id="nav-pois-drag"></div>
+  </div>
 
   <!-- Mapa wypełnia środek -->
   <div class="nav-spacer" style="flex:1;pointer-events:none"></div>
@@ -3729,6 +3742,8 @@ function enterMode(mode){
     map.addControl(new mapboxgl.NavigationControl({showCompass:false}), 'top-left');
     map.on('click', (e)=>{ onMapClickForMsg(e); onMapClick(e); });
     map.on('moveend', ()=>{ if(map.getZoom()>=8) loadOsmParkings(); loadReports(); });
+    // Inicjalizuj draggable widget osi trasy
+    _initPoiDrag();
     // Wykryj ręczne operacje na mapie podczas nawigacji
     map.on('zoomstart', e=>{ if(e.originalEvent && navActive) onNavUserInteract(); });
     map.on('dragstart',  e=>{ if(e.originalEvent && navActive) onNavUserInteract(); });
@@ -6549,24 +6564,74 @@ async function loadRoutePois(){
 }
 
 // Ustawia top POI stripu tuż pod ostatnim widocznym elementem nawigacyjnym
+// ── DRAGGABLE WIDGET: oś trasy ───────────────────────────────────────────────
+const POIS_WIDGET_KEY = 'ts_pois_widget_pos';
+
 function updatePoiStripTop(){
+  // Teraz pozycja jest kontrolowana przez drag — nic tu nie robimy
+  // (zostawione dla kompatybilności z miejscami które to wywołują)
+}
+
+function _initPoiDrag(){
   const strip = document.getElementById('nav-pois-strip');
-  if(!strip) return;
-  // Szukaj najniżej położonego widocznego elementu nawigacyjnego (karta + next-strip)
-  let bottomPx = 8;
-  const card = document.querySelector('.nav-maneuver-card');
-  if(card){
-    const r = card.getBoundingClientRect();
-    if(r.height > 0) bottomPx = r.bottom + 6;
+  const handle = document.getElementById('nav-pois-drag');
+  if(!strip || !handle) return;
+
+  // Wczytaj zapisaną pozycję
+  try{
+    const saved = JSON.parse(localStorage.getItem(POIS_WIDGET_KEY)||'null');
+    if(saved){
+      strip.style.left = Math.min(saved.x, window.innerWidth-70) + 'px';
+      strip.style.top  = Math.min(saved.y, window.innerHeight-100) + 'px';
+    }
+  }catch(e){}
+
+  let dragging=false, startX=0, startY=0, origX=0, origY=0;
+
+  function onStart(cx,cy){
+    dragging=true;
+    const r = strip.getBoundingClientRect();
+    origX=r.left; origY=r.top;
+    startX=cx; startY=cy;
+    strip.classList.add('dragging');
+    strip.style.maxHeight = (window.innerHeight-80)+'px';
   }
-  const next = document.getElementById('nav-next-strip');
-  if(next && next.style.display !== 'none' && !next.classList.contains('hidden')){
-    const r = next.getBoundingClientRect();
-    if(r.height > 0) bottomPx = r.bottom + 6;
+  function onMove(cx,cy){
+    if(!dragging) return;
+    let nx = origX + (cx-startX);
+    let ny = origY + (cy-startY);
+    // Ogranicz do ekranu
+    nx = Math.max(0, Math.min(nx, window.innerWidth-strip.offsetWidth));
+    ny = Math.max(0, Math.min(ny, window.innerHeight-80));
+    strip.style.left = nx+'px';
+    strip.style.top  = ny+'px';
   }
-  strip.style.top = bottomPx + 'px';
-  // max-height żeby nie wychodził poza dolny pasek (~80px)
-  strip.style.maxHeight = (window.innerHeight - bottomPx - 90) + 'px';
+  function onEnd(){
+    if(!dragging) return;
+    dragging=false;
+    strip.classList.remove('dragging');
+    const r = strip.getBoundingClientRect();
+    localStorage.setItem(POIS_WIDGET_KEY, JSON.stringify({x:r.left,y:r.top}));
+  }
+
+  // Touch
+  handle.addEventListener('touchstart',e=>{
+    e.preventDefault();
+    const t=e.touches[0]; onStart(t.clientX,t.clientY);
+  },{passive:false});
+  window.addEventListener('touchmove',e=>{
+    if(!dragging) return;
+    e.preventDefault();
+    const t=e.touches[0]; onMove(t.clientX,t.clientY);
+  },{passive:false});
+  window.addEventListener('touchend', onEnd);
+
+  // Mouse (desktop/devtools)
+  handle.addEventListener('mousedown',e=>{
+    e.preventDefault(); onStart(e.clientX,e.clientY);
+  });
+  window.addEventListener('mousemove',e=>{ if(dragging) onMove(e.clientX,e.clientY); });
+  window.addEventListener('mouseup', onEnd);
 }
 
 // Typy zawsze widoczne na osi TIR (niezależnie od filtrów)
