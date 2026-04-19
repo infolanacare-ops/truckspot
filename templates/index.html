@@ -1202,23 +1202,32 @@ body.navigating .nav-tl-hint{display:block}
   display:none;cursor:pointer;
 }
 body.navigating .nav-tl-handle{display:block}
-/* Panel — przeswitujący, wysuwa się z lewej */
+/* Panel — swobodnie przeciągalny widget */
 .nav-route-tl{
-  position:fixed;left:0;
-  top:calc(108px + env(safe-area-inset-top,0px) + 72px);
-  bottom:calc(62px + env(safe-area-inset-bottom,0px));
-  width:168px;z-index:1206;
-  background:rgba(14,18,32,.72);backdrop-filter:blur(18px);
-  border:1px solid rgba(255,255,255,.1);
-  border-left:none;
-  border-radius:0 16px 16px 0;
+  position:fixed;left:8px;
+  top:calc(190px + env(safe-area-inset-top,0px));
+  width:168px;max-height:55vh;z-index:1206;
+  background:rgba(14,18,32,.86);backdrop-filter:blur(18px);
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:16px;
   display:flex;flex-direction:column;
-  padding:.75rem .8rem .75rem .8rem;
-  transform:translateX(-100%);
-  transition:transform .32s cubic-bezier(.4,0,.2,1);
-  pointer-events:none;overflow:hidden;
+  padding:.5rem .8rem .75rem .8rem;
+  opacity:0;pointer-events:none;
+  transition:opacity .22s;
+  touch-action:none;
 }
-.nav-route-tl.open{transform:translateX(0);pointer-events:auto}
+.nav-route-tl.open{opacity:1;pointer-events:auto}
+/* Drag handle u góry panelu */
+.nav-tl-drag-handle{
+  display:flex;align-items:center;justify-content:center;
+  margin:-.1rem 0 .45rem;
+  cursor:grab;padding:.25rem 0;
+}
+.nav-tl-drag-handle:active{cursor:grabbing}
+.nav-tl-drag-handle-bar{
+  width:32px;height:3.5px;border-radius:2px;
+  background:rgba(255,255,255,.28);
+}
 /* Pionowa linia postępu */
 .nav-tl-line{
   position:absolute;left:19px;top:.75rem;bottom:.75rem;
@@ -2916,6 +2925,9 @@ body.navigating .convoy-btn{display:none}
 <div class="nav-tl-hint" id="nav-tl-hint"></div>
 <div class="nav-tl-handle" id="nav-tl-handle" onclick="toggleRouteTimeline()" title="Oś czasu trasy"></div>
 <div class="nav-route-tl" id="nav-route-tl">
+  <div class="nav-tl-drag-handle" id="nav-tl-drag-handle">
+    <div class="nav-tl-drag-handle-bar"></div>
+  </div>
   <div class="nav-tl-line"></div>
   <div class="nav-tl-list" id="nav-tl-list"></div>
 </div>
@@ -5911,17 +5923,22 @@ async function convoyPing(){
 }
 
 // ── Route Timeline ────────────────────────────────────────────────────────────
+const MOD_TL_KEY = 'ts_mod_tl_pos';
 let _rtlTimer = null;
+let _rtlDragInited = false;
 
 function showRouteTimeline(){
   renderRouteTimeline();
   const tl = document.getElementById('nav-route-tl');
   if(!tl) return;
   tl.classList.add('open');
-  // Jedno kliknięcie gdziekolwiek w panel → zamknij
-  tl.onclick = () => hideRouteTimeline();
   if(_rtlTimer) clearTimeout(_rtlTimer);
-  _rtlTimer = setTimeout(hideRouteTimeline, 20000);
+  // Inicjuj drag tylko raz — przez handle u góry
+  if(!_rtlDragInited){
+    _rtlDragInited = true;
+    const handle = document.getElementById('nav-tl-drag-handle');
+    if(handle) _makeDraggableModule(tl, MOD_TL_KEY, 8, 190, handle);
+  }
 }
 function hideRouteTimeline(){
   document.getElementById('nav-route-tl')?.classList.remove('open');
@@ -6446,7 +6463,9 @@ function updateLaneGuidance(dToManeuver){
 
 // ── MODUŁY HUD — system przeciągania ─────────────────────────────────────────
 // Reużywalna funkcja: dowolny element fixed → przeciągalny, pozycja w localStorage
-function _makeDraggableModule(el, storageKey, defaultRight, defaultBottom){
+// handle — opcjonalny element który jest uchwytem do przeciągania (domyślnie cały el)
+function _makeDraggableModule(el, storageKey, defaultRight, defaultBottom, handle){
+  const grip = handle || el;
   // Przywróć pozycję
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey)||'null');
@@ -6473,10 +6492,10 @@ function _makeDraggableModule(el, storageKey, defaultRight, defaultBottom){
     const r=el.getBoundingClientRect();
     try{ localStorage.setItem(storageKey,JSON.stringify({x:r.left,y:r.top})); }catch(e){}
   }
-  el.addEventListener('mousedown', e=>{ e.preventDefault(); onStart(e.clientX,e.clientY); });
+  grip.addEventListener('mousedown', e=>{ e.preventDefault(); onStart(e.clientX,e.clientY); });
   window.addEventListener('mousemove', e=>{ if(dragging) onMove(e.clientX,e.clientY); });
   window.addEventListener('mouseup', onEnd);
-  el.addEventListener('touchstart', e=>{ e.preventDefault(); onStart(e.touches[0].clientX,e.touches[0].clientY); },{passive:false});
+  grip.addEventListener('touchstart', e=>{ e.preventDefault(); onStart(e.touches[0].clientX,e.touches[0].clientY); },{passive:false});
   window.addEventListener('touchmove', e=>{ if(dragging){ e.preventDefault(); onMove(e.touches[0].clientX,e.touches[0].clientY); } },{passive:false});
   window.addEventListener('touchend', onEnd);
 }
@@ -7336,6 +7355,7 @@ function stopNavigation(){
   // Reset splajnu + ZUPT
   _drPrevLat=null; _drPrevLng=null; _drTickElapsed=0; _drTickDur=1.0;
   _zuptSnapLat=null; _zuptSnapLng=null;
+  _rtlDragInited=false;
   _navLockedZoom=null;
   const ob = document.getElementById('nav-overview-btn');
   if(ob) ob.classList.remove('active');
