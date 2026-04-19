@@ -4965,6 +4965,9 @@ function fitRouteCoords(coords, pad=60){
 // FILTERS
 // ══════════════════════════════════════
 const FILTER_DEFS = [
+  { section: { pl:'Parkingi TIR', en:'TIR Parkings', de:'LKW-Parkplätze', es:'Aparcamientos TIR' }, chips: [
+    { id:'all_parkings', pl:'🅿️ Wszystkie parkingi', en:'🅿️ All parkings', icon:'🅿️' },
+  ]},
   { section: { pl:'Paliwo i Pojazd', en:'Fuel & Vehicle', de:'Kraftstoff & Fahrzeug', es:'Combustible y Vehículo' }, chips: [
     { id:'fuel',       pl:'Stacja paliw',          en:'Fuel station',        icon:'⛽' },
     { id:'adblue',     pl:'AdBlue',                en:'AdBlue',              icon:'🟦' },
@@ -5090,11 +5093,19 @@ function updateFilterBadge(){
 }
 
 function applyFilterToMarkers(){
-  // Filtry parkingów = tylko nie-fs_ filtry
-  const parkingFilters = [...activeFilters].filter(id=>!FUEL_FILTER_IDS.has(id));
-  const filtered = parkingFilters.length === 0
-    ? []
-    : allParkings.filter(p => parkingFilters.some(f => (p.amenities||[]).includes(f)));
+  const SPECIAL = new Set(['all_parkings']);
+  const parkingFilters = [...activeFilters].filter(id=>!FUEL_FILTER_IDS.has(id) && !SPECIAL.has(id));
+  const showAll = activeFilters.has('all_parkings');
+
+  let filtered;
+  if(showAll && parkingFilters.length === 0){
+    filtered = allParkings; // wszystkie parkingi
+  } else if(parkingFilters.length > 0){
+    filtered = allParkings.filter(p => parkingFilters.some(f => (p.amenities||[]).includes(f)));
+  } else {
+    filtered = [];
+  }
+
   const src = map.getSource(CLUSTER_SRC);
   if(src){ src.setData(_parkingsGeoJSON(filtered)); _clusterParkings = filtered; }
   else renderMarkers(filtered);
@@ -5105,13 +5116,15 @@ function applyFilterToMarkers(){
   else renderFuelStations([]);
 
   if(activeFilters.size === 0){
-    showAlert('⚙️','Filtry','Parkingi ukryte — wybierz filtr aby je pokazać');
+    showAlert('⚙️','Filtry','Wybierz filtr aby zobaczyć parkingi');
+  } else if(showAll && parkingFilters.length === 0){
+    showAlert('🅿️','Parkingi', allParkings.length+' parkingów TIR');
   } else if(!hasFuelFilter && filtered.length === 0){
     showAlert('⚙️','Filtry','Brak parkingów spełniających kryteria');
-  } else if(hasFuelFilter && !parkingFilters.length){
+  } else if(hasFuelFilter && !parkingFilters.length && !showAll){
     showAlert('⛽','Stacje TIR','Ładowanie stacji...');
   } else {
-    showAlert('⚙️','Filtry',filtered.length+' parkingów');
+    showAlert('⚙️','Filtry', filtered.length+' parkingów');
   }
 }
 
