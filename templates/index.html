@@ -5851,58 +5851,57 @@ function stripForTts(txt){
 const VOICE_STORAGE_KEY = 'ts_nav_voice';
 let _selectedVoiceName = localStorage.getItem(VOICE_STORAGE_KEY) || null;
 
-function openVoicePicker(){
-  closeDrawer();
-  // getVoices() jest async — przy pierwszym wywołaniu może być pusta
-  const voicesNow = speechSynthesis.getVoices();
-  if(voicesNow.length === 0){
-    speechSynthesis.onvoiceschanged = () => { speechSynthesis.onvoiceschanged = null; openVoicePicker(); };
-    speechSynthesis.cancel(); // wymusza załadowanie głosów na niektórych przeglądarkach
-    return;
-  }
-  const panel   = document.getElementById('voice-picker-panel');
-  const overlay = document.getElementById('voice-picker-overlay');
-  const list    = document.getElementById('voice-picker-list');
-  if(!panel) return;
-
+function _fillVoiceList(voices){
+  const list = document.getElementById('voice-picker-list');
+  if(!list) return;
   const lang = currentLang==='pl'?'pl':currentLang==='de'?'de':currentLang==='es'?'es':'en';
-  const voices = voicesNow;
-  // Pokaż głosy pasujące do języka + kilka angielskich jako fallback
   const filtered = voices.filter(v => v.lang.startsWith(lang) || v.lang.startsWith('en'));
 
   list.innerHTML = '';
 
-  // Opcja "Auto" — najlepszy głos automatycznie
+  if(voices.length === 0){
+    list.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:.5rem;text-align:center">⏳ Ładowanie głosów...<br><small>Sprawdź ustawienia TTS w telefonie</small></div>';
+    return;
+  }
+
+  // Opcja "Auto"
   const autoBtn = document.createElement('div');
   autoBtn.style.cssText = `padding:.7rem .9rem;border-radius:12px;cursor:pointer;display:flex;align-items:center;gap:.7rem;border:1.5px solid ${!_selectedVoiceName ? 'var(--accent)' : 'var(--border)'};background:${!_selectedVoiceName ? 'var(--accent-bg)' : 'var(--panel2)'}`;
-  autoBtn.innerHTML = `<span style="font-size:1.2rem">🤖</span><div style="flex:1"><div style="font-weight:700;font-size:.88rem;color:var(--text)">Auto (najlepszy)</div><div style="font-size:.72rem;color:var(--muted)">Wybiera automatycznie najlepszy głos</div></div>${!_selectedVoiceName ? '<span style="color:var(--accent);font-size:.8rem;font-weight:700">✓</span>' : ''}`;
+  autoBtn.innerHTML = `<span style="font-size:1.2rem">🤖</span><div style="flex:1"><div style="font-weight:700;font-size:.88rem;color:var(--text)">Auto (najlepszy)</div><div style="font-size:.72rem;color:var(--muted)">Wybiera automatycznie</div></div>${!_selectedVoiceName ? '<span style="color:var(--accent);font-size:.8rem;font-weight:700">✓</span>' : ''}`;
   autoBtn.onclick = () => { _selectedVoiceName = null; localStorage.removeItem(VOICE_STORAGE_KEY); _navVoiceCache={}; closeVoicePicker(); updateVoiceBadge(); };
   list.appendChild(autoBtn);
 
-  filtered.forEach(v => {
+  (filtered.length ? filtered : voices).forEach(v => {
     const isSelected = _selectedVoiceName === v.name;
     const div = document.createElement('div');
     div.style.cssText = `padding:.7rem .9rem;border-radius:12px;cursor:pointer;display:flex;align-items:center;gap:.7rem;border:1.5px solid ${isSelected ? 'var(--accent)' : 'var(--border)'};background:${isSelected ? 'var(--accent-bg)' : 'var(--panel2)'}`;
     const quality = v.localService ? '📱 lokalny' : '🌐 online';
     div.innerHTML = `<span style="font-size:1.1rem">🎙</span><div style="flex:1"><div style="font-weight:700;font-size:.88rem;color:var(--text)">${v.name}</div><div style="font-size:.72rem;color:var(--muted)">${v.lang} · ${quality}</div></div>${isSelected ? '<span style="color:var(--accent);font-size:.8rem;font-weight:700">✓</span>' : ''}`;
+    const lngLocal = lang;
     div.onclick = () => {
       _selectedVoiceName = v.name;
       localStorage.setItem(VOICE_STORAGE_KEY, v.name);
       _navVoiceCache = {};
-      // Test głosu
-      const utt = new SpeechSynthesisUtterance(lang==='pl' ? 'Za 300 metrów skręć w prawo' : 'In 300 meters, turn right');
+      const utt = new SpeechSynthesisUtterance(lngLocal==='pl' ? 'Za 300 metrów skręć w prawo' : 'In 300 meters, turn right');
       utt.voice = v; utt.lang = v.lang; utt.rate=0.92;
-      speechSynthesis.cancel();
-      speechSynthesis.speak(utt);
-      closeVoicePicker();
-      updateVoiceBadge();
+      speechSynthesis.cancel(); speechSynthesis.speak(utt);
+      closeVoicePicker(); updateVoiceBadge();
     };
     list.appendChild(div);
   });
+}
 
-  if(filtered.length === 0){
-    list.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:.5rem">Brak dostępnych głosów dla tego języka.</div>';
-  }
+function openVoicePicker(){
+  closeDrawer();
+  const panel   = document.getElementById('voice-picker-panel');
+  const overlay = document.getElementById('voice-picker-overlay');
+  if(!panel) return;
+
+  // Otwórz panel od razu — głosy ładuj asynchronicznie
+  _fillVoiceList(speechSynthesis.getVoices());
+
+  // Jeśli głosy jeszcze nie załadowane, odśwież gdy będą gotowe
+  speechSynthesis.onvoiceschanged = () => { _fillVoiceList(speechSynthesis.getVoices()); };
 
   overlay.style.display='block'; overlay.style.opacity='0';
   panel.style.transform='translateY(100%)';
