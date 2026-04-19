@@ -2357,6 +2357,22 @@ body.navigating .convoy-btn{display:none}
 <!-- DRAWER OVERLAY -->
 <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
 
+<!-- VOICE PICKER PANEL -->
+<div class="drawer-overlay" id="voice-picker-overlay" onclick="closeVoicePicker()" style="z-index:1100"></div>
+<div id="voice-picker-panel" style="
+  position:fixed;left:0;right:0;bottom:0;z-index:1101;
+  background:var(--panel);border-radius:20px 20px 0 0;
+  border-top:1px solid var(--border);
+  padding:1rem 1rem 2rem;
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  max-height:65vh;overflow-y:auto;
+">
+  <div style="width:40px;height:4px;background:rgba(255,255,255,.18);border-radius:2px;margin:.2rem auto .9rem"></div>
+  <div style="font-family:var(--font-head);font-size:1rem;font-weight:800;color:var(--text);margin-bottom:.3rem">🎙 Głos nawigacji</div>
+  <div style="font-size:.75rem;color:var(--muted);margin-bottom:.9rem">Wybierz głos do zapowiedzi nawigacyjnych</div>
+  <div id="voice-picker-list" style="display:flex;flex-direction:column;gap:.4rem"></div>
+</div>
+
 <!-- SIDE DRAWER -->
 <div class="drawer" id="drawer">
   <div class="drawer-header">
@@ -2414,6 +2430,15 @@ body.navigating .convoy-btn{display:none}
         <div class="accent-swatch" data-accent="blue"   style="background:linear-gradient(135deg,#60a5fa,#3b82f6)" onclick="setAccentColor('blue')"   title="Niebieski"></div>
       </div>
     </div>
+    <!-- Głos nawigacji -->
+    <div class="menu-item" onclick="openVoicePicker()">
+      <div class="menu-icon" style="background:rgba(212,175,55,.12);border-color:#d4af37">
+        <span class="si"><svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></span>
+      </div>
+      <span class="menu-label">Głos nawigacji</span>
+      <span class="menu-badge" id="voice-badge" style="background:rgba(212,175,55,.15);color:#d4af37;border:1px solid rgba(212,175,55,.3)">auto</span>
+    </div>
+
     <div class="menu-item" onclick="drawerAction('lang')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span></div><span class="menu-label" data-i="menu_lang">Language</span></div>
     <div class="menu-item" onclick="drawerAction('mode')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span></div><span class="menu-label" data-i="menu_mode">Change mode</span></div>
   </div>
@@ -5790,8 +5815,86 @@ function stripForTts(txt){
 }
 
 // Najlepszy głos dla danego języka — raz wykryty i cachowany
+const VOICE_STORAGE_KEY = 'ts_nav_voice';
+let _selectedVoiceName = localStorage.getItem(VOICE_STORAGE_KEY) || null;
+
+function openVoicePicker(){
+  closeDrawer();
+  const panel   = document.getElementById('voice-picker-panel');
+  const overlay = document.getElementById('voice-picker-overlay');
+  const list    = document.getElementById('voice-picker-list');
+  if(!panel) return;
+
+  const lang = currentLang==='pl'?'pl':currentLang==='de'?'de':currentLang==='es'?'es':'en';
+  const voices = speechSynthesis.getVoices();
+  // Pokaż głosy pasujące do języka + kilka angielskich jako fallback
+  const filtered = voices.filter(v => v.lang.startsWith(lang) || v.lang.startsWith('en'));
+
+  list.innerHTML = '';
+
+  // Opcja "Auto" — najlepszy głos automatycznie
+  const autoBtn = document.createElement('div');
+  autoBtn.style.cssText = `padding:.7rem .9rem;border-radius:12px;cursor:pointer;display:flex;align-items:center;gap:.7rem;border:1.5px solid ${!_selectedVoiceName ? 'var(--accent)' : 'var(--border)'};background:${!_selectedVoiceName ? 'var(--accent-bg)' : 'var(--panel2)'}`;
+  autoBtn.innerHTML = `<span style="font-size:1.2rem">🤖</span><div style="flex:1"><div style="font-weight:700;font-size:.88rem;color:var(--text)">Auto (najlepszy)</div><div style="font-size:.72rem;color:var(--muted)">Wybiera automatycznie najlepszy głos</div></div>${!_selectedVoiceName ? '<span style="color:var(--accent);font-size:.8rem;font-weight:700">✓</span>' : ''}`;
+  autoBtn.onclick = () => { _selectedVoiceName = null; localStorage.removeItem(VOICE_STORAGE_KEY); _navVoiceCache={}; closeVoicePicker(); updateVoiceBadge(); };
+  list.appendChild(autoBtn);
+
+  filtered.forEach(v => {
+    const isSelected = _selectedVoiceName === v.name;
+    const div = document.createElement('div');
+    div.style.cssText = `padding:.7rem .9rem;border-radius:12px;cursor:pointer;display:flex;align-items:center;gap:.7rem;border:1.5px solid ${isSelected ? 'var(--accent)' : 'var(--border)'};background:${isSelected ? 'var(--accent-bg)' : 'var(--panel2)'}`;
+    const quality = v.localService ? '📱 lokalny' : '🌐 online';
+    div.innerHTML = `<span style="font-size:1.1rem">🎙</span><div style="flex:1"><div style="font-weight:700;font-size:.88rem;color:var(--text)">${v.name}</div><div style="font-size:.72rem;color:var(--muted)">${v.lang} · ${quality}</div></div>${isSelected ? '<span style="color:var(--accent);font-size:.8rem;font-weight:700">✓</span>' : ''}`;
+    div.onclick = () => {
+      _selectedVoiceName = v.name;
+      localStorage.setItem(VOICE_STORAGE_KEY, v.name);
+      _navVoiceCache = {};
+      // Test głosu
+      const utt = new SpeechSynthesisUtterance(lang==='pl' ? 'Za 300 metrów skręć w prawo' : 'In 300 meters, turn right');
+      utt.voice = v; utt.lang = v.lang; utt.rate=0.92;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(utt);
+      closeVoicePicker();
+      updateVoiceBadge();
+    };
+    list.appendChild(div);
+  });
+
+  if(filtered.length === 0){
+    list.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:.5rem">Brak dostępnych głosów dla tego języka.</div>';
+  }
+
+  overlay.style.display='block'; overlay.style.opacity='0';
+  panel.style.transform='translateY(100%)';
+  requestAnimationFrame(()=>{
+    overlay.style.transition='opacity .3s'; overlay.style.opacity='1';
+    panel.style.transform='translateY(0)';
+  });
+}
+
+function closeVoicePicker(){
+  const panel   = document.getElementById('voice-picker-panel');
+  const overlay = document.getElementById('voice-picker-overlay');
+  if(panel) panel.style.transform='translateY(100%)';
+  if(overlay){ overlay.style.opacity='0'; setTimeout(()=>{ overlay.style.display='none'; },300); }
+}
+
+function updateVoiceBadge(){
+  const badge = document.getElementById('voice-badge');
+  if(!badge) return;
+  badge.textContent = _selectedVoiceName
+    ? _selectedVoiceName.split(' ').slice(0,2).join(' ')
+    : 'auto';
+}
+
 let _navVoiceCache = {};
 function getBestVoice(lang){
+  // Użyj ręcznie wybranego głosu jeśli istnieje
+  if(_selectedVoiceName){
+    const voices = speechSynthesis.getVoices();
+    const found = voices.find(v => v.name === _selectedVoiceName);
+    if(found) return found;
+  }
   if(_navVoiceCache[lang]) return _navVoiceCache[lang];
   const voices = speechSynthesis.getVoices();
   if(!voices.length) return null;
@@ -6306,7 +6409,7 @@ function clearConvoyMsgBadge(){
 
 // Głosy ładują się asynchronicznie — odśwież cache
 if(typeof speechSynthesis !== 'undefined'){
-  speechSynthesis.onvoiceschanged = () => { _navVoiceCache = {}; };
+  speechSynthesis.onvoiceschanged = () => { _navVoiceCache = {}; updateVoiceBadge(); };
 }
 
 let _navSpeaking = false;
