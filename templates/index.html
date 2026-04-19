@@ -6471,7 +6471,7 @@ function startNavigation(){
     loadRoutePois();
     loadNavCameras();
   });
-  map.easeTo({pitch:55, duration:800});
+  map.easeTo({pitch:55, duration:1500});
   acquireWakeLock();
   // Pokaż profil TIR podczas nawigacji
   if(currentMode === 'tir'){
@@ -7219,7 +7219,7 @@ function cycleNavPitch(){
   const m = NAV_PITCH_MODES[navPitchMode];
   document.getElementById('nav-pitch-btn').textContent = m.label;
   if(!navOverviewMode && !navUserInteracting){
-    map.easeTo({pitch: m.pitch, duration:500});
+    map.easeTo({pitch: m.pitch, duration:1500});
   }
 }
 
@@ -7238,11 +7238,11 @@ function toggleNavOverview(){
     btn.classList.add('active');
     // Dopasuj kamerę do całej trasy — płasko z góry
     if(routeCoords.length) fitRouteCoords(routeCoords, 60);
-    map.easeTo({pitch:0, bearing:0, duration:500});
+    map.easeTo({pitch:0, bearing:0, duration:1500});
   } else {
     btn.classList.remove('active');
     // Wróć do widoku nawigacji
-    map.easeTo({pitch:55, duration:500});
+    map.easeTo({pitch:55, duration:1500});
   }
 }
 
@@ -7280,7 +7280,7 @@ function stopNavigation(){
   // Zamień strzałkę z powrotem na kółko
   if(gpsMarker){ const ll = gpsMarker.getLngLat(); gpsMarker.remove(); gpsMarker=null;
     gpsMarker = mkGpsDotMarker(ll.lat, ll.lng); }
-  map.easeTo({pitch:0, bearing:0, zoom:10, duration:800});
+  map.easeTo({pitch:0, bearing:0, zoom:10, duration:1500});
   releaseWakeLock();
   // Jeśli MOBILKI włączone — pokaż kierowców na mapie po zakończeniu navi
   if(convoyVisible && convoyNearby.length > 0){
