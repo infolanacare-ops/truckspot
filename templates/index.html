@@ -4659,7 +4659,7 @@ function _easeOut(t){ return 1 - Math.pow(1-t, 3); }
 
 function setGpsArrow(lat, lng){
   if(!gpsMarker){
-    const arrowColor = '#d4af37';
+    const arrowColor = getNavPalette().arrow;
     const el = document.createElement('div');
     el.innerHTML = `<svg class="nav-arrow" width="52" height="66" viewBox="0 0 40 52" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 3px 8px rgba(0,0,0,.65)) drop-shadow(0 1px 3px rgba(0,0,0,.5))">
       <polygon points="20,2 38,50 20,40 2,50" fill="${arrowColor}" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>
@@ -5310,12 +5310,44 @@ const NAV_SVG_PATHS = {
 };
 
 // Card background colours
+// Premium palety kolorów nawigacji per tryb
+const NAV_PALETTES = {
+  tir:     { card:'#006d77', strip:'#005560', arrow:'#d4af37', route:'#00838f', casing:'#003d44', glow:'#006d77' },
+  bus:     { card:'#065f46', strip:'#054d38', arrow:'#10b981', route:'#059669', casing:'#023d2e', glow:'#065f46' },
+  tourist: { card:'#1e3a5f', strip:'#162d4a', arrow:'#60a5fa', route:'#2563eb', casing:'#0f2340', glow:'#1e3a5f' },
+};
+
+function getNavPalette(){ return NAV_PALETTES[currentMode] || NAV_PALETTES.tir; }
+
+function applyNavPalette(){
+  const p = getNavPalette();
+  const card = document.getElementById('nav-maneuver-card');
+  const strip = document.getElementById('nav-next-strip');
+  if(card) card.style.background = p.card;
+  if(strip) strip.style.background = p.strip;
+  // Strzałka GPS
+  if(gpsMarker){
+    const poly = gpsMarker.getElement().querySelector('polygon');
+    if(poly) poly.style.fill = p.arrow;
+  }
+  // Linia trasy
+  if(map.getLayer('ts-route-line'))   map.setPaintProperty('ts-route-line',  'line-color', p.route);
+  if(map.getLayer('ts-route-casing')) map.setPaintProperty('ts-route-casing','line-color', p.casing);
+  if(map.getLayer('ts-route-glow'))   map.setPaintProperty('ts-route-glow',  'line-color', p.glow);
+}
+
 const NAV_COLORS = {
-  straight:'#006d77', 'turn left':'#006d77', 'turn right':'#006d77',
-  'slight left':'#006d77','slight right':'#006d77',
-  'sharp left':'#006d77','sharp right':'#006d77',
-  roundabout:'#006d77', uturn:'#dc7716',
-  depart:'#16a34a', arrive:'#16a34a', default:'#006d77',
+  get straight(){ return getNavPalette().card; },
+  get 'turn left'(){ return getNavPalette().card; },
+  get 'turn right'(){ return getNavPalette().card; },
+  get 'slight left'(){ return getNavPalette().card; },
+  get 'slight right'(){ return getNavPalette().card; },
+  get 'sharp left'(){ return getNavPalette().card; },
+  get 'sharp right'(){ return getNavPalette().card; },
+  get roundabout(){ return getNavPalette().card; },
+  uturn:'#dc7716',
+  depart:'#16a34a', arrive:'#16a34a',
+  get default(){ return getNavPalette().card; },
 };
 
 function navSvgPath(type, mod){
@@ -6391,6 +6423,8 @@ function startNavigation(){
   navActive=true; navStepIdx=0; navCIdx=0; navLastLat=null; navLastLng=null;
   // Uruchom giroskop dla precyzyjnego headingu
   _gyroHeading = null; _startGyro();
+  // Zastosuj paletę kolorów dla aktywnego trybu
+  setTimeout(applyNavPalette, 100);
   navAnnouncedPois=new Set(); navAnnouncedSteps=new Set(); navSpeedKmh=0;
   window._lastPoiAnnounceTs = 0;
   navAnnouncedReports=new Set(); navRerouteWarned=false; navRerouteTs=0; navOffRouteTicks=0;
@@ -6859,7 +6893,7 @@ function onNavPosition(pos){
                 padding:{top:padTop, bottom:padBot, left:0, right:0}});
   }
   // Upewnij się że trasa jest narysowana (może zniknąć po zmianie stylu)
-  if(routeCoords.length && !map.getSource('ts-route')) drawRoute(routeCoords);
+  if(routeCoords.length && !map.getSource('ts-route')){ drawRoute(routeCoords); setTimeout(applyNavPalette,200); }
   // Aktualizuj szarą "przejechana" część — co 3 ticki GPS
   if(navCIdx % 3 === 0) updateTraveledRoute();
 
