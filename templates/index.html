@@ -7265,24 +7265,18 @@ function onNavPosition(pos){
     finalZoom = targetZoom;
   }
 
-  // Centruj na snapCoord — strzałka stoi, mapa płynie wokół niej (Waze/Google style)
-  const camLat = snapLat, camLng = snapLng;
+  // Lookahead: centruj mapę 150m przed samochodem → strzałka pojawia się w dolnej części ekranu
+  const lookaheadM = 150;
+  const bearingRad = (navHeading * Math.PI) / 180;
+  const mPerDeg = 111320;
+  const camLat = snapLat + (lookaheadM / mPerDeg) * Math.cos(bearingRad);
+  const camLng = snapLng + (lookaheadM / (mPerDeg * Math.cos(snapLat * Math.PI / 180))) * Math.sin(bearingRad);
   if(!navOverviewMode && !navUserInteracting){
-    // Camera offset: strzałka w dolnej 1/3 widocznej mapy — dużo drogi przed (TomTom/Waze standard)
-    // padTop = wysokość górnych paneli nav, padBot = dolny pasek → strzałka w centrum widocznej mapy
-    const navBarH  = document.getElementById('nav-bottom')?.offsetHeight || 100;
-    const navCardH = (document.getElementById('nav-maneuver-card')?.offsetHeight || 0)
-                   + (document.getElementById('nav-next-strip')?.offsetHeight || 0)
-                   + (document.getElementById('nav-lanes')?.offsetHeight || 0)
-                   + (document.getElementById('nav-road-strip')?.offsetHeight || 0);
-    const padTop  = navCardH + 8;
-    const padBot  = navBarH + 8;
-    // Gdy auto stoi — nie obracamy mapy, tylko centrujemy (bearing freeze)
     const camBearing = navSpeedKmh >= 4 ? navHeading : map.getBearing();
     map.easeTo({center:[camLng, camLat], zoom:finalZoom, bearing:camBearing,
                 pitch:targetPitch, duration:camDuration,
                 easing: t => t*(2-t),
-                padding:{top:padTop, bottom:padBot, left:0, right:0}});
+                padding:{top:0, bottom:0, left:0, right:0}});
   }
   // Upewnij się że trasa jest narysowana (może zniknąć po zmianie stylu)
   if(routeCoords.length && !map.getSource('ts-route')){ drawRoute(routeCoords); setTimeout(applyNavPalette,200); }
@@ -7511,8 +7505,8 @@ let navUserInteractTimer = null;
 
 // Trzy poziomy perspektywy nawigacji
 const NAV_PITCH_MODES = [
-  {pitch:55, label:'3D',   zoomOff: +0.5}, // domyślny 3D — dobry widok drogi
-  {pitch:40, label:'2D',   zoomOff:  0},   // prawie płaski
+  {pitch:65, label:'3D',   zoomOff: +1.0}, // domyślny 3D — więcej szczegółów, bardziej pod kątem
+  {pitch:45, label:'2D',   zoomOff:  0},   // prawie płaski
   {pitch:0,  label:'⊙',   zoomOff: -1},   // z góry
 ];
 let navPitchMode = 0;
