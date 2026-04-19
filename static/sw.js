@@ -1,8 +1,9 @@
-// TruckSpot Service Worker — v9
-// Kluczowa zmiana: HTML zawsze network-first → apka zawsze ładuje świeży kod
-const STATIC_CACHE = 'ts-static-v10';  // ikony, manifest (rzadko się zmieniają)
-const DATA_CACHE   = 'ts-data-v10';    // API responses
-const TILE_CACHE   = 'ts-tiles-v10';   // kafelki mapy
+// TruckSpot Service Worker — v11
+// HTML nigdy nie cachowany → zawsze świeży kod przy każdym otwarciu
+// Aktualizacja: cichy reload wszystkich klientów, zero banerów
+const STATIC_CACHE = 'ts-static-v11';  // ikony, manifest (rzadko się zmieniają)
+const DATA_CACHE   = 'ts-data-v11';    // API responses
+const TILE_CACHE   = 'ts-tiles-v11';   // kafelki mapy
 
 // Tylko naprawdę statyczne assety — NIE cachujemy HTML
 const STATIC_ASSETS = [
@@ -32,7 +33,7 @@ self.addEventListener('install', e => {
   );
 });
 
-// ── ACTIVATE — wyczyść stare cache ───────────────────────────────────────────
+// ── ACTIVATE — wyczyść stare cache + cichy reload ───────────────────────────
 self.addEventListener('activate', e => {
   const CURRENT = [STATIC_CACHE, DATA_CACHE, TILE_CACHE];
   e.waitUntil(
@@ -43,16 +44,9 @@ self.addEventListener('activate', e => {
       .then(() => self.clients.claim())
       .then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
       .then(clients => {
-        // Jeśli żaden klient nie jest aktywny (app była w tle/zamknięta)
-        // — przeładuj cicho bez bannera
-        const activeClients = clients.filter(c => c.visibilityState === 'visible');
-        if(activeClients.length === 0){
-          // Nikt nie patrzy — przeładuj wszystkich po cichu
-          clients.forEach(c => c.navigate(c.url));
-        } else {
-          // Ktoś jest aktywnie w apce — pokaż banner
-          activeClients.forEach(c => c.postMessage({ type: 'UPDATE_AVAILABLE' }));
-        }
+        // Zawsze przeładuj cicho — Flask wysyła no-store, reload = świeży kod
+        // Zero banerów, pełen automat jak TomTom/Waze
+        clients.forEach(c => c.navigate(c.url));
       })
   );
 });
@@ -91,10 +85,13 @@ self.addEventListener('fetch', e => {
 // ── STRATEGIE ─────────────────────────────────────────────────────────────────
 
 // Network First — próbuj sieć, fallback na cache
+// HTML (navigate) nigdy nie jest cachowany — zawsze świeży z serwera
 async function networkFirst(request) {
+  const isNavigate = request.mode === 'navigate';
   try {
     const response = await fetch(request);
-    if (response.ok) {
+    if (response.ok && !isNavigate) {
+      // Cachujemy tylko nie-HTML (JS, CSS itp.) — HTML zawsze sieć
       const cache = await caches.open(STATIC_CACHE);
       cache.put(request, response.clone());
     }
@@ -102,7 +99,7 @@ async function networkFirst(request) {
   } catch {
     const cached = await caches.match(request);
     if (cached) return cached;
-    if (request.mode === 'navigate') {
+    if (isNavigate) {
       return new Response('<h1>Offline</h1><p>Brak połączenia. Otwórz apkę gdy masz internet.</p>',
         { headers: { 'Content-Type': 'text/html' } });
     }

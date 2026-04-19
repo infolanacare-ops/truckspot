@@ -9537,9 +9537,7 @@ if('serviceWorker' in navigator){
     if(e.data?.type === 'ALERT_NAVIGATE' && e.data.lat && e.data.lng){
       map && map.flyTo({center:[e.data.lng, e.data.lat], zoom:13});
     }
-    if(e.data?.type === 'UPDATE_AVAILABLE'){
-      showUpdateBanner();
-    }
+    // UPDATE_AVAILABLE usunięty — SW v11 robi cichy reload automatycznie
   });
 }
 
