@@ -5820,13 +5820,20 @@ let _selectedVoiceName = localStorage.getItem(VOICE_STORAGE_KEY) || null;
 
 function openVoicePicker(){
   closeDrawer();
+  // getVoices() jest async — przy pierwszym wywołaniu może być pusta
+  const voicesNow = speechSynthesis.getVoices();
+  if(voicesNow.length === 0){
+    speechSynthesis.onvoiceschanged = () => { speechSynthesis.onvoiceschanged = null; openVoicePicker(); };
+    speechSynthesis.cancel(); // wymusza załadowanie głosów na niektórych przeglądarkach
+    return;
+  }
   const panel   = document.getElementById('voice-picker-panel');
   const overlay = document.getElementById('voice-picker-overlay');
   const list    = document.getElementById('voice-picker-list');
   if(!panel) return;
 
   const lang = currentLang==='pl'?'pl':currentLang==='de'?'de':currentLang==='es'?'es':'en';
-  const voices = speechSynthesis.getVoices();
+  const voices = voicesNow;
   // Pokaż głosy pasujące do języka + kilka angielskich jako fallback
   const filtered = voices.filter(v => v.lang.startsWith(lang) || v.lang.startsWith('en'));
 
@@ -6605,21 +6612,22 @@ function _makeDraggableModule(el, storageKey){
     try{ localStorage.setItem(storageKey,JSON.stringify({x:r.left,y:r.top})); }catch(ex){}
   }
 
-  el.addEventListener('mousedown',  e=>onStart(e.clientX,e.clientY));
+  el.addEventListener('mousedown',  e=>{ e.stopPropagation(); onStart(e.clientX,e.clientY); });
   window.addEventListener('mousemove', e=>onMove(e.clientX,e.clientY));
   window.addEventListener('mouseup',   e=>onEnd(e));
-  el.addEventListener('touchstart', e=>onStart(e.touches[0].clientX,e.touches[0].clientY),{passive:true});
+  el.addEventListener('touchstart', e=>{ e.stopPropagation(); e.preventDefault(); onStart(e.touches[0].clientX,e.touches[0].clientY); },{passive:false});
   window.addEventListener('touchmove', e=>{ if(dragging){ e.preventDefault(); onMove(e.touches[0].clientX,e.touches[0].clientY); } },{passive:false});
   window.addEventListener('touchend',  e=>onEnd(e));
 }
 
 const MOD_SPEED_KEY   = 'ts_mod_speed_pos';
 const MOD_SPEED_VIS   = 'ts_mod_speed_vis';
+let _speedModuleInited = false;
 
 function _initSpeedModule(){
   const el = document.getElementById('speed-module');
   if(!el) return;
-  _makeDraggableModule(el, MOD_SPEED_KEY);
+  if(!_speedModuleInited){ _speedModuleInited = true; _makeDraggableModule(el, MOD_SPEED_KEY); }
   // Przywróć widoczność
   const hidden = localStorage.getItem(MOD_SPEED_VIS) === 'hidden';
   el.classList.toggle('mod-hidden', hidden);
