@@ -7170,11 +7170,10 @@ function onNavPosition(pos){
   // Centruj na snapCoord — strzałka stoi, mapa płynie wokół niej (Waze/Google style)
   const camLat = snapLat, camLng = snapLng;
   if(!navOverviewMode && !navUserInteracting){
-    // Camera offset: strzałka na ~35% od dołu ekranu (więcej drogi przed, mniej za)
-    // TomTom/Google Maps używają 30-40% od dołu
-    const navBarH = document.getElementById('nav-bottom')?.offsetHeight || 100;
-    const padBot  = Math.round(window.innerHeight * 0.35) + navBarH;
-    const padTop  = Math.round(window.innerHeight * 0.12);
+    // Camera offset: strzałka na ~25% od dołu — dużo drogi przed (TomTom/Waze standard)
+    const navBarH = document.getElementById('nav-bottom')?.offsetHeight || 110;
+    const padBot  = Math.round(window.innerHeight * 0.58) + navBarH;
+    const padTop  = Math.round(window.innerHeight * 0.08);
     // Gdy auto stoi — nie obracamy mapy, tylko centrujemy (bearing freeze)
     const camBearing = navSpeedKmh >= 4 ? navHeading : map.getBearing();
     map.easeTo({center:[camLng, camLat], zoom:finalZoom, bearing:camBearing,
