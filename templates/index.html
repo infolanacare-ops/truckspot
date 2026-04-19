@@ -2922,6 +2922,8 @@ body.navigating .convoy-btn{display:none}
     </div>
     <!-- Stop -->
     <button class="nav-btm-btn nav-btm-stop" onclick="stopNavigation()" title="Zatrzymaj nawigację">✕</button>
+    <!-- Kompas north-up / bearing-up -->
+    <button class="nav-btm-btn" id="nav-compass-btn" onclick="toggleNavNorthUp()" title="Orientacja mapy" style="font-size:1.3rem;background:rgba(255,255,255,.12);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;">🧭</button>
     <!-- Hamburger -->
     <button class="nav-hamburger" id="nav-hamburger" onclick="toggleNavSheet()" aria-label="Menu nawigacji">
       <span></span><span></span><span></span>
@@ -7272,7 +7274,7 @@ function onNavPosition(pos){
   const camLat = snapLat + (lookaheadM / mPerDeg) * Math.cos(bearingRad);
   const camLng = snapLng + (lookaheadM / (mPerDeg * Math.cos(snapLat * Math.PI / 180))) * Math.sin(bearingRad);
   if(!navOverviewMode && !navUserInteracting){
-    const camBearing = navSpeedKmh >= 8 ? navHeading : map.getBearing();
+    const camBearing = navNorthUp ? 0 : (navSpeedKmh >= 8 ? navHeading : map.getBearing());
     map.easeTo({center:[camLng, camLat], zoom:finalZoom, bearing:camBearing,
                 pitch:targetPitch, duration:camDuration,
                 easing: t => t*(2-t),
@@ -7516,6 +7518,20 @@ function cycleNavPitch(){
   document.getElementById('nav-pitch-btn').textContent = m.label;
   if(!navOverviewMode && !navUserInteracting){
     map.easeTo({pitch: m.pitch, duration:1500});
+  }
+}
+
+let navNorthUp = false;
+function toggleNavNorthUp(){
+  navNorthUp = !navNorthUp;
+  const btn = document.getElementById('nav-compass-btn');
+  if(navNorthUp){
+    btn.textContent = '⬆️';
+    btn.title = 'Północ — kliknij aby wrócić do kierunku jazdy';
+    map.easeTo({bearing: 0, duration: 600});
+  } else {
+    btn.textContent = '🧭';
+    btn.title = 'Kierunek jazdy — kliknij aby ustawić północ';
   }
 }
 
