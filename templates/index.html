@@ -5936,8 +5936,7 @@ function showRouteTimeline(){
   // Inicjuj drag tylko raz — przez handle u góry
   if(!_rtlDragInited){
     _rtlDragInited = true;
-    const handle = document.getElementById('nav-tl-drag-handle');
-    if(handle) _makeDraggableModule(tl, MOD_TL_KEY, 8, 190, handle);
+    _makeDraggableModule(tl, MOD_TL_KEY);
   }
 }
 function hideRouteTimeline(){
@@ -6463,41 +6462,52 @@ function updateLaneGuidance(dToManeuver){
 
 // ── MODUŁY HUD — system przeciągania ─────────────────────────────────────────
 // Reużywalna funkcja: dowolny element fixed → przeciągalny, pozycja w localStorage
-// handle — opcjonalny element który jest uchwytem do przeciągania (domyślnie cały el)
-function _makeDraggableModule(el, storageKey, defaultRight, defaultBottom, handle){
-  const grip = handle || el;
-  // Przywróć pozycję
+// Przeciąganie modułów HUD — dowolne miejsce w elemencie, threshold 6px żeby
+// kliknięcia w przyciski wewnątrz dalej działały normalnie
+function _makeDraggableModule(el, storageKey){
+  // Przywróć zapisaną pozycję
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey)||'null');
     if(saved){ el.style.left=saved.x+'px'; el.style.top=saved.y+'px'; el.style.right='auto'; el.style.bottom='auto'; }
   } catch(e){}
 
-  let dragging=false, ox=0, oy=0;
+  const THRESHOLD = 6; // px ruchu zanim uzna za drag (nie tap)
+  let pressing=false, dragging=false, ox=0, oy=0, sx=0, sy=0;
 
   function onStart(cx, cy){
-    dragging=true;
+    pressing=true; dragging=false;
     const r=el.getBoundingClientRect();
     ox=cx-r.left; oy=cy-r.top;
-    el.style.transition='none';
-    el.style.right='auto'; el.style.bottom='auto';
+    sx=cx; sy=cy;
   }
   function onMove(cx, cy){
-    if(!dragging) return;
+    if(!pressing) return;
+    if(!dragging){
+      if(Math.abs(cx-sx)>THRESHOLD || Math.abs(cy-sy)>THRESHOLD){
+        dragging=true;
+        el.style.transition='none';
+        el.style.right='auto'; el.style.bottom='auto';
+      } else return;
+    }
     const x=Math.max(0,Math.min(cx-ox, window.innerWidth-el.offsetWidth));
     const y=Math.max(0,Math.min(cy-oy, window.innerHeight-el.offsetHeight));
     el.style.left=x+'px'; el.style.top=y+'px';
   }
-  function onEnd(){
-    if(!dragging) return; dragging=false;
+  function onEnd(e){
+    if(dragging && e){ e.stopPropagation(); }
+    pressing=false;
+    if(!dragging){ return; }
+    dragging=false;
     const r=el.getBoundingClientRect();
-    try{ localStorage.setItem(storageKey,JSON.stringify({x:r.left,y:r.top})); }catch(e){}
+    try{ localStorage.setItem(storageKey,JSON.stringify({x:r.left,y:r.top})); }catch(ex){}
   }
-  grip.addEventListener('mousedown', e=>{ e.preventDefault(); onStart(e.clientX,e.clientY); });
-  window.addEventListener('mousemove', e=>{ if(dragging) onMove(e.clientX,e.clientY); });
-  window.addEventListener('mouseup', onEnd);
-  grip.addEventListener('touchstart', e=>{ e.preventDefault(); onStart(e.touches[0].clientX,e.touches[0].clientY); },{passive:false});
+
+  el.addEventListener('mousedown',  e=>onStart(e.clientX,e.clientY));
+  window.addEventListener('mousemove', e=>onMove(e.clientX,e.clientY));
+  window.addEventListener('mouseup',   e=>onEnd(e));
+  el.addEventListener('touchstart', e=>onStart(e.touches[0].clientX,e.touches[0].clientY),{passive:true});
   window.addEventListener('touchmove', e=>{ if(dragging){ e.preventDefault(); onMove(e.touches[0].clientX,e.touches[0].clientY); } },{passive:false});
-  window.addEventListener('touchend', onEnd);
+  window.addEventListener('touchend',  e=>onEnd(e));
 }
 
 const MOD_SPEED_KEY   = 'ts_mod_speed_pos';
@@ -6506,7 +6516,7 @@ const MOD_SPEED_VIS   = 'ts_mod_speed_vis';
 function _initSpeedModule(){
   const el = document.getElementById('speed-module');
   if(!el) return;
-  _makeDraggableModule(el, MOD_SPEED_KEY, 12, 130);
+  _makeDraggableModule(el, MOD_SPEED_KEY);
   // Przywróć widoczność
   const hidden = localStorage.getItem(MOD_SPEED_VIS) === 'hidden';
   el.classList.toggle('mod-hidden', hidden);
