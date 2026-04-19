@@ -7096,7 +7096,7 @@ function updateNavStep(idx, flash=false){
     const nextPathEl = document.getElementById('nav-next-path');
     if(nextPathEl) nextPathEl.setAttribute('d', np);
     setEl('nav-next-label', (currentLang==='pl'?'Potem: ':'Then: ') + stepInstruction(next));
-    setEl('nav-next-dist', fmtDist(next.distance||0));
+    setElH('nav-next-dist', fmtDist(next.distance||0));
     nextStrip.style.display = 'flex';
     nextStrip.classList.remove('hidden');
     requestAnimationFrame(updatePoiStripTop);
@@ -7289,18 +7289,21 @@ function onNavPosition(pos){
     finalZoom = targetZoom;
   }
 
-  // Lookahead: centruj mapę 150m przed samochodem → strzałka pojawia się w dolnej części ekranu
-  const lookaheadM = 150;
-  const bearingRad = (navHeading * Math.PI) / 180;
-  const mPerDeg = 111320;
-  const camLat = snapLat + (lookaheadM / mPerDeg) * Math.cos(bearingRad);
-  const camLng = snapLng + (lookaheadM / (mPerDeg * Math.cos(snapLat * Math.PI / 180))) * Math.sin(bearingRad);
+  // Centrum na samochodzie + padding żeby strzałka była w dolnej części widocznej mapy
+  const camLat = snapLat, camLng = snapLng;
   if(!navOverviewMode && !navUserInteracting){
+    const navBarH  = document.getElementById('nav-bottom')?.offsetHeight || 100;
+    const navCardH = (document.getElementById('nav-maneuver-card')?.offsetHeight || 0)
+                   + (document.getElementById('nav-next-strip')?.offsetHeight || 0)
+                   + (document.getElementById('nav-lanes')?.offsetHeight || 0)
+                   + (document.getElementById('nav-road-strip')?.offsetHeight || 0);
+    const padTop = navCardH + 8;
+    const padBot = navBarH + 8;
     const camBearing = navNorthUp ? 0 : (navSpeedKmh >= 8 ? navHeading : map.getBearing());
     map.easeTo({center:[camLng, camLat], zoom:finalZoom, bearing:camBearing,
                 pitch:targetPitch, duration:camDuration,
                 easing: t => t*(2-t),
-                padding:{top:0, bottom:0, left:0, right:0}});
+                padding:{top:padTop, bottom:padBot, left:0, right:0}});
   }
   // Upewnij się że trasa jest narysowana (może zniknąć po zmianie stylu)
   if(routeCoords.length && !map.getSource('ts-route')){ drawRoute(routeCoords); setTimeout(applyNavPalette,200); }
