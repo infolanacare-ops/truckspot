@@ -6934,10 +6934,19 @@ let _audioUnlocked = false;
 function _unlockAudio(){
   if(_audioUnlocked) return;
   try {
-    // Cichy WAV (44 bajty, 0 sampli) — tylko żeby przebudzić autoplay policy
     const a = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
     a.volume = 0;
     a.play().then(()=>{ _audioUnlocked = true; a.pause(); }).catch(()=>{});
+  } catch(e){}
+}
+let _speechUnlocked = false;
+function _unlockSpeech(){
+  if(_speechUnlocked || !('speechSynthesis' in window)) return;
+  try {
+    const utt = new SpeechSynthesisUtterance(' ');
+    utt.volume = 0;
+    utt.onend = () => { _speechUnlocked = true; };
+    speechSynthesis.speak(utt);
   } catch(e){}
 }
 
@@ -6963,11 +6972,15 @@ function _elPlayNext(){
 function _speakWebFallback(txt, lang, onEnd){
   if(!('speechSynthesis' in window)){ onEnd && onEnd(); return; }
   const utt = new SpeechSynthesisUtterance(txt);
-  utt.lang=lang; utt.rate=1.0; utt.pitch=1.1; utt.volume=1.0;
+  utt.rate=1.0; utt.pitch=1.0; utt.volume=1.0;
   const voice = _pickVoice(lang, 'nav');
-  if(voice) utt.voice = voice;
+  if(voice){
+    utt.voice = voice;
+    utt.lang = lang;
+  }
+  // jeśli brak głosu dla danego języka — nie ustawiamy lang, Android użyje głosu systemowego
   utt.onend = utt.onerror = () => { onEnd && onEnd(); };
-  _safespeak(utt);
+  speechSynthesis.speak(utt); // bez setTimeout — bezpośrednio
 }
 
 function speakNav(txt, priority=false){
@@ -7198,7 +7211,8 @@ function _updateSpeedModuleBtn(){
 
 function startNavigation(){
   if(!routeSteps.length){ showAlert('⚠️','','Najpierw oblicz trasę'); return; }
-  _unlockAudio(); // odblokuj HTML5 Audio w user gesture context — kluczowe dla Android
+  _unlockAudio();   // odblokuj HTML5 Audio — kluczowe dla Android
+  _unlockSpeech();  // odblokuj speechSynthesis — Android wymaga user gesture
   navActive=true; navStepIdx=0; navCIdx=0; navLastLat=null; navLastLng=null;
   _smoothBearing=null; _navLockedZoom=null; _zuptSnapLat=null; _zuptSnapLng=null;
   _snapEmaLat=null; _snapEmaLng=null;
