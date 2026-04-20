@@ -3,6 +3,9 @@
 import os, json, re, secrets, time, math, requests as _requests
 from flask import Flask, render_template, request, jsonify, send_from_directory
 
+_poi_cache = {}   # bbox_key → (timestamp, data)
+_POI_CACHE_TTL = 1800  # 30 minut
+
 try:
     from pywebpush import webpush, WebPushException
     PUSH_AVAILABLE = True
@@ -225,6 +228,10 @@ def api_route_pois():
         return jsonify([])
 
     bbox = f"{south},{west},{north},{east}"
+    cached = _poi_cache.get(bbox)
+    if cached and time.time() - cached[0] < _POI_CACHE_TTL:
+        return jsonify(cached[1])
+
     query = f"""
     [out:json][timeout:20];
     (
@@ -271,6 +278,7 @@ def api_route_pois():
             "icon": icon,
             "hgv":  tags.get("hgv","") in ("yes","designated"),
         })
+    _poi_cache[bbox] = (time.time(), results)
     return jsonify(results)
 
 

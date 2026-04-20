@@ -7227,7 +7227,8 @@ function startNavigation(){
   speakNav(stepInstruction(routeSteps[0], true), true);
   // Nie przeładowuj stylu mapy — trasa jest już narysowana, unikamy białego ekranu
   if(routeCoords.length && !map.getSource('ts-route')) drawRoute(routeCoords);
-  loadRoutePois();
+  // POI już załadowane po obliczeniu trasy — ładuj ponownie tylko jeśli puste
+  if(!navRoutePois.length) loadRoutePois();
   loadNavCameras();
   map.easeTo({pitch:65, duration:1500});
   acquireWakeLock();
@@ -8840,23 +8841,13 @@ async function loadUserCameras(){
 }
 
 // Ładuje fotoradary dla całej trasy — segmentami wzdłuż trasy (dokładniejsze niż bbox)
-async function loadNavCameras(){
-  if(!routeCoords.length) return;
+const _camCache = new Map(); // bbox_key → elements[], TTL 30min
 
-  // Podziel trasę na segmenty ~80km i odpytaj każdy osobno
-  // (Overpass lepiej radzi sobie z małymi zapytaniami niż jednym dużym bbox)
-  const SEGMENT_KM = 80;
-  const segments = buildRouteSegmentBboxes(SEGMENT_KM);
-
-  let allElements = [];
-  const seen = new Set();
-
-  // Odpytuj segmenty kolejno (nie równolegle — Overpass rate limit)
-  for(const bbox of segments){
-    try {
-      const [s,w,n,e] = bbox;
-      // Wszystkie tagi fotoradarów używane w całej Europie
-      const query = `[out:json][timeout:25];
+async function _fetchCameraSegment([s,w,n,e]){
+  const key = `${s},${w},${n},${e}`;
+  const cached = _camCache.get(key);
+  if(cached && Date.now() - cached.ts < 1800000) return cached.data;
+  const query = `[out:json][timeout:25];
 (
   node["highway"="speed_camera"](${s},${w},${n},${e});
   node["enforcement"="maxspeed"](${s},${w},${n},${e});
@@ -8870,33 +8861,48 @@ async function loadNavCameras(){
   way["enforcement"="maxspeed"](${s},${w},${n},${e});
 );
 out center;`;
-      const resp = await fetch('https://overpass-api.de/api/interpreter', {
-        method:'POST', body:'data='+encodeURIComponent(query)
-      });
-      if(!resp.ok) continue;
-      const data = await resp.json();
-      for(const el of (data.elements||[])){
-        const lat = el.lat ?? el.center?.lat;
-        const lon = el.lon ?? el.center?.lon;
-        if(!lat||!lon) continue;
-        const key = `${lat.toFixed(5)},${lon.toFixed(5)}`;
-        if(seen.has(key)) continue;
-        seen.add(key);
-        allElements.push({...el, lat, lon});
-      }
-    } catch(e){ /* ignoruj błędy sieciowe dla segmentu */ }
+  try {
+    const resp = await fetch('https://overpass-api.de/api/interpreter', {
+      method:'POST', body:'data='+encodeURIComponent(query)
+    });
+    if(!resp.ok) return [];
+    const data = await resp.json();
+    const result = (data.elements||[]).map(el=>({
+      ...el, lat: el.lat ?? el.center?.lat, lon: el.lon ?? el.center?.lon
+    })).filter(el=>el.lat && el.lon);
+    _camCache.set(key, {ts: Date.now(), data: result});
+    return result;
+  } catch(e){ return []; }
+}
+
+async function loadNavCameras(){
+  if(!routeCoords.length) return;
+  const segments = buildRouteSegmentBboxes(150); // 150km — mniej requestów
+
+  // Pobierz segmenty po 2 równolegle (Overpass toleruje 2 concurrent)
+  const allElements = [];
+  for(let i=0; i<segments.length; i+=2){
+    const batch = segments.slice(i, i+2).map(_fetchCameraSegment);
+    const results = await Promise.all(batch);
+    results.forEach(els => allElements.push(...els));
   }
+
+  const seen = new Set();
+  const deduped = allElements.filter(el=>{
+    const key = `${el.lat.toFixed(5)},${el.lon.toFixed(5)}`;
+    if(seen.has(key)) return false;
+    seen.add(key); return true;
+  });
 
   // Dołącz fotoradary zgłoszone przez użytkowników
   const userCams = await loadUserCameras();
-  // Deduplikuj: user cameras w promieniu 100m od OSM — pomiń
-  const osmKeys = new Set(allElements.map(e=>`${e.lat.toFixed(4)},${e.lon.toFixed(4)}`));
+  const osmKeys = new Set(deduped.map(e=>`${e.lat.toFixed(4)},${e.lon.toFixed(4)}`));
   for(const uc of userCams){
     const key = `${uc.lat.toFixed(4)},${uc.lon.toFixed(4)}`;
-    if(!osmKeys.has(key)) allElements.push(uc);
+    if(!osmKeys.has(key)) deduped.push(uc);
   }
 
-  renderCameraMarkers(allElements);
+  renderCameraMarkers(deduped);
 }
 
 // Podziel trasę na segmenty i zwróć listę bbox [south,west,north,east]
