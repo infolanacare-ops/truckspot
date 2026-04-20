@@ -3272,6 +3272,9 @@ body.navigating .convoy-btn{display:none}
     </div>
   </div>
 
+  <!-- GPS debug overlay (toggled by tap on speedometer) -->
+  <div id="gps-debug" style="display:none;position:absolute;bottom:90px;left:8px;z-index:999;background:rgba(0,0,0,.82);color:#0f0;font:10px/1.5 monospace;padding:6px 8px;border-radius:6px;pointer-events:none;max-width:220px"></div>
+
   <!-- POI strip -->
   <div class="nav-pois-strip" id="nav-pois-strip">
     <div class="nav-pois-drag" id="nav-pois-drag"></div>
@@ -5272,7 +5275,7 @@ function setGpsArrow(lat, lng){
   if(_markerAnimId){ cancelAnimationFrame(_markerAnimId); _markerAnimId = null; }
   const cur = gpsMarker.getLngLat();
   const fromLat = cur.lat, fromLng = cur.lng;
-  const dur = 700;
+  const dur = 950;
   const t0 = performance.now();
   function lerpStep(now){
     const p = Math.min((now - t0) / dur, 1);
@@ -7438,7 +7441,7 @@ function startNavigation(){
     onNavPosition(pos);
   },
     e=>{ if(e.code!==e.TIMEOUT) showAlert('⚠️','GPS Error',''); },
-    {enableHighAccuracy:true, maximumAge:3000, timeout:15000});
+    {enableHighAccuracy:true, maximumAge:0, timeout:10000});
 }
 
 async function loadRoutePois(){
@@ -7731,6 +7734,29 @@ function setNavSpeed(kmh, limitKmh){
   if(limitKmh > 0) updateSpeedSign(limitKmh);
 }
 
+// Toggle GPS debug overlay (tap na prędkościomierz)
+(function(){
+  let _dbgOn = false;
+  document.addEventListener('click', e=>{
+    if(e.target.closest('#nav-speedometer')){
+      _dbgOn = !_dbgOn;
+      const el = document.getElementById('gps-debug');
+      if(el) el.style.display = _dbgOn ? 'block' : 'none';
+    }
+  });
+})();
+
+function _updateGpsDebug(raw, kalman, snap){
+  const el = document.getElementById('gps-debug');
+  if(!el || el.style.display==='none') return;
+  const f = v => v != null ? v.toFixed(6) : '—';
+  el.innerHTML =
+    `<b>RAW</b>  ${f(raw.lat)}, ${f(raw.lng)}<br>`+
+    `<b>KAL</b>  ${f(kalman.lat)}, ${f(kalman.lng)}<br>`+
+    `<b>SNAP</b> ${f(snap.lat)}, ${f(snap.lng)}<br>`+
+    `<b>acc</b> ${raw.acc?.toFixed(1)}m`;
+}
+
 // ── Right-lane positioning ───────────────────────────────────────────────────
 // Pobiera liczbę pasów z kafli wektorowych Mapbox (OSM lanes tag)
 function _getRoadLanes(lat, lng){
@@ -7836,6 +7862,11 @@ function onNavPosition(pos){
   // Przesuń na prawy pas na podstawie danych OSM z kafli Mapbox
   const rlo = _applyRightLaneOffset(baseArrowLat, baseArrowLng, navCurrentHeading);
   setGpsArrow(rlo.lat, rlo.lng);
+  _updateGpsDebug(
+    {lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy},
+    {lat, lng},
+    {lat: baseArrowLat, lng: baseArrowLng}
+  );
 
   // Heading: GPS velocity (stabilny podczas jazdy) → delta pozycji → giroskop tylko gdy stoi
   // Google Maps / TomTom standard: kompas NIE jest używany podczas jazdy — zbyt szumny
