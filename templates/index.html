@@ -7255,6 +7255,8 @@ function startNavigation(){
   // POI już załadowane po obliczeniu trasy — ładuj ponownie tylko jeśli puste
   if(!navRoutePois.length) loadRoutePois();
   loadNavCameras();
+  navWarnedHeightIds = new Set();
+  loadNavHeightRestrictions();
   map.easeTo({pitch:65, duration:1500});
   acquireWakeLock();
   // Pokaż profil TIR podczas nawigacji
@@ -7874,6 +7876,25 @@ function onNavPosition(pos){
     }
   }
 
+  // ── Ostrzeżenie o ograniczeniu wysokości (TIR) ──────────────────────────────
+  if(currentMode === 'tir' && navHeightRestrictions.length){
+    const vehicleH = parseFloat(document.getElementById('tir-height')?.value) || 4.0;
+    for(const r of navHeightRestrictions){
+      if(navWarnedHeightIds.has(r.id)) continue;
+      const dM = haversineKm(lat, lng, r.lat, r.lon) * 1000;
+      if(dM < 400 && dM > 15){
+        navWarnedHeightIds.add(r.id);
+        const dist = dM < 150 ? Math.round(dM)+'m' : Math.round(dM/50)*50+'m';
+        const msg = currentLang==='pl'
+          ? `Uwaga! Za ${dist} ograniczenie wysokości ${r.maxheight.toFixed(1)} metra. Twój pojazd nie przejedzie!`
+          : `Warning! In ${dist}, height restriction ${r.maxheight.toFixed(1)}m. Your vehicle cannot pass!`;
+        speakNav(msg, true);
+        showAlert('🚨','OGRANICZENIE WYSOKOŚCI',`Za ${dist} — max ${r.maxheight.toFixed(1)}m | Twój TIR: ${vehicleH}m`);
+        break;
+      }
+    }
+  }
+
   // ── Detekcja zatrzymania → atrakcje w pobliżu ───────────────────────────────
   checkNearbyAttractions(lat, lng);
 
@@ -7919,11 +7940,13 @@ async function rerouteNavigation(fromLat, fromLng){
     navAnnouncedReports = new Set();
     navOffRouteTicks   = 0;
     navRerouteWarned   = false;
-    _snapEmaLat = null; _snapEmaLng = null; // reset EMA — strzałka skacze od razu na nową trasę
+    _snapEmaLat = null; _snapEmaLng = null;
+    navWarnedHeightIds = new Set();
 
     buildRouteDistances();
     clearRouteLayer();
     drawRoute(routeCoords);
+    loadNavHeightRestrictions();
     loadRoutePois();
     updateNavStep(0);
     setEl('nav-total-dist', Math.round(routeTotalDist/1000)+' km');
@@ -8945,6 +8968,61 @@ async function loadNavCameras(){
   }
 
   renderCameraMarkers(deduped);
+}
+
+// ── Ostrzeżenia o ograniczeniach wysokości (TIR) ─────────────────────────────
+let navHeightRestrictions = [];   // [{lat,lon,maxheight,id}] wzdłuż trasy
+let navWarnedHeightIds    = new Set();
+const _heightCache = new Map();   // bbox_key → data, TTL 24h
+
+async function _fetchHeightSegment([s,w,n,e]){
+  const key = `h:${s},${w},${n},${e}`;
+  const c = _heightCache.get(key);
+  if(c && Date.now() - c.ts < 86400000) return c.data;
+  const query = `[out:json][timeout:20];
+(
+  way["maxheight"](${s},${w},${n},${e});
+  node["maxheight"](${s},${w},${n},${e});
+);
+out center;`;
+  try {
+    const r = await fetch('https://overpass-api.de/api/interpreter',
+      {method:'POST', body:'data='+encodeURIComponent(query)});
+    if(!r.ok) return [];
+    const data = await r.json();
+    const result = (data.elements||[]).map(el=>{
+      const lat = el.lat ?? el.center?.lat;
+      const lon = el.lon ?? el.center?.lon;
+      const raw = el.tags?.maxheight || '';
+      // Obsługuje formaty: "3.6", "3,6", "3m60", "12 ft" → metry
+      let mh = parseFloat(raw.replace(',','.'));
+      if(raw.toLowerCase().includes('ft')) mh = mh * 0.3048;
+      if(!lat || !lon || isNaN(mh) || mh <= 0) return null;
+      return {lat, lon, maxheight: mh, id:`h_${el.id}`};
+    }).filter(Boolean);
+    _heightCache.set(key, {ts:Date.now(), data:result});
+    return result;
+  } catch(e){ return []; }
+}
+
+async function loadNavHeightRestrictions(){
+  if(currentMode !== 'tir') return; // tylko TIR
+  if(!routeCoords.length) return;
+  const vehicleH = parseFloat(document.getElementById('tir-height')?.value) || 4.0;
+  const segments = buildRouteSegmentBboxes(150);
+  const all = [];
+  for(let i=0; i<segments.length; i+=2){
+    const results = await Promise.all(segments.slice(i,i+2).map(_fetchHeightSegment));
+    results.forEach(r=>all.push(...r));
+  }
+  const seen = new Set();
+  navHeightRestrictions = all.filter(r=>{
+    const key = `${r.lat.toFixed(5)},${r.lon.toFixed(5)}`;
+    if(seen.has(key)) return false;
+    seen.add(key);
+    if(r.maxheight >= vehicleH) return false; // nie zagraża
+    return pointToRouteDistKm(r.lat, r.lon, routeCoords) * 1000 <= 60; // maks 60m od trasy
+  });
 }
 
 // Podziel trasę na segmenty i zwróć listę bbox [south,west,north,east]
