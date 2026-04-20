@@ -4,6 +4,14 @@ import os, json, re, secrets, time, math, requests as _requests
 from flask import Flask, render_template, request, jsonify, send_from_directory, send_file
 import hashlib
 
+try:
+    from supabase import create_client, Client as SupabaseClient
+    _sb_url = os.environ.get("SUPABASE_URL", "")
+    _sb_key = os.environ.get("SUPABASE_SERVICE_KEY", "")
+    supabase: SupabaseClient = create_client(_sb_url, _sb_key) if _sb_url and _sb_key else None
+except Exception:
+    supabase = None
+
 _poi_cache = {}   # bbox_key → (timestamp, data)
 _POI_CACHE_TTL = 1800  # 30 minut
 
@@ -1419,6 +1427,139 @@ def api_gtts():
     except Exception:
         pass
     return '', 502
+
+
+## ── SUPABASE AUTH / PROFIL / ULUBIONE ────────────────────────────────────────
+
+def _get_user_from_token():
+    """Wyciąga user_id z Bearer tokena Supabase."""
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer ") or not supabase:
+        return None
+    token = auth[7:]
+    try:
+        return supabase.auth.get_user(token).user
+    except Exception:
+        return None
+
+@app.route("/api/profile", methods=["GET"])
+def api_profile_get():
+    user = _get_user_from_token()
+    if not user:
+        return jsonify({"error": "unauthorized"}), 401
+    try:
+        row = supabase.table("profiles").select("*").eq("id", user.id).single().execute()
+        return jsonify(row.data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/profile", methods=["PATCH"])
+def api_profile_patch():
+    user = _get_user_from_token()
+    if not user:
+        return jsonify({"error": "unauthorized"}), 401
+    data = request.json or {}
+    allowed = {"display_name","truck_type","truck_height_m","truck_weight_t","truck_width_m","language","country"}
+    update = {k: v for k, v in data.items() if k in allowed}
+    if not update:
+        return jsonify({"error": "no valid fields"}), 400
+    update["updated_at"] = "now()"
+    try:
+        row = supabase.table("profiles").update(update).eq("id", user.id).execute()
+        return jsonify(row.data[0] if row.data else {})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/favorites", methods=["GET"])
+def api_favorites_get():
+    user = _get_user_from_token()
+    if not user:
+        return jsonify({"error": "unauthorized"}), 401
+    try:
+        rows = supabase.table("user_favorites").select("*").eq("user_id", user.id).execute()
+        return jsonify(rows.data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/favorites", methods=["POST"])
+def api_favorites_post():
+    user = _get_user_from_token()
+    if not user:
+        return jsonify({"error": "unauthorized"}), 401
+    data = request.json or {}
+    spot_type = data.get("spot_type")
+    spot_id = data.get("spot_id")
+    if not spot_type or not spot_id:
+        return jsonify({"error": "spot_type and spot_id required"}), 400
+    try:
+        row = supabase.table("user_favorites").upsert({
+            "user_id": user.id, "spot_type": spot_type, "spot_id": spot_id
+        }).execute()
+        return jsonify(row.data[0] if row.data else {}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/favorites/<spot_type>/<int:spot_id>", methods=["DELETE"])
+def api_favorites_delete(spot_type, spot_id):
+    user = _get_user_from_token()
+    if not user:
+        return jsonify({"error": "unauthorized"}), 401
+    try:
+        supabase.table("user_favorites").delete().eq("user_id", user.id).eq("spot_type", spot_type).eq("spot_id", spot_id).execute()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/ai-history", methods=["GET"])
+def api_ai_history():
+    """Ostatnie 20 wiadomości z historii rozmów użytkownika."""
+    user = _get_user_from_token()
+    if not user:
+        return jsonify([])
+    try:
+        rows = supabase.table("ai_conversations").select("role,content,created_at") \
+            .eq("user_id", user.id).order("created_at", desc=True).limit(20).execute()
+        return jsonify(list(reversed(rows.data)))
+    except Exception:
+        return jsonify([])
+
+@app.route("/api/ai-history", methods=["POST"])
+def api_ai_history_save():
+    """Zapisuje wiadomość do historii rozmowy."""
+    user = _get_user_from_token()
+    if not user:
+        return jsonify({"ok": False})
+    data = request.json or {}
+    role = data.get("role")
+    content = data.get("content", "").strip()
+    if role not in ("user", "assistant") or not content:
+        return jsonify({"error": "invalid"}), 400
+    try:
+        supabase.table("ai_conversations").insert({
+            "user_id": user.id, "role": role, "content": content
+        }).execute()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/parking/<int:parking_id>/review", methods=["POST"])
+def api_parking_review(parking_id):
+    user = _get_user_from_token()
+    if not user:
+        return jsonify({"error": "unauthorized"}), 401
+    data = request.json or {}
+    rating = data.get("rating")
+    comment = data.get("comment", "")
+    if not rating or not (1 <= int(rating) <= 5):
+        return jsonify({"error": "rating 1-5 required"}), 400
+    try:
+        row = supabase.table("parking_reviews").upsert({
+            "user_id": user.id, "parking_id": parking_id,
+            "rating": int(rating), "comment": comment
+        }).execute()
+        return jsonify(row.data[0] if row.data else {}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/ai-ping")

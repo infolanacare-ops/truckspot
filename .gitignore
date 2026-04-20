@@ -1,7 +1,11 @@
+node_modules/
 __pycache__/
 *.pyc
 .env
-.gradio/
-trackspot_data.json
-# Splash screeny są za duże do repo (>2MB każdy)
-static/splash-*.png
+*.keystore
+deploy_key
+deploy_key.pub
+android/app/build/
+android/.gradle/
+android/build/
+static/audio/nav/
