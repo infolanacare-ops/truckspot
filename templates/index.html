@@ -7180,42 +7180,16 @@ async function speakNav(txt, priority=false){
 }
 
 const AI_NAV_SILENCE_MS = 7000;
-async function speakAi(txt){
-  // NIE sprawdzaj navMuted — asystentka mówi nawet gdy nawi wyciszona
-  const clean = stripForTts(txt);
-  if(!clean) return;
-
-  const onEnd = () => {
-    _navSpeaking = false;
-    _navLastEndTs = Date.now();
-    if(_bgAssistantActive && !window._bgRecognition){
-      setTimeout(() => { if(_bgAssistantActive) startBgListening(); }, 400);
-    }
+function speakAi(txt){
+  // Używa dokładnie tego samego mechanizmu co speakNav — _elPlayNext queue
+  // Nie sprawdza navMuted — asystentka mówi niezależnie
+  speakNav(txt, false);
+  // Po zakończeniu mówienia — wznów nasłuchiwanie mikrofonu
+  const checkResume = () => {
+    if(_navSpeaking || _elAudio) return setTimeout(checkResume, 300);
+    if(_bgAssistantActive && !window._bgRecognition) startBgListening();
   };
-
-  // OpenAI TTS (nova) — ten sam głos co nawigacja
-  try {
-    const r = await fetch('/api/tts', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({text: clean})
-    });
-    const d = await r.json();
-    if(d.url){
-      _navSpeaking = true;
-      if(_elAudio){ _elAudio.pause(); _elAudio = null; }
-      const audio = new Audio(d.url);
-      _elAudio = audio;
-      audio.onended  = () => { _elAudio = null; onEnd(); };
-      audio.onerror  = () => { _elAudio = null; onEnd(); };
-      audio.play().catch(() => { _elAudio = null; onEnd(); });
-      return;
-    }
-  } catch(e){}
-
-  // Fallback: Web Speech
-  const lang = currentLang==='pl'?'pl-PL':currentLang==='de'?'de-DE':'en-US';
-  _navSpeaking = true;
-  _speakWebFallback(clean, lang, onEnd);
+  setTimeout(checkResume, 500);
 }
 
 // ── Lane guidance — SVG arrows ────────────────────────────────────────────────
