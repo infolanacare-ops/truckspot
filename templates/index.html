@@ -5275,7 +5275,7 @@ function setGpsArrow(lat, lng){
   if(_markerAnimId){ cancelAnimationFrame(_markerAnimId); _markerAnimId = null; }
   const cur = gpsMarker.getLngLat();
   const fromLat = cur.lat, fromLng = cur.lng;
-  const dur = 950;
+  const dur = 350;
   const t0 = performance.now();
   function lerpStep(now){
     const p = Math.min((now - t0) / dur, 1);
@@ -7452,7 +7452,7 @@ function startNavigation(){
   let _lastNavTick = 0;
   navWatchId = navigator.geolocation.watchPosition(pos=>{
     const now = Date.now();
-    if(now - _lastNavTick < 200) return; // throttle — max 5 ticków/s (jak TomTom)
+    if(now - _lastNavTick < 100) return; // throttle — max 10 ticków/s
     _lastNavTick = now;
     onNavPosition(pos);
   },
