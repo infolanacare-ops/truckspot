@@ -1147,8 +1147,6 @@ def api_convoy_messages():
     return jsonify(result)
 
 
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-
 SYSTEM_PROMPT_BASE = """Jesteś TruckBot — osobisty asystent i towarzysz kierowcy w aplikacji TruckSpot.
 Znasz kierowcę z imienia, pamiętasz o czym rozmawialiście i traktujesz go jak przyjaciela.
 Odpowiadasz PO POLSKU, ciepło, krótko (max 2-3 zdania). Mówisz do kierowcy po imieniu gdy to naturalne.
@@ -1194,54 +1192,32 @@ Pytania informacyjne, rozmowa, emocje → odpowiedz zwykłym tekstem (NIE JSON).
 NAturAlnie używaj zapamiętanych faktów w rozmowie — proponuj, nawiązuj, pytaj.
 NIE mieszaj JSON z tekstem."""
 
-GEMINI_MODELS = [
-    ("v1beta", "gemini-2.5-flash"),
-    ("v1beta", "gemini-flash-latest"),
-    ("v1beta", "gemini-pro-latest"),
-]
-
-def _gemini_extract(result):
-    if "candidates" not in result:
-        err = result.get("error", {})
-        raise RuntimeError(f"Gemini error {err.get('code','?')}: {err.get('message','no candidates')}")
-    return result["candidates"][0]["content"]["parts"][0]["text"].strip()
+def _call_openai(messages, temperature=0.7, max_tokens=150):
+    resp = _requests.post(
+        "https://api.openai.com/v1/chat/completions",
+        headers={"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"},
+        json={"model": "gpt-4o-mini", "messages": messages, "temperature": temperature, "max_tokens": max_tokens},
+        timeout=12
+    )
+    data = resp.json()
+    if resp.status_code != 200:
+        raise RuntimeError(f"OpenAI error {resp.status_code}: {data}")
+    return data["choices"][0]["message"]["content"].strip()
 
 def call_gemini(prompt, temperature=0.7, max_tokens=150):
-    last_err = RuntimeError("no models tried")
-    for api_ver, model in GEMINI_MODELS:
-        try:
-            url = (f"https://generativelanguage.googleapis.com/{api_ver}/models/"
-                   f"{model}:generateContent?key={GEMINI_API_KEY}")
-            resp = _requests.post(url, json={
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {"maxOutputTokens": max_tokens, "temperature": temperature},
-            }, timeout=10)
-            return _gemini_extract(resp.json())
-        except Exception as e:
-            last_err = e
-    raise last_err
+    return _call_openai([{"role": "user", "content": prompt}], temperature, max_tokens)
 
 def call_gemini_chat(system_instruction, user_message, temperature=0.3, max_tokens=200):
-    last_err = RuntimeError("no models tried")
-    for api_ver, model in GEMINI_MODELS:
-        try:
-            url = (f"https://generativelanguage.googleapis.com/{api_ver}/models/"
-                   f"{model}:generateContent?key={GEMINI_API_KEY}")
-            resp = _requests.post(url, json={
-                "systemInstruction": {"parts": [{"text": system_instruction}]},
-                "contents": [{"role": "user", "parts": [{"text": user_message}]}],
-                "generationConfig": {"maxOutputTokens": max_tokens, "temperature": temperature},
-            }, timeout=12)
-            return _gemini_extract(resp.json())
-        except Exception as e:
-            last_err = e
-    raise last_err
+    return _call_openai([
+        {"role": "system", "content": system_instruction},
+        {"role": "user",   "content": user_message}
+    ], temperature, max_tokens)
 
 
 @app.route("/api/ai-assist", methods=["POST"])
 def api_ai_assist():
     """Asystent AI — atrakcje przy zatrzymaniu (tryb automatyczny)."""
-    if not GEMINI_API_KEY:
+    if not OPENAI_API_KEY:
         return jsonify({"error": "no_key"}), 503
     data = request.get_json(force=True)
     attrs = data.get("attrs", [])
@@ -1270,7 +1246,7 @@ def api_ai_assist():
 @app.route("/api/ai-chat", methods=["POST"])
 def api_ai_chat():
     """Asystent AI — czat głosowy/tekstowy z kierowcą."""
-    if not GEMINI_API_KEY:
+    if not OPENAI_API_KEY:
         return jsonify({"error": "no_key"}), 503
 
     data = request.get_json(force=True)
@@ -1445,7 +1421,7 @@ def api_gtts():
 @app.route("/api/ai-ping")
 def api_ai_ping():
     """Diagnostyka — sprawdź który model Gemini działa."""
-    if not GEMINI_API_KEY:
+    if not OPENAI_API_KEY:
         return jsonify({"error": "no key"})
     results = {}
     for api_ver, model in GEMINI_MODELS:
