@@ -4257,7 +4257,7 @@ function loadUserSpots(){
   fetch('/api/spots').then(r=>r.json()).then(data=>{
     userSpots=data; userSpotMarkers.forEach(m=>m.remove()); userSpotMarkers=[];
     data.forEach(addUserSpotMarker);
-  });
+  }).catch(e=>{ console.error('loadUserSpots error',e); });
 }
 function addUserSpotMarker(spot){
   userSpotMarkers.push(mkMbMarker(spot.lat,spot.lng,mkPinP('#8b5cf6',(spot.cat||'?')[0].toUpperCase()),()=>showUserSpotDetail(spot)));
