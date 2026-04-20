@@ -7971,8 +7971,8 @@ function onNavPosition(pos){
   }
 
   // Centrum na samochodzie + padding żeby strzałka była w dolnej części widocznej mapy
-  const camLat = rlo.lat;
-  const camLng = rlo.lng;
+  const camLat = snapLat;
+  const camLng = snapLng;
   if(!navOverviewMode && !navUserInteracting){
     const navBarH  = document.getElementById('nav-bottom')?.offsetHeight || 100;
     const navCardH = (document.getElementById('nav-maneuver-card')?.offsetHeight || 0)
