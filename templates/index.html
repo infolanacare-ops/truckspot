@@ -6839,10 +6839,11 @@ async function pollDriverMessages(){
   } catch(e){}
 }
 
-// Polluj wiadomości globalnie co 15s (gdy panel zamknięty)
+// Polluj wiadomości globalnie co 15s — tylko gdy użytkownik jest widoczny w konwoju
 let _globalMsgLastTs = Date.now() / 1000;
 setInterval(async () => {
-  if(_dcPollTimer) return; // chat otwarty — już polluje
+  if(!convoyVisible) return;   // nie polluj gdy poza konwojem
+  if(_dcPollTimer) return;     // chat otwarty — już polluje
   try {
     const r = await fetch(`/api/convoy/messages?voter_id=${getVoterId()}&since=${_globalMsgLastTs}`);
     const msgs = await r.json();
