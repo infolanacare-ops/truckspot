@@ -2997,7 +2997,17 @@ body.navigating .convoy-btn{display:none}
     <div class="bnav-item active" onclick="bnav(this,'map')"><span class="bnav-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="M3 7l6-4 6 4 6-4v14l-6 4-6-4-6 4V7z"/><path d="M9 3v14M15 7v14"/></svg></span></span><span class="bnav-lbl" data-i="nav_map">Map</span></div>
     <div class="bnav-item" onclick="bnav(this,'route')"><span class="bnav-icon"><span class="si"><svg viewBox="0 0 24 24"><polygon points="12 2 19 21 12 17 5 21 12 2"/></svg></span></span><span class="bnav-lbl" data-i="nav_route">Route</span></div>
     <div class="bnav-item" onclick="bnav(this,'add')"><span class="bnav-icon"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></span></span><span class="bnav-lbl" data-i="nav_add">Add</span></div>
-    <div class="bnav-item" onclick="bnav(this,'radio')"><span class="bnav-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg></span></span><span class="bnav-lbl" data-i="nav_radio">Radio</span></div>
+    <div class="bnav-item" id="bnav-cb" onclick="bnav(this,'cbradio')">
+      <span class="bnav-icon" style="position:relative">
+        <span class="si"><svg viewBox="0 0 24 24"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg></span>
+        <span id="bnav-cb-badge" style="display:none;position:absolute;top:-4px;right:-6px;
+          background:#ef4444;color:#fff;font-size:.55rem;font-weight:800;
+          min-width:15px;height:15px;border-radius:8px;padding:0 3px;
+          display:none;align-items:center;justify-content:center;
+          border:1.5px solid var(--bg)">0</span>
+      </span>
+      <span class="bnav-lbl">CB</span>
+    </div>
     <div class="bnav-item" onclick="bnav(this,'rank')"><span class="bnav-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg></span></span><span class="bnav-lbl" data-i="nav_rank">Ranking</span></div>
   </div>
 </div>
@@ -3034,6 +3044,7 @@ body.navigating .convoy-btn{display:none}
     <div class="menu-sep"></div>
     <div class="menu-section" data-i="sec_community">Community</div>
     <div class="menu-item" onclick="drawerAction('cbradio')"><div class="menu-icon" style="background:rgba(59,130,246,.12);border-color:#3b82f6"><span class="si"><svg viewBox="0 0 24 24"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg></span></div><span class="menu-label">CB Radio — mapa wiadomości</span><span class="menu-badge" id="msgs-count-badge" style="display:none">0</span></div>
+    <div class="menu-item" id="demo-mode-btn" onclick="closeDrawer();setTimeout(toggleDemoMode,200)"><div class="menu-icon" style="background:rgba(139,92,246,.12);border-color:#8b5cf6"><span style="font-size:1.1rem">🌐</span></div><span class="menu-label">Demo Mode — przykładowi kierowcy</span></div>
     <div class="menu-item" onclick="drawerAction('add')"><div class="menu-icon" style="background:rgba(139,92,246,.12);border-color:#8b5cf6"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></span></div><span class="menu-label" data-i="menu_add">Add a spot</span><span class="menu-badge">+10 pts</span></div>
     <div class="menu-item" onclick="drawerAction('myspots')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg></span></div><span class="menu-label" data-i="menu_myspots">My spots</span></div>
     <div class="menu-item" onclick="drawerAction('favs')"><div class="menu-icon" style="background:rgba(212,175,55,.12);border-color:#d4af37"><span class="si"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span></div><span class="menu-label">Ulubione parkingi</span><span class="menu-badge" id="favs-count" style="display:none">0</span></div>
@@ -4631,6 +4642,7 @@ function bnav(el,action){
   else if(action==='add') startAddMode();
   else if(action==='radio') toggleRadioBar();
   else if(action==='rank') openRank();
+  else if(action==='cbradio'){ openMsgsPanel(); setTimeout(()=>el.classList.remove('active'),300); }
 }
 
 // ══════════════════════════════════════
@@ -9304,6 +9316,12 @@ async function loadMapMessages(forceRefresh){
       badge.style.display = msgs.length ? '' : 'none';
     }
     _updateCbModuleCnt(msgs.length);
+    // bottom nav badge
+    const bnavBadge = document.getElementById('bnav-cb-badge');
+    if(bnavBadge){
+      if(msgs.length){ bnavBadge.textContent=msgs.length; bnavBadge.style.display='flex'; }
+      else { bnavBadge.style.display='none'; }
+    }
 
     // Update panel list if open
     const listEl = document.getElementById('msgs-list');
@@ -11726,6 +11744,90 @@ function _updateZones(peersMap){
 function _zoneTap(names){
   const list = Array.isArray(names) ? names.join(', ') : names;
   showAlert('🟢', 'Strefa aktywna', `Tu jest ${list}`);
+}
+
+// ══════════════════════════════════════════════════════
+// DEMO MODE — przykładowe avatary na mapie
+// ══════════════════════════════════════════════════════
+const _DEMO_PEERS = [
+  { id:'demo-1', name:'Marek TIR',   emoji:'🚛', color:'#3b82f6', msg:'Uwaga! Korek na A1 za Łodzią 🚗' },
+  { id:'demo-2', name:'Ewa Logistyk',emoji:'🚚', color:'#10b981', msg:null },
+  { id:'demo-3', name:'Hans DE',     emoji:'🏎️', color:'#f97316', msg:'Guten Morgen! Kontrola na granicy' },
+  { id:'demo-4', name:'Piotr B.',    emoji:'🛻', color:'#8b5cf6', msg:null },
+  { id:'demo-5', name:'Maria ES',    emoji:'🚌', color:'#ec4899', msg:'Tanie paliwo w Barcelonie ⛽ 1.45€' },
+];
+let _demoMarkers  = [];
+let _demoActive   = false;
+let _demoMoveTimer = null;
+
+function toggleDemoMode(){
+  if(_demoActive) _stopDemo(); else _startDemo();
+}
+
+function _startDemo(){
+  if(!map) return;
+  _demoActive = true;
+  const center = map.getCenter();
+  const offsets = [
+    { dlat:0.003, dlng:0.005 },
+    { dlat:-0.004,dlng:0.003 },
+    { dlat:0.001, dlng:-0.006 },
+    { dlat:-0.002,dlng:-0.004 },
+    { dlat:0.005, dlng:-0.002 },
+  ];
+  _DEMO_PEERS.forEach((p, i) => {
+    const lat = center.lat + offsets[i].dlat;
+    const lng = center.lng + offsets[i].dlng;
+    const mk = _mkPeerMarker(p.id, { ...p, lat, lng });
+    _demoMarkers.push({ mk, lat, lng, peerId: p.id });
+    if(p.msg){
+      setTimeout(() => _showPeerCbBubble(p.id, p.msg), 800 + i * 400);
+    }
+  });
+  // Lekki ruch co 4s
+  _demoMoveTimer = setInterval(() => {
+    _demoMarkers.forEach(d => {
+      d.lat += (Math.random() - 0.5) * 0.0004;
+      d.lng += (Math.random() - 0.5) * 0.0004;
+      d.mk.setLngLat([d.lng, d.lat]);
+      _peerMarkers[d.peerId] = d.mk;
+    });
+    // Przelicz strefy z demo peerami
+    const snap = {};
+    _demoMarkers.forEach(d => {
+      const peer = _DEMO_PEERS.find(p => p.id === d.peerId);
+      snap[d.peerId] = { ...peer, lat: d.lat, lng: d.lng };
+    });
+    _updateZones(snap);
+  }, 4000);
+
+  // Dodaj demo markery do _peerMarkers żeby _showPeerCbBubble działało
+  _demoMarkers.forEach((d, i) => { _peerMarkers[d.peerId] = d.mk; });
+
+  _updateDemoBtn();
+  showAlert('🌐','Demo Mode ON','Widzisz przykładowych kierowców na mapie');
+}
+
+function _stopDemo(){
+  _demoActive = false;
+  clearInterval(_demoMoveTimer);
+  _demoMarkers.forEach(d => {
+    d.mk.remove();
+    delete _peerMarkers[d.peerId];
+  });
+  _demoMarkers = [];
+  _updateZones({});
+  _updateDemoBtn();
+  showAlert('🌐','Demo Mode OFF','');
+}
+
+function _updateDemoBtn(){
+  const btn = document.getElementById('demo-mode-btn');
+  if(!btn) return;
+  btn.textContent = _demoActive ? '🌐 Demo OFF' : '🌐 Demo ON';
+  btn.style.background = _demoActive ? 'rgba(239,68,68,.15)' : '';
+  btn.style.borderColor = _demoActive ? '#ef4444' : '';
+  btn.style.color       = _demoActive ? '#ef4444' : '';
 }
 
 // Inicjalizacja — sprawdź czy użytkownik jest zalogowany
