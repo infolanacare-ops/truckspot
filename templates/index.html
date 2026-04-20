@@ -5904,6 +5904,7 @@ function clearRoute(){
 let navActive=false, navWatchId=null, navStepIdx=0, navLastLat=null, navLastLng=null;
 let navSpeedKmh = 0;
 let _zuptSnapLat = null, _zuptSnapLng = null; // ZUPT: pozycja zamrożona gdy < 1 km/h
+let _snapEmaLat = null, _snapEmaLng = null;   // EMA wygładzenie snap pozycji (lewo/prawo)
 let _navLockedZoom = null; // Zoom lock: zamrożony zoom gdy < 5 km/h (TomTom standard)
 let navCurrentSpeedLimit = 0;
 let navVoiceQueue = [];      // look-ahead announcements
@@ -7200,6 +7201,7 @@ function startNavigation(){
   if(!routeSteps.length){ showAlert('⚠️','','Najpierw oblicz trasę'); return; }
   navActive=true; navStepIdx=0; navCIdx=0; navLastLat=null; navLastLng=null;
   _smoothBearing=null; _navLockedZoom=null; _zuptSnapLat=null; _zuptSnapLng=null;
+  _snapEmaLat=null; _snapEmaLng=null;
   // Inicjuj heading z pierwszego segmentu trasy — nie startuj z 0 (północ)
   if(routeCoords.length >= 2){
     const dx = routeCoords[1][0] - routeCoords[0][0];
@@ -7563,9 +7565,9 @@ function onNavPosition(pos){
   navSpeedKmh = rawSpeed != null ? Math.round(rawSpeed*3.6) : navSpeedKmh;
   setNavSpeed(navSpeedKmh, navCurrentSpeedLimit);
 
-  // GPS arrow — forward-looking snap do najbliższego punktu trasy
+  // GPS arrow — snap tylko do przodu, nigdy wstecz
   const cIdx = closestRouteIdxForward(lat, lng, navCIdx);
-  navCIdx = cIdx;
+  if(cIdx > navCIdx) navCIdx = cIdx; // indeks może tylko rosnąć
 
   // Segment projection — interpoluj pozycję na odcinku między cIdx a cIdx+1
   // zamiast skakać między dyskretnymi punktami (sub-point precision jak TomTom)
@@ -7592,7 +7594,15 @@ function onNavPosition(pos){
   } else {
     _zuptSnapLat = null; _zuptSnapLng = null;
   }
-  setGpsArrow(snapLat, snapLng);
+  // EMA wygładzenie pozycji snap — eliminuje skoki lewo/prawo (szum GPS)
+  // alpha wyższe przy wyższej prędkości (szybsza reakcja), niższe przy wolnej (wygładzenie)
+  const snapAlpha = navSpeedKmh > 40 ? 0.6 : navSpeedKmh > 10 ? 0.4 : 0.25;
+  if(_snapEmaLat === null){ _snapEmaLat = snapLat; _snapEmaLng = snapLng; }
+  else {
+    _snapEmaLat += (snapLat - _snapEmaLat) * snapAlpha;
+    _snapEmaLng += (snapLng - _snapEmaLng) * snapAlpha;
+  }
+  setGpsArrow(_snapEmaLat, _snapEmaLng);
 
   // Heading: GPS velocity (stabilny podczas jazdy) → delta pozycji → giroskop tylko gdy stoi
   // Google Maps / TomTom standard: kompas NIE jest używany podczas jazdy — zbyt szumny
