@@ -8041,17 +8041,16 @@ function onNavPosition(pos){
       if(cStep) setEl('nav-road-name', cStep.name||cStep.ref||'');
 
       // Look-ahead voice — TomTom standard: 3 etapy zapowiedzi
-      // Autostrada (>80): 900m + 300m + 100m
-      // Droga (>50):      500m + 200m + 60m
-      // Miasto (<50):     300m + 100m + 40m
+      // Blokada 5s po reroute — żeby "Trasa przeliczona" nie nakładało się na zapowiedź
       const announceAt = navSpeedKmh > 80 ? [900, 300, 100]
                        : navSpeedKmh > 50 ? [500, 200, 60]
                        :                    [300, 100, 40];
+      const rerouteSilence = Date.now() - navRerouteTs < 5000;
       for(const dist of announceAt){
         const key = `${navStepIdx}_${dist}`;
         if(!navAnnouncedSteps.has(key) && dToManeuver < dist && dToManeuver > dist * 0.25){
           navAnnouncedSteps.add(key);
-          speakNav(buildTtsSentence(routeSteps[navStepIdx], dToManeuver), false);
+          if(!rerouteSilence) speakNav(buildTtsSentence(routeSteps[navStepIdx], dToManeuver), false);
         }
       }
       break;
