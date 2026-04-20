@@ -11818,12 +11818,13 @@ function _startDemo(){
   if(!map) return;
   _demoActive = true;
   const center = map.getCenter();
+  // Rozrzut ~30-80km (1 stopień ≈ 111km)
   const offsets = [
-    { dlat:0.003, dlng:0.005 },
-    { dlat:-0.004,dlng:0.003 },
-    { dlat:0.001, dlng:-0.006 },
-    { dlat:-0.002,dlng:-0.004 },
-    { dlat:0.005, dlng:-0.002 },
+    { dlat: 0.45, dlng: 0.55 },
+    { dlat:-0.55, dlng: 0.35 },
+    { dlat: 0.25, dlng:-0.65 },
+    { dlat:-0.35, dlng:-0.45 },
+    { dlat: 0.60, dlng:-0.20 },
   ];
   _DEMO_PEERS.forEach((p, i) => {
     const lat = center.lat + offsets[i].dlat;
@@ -11837,8 +11838,8 @@ function _startDemo(){
   // Lekki ruch co 4s
   _demoMoveTimer = setInterval(() => {
     _demoMarkers.forEach(d => {
-      d.lat += (Math.random() - 0.5) * 0.0004;
-      d.lng += (Math.random() - 0.5) * 0.0004;
+      d.lat += (Math.random() - 0.5) * 0.006;
+      d.lng += (Math.random() - 0.5) * 0.006;
       d.mk.setLngLat([d.lng, d.lat]);
       _peerMarkers[d.peerId] = d.mk;
     });
