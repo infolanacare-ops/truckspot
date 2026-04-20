@@ -1826,22 +1826,23 @@ body.navigating .fab-ai{display:none}
   display:flex;align-items:center;justify-content:space-between;gap:.5rem;
 }
 /* ETA inline w pasku */
-.nav-eta-inline{display:flex;gap:.4rem}
+.nav-eta-inline{display:flex;gap:.4rem;flex:1;min-width:0}
 .nav-eta-cell{
-  min-width:68px;height:60px;flex-shrink:0;padding:0 .5rem;
+  flex:1;min-width:0;height:60px;padding:0 .4rem;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   background:rgba(255,255,255,.10);border-radius:16px;
   border:1.5px solid rgba(255,255,255,.18);
   overflow:hidden;
 }
 .nav-eta-cell-val{
-  font-family:var(--font-head);font-size:clamp(.9rem,4.5vw,1.2rem);font-weight:900;
+  font-family:var(--font-head);font-size:clamp(.72rem,3.8vw,1.2rem);font-weight:900;
   color:#fff;line-height:1;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;max-width:100%;
 }
 .nav-eta-cell-lbl{
-  font-size:.62rem;color:rgba(255,255,255,.65);
+  font-size:.58rem;color:rgba(255,255,255,.65);
   text-transform:uppercase;font-weight:700;letter-spacing:.04em;margin-top:.3rem;
-  white-space:nowrap;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
 }
 /* spacer */
 .nav-bottom-space{flex:1}
@@ -2072,7 +2073,7 @@ body.navigating .convoy-btn{display:none}
   .nav-speed-sign-val{font-size:1.1rem}
   .nav-cam-warn{top:calc(.5rem + 64px);left:.5rem}
   .nav-hamburger{width:38px;height:38px;border-radius:10px}
-  .nav-eta-cell{width:38px;height:38px;border-radius:10px}
+  .nav-eta-cell{height:48px;border-radius:10px}
   .nav-btm-btn{width:38px;height:38px;border-radius:10px;font-size:1rem}
   /* Sheet — w landscape po prawej stronie ekranu */
   .nav-sheet{border-radius:20px 0 0 20px;bottom:auto;top:0;left:auto;
