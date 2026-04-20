@@ -7793,24 +7793,24 @@ function onNavPosition(pos){
 
   // ── Off-route detection (TomTom-style: prostopadła odległość + histereza) ──
   const distFromRoute = perpendicularDistFromRoute(lat, lng, cIdx);
-  const rerouteCooldown = 25000; // 25s między reroutingami (było 10s)
+  const rerouteCooldown = 15000; // 15s między reroutingami
   if(navDestLat !== null && navSpeedKmh > 5){
     const now = Date.now();
-    if(distFromRoute > 100){
-      navOffRouteTicks++;          // zliczaj kolejne ticki poza trasą
+    if(distFromRoute > 40){      // 40m od trasy = zjechałeś (było 100m)
+      navOffRouteTicks++;
     } else {
-      navOffRouteTicks = 0;        // wróciłeś — zeruj
+      navOffRouteTicks = 0;
       navRerouteWarned = false;
     }
-    if(navOffRouteTicks >= 5 && now - navRerouteTs > rerouteCooldown){
-      // 5 ticków × 800ms ≈ 4s poza trasą → pewna detekcja, przelicz
+    if(navOffRouteTicks >= 3 && now - navRerouteTs > rerouteCooldown){
+      // 3 ticki poza trasą → przelicz (było 5)
       navOffRouteTicks = 0;
       navRerouteTs = now;
       navRerouteWarned = false;
       rerouteNavigation(lat, lng);
       return;
-    } else if(navOffRouteTicks >= 3 && !navRerouteWarned && now - navRerouteTs > rerouteCooldown){
-      // 3 ticki → ostrzeżenie, ale jeszcze nie przeliczaj
+    } else if(navOffRouteTicks >= 2 && !navRerouteWarned && now - navRerouteTs > rerouteCooldown){
+      // 2 ticki → ostrzeżenie głosowe
       navRerouteWarned = true;
       speakNav(currentLang==='pl' ? 'Zboczyłeś z trasy. Przeliczam...' : 'Off route. Recalculating...', true);
       setEl('nav-street-name', currentLang==='pl' ? '🔄 Przeliczam trasę' : '🔄 Recalculating');
