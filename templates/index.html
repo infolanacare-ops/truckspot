@@ -2383,26 +2383,6 @@ body.navigating .convoy-btn{display:none}
 <!-- DRAWER OVERLAY -->
 <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
 
-<!-- VOICE PICKER PANEL -->
-<div class="drawer-overlay" id="voice-picker-overlay" onclick="closeVoicePicker()" style="z-index:1100"></div>
-<div id="voice-picker-panel" style="
-  position:fixed;left:0;right:0;bottom:0;z-index:1101;
-  background:var(--panel);border-radius:20px 20px 0 0;
-  border-top:1px solid var(--border);
-  padding:1rem 1rem 2rem;
-  transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
-  max-height:65vh;overflow-y:auto;
-">
-  <div style="display:flex;align-items:center;margin-bottom:.9rem">
-    <div style="flex:1">
-      <div style="width:40px;height:4px;background:rgba(255,255,255,.18);border-radius:2px;margin:.2rem auto .6rem"></div>
-      <div style="font-family:var(--font-head);font-size:1rem;font-weight:800;color:var(--text)">🎙 Głos nawigacji</div>
-      <div style="font-size:.75rem;color:var(--muted);margin-top:.2rem">Wybierz głos do zapowiedzi nawigacyjnych</div>
-    </div>
-    <button onclick="closeVoicePicker()" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--panel2);color:var(--muted);font-size:1.1rem;cursor:pointer;flex-shrink:0">✕</button>
-  </div>
-  <div id="voice-picker-list" style="display:flex;flex-direction:column;gap:.4rem"></div>
-</div>
 
 <!-- SIDE DRAWER -->
 <div class="drawer" id="drawer">
@@ -2460,14 +2440,6 @@ body.navigating .convoy-btn{display:none}
         <div class="accent-swatch" data-accent="green"  style="background:linear-gradient(135deg,#34d399,#10b981)" onclick="setAccentColor('green')"  title="Zielony"></div>
         <div class="accent-swatch" data-accent="blue"   style="background:linear-gradient(135deg,#60a5fa,#3b82f6)" onclick="setAccentColor('blue')"   title="Niebieski"></div>
       </div>
-    </div>
-    <!-- Głos nawigacji -->
-    <div class="menu-item" onclick="openVoicePicker()">
-      <div class="menu-icon" style="background:rgba(212,175,55,.12);border-color:#d4af37">
-        <span class="si"><svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></span>
-      </div>
-      <span class="menu-label">Głos nawigacji</span>
-      <span class="menu-badge" id="voice-badge" style="background:rgba(212,175,55,.15);color:#d4af37;border:1px solid rgba(212,175,55,.3)">auto</span>
     </div>
 
     <div class="menu-item" onclick="drawerAction('lang')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span></div><span class="menu-label" data-i="menu_lang">Language</span></div>
@@ -2964,7 +2936,7 @@ body.navigating .convoy-btn{display:none}
   <!-- MODUŁY NAWIGACJI -->
   <div style="font-size:.6rem;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:.5rem;padding:0 .1rem">Moduły</div>
   <div class="nav-sheet-actions" style="margin-bottom:.7rem">
-    <button class="nav-sheet-btn" id="nav-mute-btn" onclick="toggleNavMute()">🔊 Głos</button>
+
     <button class="nav-sheet-btn" id="nav-pitch-btn" onclick="cycleNavPitch()">3D</button>
     <button class="nav-sheet-btn" id="nav-northup-btn" onclick="toggleNavNorthUp()">🧭 Północ</button>
     <button class="nav-sheet-btn" id="mod-speed-btn" onclick="toggleSpeedModule()">✅ Prędkość</button>
@@ -4620,16 +4592,6 @@ function showAlert(icon,title,desc,parking=null){
   t2.classList.add('show');
   t2.onclick=(e)=>{if(e.target.className==='alert-close')return;if(alertParking)showDetail(alertParking);closeAlert();};
   clearTimeout(alertTimer); alertTimer=setTimeout(closeAlert,6000);
-  // Czytaj na głos — tylko podczas nawigacji, respektuj wyciszenie
-  if(navActive && typeof navMuted!=='undefined' && !navMuted){
-    const toSpeak=[title,desc].filter(x=>x&&x.replace(/[^\w]/g,'').length>2).join('. ');
-    if(toSpeak){
-      const utt=new SpeechSynthesisUtterance(toSpeak);
-      utt.lang=typeof currentLang!=='undefined'&&currentLang==='pl'?'pl-PL':'en-US';
-      utt.rate=1.05; utt.volume=1;
-      speechSynthesis.speak(utt);
-    }
-  }
 }
 function closeAlert(){document.getElementById('alert-toast').classList.remove('show');}
 
@@ -5951,161 +5913,15 @@ function closeNavSheet(){
   document.getElementById('nav-hamburger')?.classList.remove('open');
 }
 
-// ── Mute ─────────────────────────────────────────────────────────────────────
+// ── Voice — wyłączony, własny TTS w przyszłości ──────────────────────────────
 let navMuted = false;
-function toggleNavMute(){
-  navMuted = !navMuted;
-  if(navMuted) speechSynthesis.cancel();
-  const btn = document.getElementById('nav-mute-btn');
-  if(btn){ btn.classList.toggle('muted', navMuted); btn.textContent = navMuted ? '🔇 Głos' : '🔊 Głos'; }
-}
-
-function stripForTts(txt){
-  // Usuń emoji i symbole graficzne, zachowaj tekst czytelny dla TTS
-  return (txt||'')
-    .replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}]/gu, '')
-    .replace(/[⚠️🔄↩🏁·•]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-// Najlepszy głos dla danego języka — raz wykryty i cachowany
-const VOICE_STORAGE_KEY = 'ts_nav_voice';
-let _selectedVoiceName = localStorage.getItem(VOICE_STORAGE_KEY) || null;
-
-function _fillVoiceList(voices){
-  const list = document.getElementById('voice-picker-list');
-  if(!list) return;
-  if(!Array.isArray(voices)) voices = [];
-  const lang = (typeof currentLang !== 'undefined' && currentLang) === 'pl' ? 'pl'
-             : (typeof currentLang !== 'undefined' && currentLang) === 'de' ? 'de' : 'en';
-  const filtered = voices.filter(v => v && v.lang && (v.lang.startsWith(lang) || v.lang.startsWith('en')));
-
-  list.innerHTML = '';
-
-  if(voices.length === 0){
-    list.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:.5rem;text-align:center">⏳ Ładowanie głosów...<br><small>Sprawdź ustawienia TTS w telefonie</small></div>';
-    return;
-  }
-
-  // Opcja "Auto"
-  const autoBtn = document.createElement('div');
-  autoBtn.style.cssText = `padding:.7rem .9rem;border-radius:12px;cursor:pointer;display:flex;align-items:center;gap:.7rem;border:1.5px solid ${!_selectedVoiceName ? 'var(--accent)' : 'var(--border)'};background:${!_selectedVoiceName ? 'var(--accent-bg)' : 'var(--panel2)'}`;
-  autoBtn.innerHTML = `<span style="font-size:1.2rem">🤖</span><div style="flex:1"><div style="font-weight:700;font-size:.88rem;color:var(--text)">Auto (najlepszy)</div><div style="font-size:.72rem;color:var(--muted)">Wybiera automatycznie</div></div>${!_selectedVoiceName ? '<span style="color:var(--accent);font-size:.8rem;font-weight:700">✓</span>' : ''}`;
-  autoBtn.onclick = () => { _selectedVoiceName = null; localStorage.removeItem(VOICE_STORAGE_KEY); _navVoiceCache={}; closeVoicePicker(); updateVoiceBadge(); };
-  list.appendChild(autoBtn);
-
-  (filtered.length ? filtered : voices).forEach(v => {
-    const isSelected = _selectedVoiceName === v.name;
-    const div = document.createElement('div');
-    div.style.cssText = `padding:.7rem .9rem;border-radius:12px;cursor:pointer;display:flex;align-items:center;gap:.7rem;border:1.5px solid ${isSelected ? 'var(--accent)' : 'var(--border)'};background:${isSelected ? 'var(--accent-bg)' : 'var(--panel2)'}`;
-    const quality = v.localService ? '📱 lokalny' : '🌐 online';
-    div.innerHTML = `<span style="font-size:1.1rem">🎙</span><div style="flex:1"><div style="font-weight:700;font-size:.88rem;color:var(--text)">${v.name}</div><div style="font-size:.72rem;color:var(--muted)">${v.lang} · ${quality}</div></div>${isSelected ? '<span style="color:var(--accent);font-size:.8rem;font-weight:700">✓</span>' : ''}`;
-    const lngLocal = lang;
-    div.onclick = () => {
-      _selectedVoiceName = v.name;
-      localStorage.setItem(VOICE_STORAGE_KEY, v.name);
-      _navVoiceCache = {};
-      closeVoicePicker(); updateVoiceBadge();
-      // Opóźnienie: najpierw zamknij panel, potem odtwórz — unikamy freeze Android WebView
-      setTimeout(() => {
-        try {
-          const utt = new SpeechSynthesisUtterance(lngLocal==='pl' ? 'Za 300 metrów skręć w prawo' : 'In 300 meters, turn right');
-          utt.voice = v; utt.lang = v.lang; utt.rate=0.92;
-          speechSynthesis.cancel();
-          setTimeout(() => { try { speechSynthesis.speak(utt); } catch(e){} }, 80);
-        } catch(e){}
-      }, 350);
-    };
-    list.appendChild(div);
-  });
-}
-
-function openVoicePicker(){
-  closeDrawer();
-  const panel   = document.getElementById('voice-picker-panel');
-  const overlay = document.getElementById('voice-picker-overlay');
-  if(!panel || !overlay) return;
-
-  // Dodaj transition jeśli jeszcze nie ma
-  if(!panel.style.transition) panel.style.transition = 'transform .3s cubic-bezier(.4,0,.2,1)';
-
-  // Załaduj głosy — z zabezpieczeniem przed pętlą onvoiceschanged
-  try {
-    if(typeof speechSynthesis !== 'undefined' && speechSynthesis){
-      const voices = speechSynthesis.getVoices();
-      if(voices.length > 0){
-        _fillVoiceList(voices);
-        speechSynthesis.onvoiceschanged = null; // nie potrzeba, mamy już głosy
-      } else {
-        _fillVoiceList([]); // pokaż "ładowanie..."
-        speechSynthesis.onvoiceschanged = () => {
-          speechSynthesis.onvoiceschanged = null; // odpal tylko raz
-          try { _fillVoiceList(speechSynthesis.getVoices()); } catch(e){}
-        };
-      }
-    } else {
-      const list = document.getElementById('voice-picker-list');
-      if(list) list.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:.5rem;text-align:center">TTS niedostępny na tym urządzeniu.<br><small>Sprawdź ustawienia → Dostępność → TTS</small></div>';
-    }
-  } catch(e){
-    const list = document.getElementById('voice-picker-list');
-    if(list) list.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:.5rem;text-align:center">Błąd ładowania głosów: '+e.message+'</div>';
-  }
-
-  overlay.style.cssText='display:block;opacity:0;pointer-events:auto';
-  panel.style.transform='translateY(100%)';
-  requestAnimationFrame(()=>{
-    requestAnimationFrame(()=>{
-      overlay.style.transition='opacity .3s'; overlay.style.opacity='1';
-      panel.style.transform='translateY(0)';
-    });
-  });
-}
-
-function closeVoicePicker(){
-  const panel   = document.getElementById('voice-picker-panel');
-  const overlay = document.getElementById('voice-picker-overlay');
-  if(panel) panel.style.transform='translateY(100%)';
-  if(overlay){ overlay.style.opacity='0'; setTimeout(()=>{ overlay.style.display='none'; },300); }
-}
-
-function updateVoiceBadge(){
-  const badge = document.getElementById('voice-badge');
-  if(!badge) return;
-  badge.textContent = _selectedVoiceName
-    ? _selectedVoiceName.split(' ').slice(0,2).join(' ')
-    : 'auto';
-}
-
-let _navVoiceCache = {};
-function getBestVoice(lang){
-  // Użyj ręcznie wybranego głosu jeśli istnieje
-  if(_selectedVoiceName){
-    const voices = speechSynthesis.getVoices();
-    const found = voices.find(v => v.name === _selectedVoiceName);
-    if(found) return found;
-  }
-  if(_navVoiceCache[lang]) return _navVoiceCache[lang];
-  const voices = speechSynthesis.getVoices();
-  if(!voices.length) return null;
-  // Preferuj głosy online (wyższa jakość) i pełne locale
-  const preferred = {
-    'pl-PL': ['Google polski','Microsoft Paulina','Polish','pl'],
-    'de-DE': ['Google Deutsch','Microsoft Hedda','German','de'],
-    'en-US': ['Google US English','Microsoft Zira','Microsoft David','English (US)','en-US'],
-  };
-  const pref = preferred[lang] || [];
-  // 1. Szukaj preferowanego po nazwie
-  for(const p of pref){
-    const v = voices.find(v => v.name.toLowerCase().includes(p.toLowerCase()) && v.lang.startsWith(lang.split('-')[0]));
-    if(v){ _navVoiceCache[lang]=v; return v; }
-  }
-  // 2. Szukaj po języku
-  const v = voices.find(v => v.lang === lang) || voices.find(v => v.lang.startsWith(lang.split('-')[0]));
-  if(v){ _navVoiceCache[lang]=v; return v; }
-  return null;
-}
+function toggleNavMute(){}
+function stripForTts(txt){ return (txt||'').replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}]/gu,'').replace(/\s+/g,' ').trim(); }
+function openVoicePicker(){}
+function closeVoicePicker(){}
+function updateVoiceBadge(){}
+function getBestVoice(){ return null; }
+function _fillVoiceList(){}
 
 // ══════════════════════════════════════
 // KONWÓJ — live pozycje kierowców na mapie
@@ -6590,72 +6406,13 @@ function clearConvoyMsgBadge(){
   _globalMsgLastTs = Date.now() / 1000;
 }
 
-// Głosy ładują się asynchronicznie — odśwież cache
-if(typeof speechSynthesis !== 'undefined'){
-  speechSynthesis.onvoiceschanged = () => { _navVoiceCache = {}; updateVoiceBadge(); };
-}
 
 let _navSpeaking = false;
 let _navLastEndTs = 0; // timestamp ostatniej zakończonej komendy nawi
 
-function speakNav(txt, priority=false){
-  if(navMuted) return;
-  if(!('speechSynthesis' in window)) return;
-  const clean = stripForTts(txt);
-  if(!clean) return;
-  if(priority) speechSynthesis.cancel();
-  const lang = currentLang==='pl'?'pl-PL':currentLang==='de'?'de-DE':currentLang==='es'?'es-ES':'en-US';
-  const utt = new SpeechSynthesisUtterance(clean);
-  utt.lang = lang;
-  utt.rate   = 0.92;
-  utt.pitch  = 1.0;
-  utt.volume = 1.0;
-  const voice = getBestVoice(lang);
-  if(voice) utt.voice = voice;
-  utt.onstart = () => { _navSpeaking = true; };
-  utt.onend   = () => { _navSpeaking = false; _navLastEndTs = Date.now(); };
-  utt.onerror = () => { _navSpeaking = false; _navLastEndTs = Date.now(); };
-  speechSynthesis.speak(utt);
-}
-
-/* Głos AI — czeka na 7s ciszy od ostatniej komendy nawigacji */
+function speakNav(){}
 const AI_NAV_SILENCE_MS = 7000;
-function speakAi(txt){
-  if(navMuted) return;
-  if(!('speechSynthesis' in window)) return;
-  const clean = stripForTts(txt);
-  if(!clean) return;
-  const lang = currentLang==='pl'?'pl-PL':currentLang==='de'?'de-DE':currentLang==='es'?'es-ES':'en-US';
-  const _do = () => {
-    const utt = new SpeechSynthesisUtterance(clean);
-    utt.lang = lang; utt.rate = 0.92; utt.pitch = 1.0; utt.volume = 1.0;
-    const voice = getBestVoice(lang);
-    if(voice) utt.voice = voice;
-    utt.onend = () => {
-      // Wznów nasłuchiwanie asystenta po skończeniu mówienia
-      if(_bgAssistantActive && !window._bgRecognition){
-        setTimeout(() => { if(_bgAssistantActive) startBgListening(); }, 400);
-      }
-    };
-    speechSynthesis.speak(utt);
-  };
-  const navRecentlySilent = () =>
-    !_navSpeaking && !speechSynthesis.speaking &&
-    (Date.now() - _navLastEndTs) >= AI_NAV_SILENCE_MS;
-
-  // Nawi nie mówiła ostatnio — odezwij się od razu
-  if(_navLastEndTs === 0 && !_navSpeaking && !speechSynthesis.speaking){
-    return _do();
-  }
-  // Czekaj aż miną 7s od ostatniej komendy nawi
-  let tries = 0;
-  const wait = () => {
-    if(tries++ > 60) return; // zabezpieczenie ~42s max
-    if(!navRecentlySilent()) return setTimeout(wait, 700);
-    _do();
-  };
-  setTimeout(wait, 700);
-}
+function speakAi(){}
 
 // ── Lane guidance — SVG arrows ────────────────────────────────────────────────
 // Strzałki pasów — grube, wypełnione path, TomTom truck style
@@ -7454,7 +7211,7 @@ function onNavPosition(pos){
   if(activeFilters.size > 0){
     const now2 = Date.now();
     if(!window._lastPoiAnnounceTs) window._lastPoiAnnounceTs = 0;
-    if(now2 - window._lastPoiAnnounceTs >= 45000 && !speechSynthesis.speaking){
+    if(now2 - window._lastPoiAnnounceTs >= 45000){
       for(const p of getFilteredNavPois()){
         if(navAnnouncedPois.has(p.id)) continue;
         const d = haversineKm(lat, lng, p.lat, p.lng);
@@ -8981,15 +8738,7 @@ function openAiAssistant(){
     _navMutedByAssistant = true;
     toggleNavMute();
   }
-  speechSynthesis.cancel();
-  const name = profile.name || localStorage.getItem('ts_driver_name') || '';
-  const greeting = name ? `Hej ${name}, słucham!` : `Słucham, mów!`;
-  const utt = new SpeechSynthesisUtterance(greeting);
-  utt.lang = 'pl-PL'; utt.rate = 0.92;
-  const voice = getBestVoice('pl-PL');
-  if(voice) utt.voice = voice;
-  utt.onend = () => { if(_bgAssistantActive) startBgListening(); };
-  speechSynthesis.speak(utt);
+  startBgListening();
 }
 
 function startBgListening(){
@@ -9012,7 +8761,7 @@ function startBgListening(){
 
   rec.onresult = e => {
     // Ignoruj gdy AI mówi lub przetwarza
-    if(speechSynthesis.speaking || _aiProcessing) return;
+    if(_aiProcessing) return;
     const last = e.results[e.results.length - 1];
     if(!last.isFinal) return;
     const transcript = last[0].transcript.trim();
@@ -9035,10 +8784,7 @@ function startBgListening(){
     window._bgRecognition = null;
     if(!_bgAssistantActive) return;
     // Poczekaj aż AI skończy mówić, potem wznów
-    const resume = () => {
-      if(speechSynthesis.speaking) return setTimeout(resume, 600);
-      if(_bgAssistantActive) startBgListening();
-    };
+    const resume = () => { if(_bgAssistantActive) startBgListening(); };
     setTimeout(resume, 600);
   };
 
@@ -9513,10 +9259,6 @@ function tachoToggle(){
     tachoState.segStart = now;
     stopTachoTick();
     showAlert('☕','Przerwa','Jedź po przerwie 45 min');
-    if('speechSynthesis' in window){
-      const u=new SpeechSynthesisUtterance(currentLang==='pl'?'Przerwa. Odpoczywaj 45 minut.':'Break time. Rest for 45 minutes.');
-      u.lang=currentLang==='pl'?'pl-PL':'en-US'; speechSynthesis.speak(u);
-    }
   } else if(tachoState.mode === 'breaking'){
     // End break → drive
     const elapsed = (now - tachoState.segStart) / 1000;
@@ -9550,10 +9292,6 @@ function tachoStartTick(){
     if(driven >= TACHO_LIMIT_S){
       clearInterval(tachoInterval);
       showAlert('🛑','STOP — wymagana przerwa!','45 min odpoczynku');
-      if('speechSynthesis' in window){
-        const u=new SpeechSynthesisUtterance(currentLang==='pl'?'Uwaga! Wymagana przerwa 45 minut.':'Alert! Mandatory 45-minute break required.');
-        u.lang=currentLang==='pl'?'pl-PL':'en-US'; speechSynthesis.speak(u);
-      }
     }
   }, 1000);
 }
