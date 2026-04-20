@@ -3067,7 +3067,6 @@ body.navigating .convoy-btn{display:none}
     <button class="layers-menu-item active" id="lm-streets" onclick="setMapLayer('streets')"><span class="lm-icon"><span class="ts-icon"><svg><use href="#ts-map"/></svg></span></span>Mapa</button>
     <button class="layers-menu-item" id="lm-satellite" onclick="setMapLayer('satellite')"><span class="lm-icon"><span class="ts-icon"><svg><use href="#ts-antenna"/></svg></span></span>Satelita</button>
     <button class="layers-menu-item" id="lm-dark" onclick="setMapLayer('dark')"><span class="lm-icon"><span class="ts-icon"><svg><use href="#ts-moon"/></svg></span></span>Ciemna</button>
-    <button class="layers-menu-item" id="lm-3d" onclick="toggle3dMode()"><span class="lm-icon">🏙️</span>3D</button>
   </div>
 
   <div class="bottom-nav">
@@ -4657,7 +4656,7 @@ function enterMode(mode){
       zoom: 5,
       attributionControl: false
     });
-    map.addControl(new mapboxgl.NavigationControl({showCompass:true, visualizePitch:true}), 'top-left');
+    map.addControl(new mapboxgl.NavigationControl({showCompass:false}), 'top-left');
     map.on('click', (e)=>{ onMapClickForMsg(e); onMapClick(e); });
     map.on('moveend', ()=>{ if(map.getZoom()>=8) loadOsmParkings(); loadReports(); if(activeFuelCards().length>0) loadFuelStations(); });
     map.once('load', ()=>{ if(!gpsActive) startGps(); });
@@ -8916,74 +8915,6 @@ function _closeLayersOutside(e){
     document.getElementById('layers-menu').classList.remove('open');
   }
 }
-// ══════════════════════════════════════════════════════
-// 3D MODE — budynki, teren, niebo
-// ══════════════════════════════════════════════════════
-let _3dMode = false;
-
-function toggle3dMode(){
-  _3dMode = !_3dMode;
-  document.getElementById('lm-3d')?.classList.toggle('active', _3dMode);
-  if(_3dMode){
-    map.easeTo({pitch:52, bearing:-15, duration:1200});
-    _apply3d();
-    showAlert('🏙️','3D ON','Widok 3D z budynkami i terenem');
-  } else {
-    map.easeTo({pitch:0, bearing:0, duration:800});
-    _remove3d();
-    showAlert('🗺️','3D OFF','');
-  }
-}
-
-function _apply3d(){
-  if(!map.isStyleLoaded()){ map.once('style.load', _apply3d); return; }
-  // Teren
-  if(!map.getSource('mapbox-dem')){
-    map.addSource('mapbox-dem',{
-      type:'raster-dem',
-      url:'mapbox://mapbox.mapbox-terrain-dem-v1',
-      tileSize:512, maxzoom:14
-    });
-  }
-  map.setTerrain({source:'mapbox-dem', exaggeration:1.2});
-  // Niebo i mgła horyzontalna
-  map.setFog({
-    color:'rgb(186,210,235)',
-    'high-color':'rgb(36,92,223)',
-    'horizon-blend':0.04,
-    'space-color':'rgb(11,11,25)',
-    'star-intensity':0.5
-  });
-  // Budynki 3D
-  if(!map.getLayer('ts-3d-buildings')){
-    const layers = map.getStyle().layers;
-    const firstLabel = layers.find(l=>l.type==='symbol' && l.layout?.['text-field']);
-    map.addLayer({
-      id:'ts-3d-buildings',
-      source:'composite',
-      'source-layer':'building',
-      filter:['==','extrude','true'],
-      type:'fill-extrusion',
-      minzoom:14,
-      paint:{
-        'fill-extrusion-color':[
-          'interpolate',['linear'],['get','height'],
-          0,'#1a2744', 15,'#1e3a6e', 40,'#2563eb', 80,'#60a5fa'
-        ],
-        'fill-extrusion-height':['interpolate',['linear'],['zoom'],14,0,14.5,['get','height']],
-        'fill-extrusion-base':['interpolate',['linear'],['zoom'],14,0,14.5,['get','min_height']],
-        'fill-extrusion-opacity':0.78
-      }
-    }, firstLabel?.id);
-  }
-}
-
-function _remove3d(){
-  try{ if(map.getTerrain()) map.setTerrain(null); }catch(e){}
-  try{ map.setFog(null); }catch(e){}
-  if(map.getLayer('ts-3d-buildings')) map.removeLayer('ts-3d-buildings');
-}
-
 function setMapLayer(layer){
   _currentLayer = layer;
   document.getElementById('layers-menu').classList.remove('open');
@@ -8993,10 +8924,7 @@ function setMapLayer(layer){
   });
   const style = LAYER_STYLES[layer]();
   map.setStyle(style);
-  map.once('style.load', ()=>{
-    if(activeFilters.size>0) applyFilterToMarkers(); else renderMarkers([]);
-    if(_3dMode) _apply3d();
-  });
+  map.once('style.load', ()=>{ if(activeFilters.size>0) applyFilterToMarkers(); else renderMarkers([]); });
 }
 
 function toggleReportDial(){
