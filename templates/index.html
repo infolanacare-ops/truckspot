@@ -7092,7 +7092,23 @@ async function speakNav(txt, priority=false){
     }
   } catch(e){ /* serwer niedostępny — fallback */ }
 
-  // Fallback: Web Speech (działa tylko przy włączonym ekranie)
+  // Fallback 1: Google Translate TTS (MP3, działa w tle jak ElevenLabs)
+  try {
+    const langCode = lang.split('-')[0];
+    const gttsUrl = `/api/gtts?text=${encodeURIComponent(clean)}&lang=${langCode}`;
+    const gttsAudio = new Audio(gttsUrl);
+    await new Promise((resolve, reject) => {
+      gttsAudio.oncanplaythrough = resolve;
+      gttsAudio.onerror = reject;
+      setTimeout(reject, 5000);
+    });
+    _navSpeaking = true;
+    gttsAudio.onended = () => { _navSpeaking=false; _navLastEndTs=Date.now(); };
+    gttsAudio.play().catch(()=>{});
+    return;
+  } catch(e){ /* google tts niedostępne */ }
+
+  // Fallback 2: Web Speech (działa tylko przy włączonym ekranie)
   _navSpeaking = true;
   _speakWebFallback(clean, lang, ()=>{ _navSpeaking=false; _navLastEndTs=Date.now(); });
 }

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import os, json, re, secrets, time, math, requests as _requests
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, send_file
+import hashlib
 
 _poi_cache = {}   # bbox_key → (timestamp, data)
 _POI_CACHE_TTL = 1800  # 30 minut
@@ -1395,7 +1396,6 @@ def api_tts():
         return jsonify({"error": "empty"}), 400
 
     # Klucz cache — hash tekstu + voice_id (pierwsze 8 znaków)
-    import hashlib
     cache_key  = hashlib.md5(f"{ELEVENLABS_VOICE_ID}:{text}".encode()).hexdigest()
     cache_file = os.path.join(TTS_CACHE_DIR, f"{cache_key}.mp3")
     cache_url  = f"/static/audio/nav/{cache_key}.mp3"
@@ -1429,6 +1429,30 @@ def api_tts():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 502
+
+
+@app.route("/api/gtts")
+def api_gtts():
+    """Google Translate TTS proxy — bez klucza API, fallback gdy ElevenLabs pada."""
+    from urllib.parse import quote as url_quote
+    text = (request.args.get('text') or '').strip()[:200]
+    lang = (request.args.get('lang') or 'pl')[:5]
+    if not text:
+        return '', 400
+    cache_key  = hashlib.md5(f"gtts:{lang}:{text}".encode()).hexdigest()
+    cache_file = os.path.join(TTS_CACHE_DIR, f"{cache_key}.mp3")
+    if os.path.exists(cache_file):
+        return send_file(cache_file, mimetype='audio/mpeg')
+    try:
+        url = f"https://translate.google.com/translate_tts?ie=UTF-8&q={url_quote(text)}&tl={lang}&client=tw-ob"
+        r = _requests.get(url, headers={'User-Agent':'Mozilla/5.0'}, timeout=8)
+        if r.status_code == 200 and len(r.content) > 100:
+            with open(cache_file, 'wb') as f:
+                f.write(r.content)
+            return send_file(cache_file, mimetype='audio/mpeg')
+    except Exception:
+        pass
+    return '', 502
 
 
 @app.route("/api/ai-ping")
