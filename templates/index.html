@@ -5267,7 +5267,7 @@ function setGpsArrow(lat, lng){
       <polygon points="20,2 38,50 20,40 2,50" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1" stroke-linejoin="round"/>
     </svg>`;
     el.style.cssText = 'line-height:0;z-index:10';
-    gpsMarker = new mapboxgl.Marker({element:el, anchor:'center', rotationAlignment:'viewport', pitchAlignment:'map'})
+    gpsMarker = new mapboxgl.Marker({element:el, anchor:'center', rotation: navCurrentHeading, rotationAlignment:'map', pitchAlignment:'map'})
       .setLngLat([lng,lat]).addTo(map);
     return;
   }
@@ -7941,6 +7941,7 @@ function onNavPosition(pos){
   // Map matching odpala w tle tylko dla debug overlay
   _runSnapToRoad(lat, lng);
   setGpsArrow(snapLat, snapLng);
+  if(gpsMarker) gpsMarker.setRotation(navCurrentHeading);
   _updateGpsDebug(
     {lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy},
     {lat, lng},
