@@ -9859,7 +9859,7 @@ function startBgListening(){
 
   const rec = new SR();
   rec.lang = 'pl-PL';
-  rec.continuous = true;      // ← klucz: nie zamykaj po ciszy, brak klikania
+  rec.continuous = false;     // Android Chrome: false + auto-restart jest stabilniejszy niż continuous
   rec.interimResults = false;
   rec.maxAlternatives = 1;
   window._bgRecognition = rec;
@@ -9883,9 +9883,13 @@ function startBgListening(){
     if(e.error === 'not-allowed' || e.error === 'service-not-allowed'){
       _bgAssistantActive = false;
       _setAssistantBtn(false);
-      showAlert('🎤','Brak dostępu do mikrofonu','Zezwól na mikrofon w ustawieniach przeglądarki lub sprawdź czy strona jest otwarta przez HTTPS.');
+      showAlert('🎤','Brak dostępu do mikrofonu','Zezwól na mikrofon w ustawieniach przeglądarki (Ustawienia → Prywatność → Uprawnienia → Mikrofon).');
+      return;
     }
-    // no-speech, audio-capture itp. — continuous sam się odnowi przez onend
+    // no-speech / audio-capture — restartuj po chwili
+    if(_bgAssistantActive){
+      setTimeout(() => { if(_bgAssistantActive) startBgListening(); }, 500);
+    }
   };
 
   rec.onend = () => {
@@ -9897,11 +9901,11 @@ function startBgListening(){
       if(_navSpeaking || !!_elAudio) return setTimeout(resume, 400);
       if(_bgAssistantActive) startBgListening();
     };
-    setTimeout(resume, 400);
+    setTimeout(resume, 300);
   };
 
   try{ rec.start(); }
-  catch(e){ window._bgRecognition = null; }
+  catch(e){ window._bgRecognition = null; showAlert('⚠️','Mikrofon','Błąd startu: ' + e.message); }
 }
 
 function closeAiAssistant(){
