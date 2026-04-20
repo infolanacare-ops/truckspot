@@ -2112,6 +2112,15 @@ body.navigating .convoy-btn{display:none}
 /* ══ SVG ICON SYSTEM ══ */
 .si{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
 .si svg{display:block}
+/* TruckSpot icon system */
+.ts-icon{display:inline-flex;align-items:center;justify-content:center;line-height:0}
+.ts-icon svg{display:block;overflow:visible}
+.mode-icon-wrap .ts-icon svg{width:30px;height:30px;stroke:currentColor}
+.jedz-btn .ts-icon svg{width:22px;height:18px;stroke:currentColor;vertical-align:middle}
+.ai-panel-avatar .ts-icon svg{width:26px;height:26px;stroke:#fff}
+.lm-icon .ts-icon svg{width:18px;height:18px;stroke:currentColor}
+.nav-sheet-btn .ts-icon svg{width:18px;height:18px;stroke:currentColor;vertical-align:middle;margin-right:4px}
+.ai-gb-icon .ts-icon svg{width:22px;height:22px;stroke:currentColor}
 /* Menu icons with SVG */
 .menu-icon .si svg{width:20px;height:20px;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
 /* Bottom nav SVG */
@@ -2147,6 +2156,99 @@ body.navigating .convoy-btn{display:none}
 </style>
 </head>
 <body>
+
+<!-- ═══ TruckSpot SVG icon library ═══ -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <!-- TIR truck (side view) -->
+  <symbol id="ts-truck" viewBox="0 0 34 22" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6">
+    <rect x="1" y="3" width="18" height="12" rx="2"/>
+    <path d="M19 7h6.5l4.5 4.5V15H19V7z"/>
+    <line x1="28" y1="6" x2="30.5" y2="6"/>
+    <rect x="29.5" y="12.5" width="3" height="1.5" rx=".6" fill="currentColor" stroke="none" opacity=".85"/>
+    <line x1="1" y1="15" x2="33" y2="15"/>
+    <circle cx="7" cy="18.5" r="2.5"/>
+    <circle cx="14" cy="18.5" r="2.5"/>
+    <circle cx="26.5" cy="18.5" r="2.5"/>
+  </symbol>
+
+  <!-- TruckBot AI — robot face w stylu kabiny TIR -->
+  <symbol id="ts-bot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+    <rect x="3" y="7" width="18" height="14" rx="3"/>
+    <line x1="12" y1="7" x2="12" y2="3.5"/>
+    <circle cx="12" cy="3" r="1" fill="currentColor" stroke="none"/>
+    <circle cx="9" cy="13" r="2" fill="currentColor" stroke="none"/>
+    <circle cx="15" cy="13" r="2" fill="currentColor" stroke="none"/>
+    <circle cx="9.6" cy="12.4" r=".7" fill="white" stroke="none" opacity=".8"/>
+    <circle cx="15.6" cy="12.4" r=".7" fill="white" stroke="none" opacity=".8"/>
+    <path d="M9 17.5h1.5M11.5 17.5h1M13.5 17.5H15"/>
+    <line x1="1.5" y1="12.5" x2="3" y2="12.5"/>
+    <line x1="21" y1="12.5" x2="22.5" y2="12.5"/>
+  </symbol>
+
+  <!-- Custom map pin z ciężarówką w środku -->
+  <symbol id="ts-pin" viewBox="0 0 24 28" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+    <path d="M12 2C7.03 2 3 6.03 3 11c0 6.25 9 15 9 15s9-8.75 9-15c0-4.97-4.03-9-9-9z"/>
+    <rect x="7.5" y="8" width="5.5" height="4" rx=".8" stroke-width="1.2"/>
+    <path d="M13 9.5h2l1.5 1.5V12H13V9.5z" stroke-width="1.2"/>
+    <circle cx="9.5" cy="13.5" r=".9" fill="currentColor" stroke="none"/>
+    <circle cx="14.5" cy="13.5" r=".9" fill="currentColor" stroke="none"/>
+  </symbol>
+
+  <!-- Map/layers icon -->
+  <symbol id="ts-map" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+    <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
+    <line x1="9" y1="3" x2="9" y2="18"/>
+    <line x1="15" y1="6" x2="15" y2="21"/>
+  </symbol>
+
+  <!-- Satellite / antena -->
+  <symbol id="ts-antenna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+    <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/>
+    <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/>
+    <circle cx="12" cy="12" r="2"/>
+    <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/>
+    <path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/>
+  </symbol>
+
+  <!-- Night / moon -->
+  <symbol id="ts-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+  </symbol>
+
+  <!-- Camper/van -->
+  <symbol id="ts-van" viewBox="0 0 28 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+    <rect x="1" y="3" width="20" height="10" rx="2"/>
+    <path d="M21 6h4l2 3v4H21V6z"/>
+    <rect x="5" y="5.5" width="4" height="3" rx=".6" stroke-width="1.2"/>
+    <rect x="11" y="5.5" width="4" height="3" rx=".6" stroke-width="1.2"/>
+    <line x1="1" y1="13" x2="27" y2="13"/>
+    <circle cx="7" cy="15.5" r="2"/>
+    <circle cx="21" cy="15.5" r="2"/>
+  </symbol>
+
+  <!-- Tourist/backpack -->
+  <symbol id="ts-tourist" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+    <path d="M4 20V9a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v11"/>
+    <line x1="12" y1="5" x2="12" y2="2"/>
+    <line x1="4" y1="13" x2="20" y2="13"/>
+    <line x1="8" y1="20" x2="8" y2="13"/>
+    <line x1="16" y1="20" x2="16" y2="13"/>
+    <path d="M10 2h4"/>
+  </symbol>
+
+  <!-- Route/navigation arrow -->
+  <symbol id="ts-route" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+    <polygon points="12 2 19 21 12 17 5 21 12 2"/>
+  </symbol>
+
+  <!-- Mic / voice -->
+  <symbol id="ts-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+    <line x1="12" y1="19" x2="12" y2="23"/>
+    <line x1="8" y1="23" x2="16" y2="23"/>
+  </symbol>
+</svg>
 
 <!-- ══════════════════════════════════════
      ONBOARDING (3 steps)
@@ -2244,7 +2346,7 @@ body.navigating .convoy-btn{display:none}
     </div>
     <div class="ob-cards">
       <div class="ob-card mode-card tir" onclick="enterMode('tir')">
-        <div class="mode-icon-wrap">🚛</div>
+        <div class="mode-icon-wrap"><span class="ts-icon"><svg><use href="#ts-truck"/></svg></span></div>
         <div class="ob-card-body">
           <div class="mode-card-title-row">
             <div class="ob-card-title" id="lbl-tir-title">Kierowca TIR</div>
@@ -2255,7 +2357,7 @@ body.navigating .convoy-btn{display:none}
         <div class="mode-chevron">›</div>
       </div>
       <div class="ob-card mode-card camper" onclick="enterMode('bus')">
-        <div class="mode-icon-wrap">🚐</div>
+        <div class="mode-icon-wrap"><span class="ts-icon"><svg><use href="#ts-van"/></svg></span></div>
         <div class="ob-card-body">
           <div class="ob-card-title" id="lbl-bus-title">Busiarz / Van Life</div>
           <div class="ob-card-desc" id="lbl-bus-desc">Stellplätze · prąd · woda · prysznice</div>
@@ -2263,7 +2365,7 @@ body.navigating .convoy-btn{display:none}
         <div class="mode-chevron">›</div>
       </div>
       <div class="ob-card mode-card tourist" onclick="enterMode('tourist')">
-        <div class="mode-icon-wrap">🧳</div>
+        <div class="mode-icon-wrap"><span class="ts-icon"><svg><use href="#ts-tourist"/></svg></span></div>
         <div class="ob-card-body">
           <div class="ob-card-title" id="lbl-tourist-title">Turysta / Camping</div>
           <div class="ob-card-desc" id="lbl-tourist-desc">Campingi · pola namiotowe · atrakcje · zabytki</div>
@@ -2367,9 +2469,9 @@ body.navigating .convoy-btn{display:none}
   <!-- Layer switcher -->
   <button class="fab-layers" id="fab-layers" onclick="toggleLayersMenu()" title="Zmień styl mapy">🗺️</button>
   <div class="layers-menu" id="layers-menu">
-    <button class="layers-menu-item active" id="lm-streets" onclick="setMapLayer('streets')"><span class="lm-icon">🗺️</span>Mapa</button>
-    <button class="layers-menu-item" id="lm-satellite" onclick="setMapLayer('satellite')"><span class="lm-icon">🛰️</span>Satelita</button>
-    <button class="layers-menu-item" id="lm-dark" onclick="setMapLayer('dark')"><span class="lm-icon">🌙</span>Ciemna</button>
+    <button class="layers-menu-item active" id="lm-streets" onclick="setMapLayer('streets')"><span class="lm-icon"><span class="ts-icon"><svg><use href="#ts-map"/></svg></span></span>Mapa</button>
+    <button class="layers-menu-item" id="lm-satellite" onclick="setMapLayer('satellite')"><span class="lm-icon"><span class="ts-icon"><svg><use href="#ts-antenna"/></svg></span></span>Satelita</button>
+    <button class="layers-menu-item" id="lm-dark" onclick="setMapLayer('dark')"><span class="lm-icon"><span class="ts-icon"><svg><use href="#ts-moon"/></svg></span></span>Ciemna</button>
   </div>
 
   <div class="bottom-nav">
@@ -2807,7 +2909,7 @@ body.navigating .convoy-btn{display:none}
     </div>
   </div>
 
-  <button class="jedz-btn" onclick="startDriving()" id="jedz-btn">🚛 JEDŹ</button>
+  <button class="jedz-btn" onclick="startDriving()" id="jedz-btn"><span class="ts-icon"><svg><use href="#ts-truck"/></svg></span> JEDŹ</button>
   <div id="route-results"></div>
   <div id="route-history-section"></div>
 </div>
@@ -2910,7 +3012,7 @@ body.navigating .convoy-btn{display:none}
 <!-- AI ASYSTENT PANEL -->
 <div class="ai-panel" id="ai-panel">
   <div class="ai-panel-header">
-    <div class="ai-panel-avatar">🤖</div>
+    <div class="ai-panel-avatar"><span class="ts-icon"><svg><use href="#ts-bot"/></svg></span></div>
     <div>
       <div class="ai-panel-title">TruckBot</div>
       <div class="ai-panel-sub" id="ai-panel-sub">Gotowy — zapytaj mnie o cokolwiek</div>
@@ -2941,8 +3043,8 @@ body.navigating .convoy-btn{display:none}
     <button class="nav-sheet-btn" id="nav-pitch-btn" onclick="cycleNavPitch()">3D</button>
     <button class="nav-sheet-btn" id="nav-northup-btn" onclick="toggleNavNorthUp()">🧭 Północ</button>
     <button class="nav-sheet-btn" id="mod-speed-btn" onclick="toggleSpeedModule()">✅ Prędkość</button>
-    <button class="nav-sheet-btn" onclick="closeNavSheet(); togglePoisStrip()">📍 Oś trasy</button>
-    <button class="nav-sheet-btn" onclick="closeNavSheet(); toggleNavOverview()">🗺️ Widok</button>
+    <button class="nav-sheet-btn" onclick="closeNavSheet(); togglePoisStrip()"><span class="ts-icon"><svg><use href="#ts-pin"/></svg></span> Oś trasy</button>
+    <button class="nav-sheet-btn" onclick="closeNavSheet(); toggleNavOverview()"><span class="ts-icon"><svg><use href="#ts-map"/></svg></span> Widok</button>
     <button class="nav-sheet-btn nav-sheet-convoy" onclick="closeNavSheet(); toggleConvoyPanel()">
       🚛 MOBILKI <span id="nav-sheet-convoy-cnt" style="display:none;background:rgba(16,185,129,.25);border-radius:8px;padding:.05rem .35rem;font-size:.75rem;margin-left:.2rem">0</span>
     </button>
@@ -2952,11 +3054,11 @@ body.navigating .convoy-btn{display:none}
   <div class="nav-ai-group">
     <div class="nav-ai-group-label">✦ AI</div>
     <button class="nav-ai-group-btn" id="nav-asystent-btn" onclick="closeNavSheet(); openAiAssistant()">
-      <span class="ai-gb-icon">🎙</span>
+      <span class="ai-gb-icon"><span class="ts-icon"><svg><use href="#ts-mic"/></svg></span></span>
       <span>Asystent</span>
     </button>
     <button class="nav-ai-group-btn" onclick="closeNavSheet(); openAiChat()">
-      <span class="ai-gb-icon">💬</span>
+      <span class="ai-gb-icon ts-icon"><svg style="width:22px;height:22px;display:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
       <span>Chat</span>
     </button>
   </div>
@@ -3557,6 +3659,7 @@ let osmLoading=false;
 let fuelStationMarkers=[], allFuelStations=[], _fuelLoading=false;
 const FUEL_FILTER_IDS = new Set(['fs_hgv','fs_dkv','fs_uta','fs_as24','fs_e100','fs_shell','fs_adblue']);
 const FUEL_CARD_MAP = {fs_hgv:'hgv',fs_dkv:'dkv',fs_uta:'uta',fs_as24:'as24',fs_e100:'e100',fs_shell:'shell',fs_adblue:'adblue'};
+const TS_TRUCK_BTN = '<span class="ts-icon"><svg><use href="#ts-truck"/></svg></span> JEDŹ';
 let pickingMode=false, spotLat=null, spotLng=null;
 let spotStars=1, spotCat='parking', spotTempMarker=null;
 let gpsActive=false, gpsWatchId=null, gpsMarker=null;
@@ -5431,14 +5534,14 @@ async function searchRoute(navMode){
       resultsDiv.innerHTML = header + parkHtml +
         `<div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.6rem">
           <button class="route-clear-btn" onclick="clearRoute()">✕ Usuń trasę</button>
-          <button class="jedz-btn" style="margin-top:0" onclick="startNavigation()">🚛 Nawiguj</button>
+          <button class="jedz-btn" style="margin-top:0" onclick="startNavigation()"><span class="ts-icon"><svg><use href="#ts-truck"/></svg></span> Nawiguj</button>
         </div>`;
     }
 
   } catch(err){
     showAlert('⚠️','Error', err.message||'Route error');
   } finally {
-    if(btn){ btn.innerHTML='🚛 JEDŹ'; btn.disabled=false; }
+    if(btn){ btn.innerHTML=TS_TRUCK_BTN; btn.disabled=false; }
   }
 }
 
@@ -5778,7 +5881,7 @@ async function startDriving(){
     await searchRoute(true);
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '🚛 JEDŹ';
+    btn.innerHTML = TS_TRUCK_BTN;
   }
 }
 
@@ -5813,7 +5916,7 @@ async function confirmTirAndNavigate(){
   try {
     await searchRoute(true);
   } finally {
-    if(btn){ btn.disabled=false; btn.innerHTML='🚛 JEDŹ'; }
+    if(btn){ btn.disabled=false; btn.innerHTML=TS_TRUCK_BTN; }
   }
 }
 
