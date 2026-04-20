@@ -1831,7 +1831,7 @@ body.navigating .fab-ai{display:none}
 /* ETA inline w pasku */
 .nav-eta-inline{display:flex;gap:.4rem;flex:1;min-width:0}
 .nav-eta-cell{
-  flex:1;min-width:0;height:60px;padding:0 .4rem;
+  flex:1;min-width:0;height:60px;padding:0 .4rem;position:relative;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   background:rgba(255,255,255,.10);border-radius:16px;
   border:1.5px solid rgba(255,255,255,.18);
@@ -3293,6 +3293,7 @@ body.navigating .convoy-btn{display:none}
       <div class="nav-eta-cell">
         <div class="nav-eta-cell-val" id="nav-eta-remaining">–</div>
         <div class="nav-eta-cell-lbl">czas</div>
+        <div id="nav-traffic-badge" style="display:none;position:absolute;top:-8px;right:-6px;background:#ef4444;color:#fff;font-size:.55rem;font-weight:800;border-radius:8px;padding:1px 5px;white-space:nowrap;line-height:1.4"></div>
       </div>
       <div class="nav-eta-cell">
         <div class="nav-eta-cell-val" id="nav-eta-arrival">––:––</div>
@@ -6235,6 +6236,52 @@ function setNavEta(secs){
   document.getElementById('nav-eta-arrival').textContent   = fmtArrival(secs);
 }
 
+// ── Traffic ETA (driving-traffic co 4 min) ──────────────────────────────────
+let _trafficEtaSecs   = null;  // czas z driving-traffic (od aktualnej pozycji)
+let _trafficDelaySecs = 0;     // różnica vs driving bez korków
+let _trafficEtaTs     = 0;
+let _trafficFetching  = false;
+
+async function _refreshTrafficEta(){
+  if(_trafficFetching || !navActive || navDestLat === null) return;
+  if(Date.now() - _trafficEtaTs < 4 * 60 * 1000) return; // co 4 minuty
+  if(!navLastLat || !navLastLng) return;
+  _trafficFetching = true;
+  try {
+    const from = `${navLastLng},${navLastLat}`;
+    const to   = `${navDestLng},${navDestLat}`;
+    const base = { geometries:'geojson', overview:'false', steps:'false', access_token:MAPBOX_TOKEN };
+    const [rT, rN] = await Promise.all([
+      fetch(`https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${from};${to}?${new URLSearchParams(base)}`),
+      fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${from};${to}?${new URLSearchParams(base)}`)
+    ]);
+    const [dT, dN] = await Promise.all([rT.json(), rN.json()]);
+    if(dT.routes?.length && dN.routes?.length){
+      _trafficEtaSecs   = dT.routes[0].duration;
+      _trafficDelaySecs = Math.max(0, dT.routes[0].duration - dN.routes[0].duration);
+      _trafficEtaTs     = Date.now();
+      _updateTrafficBadge();
+    }
+  } catch(e){} finally { _trafficFetching = false; }
+}
+
+function _updateTrafficBadge(){
+  const badge = document.getElementById('nav-traffic-badge');
+  if(!badge) return;
+  const delayMin = Math.round(_trafficDelaySecs / 60);
+  if(delayMin >= 2){
+    badge.textContent = `🚦 +${delayMin} min`;
+    badge.style.display = 'block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function resetTrafficEta(){
+  _trafficEtaSecs = null; _trafficDelaySecs = 0; _trafficEtaTs = 0;
+  _updateTrafficBadge();
+}
+
 let navRoutePois = [];     // WSZYSTKIE POI wzdłuż trasy (niefiltrowane)
 
 // Mapowanie: typ POI z API/parkingów → id filtra
@@ -7404,7 +7451,7 @@ function startNavigation(){
   navActive=true; navStepIdx=0; navCIdx=0; navLastLat=null; navLastLng=null;
   _smoothBearing=null; _navLockedZoom=null; _zuptSnapLat=null; _zuptSnapLng=null;
   _snapEmaLat=null; _snapEmaLng=null;
-  _kalman.reset(); _strBuf=[]; _strLat=null; _strLng=null;
+  _kalman.reset(); _strBuf=[]; _strLat=null; _strLng=null; resetTrafficEta();
   // Inicjuj heading z pierwszego segmentu trasy — nie startuj z 0 (północ)
   if(routeCoords.length >= 2){
     const dx = routeCoords[1][0] - routeCoords[0][0];
@@ -8023,9 +8070,12 @@ function onNavPosition(pos){
     }
   }
 
-  // ETA: use real speed, fallback 80km/h
+  // ETA: traffic-aware gdy świeże dane, fallback speed-based
   const speedForEta = navSpeedKmh > 5 ? navSpeedKmh : 80;
-  setNavEta(navDistRemaining / (speedForEta/3.6));
+  const speedEta = navDistRemaining / (speedForEta / 3.6);
+  const trafficFresh = _trafficEtaSecs !== null && (Date.now() - _trafficEtaTs) < 6 * 60 * 1000;
+  setNavEta(trafficFresh ? _trafficEtaSecs : speedEta);
+  _refreshTrafficEta(); // odpala co najwyżej co 4 min, reszta to no-op
 
   // ── Step management ─────────────────────────────────────────────────
   // Advance past steps whose maneuver point we've already passed
