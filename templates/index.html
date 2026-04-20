@@ -583,6 +583,23 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
   transition:transform .15s}
 .msg-bubble:hover{transform:scale(1.15)}
 .msg-bubble.mine{border-color:#fff}
+
+/* CB Radio speech-bubble marker */
+.cb-marker-wrap{
+  cursor:pointer;
+  filter:drop-shadow(0 3px 8px rgba(0,0,0,.5));
+  animation:cb-marker-in .25s ease-out;
+  transform-origin:50% 100%;
+}
+.cb-marker-wrap.cb-new{animation:cb-marker-in .25s ease-out, cb-marker-pulse 2s ease-in-out 3;}
+@keyframes cb-marker-in{
+  from{transform:scale(0) translateY(8px);opacity:0}
+  to{transform:scale(1) translateY(0);opacity:1}
+}
+@keyframes cb-marker-pulse{
+  0%,100%{filter:drop-shadow(0 3px 8px rgba(0,0,0,.5))}
+  50%{filter:drop-shadow(0 0 14px var(--cb-glow,rgba(59,130,246,.9))) drop-shadow(0 3px 8px rgba(0,0,0,.4))}
+}
 /* Floating add button */
 .msg-fab{position:fixed;bottom:78px;right:16px;z-index:800;width:40px;height:40px;border-radius:50%;
   background:rgba(30,36,58,.82);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.13);
@@ -8996,12 +9013,15 @@ function msgTimeSince(ts){
   return `${Math.floor(h/24)}d temu`;
 }
 
-function renderMsgMarker(m){
+function renderMsgMarker(m, isNew){
   const cat = MSG_CATS[m.cat] || MSG_CATS.info;
   const author = getChatAuthor();
   const isMine = m.color === author.color && m.emoji === author.emoji;
+  // Chmurka: emoji kategorii + skrót tekstu; moje — jaśniejszy kolor
+  const color = isMine ? (cat.color+'ee') : cat.color;
+  const snippet = m.text;
   const mk = mkMbMarker(m.lat, m.lng,
-    mkPinIcon(isMine ? cat.color+'dd' : cat.color, CAT_SVG_PATHS[m.cat]||CAT_SVG_PATHS.info),
+    mkMsgBubble(color, cat.icon, snippet, isNew),
     ()=>showMsgDetail(m));
   msgMarkers.push(mk);
 }
@@ -9127,7 +9147,7 @@ function _startCbRealtime(){
         dislikes: r.dislikes || 0,
         display_name: r.display_name,
       };
-      renderMsgMarker(m);
+      renderMsgMarker(m, true);
       // Pokaż dymek powiadomienia
       const cat = MSG_CATS[m.cat] || MSG_CATS.info;
       showAlert(cat.icon, cat.label, m.text.substring(0,80));
@@ -9234,6 +9254,53 @@ function mkPin(color, innerHtml, size=38){
     <!-- zawartość (ikona/litera) -->
     ${innerHtml}
   </svg>`;
+}
+
+// ── CB Radio speech bubble marker ──────────────────────────────────────────
+function mkMsgBubble(color, catIcon, snippet, isNew){
+  // Ogranicz snippet do ~18 znaków
+  const txt = (snippet||'').substring(0, 18) + ((snippet||'').length > 18 ? '…' : '');
+  const hasTxt = txt.trim().length > 0;
+  const w = hasTxt ? 110 : 46;
+  const h = 42;
+  const r = 10;        // border-radius
+  const tailH = 10;    // wysokość ogonka
+  const totalH = h + tailH;
+  const glowColor = color + 'cc';
+  const lightColor = hexLighten(color, 60);
+
+  // ogon — trójkąt wskazujący w dół (środek)
+  const tailX1 = w/2 - 7, tailX2 = w/2 + 7, tailTip = w/2;
+  const bubblePath = `M${r},1 H${w-r} Q${w},1 ${w},${r+1} V${h-r} Q${w},${h} ${w-r},${h}
+    H${tailX2} L${tailTip},${totalH} L${tailX1},${h} H${r} Q1,${h} 1,${h-r} V${r+1} Q1,1 ${r},1 Z`;
+
+  const glowId = 'cbg'+Math.random().toString(36).slice(2,6);
+  const gradId = 'cbgr'+Math.random().toString(36).slice(2,6);
+
+  return `<div class="cb-marker-wrap${isNew?' cb-new':''}" style="--cb-glow:${glowColor}">
+    <svg xmlns="http://www.w3.org/2000/svg" width="${w+2}" height="${totalH+2}" viewBox="-1 0 ${w+2} ${totalH+1}" style="overflow:visible">
+      <defs>
+        <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${lightColor}"/>
+          <stop offset="100%" stop-color="${color}"/>
+        </linearGradient>
+        <filter id="${glowId}" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="2.5" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <!-- cień -->
+      <path d="${bubblePath}" fill="rgba(0,0,0,.28)" transform="translate(2,3)"/>
+      <!-- wypełnienie -->
+      <path d="${bubblePath}" fill="url(#${gradId})" stroke="rgba(255,255,255,.35)" stroke-width="1.2"/>
+      <!-- emoji kategorii -->
+      <text x="${hasTxt ? 14 : w/2}" y="${h/2+1}" text-anchor="middle" dominant-baseline="middle"
+        font-size="16" style="user-select:none">${catIcon}</text>
+      ${hasTxt ? `<text x="26" y="${h/2+1}" dominant-baseline="middle"
+        font-family="'Inter',sans-serif" font-size="10" font-weight="600"
+        fill="rgba(255,255,255,.92)">${txt}</text>` : ''}
+    </svg>
+  </div>`;
 }
 
 function mkPinP(color, letter='P', size=38){
