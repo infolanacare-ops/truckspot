@@ -8089,7 +8089,6 @@ function onNavPosition(pos){
       navOffRouteTicks = 0;
       navRerouteTs = now;
       navRerouteWarned = false;
-      speakNav(currentLang==='pl' ? 'Przeliczam trasę.' : 'Recalculating.', true);
       setEl('nav-street-name', currentLang==='pl' ? '🔄 Przeliczam trasę...' : '🔄 Recalculating...');
       rerouteNavigation(lat, lng);
       return;
@@ -8248,10 +8247,8 @@ async function rerouteNavigation(fromLat, fromLng){
         : `Shortcut found. Save ${savedMin} minutes.`;
       speakNav(msg, true);
     } else {
-      const msg = currentLang==='pl'
-        ? 'Prowadzę z bieżącej pozycji.'
-        : 'Navigating from current position.';
-      speakNav(msg, false);
+      const msg = currentLang==='pl' ? 'Trasa przeliczona.' : 'Route updated.';
+      speakNav(msg, true);
     }
 
   } catch(e) {
