@@ -6694,14 +6694,22 @@ function startNavigation(){
   // Auto tryb dzienny/nocny mapy
   const h = new Date().getHours();
   const navStyle = (h >= 6 && h < 20)
-    ? 'mapbox://styles/mapbox/navigation-day-v1'
-    : 'mapbox://styles/mapbox/navigation-night-v1';
-  map.setStyle(navStyle);
-  map.once('style.load', ()=>{
+    ? 'mapbox://styles/mapbox/navigation-guidance-day-v4'
+    : 'mapbox://styles/mapbox/navigation-guidance-night-v4';
+  const _onNavStyleLoad = ()=>{
     if(routeCoords.length) drawRoute(routeCoords);
     loadRoutePois();
     loadNavCameras();
-  });
+  };
+  map.setStyle(navStyle);
+  map.once('style.load', _onNavStyleLoad);
+  // Fallback: jeśli styl nie załaduje się w 6s → użyj streets
+  const _navStyleTimeout = setTimeout(()=>{
+    if(!map.isStyleLoaded()){
+      map.setStyle('mapbox://styles/mapbox/streets-v12');
+      map.once('style.load', _onNavStyleLoad);
+    }
+  }, 6000);
   map.easeTo({pitch:65, duration:1500});
   acquireWakeLock();
   // Pokaż profil TIR podczas nawigacji
