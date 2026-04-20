@@ -5348,32 +5348,25 @@ function drawRoute(coords, splitIdx){
     // ── Pozostała trasa (niebieska, ładna) ────────────────
     map.addSource('ts-route',{type:'geojson',data:geoAhead});
 
-    // Zewnętrzny glow — subtelny, nie zakrywa mapy
-    map.addLayer({id:'ts-route-glow',type:'line',source:'ts-route',
-      layout:{'line-join':'round','line-cap':'round'},
-      paint:{'line-color':'#006d77',
-        'line-width':['interpolate',['linear'],['zoom'],8,12,12,18,16,24],
-        'line-opacity':0.18,'line-blur':6}
-    }, firstSymbol);
-    // Ciemna obwódka — odcina trasę od mapy
+    // Ciemna obwódka
     map.addLayer({id:'ts-route-casing',type:'line',source:'ts-route',
       layout:{'line-join':'round','line-cap':'round'},
-      paint:{'line-color':'#003d44',
+      paint:{'line-color':'#1a5276',
         'line-width':['interpolate',['linear'],['zoom'],8,8,12,12,16,16],
         'line-opacity':1}
     }, firstSymbol);
-    // Główna linia — żywy niebieski
+    // Główna linia — niebieski jak Google Maps
     map.addLayer({id:'ts-route-line',type:'line',source:'ts-route',
       layout:{'line-join':'round','line-cap':'round'},
-      paint:{'line-color':'#00838f',
+      paint:{'line-color':'#2980b9',
         'line-width':['interpolate',['linear'],['zoom'],8,6,12,10,16,13],
-        'line-opacity':0.92}
+        'line-opacity':1}
     }, firstSymbol);
-    // Biały centralny pasek — efekt "świecącej drogi"
+    // Subtelny centralny highlight — nie biały, jasnoniebieski
     map.addLayer({id:'ts-route-shine',type:'line',source:'ts-route',
       layout:{'line-join':'round','line-cap':'round'},
-      paint:{'line-color':'rgba(255,255,255,0.5)',
-        'line-width':['interpolate',['linear'],['zoom'],8,1.5,12,3,16,4.5],
+      paint:{'line-color':'rgba(174,214,241,0.5)',
+        'line-width':['interpolate',['linear'],['zoom'],8,1.5,12,2.5,16,4],
         'line-opacity':1}
     }, firstSymbol);
   });
