@@ -3902,11 +3902,10 @@ function loadParkings(mode){
   fetch(`/api/parkings?mode=${MODE_CONFIG[mode].apiMode}`)
     .then(r=>r.json()).then(data=>{
       allParkings=data;
-      // Parkingi widoczne tylko gdy aktywny filtr
       if(activeFilters.size > 0) applyFilterToMarkers();
       else renderMarkers([]);
-      checkParkingDeeplink(); // retry after data loaded
-    });
+      checkParkingDeeplink();
+    }).catch(e=>{ console.error('parkings fetch error',e); showAlert('⚠️','','Błąd ładowania parkingów'); });
 }
 
 // ── GL Cluster rendering ────────────────────────────────────────────────────
