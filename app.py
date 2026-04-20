@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import os, json, re, secrets, time, math, requests as _requests
+from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, send_from_directory, send_file
 import hashlib
 
@@ -632,11 +633,39 @@ def api_messages_get():
     except ValueError:
         return jsonify({"error": "bad params"}), 400
 
+    if supabase:
+        try:
+            cutoff = (datetime.utcnow() - timedelta(hours=12)).isoformat()
+            rows = supabase.table("cb_messages") \
+                .select("id,user_id,display_name,lat,lng,message,cat,color,emoji,likes,dislikes,created_at") \
+                .gte("lat", south).lte("lat", north) \
+                .gte("lng", west).lte("lng", east) \
+                .gte("created_at", cutoff) \
+                .order("created_at", desc=True).limit(200).execute()
+            result = []
+            for r in rows.data:
+                result.append({
+                    "id":       r["id"],
+                    "lat":      float(r["lat"]),
+                    "lng":      float(r["lng"]),
+                    "text":     r["message"],
+                    "cat":      r.get("cat", "info"),
+                    "color":    r.get("color", "#3b82f6"),
+                    "emoji":    r.get("emoji", "🚛"),
+                    "ts":       int(datetime.fromisoformat(r["created_at"].replace("Z","+00:00")).timestamp()),
+                    "likes":    r.get("likes", 0) or 0,
+                    "dislikes": r.get("dislikes", 0) or 0,
+                    "display_name": r.get("display_name"),
+                })
+            return jsonify(result)
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    # Fallback: plik lokalny (legacy)
     if not os.path.exists(MESSAGES_PATH):
         return jsonify([])
     with open(MESSAGES_PATH, encoding="utf-8") as f:
         msgs = json.load(f)
-
     now = time.time()
     result = []
     for m in msgs:
@@ -655,55 +684,98 @@ def api_messages_post():
         if field not in data:
             return jsonify({"error": f"Missing: {field}"}), 400
 
+    lat  = float(data["lat"])
+    lng  = float(data["lng"])
+    text = str(data["text"])[:200]
+    cat  = str(data["cat"])[:20]
+    color = str(data.get("color", "#3b82f6"))[:10]
+    emoji = str(data.get("emoji", "🚛"))[:4]
+    display_name = str(data.get("display_name", ""))[:50] or None
+
+    if supabase:
+        try:
+            # Pobierz user_id z tokena (opcjonalnie)
+            user_id = None
+            auth_hdr = request.headers.get("Authorization", "")
+            if auth_hdr.startswith("Bearer "):
+                try:
+                    u = supabase.auth.get_user(auth_hdr[7:]).user
+                    user_id = str(u.id) if u else None
+                except Exception:
+                    pass
+
+            row = supabase.table("cb_messages").insert({
+                "user_id":      user_id,
+                "display_name": display_name,
+                "lat":          lat,
+                "lng":          lng,
+                "message":      text,
+                "cat":          cat,
+                "color":        color,
+                "emoji":        emoji,
+                "likes":        0,
+                "dislikes":     0,
+            }).execute()
+            msg_id = row.data[0]["id"] if row.data else None
+
+            if cat in ("police", "accident", "help", "roadwork", "weather"):
+                try:
+                    send_push_nearby(lat, lng, cat, text)
+                except Exception:
+                    pass
+
+            return jsonify({"ok": True, "id": msg_id}), 201
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    # Fallback: plik lokalny (legacy)
     if not os.path.exists(MESSAGES_PATH):
         with open(MESSAGES_PATH, "w", encoding="utf-8") as f:
             json.dump([], f)
     with open(MESSAGES_PATH, encoding="utf-8") as f:
         msgs = json.load(f)
-
-    # Purge expired
     now = time.time()
     msgs = [m for m in msgs if now - m.get("ts", 0) < MSG_TTL]
-
     new_id = max((m.get("id", 0) for m in msgs), default=0) + 1
-    msg = {
-        "id":     new_id,
-        "lat":    float(data["lat"]),
-        "lng":    float(data["lng"]),
-        "text":   str(data["text"])[:200],
-        "cat":    str(data["cat"])[:20],
-        "color":  str(data.get("color", "#3b82f6"))[:10],
-        "emoji":  str(data.get("emoji", "🚛"))[:4],
-        "ts":     now,
-        "likes":  0,
-        "dislikes": 0,
-    }
+    msg = {"id": new_id, "lat": lat, "lng": lng, "text": text, "cat": cat,
+           "color": color, "emoji": emoji, "ts": now, "likes": 0, "dislikes": 0}
     msgs.append(msg)
     with open(MESSAGES_PATH, "w", encoding="utf-8") as f:
         json.dump(msgs, f, ensure_ascii=False, indent=2)
-
-    # Push do użytkowników w pobliżu (tylko alerty wysokiej ważności)
-    if msg["cat"] in ("police", "accident", "help", "roadwork", "weather"):
+    if cat in ("police", "accident", "help", "roadwork", "weather"):
         try:
-            send_push_nearby(msg["lat"], msg["lng"], msg["cat"], msg["text"])
+            send_push_nearby(lat, lng, cat, text)
         except Exception:
             pass
-
     return jsonify({"ok": True, "id": new_id}), 201
 
 
-@app.route("/api/messages/<int:msg_id>/react", methods=["POST"])
+@app.route("/api/messages/<msg_id>/react", methods=["POST"])
 def api_messages_react(msg_id):
     data = request.get_json(force=True)
-    reaction = data.get("reaction")  # "like" or "dislike"
+    reaction = data.get("reaction")
     if reaction not in ("like", "dislike"):
         return jsonify({"error": "bad reaction"}), 400
+
+    if supabase:
+        try:
+            row = supabase.table("cb_messages").select("id,likes,dislikes").eq("id", msg_id).single().execute()
+            if not row.data:
+                return jsonify({"error": "not found"}), 404
+            field = "likes" if reaction == "like" else "dislikes"
+            new_val = (row.data.get(field) or 0) + 1
+            supabase.table("cb_messages").update({field: new_val}).eq("id", msg_id).execute()
+            return jsonify({"ok": True})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    # Fallback: plik lokalny (legacy)
     if not os.path.exists(MESSAGES_PATH):
         return jsonify({"error": "not found"}), 404
     with open(MESSAGES_PATH, encoding="utf-8") as f:
         msgs = json.load(f)
     for m in msgs:
-        if m.get("id") == msg_id:
+        if str(m.get("id")) == str(msg_id):
             if reaction == "like":
                 m["likes"] = m.get("likes", 0) + 1
             else:

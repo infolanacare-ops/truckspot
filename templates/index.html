@@ -9000,10 +9000,48 @@ function closeMsgsPanel(){
   document.getElementById('msgs-panel').classList.remove('open');
 }
 
+let _cbRealtimeSub = null;
+
 function startMsgRefresh(){
   if(msgRefreshTimer) clearInterval(msgRefreshTimer);
-  msgRefreshTimer = setInterval(()=>loadMapMessages(false), 60000); // co 60s
+  msgRefreshTimer = setInterval(()=>loadMapMessages(false), 60000);
   loadMapMessages(false);
+  _startCbRealtime();
+}
+
+function _startCbRealtime(){
+  if(!window._SB) return;
+  if(_cbRealtimeSub) _SB.removeChannel(_cbRealtimeSub);
+  _cbRealtimeSub = _SB.channel('cb_messages_live')
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'cb_messages'
+    }, payload => {
+      const r = payload.new;
+      const m = {
+        id:       r.id,
+        lat:      parseFloat(r.lat),
+        lng:      parseFloat(r.lng),
+        text:     r.message,
+        cat:      r.cat || 'info',
+        color:    r.color || '#3b82f6',
+        emoji:    r.emoji || '🚛',
+        ts:       Math.floor(new Date(r.created_at).getTime()/1000),
+        likes:    r.likes || 0,
+        dislikes: r.dislikes || 0,
+        display_name: r.display_name,
+      };
+      renderMsgMarker(m);
+      // Pokaż dymek powiadomienia
+      const cat = MSG_CATS[m.cat] || MSG_CATS.info;
+      showAlert(cat.icon, cat.label, m.text.substring(0,80));
+      // Odśwież listę jeśli panel otwarty
+      if(document.getElementById('msgs-panel').classList.contains('open')){
+        loadMapMessages(false);
+      }
+    })
+    .subscribe();
 }
 
 // AUTOBAHN DE
