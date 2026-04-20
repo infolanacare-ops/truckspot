@@ -6921,24 +6921,70 @@ function clearConvoyMsgBadge(){
 let _navSpeaking = false;
 let _navLastEndTs = 0; // timestamp ostatniej zakończonej komendy nawi
 
-function speakNav(txt, priority=false){
-  if(navMuted) return;
-  if(!('speechSynthesis' in window)) return;
-  const clean = stripForTts(txt);
-  if(!clean) return;
-  if(priority) speechSynthesis.cancel();
-  const lang = currentLang==='pl'?'pl-PL':currentLang==='de'?'de-DE':currentLang==='es'?'es-ES':'en-US';
-  const utt = new SpeechSynthesisUtterance(clean);
-  utt.lang = lang;
-  utt.rate   = 1.0;   // naturalne tempo (nie za wolno jak robot)
-  utt.pitch  = 1.1;   // kobiecy głos — pewny, czytelny jak Waze/Google Maps
-  utt.volume = 1.0;
+// ── ElevenLabs TTS engine ─────────────────────────────────────────────────────
+let _elAudio = null;  // aktywny element Audio
+let _elQueue = [];    // kolejka fraz do odtworzenia
+
+function _elPlayNext(){
+  if(_elQueue.length === 0){ _navSpeaking = false; _navLastEndTs = Date.now(); return; }
+  const {url, fallbackTxt, lang} = _elQueue.shift();
+  _navSpeaking = true;
+  const audio = new Audio(url);
+  audio.volume = 1.0;
+  _elAudio = audio;
+  audio.onended  = () => { _elAudio = null; _navLastEndTs = Date.now(); _elPlayNext(); };
+  audio.onerror  = () => {
+    // Fallback do Web Speech jeśli plik nie załadował
+    _elAudio = null;
+    _speakWebFallback(fallbackTxt, lang, ()=>{ _navLastEndTs=Date.now(); _elPlayNext(); });
+  };
+  audio.play().catch(()=>{
+    _elAudio = null;
+    _speakWebFallback(fallbackTxt, lang, ()=>{ _navLastEndTs=Date.now(); _elPlayNext(); });
+  });
+}
+
+function _speakWebFallback(txt, lang, onEnd){
+  if(!('speechSynthesis' in window)){ onEnd && onEnd(); return; }
+  const utt = new SpeechSynthesisUtterance(txt);
+  utt.lang=lang; utt.rate=1.0; utt.pitch=1.1; utt.volume=1.0;
   const voice = _pickVoice(lang, 'nav');
   if(voice) utt.voice = voice;
-  utt.onstart = () => { _navSpeaking = true; };
-  utt.onend   = () => { _navSpeaking = false; _navLastEndTs = Date.now(); };
-  utt.onerror = () => { _navSpeaking = false; _navLastEndTs = Date.now(); };
+  utt.onend = utt.onerror = () => { onEnd && onEnd(); };
   _safespeak(utt);
+}
+
+async function speakNav(txt, priority=false){
+  if(navMuted) return;
+  const clean = stripForTts(txt);
+  if(!clean) return;
+  const lang = currentLang==='pl'?'pl-PL':currentLang==='de'?'de-DE':currentLang==='es'?'es-ES':'en-US';
+
+  if(priority){
+    // Zatrzymaj bieżące odtwarzanie
+    if(_elAudio){ _elAudio.pause(); _elAudio=null; }
+    if('speechSynthesis' in window) speechSynthesis.cancel();
+    _elQueue = [];
+    _navSpeaking = false;
+  }
+
+  try {
+    const r = await fetch('/api/tts', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({text: clean})
+    });
+    const d = await r.json();
+    if(d.url){
+      _navSpeaking = true;
+      _elQueue.push({url: d.url, fallbackTxt: clean, lang});
+      if(!_elAudio) _elPlayNext();
+      return;
+    }
+  } catch(e){ /* serwer niedostępny — fallback */ }
+
+  // Fallback Web Speech
+  _speakWebFallback(clean, lang, ()=>{ _navSpeaking=false; _navLastEndTs=Date.now(); });
 }
 
 const AI_NAV_SILENCE_MS = 7000;

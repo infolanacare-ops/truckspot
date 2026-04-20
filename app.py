@@ -29,6 +29,14 @@ VAPID_PUBLIC_KEY  = os.environ.get("VAPID_PUBLIC_KEY", "")
 VAPID_EMAIL       = os.environ.get("VAPID_EMAIL", "mailto:admin@truckspot.app")
 MAPBOX_TOKEN      = os.environ.get("MAPBOX_TOKEN", "")
 
+ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY", "")
+# Głos nawigacji — multilingual v2, kobiecy, pewny jak Waze
+# Domyślnie "Joanna" (ElevenLabs multilingual). Można podmienić na własny voice_id.
+ELEVENLABS_VOICE_ID  = os.environ.get("ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnSDxMaL")
+ELEVENLABS_MODEL     = "eleven_multilingual_v2"
+TTS_CACHE_DIR        = os.path.join(os.path.dirname(__file__), "static", "audio", "nav")
+os.makedirs(TTS_CACHE_DIR, exist_ok=True)
+
 PUSH_ALERT_RADIUS_KM = 20  # promień alertów
 
 CAT_LABELS_PL = {
@@ -1362,6 +1370,54 @@ def api_ai_chat():
         return jsonify({"text": text, "action": action})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/tts", methods=["POST"])
+def api_tts():
+    """ElevenLabs TTS z cache'owaniem. Zwraca URL do MP3."""
+    if not ELEVENLABS_API_KEY:
+        return jsonify({"error": "no_key"}), 503
+
+    data = request.get_json(force=True, silent=True) or {}
+    text = (data.get("text") or "").strip()[:300]
+    if not text:
+        return jsonify({"error": "empty"}), 400
+
+    # Klucz cache — hash tekstu + voice_id (pierwsze 8 znaków)
+    import hashlib
+    cache_key  = hashlib.md5(f"{ELEVENLABS_VOICE_ID}:{text}".encode()).hexdigest()
+    cache_file = os.path.join(TTS_CACHE_DIR, f"{cache_key}.mp3")
+    cache_url  = f"/static/audio/nav/{cache_key}.mp3"
+
+    if os.path.exists(cache_file):
+        return jsonify({"url": cache_url, "cached": True})
+
+    try:
+        resp = _requests.post(
+            f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}",
+            headers={"xi-api-key": ELEVENLABS_API_KEY, "Content-Type": "application/json"},
+            json={
+                "text": text,
+                "model_id": ELEVENLABS_MODEL,
+                "voice_settings": {
+                    "stability": 0.55,
+                    "similarity_boost": 0.80,
+                    "style": 0.20,
+                    "use_speaker_boost": True
+                }
+            },
+            timeout=10
+        )
+        if resp.status_code != 200:
+            return jsonify({"error": "elevenlabs_error", "status": resp.status_code}), 502
+
+        with open(cache_file, "wb") as f:
+            f.write(resp.content)
+
+        return jsonify({"url": cache_url, "cached": False})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
 
 
 @app.route("/api/ai-ping")
