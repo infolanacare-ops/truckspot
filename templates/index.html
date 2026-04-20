@@ -9609,11 +9609,16 @@ function toggleAiMic(){
 }
 
 function startAiMic(){
+  if(_aiProcessing){ showAlert('⏳','','Poczekaj, AI jeszcze odpowiada...'); return; }
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SpeechRecognition){
     showAlert('⚠️','','Twoja przeglądarka nie obsługuje mikrofonu');
     return;
   }
+  // Zatrzymaj ElevenLabs jeśli mówi — żeby mic nie nagrywał głosu bota
+  if(_elAudio){ _elAudio.pause(); _elAudio = null; _elQueue = []; }
+  if(speechSynthesis.speaking) speechSynthesis.cancel();
+
   _aiRecognition = new SpeechRecognition();
   _aiRecognition.lang = 'pl-PL';
   _aiRecognition.interimResults = false;
@@ -9631,9 +9636,22 @@ function startAiMic(){
     stopAiMic();
     sendAiMessage(transcript);
   };
-  _aiRecognition.onerror = () => stopAiMic();
+  _aiRecognition.onerror = e => {
+    stopAiMic();
+    if(e.error === 'not-allowed')
+      showAlert('🎤','Brak dostępu','Zezwól na mikrofon w ustawieniach przeglądarki');
+    else if(e.error === 'network')
+      showAlert('⚠️','Błąd sieci','Mikrofon wymaga połączenia z internetem');
+    else if(e.error !== 'no-speech' && e.error !== 'aborted')
+      showAlert('⚠️','Mikrofon','Błąd: ' + e.error);
+  };
   _aiRecognition.onend = () => stopAiMic();
-  _aiRecognition.start();
+  try {
+    _aiRecognition.start();
+  } catch(e){
+    stopAiMic();
+    showAlert('⚠️','Mikrofon','Nie można uruchomić: ' + e.message);
+  }
 }
 
 function stopAiMic(){
