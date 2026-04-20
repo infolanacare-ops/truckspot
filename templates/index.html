@@ -668,6 +668,78 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .msgs-refresh-btn{width:100%;padding:.5rem;border:1px solid var(--border);border-radius:10px;
   background:var(--panel2);color:var(--muted);font-size:.78rem;cursor:pointer;margin-bottom:.7rem}
 
+/* ══ DM — prywatny chat ══ */
+.dm-panel{
+  position:fixed;bottom:0;left:0;right:0;z-index:970;
+  background:var(--panel);border-top:2px solid var(--blue);
+  border-radius:20px 20px 0 0;
+  display:flex;flex-direction:column;
+  height:72vh;max-height:600px;
+  transform:translateY(100%);
+  transition:transform .3s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 -4px 32px var(--shadow);
+}
+.dm-panel.open{transform:translateY(0)}
+.dm-header{
+  display:flex;align-items:center;gap:.6rem;
+  padding:.85rem 1rem .7rem;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.dm-header-avatar{font-size:1.5rem;line-height:1}
+.dm-header-name{font-weight:800;font-size:.95rem;flex:1}
+.dm-online-dot{
+  width:9px;height:9px;border-radius:50%;background:#10b981;
+  box-shadow:0 0 6px rgba(16,185,129,.7);
+}
+.dm-messages{
+  flex:1;overflow-y:auto;padding:.8rem 1rem;
+  display:flex;flex-direction:column;gap:.5rem;
+}
+.dm-msg{
+  max-width:75%;padding:.55rem .8rem;border-radius:16px;
+  font-size:.875rem;line-height:1.45;word-break:break-word;
+}
+.dm-msg.mine{
+  align-self:flex-end;
+  background:var(--blue);color:#fff;
+  border-bottom-right-radius:4px;
+}
+.dm-msg.theirs{
+  align-self:flex-start;
+  background:var(--panel2);color:var(--text);
+  border-bottom-left-radius:4px;
+}
+.dm-msg-time{font-size:.6rem;opacity:.55;margin-top:2px;display:block;text-align:right}
+.dm-input-row{
+  display:flex;align-items:flex-end;gap:.5rem;
+  padding:.65rem 1rem 1.2rem;
+  border-top:1px solid var(--border);
+  flex-shrink:0;
+}
+.dm-textarea{
+  flex:1;background:var(--panel2);border:1px solid var(--border);
+  border-radius:18px;padding:.55rem .9rem;
+  color:var(--text);font-family:var(--font);font-size:.9rem;
+  resize:none;outline:none;max-height:100px;overflow-y:auto;
+  line-height:1.4;
+}
+.dm-textarea:focus{border-color:var(--blue)}
+.dm-send-btn{
+  width:40px;height:40px;border-radius:50%;flex-shrink:0;
+  background:var(--blue);border:none;color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:.15s;
+}
+.dm-send-btn:active{transform:scale(.92)}
+.dm-unread-badge{
+  position:absolute;top:-4px;right:-4px;
+  background:#ef4444;color:#fff;font-size:.6rem;font-weight:700;
+  min-width:16px;height:16px;border-radius:8px;padding:0 4px;
+  display:flex;align-items:center;justify-content:center;
+  border:1.5px solid var(--bg);
+}
+
 /* ══ FAV BUTTON ══ */
 .fav-btn{border:none;background:none;cursor:pointer;font-size:1.3rem;line-height:1;padding:.2rem;transition:transform .15s}
 .fav-btn:active{transform:scale(1.3)}
@@ -3251,6 +3323,24 @@ body.navigating .convoy-btn{display:none}
   <h3 style="font-family:var(--font-head);font-size:1rem;font-weight:800;margin-bottom:.7rem">📻 CB Radio — wiadomości na mapie</h3>
   <button class="msgs-refresh-btn" onclick="loadMapMessages(true)">🔄 Odśwież wiadomości</button>
   <div id="msgs-list"><div style="text-align:center;color:var(--muted);font-size:.85rem;padding:1rem">Ładowanie...</div></div>
+</div>
+
+<!-- DM PANEL — prywatna rozmowa -->
+<div class="dm-panel" id="dm-panel">
+  <div class="dm-header">
+    <button class="panel-close" onclick="closeDmPanel()" style="position:relative;top:0;right:0;margin-left:-.3rem">✕</button>
+    <div class="dm-header-avatar" id="dm-header-avatar">👤</div>
+    <div class="dm-header-name" id="dm-header-name">Kierowca</div>
+    <div class="dm-online-dot" id="dm-online-dot"></div>
+  </div>
+  <div class="dm-messages" id="dm-messages"></div>
+  <div class="dm-input-row">
+    <textarea class="dm-textarea" id="dm-textarea" placeholder="Wiadomość..." maxlength="500" rows="1"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendDm()}"></textarea>
+    <button class="dm-send-btn" onclick="sendDm()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
 </div>
 
 <!-- FAVORITES PANEL -->
@@ -11381,8 +11471,142 @@ function _peerTap(key){
   document.body.appendChild(sheet);
 }
 
-function _openDm(userId, name, emoji){
-  showAlert('🔜', 'Prywatne wiadomości', 'Funkcja wkrótce — potrzebujemy tabeli w Supabase');
+// ══════════════════════════════════════════════════════
+// DM — prywatne wiadomości
+// ══════════════════════════════════════════════════════
+let _dmPeerId   = null;
+let _dmPeerName = null;
+let _dmRtSub    = null;
+
+async function _openDm(userId, name, emoji){
+  if(!_sbUser){ showAlert('⚠️','Zaloguj się','Musisz być zalogowany aby pisać wiadomości'); return; }
+
+  _dmPeerId   = userId;
+  _dmPeerName = name;
+
+  document.getElementById('dm-header-avatar').textContent = emoji;
+  document.getElementById('dm-header-name').textContent   = name;
+
+  // Sprawdź czy peer jest online w presence
+  const online = !!(_presenceCh?.presenceState()?.[userId]);
+  document.getElementById('dm-online-dot').style.display = online ? '' : 'none';
+
+  document.getElementById('dm-messages').innerHTML =
+    '<div style="text-align:center;color:var(--muted);font-size:.8rem;padding:1rem">Ładowanie...</div>';
+  document.getElementById('dm-panel').classList.add('open');
+  document.getElementById('dm-textarea').focus();
+
+  await _dmLoadHistory();
+  _dmSubscribeRealtime();
+}
+
+async function _dmLoadHistory(){
+  if(!_sbUser || !_dmPeerId) return;
+  const myId = _sbUser.id;
+  const { data, error } = await _SB.from('private_messages')
+    .select('*')
+    .or(`and(from_user.eq.${myId},to_user.eq.${_dmPeerId}),and(from_user.eq.${_dmPeerId},to_user.eq.${myId})`)
+    .order('created_at', { ascending: true })
+    .limit(100);
+
+  if(error){ console.error('DM load:', error); return; }
+  _dmRenderMessages(data || []);
+
+  // Oznacz jako przeczytane
+  _SB.from('private_messages')
+    .update({ read: true })
+    .eq('to_user', myId)
+    .eq('from_user', _dmPeerId)
+    .eq('read', false)
+    .then(()=>{});
+}
+
+function _dmRenderMessages(msgs){
+  const el = document.getElementById('dm-messages');
+  if(!msgs.length){
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:.8rem;padding:2rem 1rem">Brak wiadomości.<br>Napisz pierwszą! 👋</div>';
+    return;
+  }
+  el.innerHTML = msgs.map(m => {
+    const mine = m.from_user === _sbUser?.id;
+    const t = new Date(m.created_at);
+    const time = t.getHours().toString().padStart(2,'0') + ':' + t.getMinutes().toString().padStart(2,'0');
+    return `<div class="dm-msg ${mine?'mine':'theirs'}">
+      ${_escHtml(m.message)}
+      <span class="dm-msg-time">${time}</span>
+    </div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function _dmSubscribeRealtime(){
+  if(_dmRtSub){ _SB.removeChannel(_dmRtSub); _dmRtSub=null; }
+  const myId = _sbUser?.id;
+  if(!myId) return;
+
+  _dmRtSub = _SB.channel('dm-'+myId)
+    .on('postgres_changes', {
+      event: 'INSERT', schema: 'public', table: 'private_messages',
+      filter: `to_user=eq.${myId}`
+    }, payload => {
+      const m = payload.new;
+      // Jeśli to wiadomość od aktualnie otwartego peera
+      if(m.from_user === _dmPeerId){
+        const el = document.getElementById('dm-messages');
+        const t = new Date(m.created_at);
+        const time = t.getHours().toString().padStart(2,'0') + ':' + t.getMinutes().toString().padStart(2,'0');
+        const div = document.createElement('div');
+        div.className = 'dm-msg theirs';
+        div.innerHTML = _escHtml(m.message) + `<span class="dm-msg-time">${time}</span>`;
+        el.appendChild(div);
+        el.scrollTop = el.scrollHeight;
+        // Oznacz od razu jako przeczytane
+        _SB.from('private_messages').update({read:true}).eq('id', m.id).then(()=>{});
+      } else {
+        // Wiadomość od kogoś innego — pokaż powiadomienie
+        showAlert('💬', 'Nowa wiadomość', m.message.substring(0,60));
+      }
+    })
+    .subscribe();
+}
+
+async function sendDm(){
+  const ta = document.getElementById('dm-textarea');
+  const text = ta.value.trim();
+  if(!text || !_sbUser || !_dmPeerId) return;
+  ta.value = '';
+  ta.style.height = '';
+
+  const myId = _sbUser.id;
+  const { data, error } = await _SB.from('private_messages').insert({
+    from_user: myId,
+    to_user:   _dmPeerId,
+    message:   text,
+  }).select().single();
+
+  if(error){ showAlert('⚠️','Błąd','Nie udało się wysłać: '+error.message); ta.value=text; return; }
+
+  // Dodaj bąbelek od razu (optimistic)
+  const el = document.getElementById('dm-messages');
+  // Usuń placeholder "brak wiadomości" jeśli jest
+  if(el.querySelector('[style*="Brak wiadomości"]')) el.innerHTML='';
+  const now = new Date();
+  const time = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  const div = document.createElement('div');
+  div.className = 'dm-msg mine';
+  div.innerHTML = _escHtml(text) + `<span class="dm-msg-time">${time}</span>`;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+function closeDmPanel(){
+  document.getElementById('dm-panel').classList.remove('open');
+  if(_dmRtSub){ _SB.removeChannel(_dmRtSub); _dmRtSub=null; }
+  _dmPeerId = null; _dmPeerName = null;
+}
+
+function _escHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // ══════════════════════════════════════════════════════
