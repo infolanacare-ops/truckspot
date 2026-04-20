@@ -5356,11 +5356,14 @@ function drawRoute(coords, splitIdx){
 
     // Kolory z palety trybu — takie same jak karta manewru u góry
     const pal = getNavPalette();
+    // Offset w prawo — TIR jedzie prawym pasem, lewy (z przeciwka) zostaje widoczny
+    const laneOffset = ['interpolate',['linear'],['zoom'],8,2,12,5,16,9];
     // Ciemna obwódka
     map.addLayer({id:'ts-route-casing',type:'line',source:'ts-route',
       layout:{'line-join':'round','line-cap':'round'},
       paint:{'line-color':pal.casing,
         'line-width':['interpolate',['linear'],['zoom'],8,10,12,15,16,20],
+        'line-offset':laneOffset,
         'line-opacity':1}
     }, firstSymbol);
     // Główna linia — kolor karty manewru
@@ -5368,6 +5371,7 @@ function drawRoute(coords, splitIdx){
       layout:{'line-join':'round','line-cap':'round'},
       paint:{'line-color':pal.route,
         'line-width':['interpolate',['linear'],['zoom'],8,7,12,12,16,16],
+        'line-offset':laneOffset,
         'line-opacity':1}
     }, firstSymbol);
     // Subtelny highlight środkowy
@@ -5375,6 +5379,7 @@ function drawRoute(coords, splitIdx){
       layout:{'line-join':'round','line-cap':'round'},
       paint:{'line-color':pal.route,
         'line-width':['interpolate',['linear'],['zoom'],8,2,12,3,16,4],
+        'line-offset':laneOffset,
         'line-opacity':0.6}
     }, firstSymbol);
   });
