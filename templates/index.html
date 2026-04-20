@@ -5598,9 +5598,11 @@ function buildRouteUrl(coordStr, fromBearing = null){
   });
   if(excl.length) params.set('exclude', excl.join(','));
   // bearing — kierunek jazdy przy reroutingu, żeby Mapbox nie kazał zawracać
+  // Format: N wpisów (tyle ile waypointów) — pierwszy z bearing, reszta puste
   if(fromBearing !== null){
-    // Format: "bearing,tolerance;," — ostatni waypoint (cel) bez ograniczenia
-    params.set('bearings', `${Math.round(fromBearing)},45;,`);
+    const n = coordStr.split(';').length;
+    const entries = [`${Math.round(fromBearing)},45`, ...Array(n - 1).fill('')];
+    params.set('bearings', entries.join(';'));
   }
   // TIR vehicle params — zawsze z bezpiecznymi wartościami domyślnymi
   if(currentMode === 'tir'){
