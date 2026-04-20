@@ -9849,15 +9849,13 @@ function openAiAssistant(){
     }
     return;
   }
-  // Włącz asystenta — wycisz navi
+  // Włącz asystenta
   _bgAssistantActive = true;
   _aiProcessing = false;
   _setAssistantBtn(true);
-  if(!navMuted){
-    _navMutedByAssistant = true;
-    toggleNavMute();
-  }
   speechSynthesis.cancel();
+
+  // Powitanie — PRZED wyciszeniem navi, bo speakNav sprawdza navMuted
   const name = profile.name || localStorage.getItem('ts_driver_name') || '';
   const greetings = name ? [
     `Hej ${name}! Słucham, co tam?`,
@@ -9869,8 +9867,11 @@ function openAiAssistant(){
     `Cześć! Jestem tu, gadaj śmiało.`,
     `Do usług! Co mogę zrobić?`,
   ];
-  const greeting = greetings[Math.floor(Math.random() * greetings.length)];
-  speakNav(greeting, true); // speakNav działa na mobile, ma poprawny user gesture context
+  speakNav(greetings[Math.floor(Math.random() * greetings.length)], true);
+
+  // Wycisz navi PO starcie powitania
+  if(!navMuted){ _navMutedByAssistant = true; toggleNavMute(); }
+
   // Mic startuje po powitaniu
   setTimeout(() => { if(_bgAssistantActive && !window._bgRecognition) startBgListening(); }, 2500);
 }
