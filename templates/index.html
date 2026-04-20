@@ -10956,10 +10956,15 @@ async function _authSubmit() {
       res = await _SB.auth.signUp({ email, password: pass });
     }
     if (res.error) throw res.error;
-    if (_authMode === 'register' && !res.data.session) {
-      errEl.style.background = '#16532422'; errEl.style.borderColor = '#22c55e'; errEl.style.color = '#86efac';
-      errEl.textContent = '✉️ Sprawdź e-mail — wysłaliśmy link potwierdzający konto.';
-      errEl.style.display = 'block';
+    if (_authMode === 'register') {
+      // Wyślij email powitalny przez backend (jeśli sesja od razu — np. bez potwierdzenia)
+      if (res.data.session) {
+        fetch('/api/send-welcome', { method: 'POST', headers: { Authorization: 'Bearer ' + res.data.session.access_token } }).catch(()=>{});
+      } else {
+        errEl.style.background = '#16532422'; errEl.style.borderColor = '#22c55e'; errEl.style.color = '#86efac';
+        errEl.textContent = '✉️ Sprawdź e-mail — wysłaliśmy link potwierdzający konto.';
+        errEl.style.display = 'block';
+      }
     }
   } catch(e) {
     const msg = e.message || 'Błąd logowania';

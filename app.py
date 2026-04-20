@@ -1,8 +1,79 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import os, json, re, secrets, time, math, requests as _requests
+import os, json, re, secrets, time, math, requests as _requests, smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from flask import Flask, render_template, request, jsonify, send_from_directory, send_file
 import hashlib
+
+SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+SMTP_USER = os.environ.get("SMTP_USER", "")
+SMTP_PASS = os.environ.get("SMTP_PASS", "")
+MAIL_FROM = os.environ.get("MAIL_FROM", "TruckSpot <noreply@truckspot.pl>")
+
+def send_email(to_email, subject, html_body):
+    if not SMTP_USER or not SMTP_PASS:
+        return False
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"]    = MAIL_FROM
+        msg["To"]      = to_email
+        msg.attach(MIMEText(html_body, "html", "utf-8"))
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10) as s:
+            s.ehlo()
+            s.starttls()
+            s.login(SMTP_USER, SMTP_PASS)
+            s.sendmail(SMTP_USER, to_email, msg.as_string())
+        return True
+    except Exception as e:
+        print(f"[MAIL ERROR] {e}")
+        return False
+
+WELCOME_HTML = """<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#0f1623;font-family:sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0f1623;padding:40px 0">
+  <tr><td align="center">
+    <table width="520" cellpadding="0" cellspacing="0" style="background:#1a1f2e;border-radius:16px;overflow:hidden;max-width:520px;width:100%">
+      <tr><td style="background:linear-gradient(135deg,#004a52,#00b4c8);padding:32px 40px;text-align:center">
+        <div style="font-size:2.5rem">🚛</div>
+        <h1 style="color:#fff;margin:12px 0 4px;font-size:1.6rem;font-weight:800">Witaj w TruckSpot!</h1>
+        <p style="color:#b2f0f8;margin:0;font-size:.95rem">Nawigacja i parkingi dla kierowców TIR</p>
+      </td></tr>
+      <tr><td style="padding:32px 40px;color:#e2e8f0">
+        <p style="font-size:1rem;line-height:1.6;margin:0 0 20px">
+          Cześć! Cieszymy się, że jesteś z nami. 👋<br><br>
+          TruckSpot to aplikacja stworzona przez kierowców dla kierowców —
+          znajdziesz tu <strong>10 000+ parkingów TIR</strong> w całej Europie,
+          nawigację dostosowaną do ciężarówki i asystentkę AI, która zna trasy jak własną kieszeń.
+        </p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0">
+          <tr>
+            <td width="48" style="padding-right:16px"><div style="background:#004a52;border-radius:12px;width:44px;height:44px;text-align:center;line-height:44px;font-size:1.4rem">🗺️</div></td>
+            <td><strong style="color:#fff">10 525 parkingów TIR</strong><br><span style="color:#94a3b8;font-size:.85rem">Niemcy, Polska, Austria, Czechy i cała Europa</span></td>
+          </tr>
+          <tr><td colspan="2" style="padding:8px 0"></td></tr>
+          <tr>
+            <td width="48" style="padding-right:16px"><div style="background:#004a52;border-radius:12px;width:44px;height:44px;text-align:center;line-height:44px;font-size:1.4rem">🤖</div></td>
+            <td><strong style="color:#fff">TruckBot AI</strong><br><span style="color:#94a3b8;font-size:.85rem">Asystentka głosowa — pyta, odpowiada, śmieje się z Tobą</span></td>
+          </tr>
+          <tr><td colspan="2" style="padding:8px 0"></td></tr>
+          <tr>
+            <td width="48" style="padding-right:16px"><div style="background:#004a52;border-radius:12px;width:44px;height:44px;text-align:center;line-height:44px;font-size:1.4rem">📡</div></td>
+            <td><strong style="color:#fff">CB Radio na mapie</strong><br><span style="color:#94a3b8;font-size:.85rem">Wiadomości od innych kierowców w okolicy</span></td>
+          </tr>
+        </table>
+        <div style="text-align:center;margin:32px 0">
+          <a href="https://truckspot.pl" style="background:linear-gradient(135deg,#00b4c8,#0ea5e9);color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:700;font-size:1rem;display:inline-block">Otwórz TruckSpot 🚀</a>
+        </div>
+        <p style="color:#64748b;font-size:.8rem;text-align:center;margin:0">TruckSpot · truckspot.pl · Dobrej drogi! 🛣️</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>"""
 
 try:
     from supabase import create_client, Client as SupabaseClient
@@ -1560,6 +1631,19 @@ def api_parking_review(parking_id):
         return jsonify(row.data[0] if row.data else {}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/send-welcome", methods=["POST"])
+def api_send_welcome():
+    user = _get_user_from_token()
+    if not user:
+        return jsonify({"error": "unauthorized"}), 401
+    email = user.email
+    if not email:
+        return jsonify({"ok": False})
+    name = (user.user_metadata or {}).get("full_name") or (user.user_metadata or {}).get("name") or email.split("@")[0]
+    ok = send_email(email, f"Witaj w TruckSpot, {name}! 🚛", WELCOME_HTML)
+    return jsonify({"ok": ok})
 
 
 @app.route("/api/ai-ping")
