@@ -1336,9 +1336,12 @@ def api_ai_chat():
         raw = call_gemini_chat(system, user_msg, temperature=0.25, max_tokens=200)
 
         action = None
-        text = raw.strip()
+        # Usuń markdown code fences (```json ... ```) które czasem zwraca Gemini
+        clean_raw = re.sub(r'```(?:json)?\s*', '', raw).strip()
+        text = clean_raw
         # Wyciągnij JSON — szukaj { ... } nawet z białymi znakami
-        json_match = re.search(r'\{[\s\S]*?\}', raw)
+        json_match = re.search(r'\{[\s\S]*?\}', clean_raw)
+        raw = clean_raw  # używaj oczyszczonej wersji dalej
         if json_match:
             try:
                 obj = json.loads(json_match.group())
