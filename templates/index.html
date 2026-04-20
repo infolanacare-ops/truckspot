@@ -2393,9 +2393,14 @@ body.navigating .convoy-btn{display:none}
   transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
   max-height:65vh;overflow-y:auto;
 ">
-  <div style="width:40px;height:4px;background:rgba(255,255,255,.18);border-radius:2px;margin:.2rem auto .9rem"></div>
-  <div style="font-family:var(--font-head);font-size:1rem;font-weight:800;color:var(--text);margin-bottom:.3rem">🎙 Głos nawigacji</div>
-  <div style="font-size:.75rem;color:var(--muted);margin-bottom:.9rem">Wybierz głos do zapowiedzi nawigacyjnych</div>
+  <div style="display:flex;align-items:center;margin-bottom:.9rem">
+    <div style="flex:1">
+      <div style="width:40px;height:4px;background:rgba(255,255,255,.18);border-radius:2px;margin:.2rem auto .6rem"></div>
+      <div style="font-family:var(--font-head);font-size:1rem;font-weight:800;color:var(--text)">🎙 Głos nawigacji</div>
+      <div style="font-size:.75rem;color:var(--muted);margin-top:.2rem">Wybierz głos do zapowiedzi nawigacyjnych</div>
+    </div>
+    <button onclick="closeVoicePicker()" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--panel2);color:var(--muted);font-size:1.1rem;cursor:pointer;flex-shrink:0">✕</button>
+  </div>
   <div id="voice-picker-list" style="display:flex;flex-direction:column;gap:.4rem"></div>
 </div>
 
@@ -6048,7 +6053,7 @@ function openVoicePicker(){
     if(list) list.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:.5rem;text-align:center">Błąd ładowania głosów: '+e.message+'</div>';
   }
 
-  overlay.style.display='block'; overlay.style.opacity='0';
+  overlay.style.cssText='display:block;opacity:0;pointer-events:auto';
   panel.style.transform='translateY(100%)';
   requestAnimationFrame(()=>{
     requestAnimationFrame(()=>{
