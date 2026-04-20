@@ -3780,7 +3780,7 @@ function setAccentColor(name){
 // ══════════════════════════════════════
 // LANGUAGE
 // ══════════════════════════════════════
-let currentLang = localStorage.getItem('ts_lang') || 'en';
+let currentLang = localStorage.getItem('ts_lang') || (navigator.language||'').startsWith('pl') ? 'pl' : (navigator.language||'').startsWith('de') ? 'de' : (navigator.language||'').startsWith('es') ? 'es' : 'pl';
 
 function t(key){ return (I18N[currentLang]||I18N.en)[key] || key; }
 
