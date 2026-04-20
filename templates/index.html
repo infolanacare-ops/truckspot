@@ -7181,7 +7181,7 @@ async function speakNav(txt, priority=false){
 
 const AI_NAV_SILENCE_MS = 7000;
 async function speakAi(txt){
-  if(navMuted) return;
+  // NIE sprawdzaj navMuted — asystentka mówi nawet gdy nawi wyciszona
   const clean = stripForTts(txt);
   if(!clean) return;
 
