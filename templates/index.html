@@ -9489,9 +9489,17 @@ async function voteCam(id, vote){
 }
 
 // Krótki dźwięk ostrzegawczy (Web Audio)
-function playBeep(freq=900, dur=0.18, vol=0.35){
+let _beepCtx = null;
+function _getBeepCtx(){
+  if(!_beepCtx || _beepCtx.state === 'closed'){
+    _beepCtx = new (window.AudioContext||window.webkitAudioContext)();
+  }
+  if(_beepCtx.state === 'suspended') _beepCtx.resume();
+  return _beepCtx;
+}
+function playBeep(freq=900, dur=0.18, vol=0.6){
   try{
-    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const ctx = _getBeepCtx();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain); gain.connect(ctx.destination);
@@ -9541,22 +9549,34 @@ function checkNavCameras(lat, lng){
     const cfg = CAM_TYPE_CFG[camType] || CAM_TYPE_CFG.fixed;
     const typeLabel = currentLang==='pl' ? cfg.label+' fotoradar' : cfg.label+' speed camera';
 
-    // Komunikat + dźwięk przy 500m
+    // 500m — pierwszy alert
     const key500 = `${base}_0`;
     if(d < 500 && !navAnnouncedCameras.has(key500)){
       navAnnouncedCameras.add(key500);
-      const txt = currentLang==='pl' ? `${typeLabel} za 500 m` : `${typeLabel} in 500 m`;
+      const txt = currentLang==='pl' ? `${typeLabel} za 500 metrów` : `${typeLabel} in 500 metres`;
       speakNav(txt, true);
-      playBeep(880, 0.22);
+      playBeep(880, 0.25);
       showAlert(cfg.icon, `⚠️ ${typeLabel.toUpperCase()}`, 'Za 500 m · Zwolnij!');
       setTimeout(closeAlert, 4000);
     }
-    // Ostry sygnał przy 100m
-    const key100 = `${base}_1`;
-    if(d < 100 && !navAnnouncedCameras.has(key100)){
-      navAnnouncedCameras.add(key100);
-      playBeep(1100, 0.15);
-      setTimeout(()=>playBeep(1100, 0.15), 220);
+    // 200m — drugi alert
+    const key200 = `${base}_1`;
+    if(d < 200 && !navAnnouncedCameras.has(key200)){
+      navAnnouncedCameras.add(key200);
+      const txt = currentLang==='pl' ? `${typeLabel} za 200 metrów` : `${typeLabel} in 200 metres`;
+      speakNav(txt, true);
+      playBeep(1000, 0.2);
+      setTimeout(()=>playBeep(1000, 0.2), 250);
+    }
+    // 50m — ostry alarm końcowy
+    const key50 = `${base}_2`;
+    if(d < 50 && !navAnnouncedCameras.has(key50)){
+      navAnnouncedCameras.add(key50);
+      const txt = currentLang==='pl' ? 'Fotoradar!' : 'Speed camera!';
+      speakNav(txt, true);
+      playBeep(1200, 0.15);
+      setTimeout(()=>playBeep(1200, 0.15), 180);
+      setTimeout(()=>playBeep(1200, 0.15), 360);
     }
   }
 
