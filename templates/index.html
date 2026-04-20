@@ -7597,23 +7597,9 @@ function onNavPosition(pos){
   } else {
     snapLat = lat; snapLng = lng;
   }
-  // ZUPT — freeze tylko gdy naprawdę stoimy i mamy już zablokowaną pozycję
-  // navLastLat==null oznacza że GPS dopiero startuje — nie blokujemy
-  if(navSpeedKmh < 2 && navLastLat !== null){
-    if(_zuptSnapLat === null){ _zuptSnapLat = snapLat; _zuptSnapLng = snapLng; }
-    snapLat = _zuptSnapLat; snapLng = _zuptSnapLng;
-  } else {
-    _zuptSnapLat = null; _zuptSnapLng = null;
-  }
-  // EMA wygładzenie pozycji snap — eliminuje skoki lewo/prawo (szum GPS)
-  // alpha wyższe przy wyższej prędkości (szybsza reakcja), niższe przy wolnej (wygładzenie)
-  const snapAlpha = navSpeedKmh > 40 ? 0.6 : navSpeedKmh > 10 ? 0.4 : 0.25;
-  if(_snapEmaLat === null){ _snapEmaLat = snapLat; _snapEmaLng = snapLng; }
-  else {
-    _snapEmaLat += (snapLat - _snapEmaLat) * snapAlpha;
-    _snapEmaLng += (snapLng - _snapEmaLng) * snapAlpha;
-  }
-  setGpsArrow(_snapEmaLat, _snapEmaLng);
+  // Pozycja strzałki = dokładnie punkt rzutu na odcinek trasy (zawsze ON route)
+  // Brak EMA — rzut na segment jest już gładki, EMA ciągnęłoby strzałkę poza trasę
+  setGpsArrow(snapLat, snapLng);
 
   // Heading: GPS velocity (stabilny podczas jazdy) → delta pozycji → giroskop tylko gdy stoi
   // Google Maps / TomTom standard: kompas NIE jest używany podczas jazdy — zbyt szumny
