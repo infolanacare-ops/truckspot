@@ -327,6 +327,19 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 .color-grid{display:flex;gap:.5rem;flex-wrap:wrap}
 .av-color{width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:.15s}
 .av-color.selected{border-color:white;transform:scale(1.15)}
+.meta-emoji-opt{
+  width:44px;height:44px;border-radius:12px;
+  background:var(--panel2);border:2px solid var(--border);
+  font-size:1.4rem;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:.15s;
+}
+.meta-emoji-opt:active{transform:scale(.93)}
+.meta-emoji-opt.selected{
+  border-color:#fff;
+  box-shadow:0 0 0 3px rgba(255,255,255,.35),0 2px 12px rgba(0,0,0,.35);
+  background:rgba(255,255,255,.12);
+  transform:scale(1.12);
+}
 .tir-pin-opt{display:flex;flex-direction:column;align-items:center;gap:.2rem;cursor:pointer;padding:.4rem .6rem;border-radius:10px;border:2px solid transparent;transition:.15s}
 .tir-pin-opt.selected{border-color:white;background:rgba(255,255,255,.08)}
 
@@ -3079,6 +3092,11 @@ body.navigating .convoy-btn{display:none}
       </div>
     </div>
   </div>
+  <!-- METAVERSE AVATAR -->
+  <div class="pp-section" style="margin-top:1rem">🌐 Avatar na mapie (Metaverse)</div>
+  <div style="font-size:.75rem;color:var(--muted);margin-bottom:.6rem;padding:0 .1rem">Twoje emoji widoczne dla innych kierowców w real-time</div>
+  <div id="meta-emoji-grid" style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.6rem"></div>
+
   <button class="pp-save-btn" onclick="saveProfileEdit()">💾 Zapisz profil</button>
 </div>
 
@@ -4271,6 +4289,26 @@ function openProfile(){
     };
     cgrid.appendChild(d);
   });
+  // metaverse emoji picker
+  const META_EMOJIS = ['🚛','🚚','🚐','🚌','🏎️','🚑','🚒','🚜','🏍️','🚗','🛻','✈️','🚢','🚁','🤖','👾','🦊','🐺','🦁','👑','🔥','⚡','🌟','💎'];
+  const megrid = document.getElementById('meta-emoji-grid');
+  megrid.innerHTML = '';
+  const curEmoji = profile.emoji || '🚛';
+  META_EMOJIS.forEach(em => {
+    const d = document.createElement('div');
+    d.className = 'meta-emoji-opt' + (curEmoji === em ? ' selected' : '');
+    d.textContent = em;
+    d.onclick = () => {
+      profile.emoji = em;
+      megrid.querySelectorAll('.meta-emoji-opt').forEach(x => x.classList.remove('selected'));
+      d.classList.add('selected');
+      // podgląd na żywo w dużym avatarze
+      const ea = document.getElementById('pp-avatar-emoji');
+      if(ea && !profile.avatarPhoto) ea.textContent = em;
+    };
+    megrid.appendChild(d);
+  });
+
   // tir pin color
   const curTirCol = profile.tirPinColor||'#d4af37';
   document.querySelectorAll('.tir-pin-opt').forEach(el=>{
@@ -4364,19 +4402,29 @@ function removeAvatarPhoto(){
 function saveProfileEdit(){
   const nick = document.getElementById('pp-input-nick').value.trim();
   if(nick) profile.name = nick;
-  profile.bio = document.getElementById('pp-input-bio').value.trim();
+  profile.bio      = document.getElementById('pp-input-bio').value.trim();
   profile.homeBase = document.getElementById('pp-input-home').value.trim();
-  profile.country = document.getElementById('pp-input-country').value;
+  profile.country  = document.getElementById('pp-input-country').value;
   const km = parseInt(document.getElementById('pp-input-km').value);
   if(!isNaN(km)) profile.km = km;
+  // Sync kolor avatara → metaverse color
+  if(profile.avatarColor) profile.color = profile.avatarColor;
   saveProfile();
   updateProfileUI();
-  // odśwież widok
   setEl('pp-name', profile.name);
-  setEl('pp-bio', profile.bio);
+  setEl('pp-bio',  profile.bio);
   setEl('pp-country', profile.country||'–');
-  setEl('pp-home', profile.homeBase||'–');
+  setEl('pp-home',    profile.homeBase||'–');
   localStorage.setItem('ts_comment_nick', profile.name);
+  // Odśwież presence z nowym emoji/kolorem jeśli aktywne
+  if(_presenceCh && userLat && userLng){
+    _presenceCh.track({
+      lat:   userLat, lng: userLng,
+      emoji: profile.emoji  || '🚛',
+      color: profile.color  || profile.avatarColor || '#8b5cf6',
+      name:  profile.display_name || profile.name  || 'Trucker',
+    }).catch(()=>{});
+  }
   closeProfile();
   showAlert('✅','Profil zapisany!', profile.name);
 }
@@ -11303,7 +11351,38 @@ function _showPeerCbBubble(userId, text){
 }
 
 function _peerTap(key){
-  showAlert('👤', 'Kierowca', 'Ten użytkownik jest online w pobliżu');
+  // Pobierz dane peera z presence state
+  const state = _presenceCh?.presenceState() || {};
+  const presences = state[key];
+  const p = presences?.[0] || {};
+  const name  = p.name  || 'Kierowca';
+  const emoji = p.emoji || '👤';
+
+  // Sheet z opcjami
+  const sheet = document.createElement('div');
+  sheet.style.cssText = 'position:fixed;inset:0;z-index:3200;background:rgba(0,0,0,.55)';
+  sheet.innerHTML = `
+    <div onclick="event.stopPropagation()" style="position:absolute;bottom:0;left:0;right:0;
+      background:var(--panel);border-radius:20px 20px 0 0;padding:1.4rem 1.2rem 2rem">
+      <div style="text-align:center;font-size:2rem;margin-bottom:.3rem">${emoji}</div>
+      <div style="text-align:center;font-weight:800;font-size:1rem;margin-bottom:1.2rem">${name}</div>
+      <button onclick="this.closest('[style*=fixed]').remove(); _openDm('${key}','${name}','${emoji}')"
+        style="width:100%;padding:.9rem;margin-bottom:.6rem;border:none;border-radius:14px;
+        background:var(--blue);color:#fff;font-size:.95rem;cursor:pointer;font-family:var(--font);font-weight:600">
+        💬 Napisz prywatną wiadomość
+      </button>
+      <button onclick="this.closest('[style*=fixed]').remove()"
+        style="width:100%;padding:.75rem;border:none;border-radius:14px;
+        background:transparent;color:var(--muted);font-size:.9rem;cursor:pointer;font-family:var(--font)">
+        Anuluj
+      </button>
+    </div>`;
+  sheet.onclick = () => sheet.remove();
+  document.body.appendChild(sheet);
+}
+
+function _openDm(userId, name, emoji){
+  showAlert('🔜', 'Prywatne wiadomości', 'Funkcja wkrótce — potrzebujemy tabeli w Supabase');
 }
 
 // ══════════════════════════════════════════════════════
