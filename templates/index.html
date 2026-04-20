@@ -4748,8 +4748,10 @@ function startGps(){
     const {latitude:lat,longitude:lng}=pos.coords;
     userLat=lat; userLng=lng;
     updatePushPosition(lat, lng);
-    if(!gpsMarker) gpsMarker=mkGpsDotMarker(lat,lng);
-    else gpsMarker.setLngLat([lng,lat]);
+    if(!navActive){
+      if(!gpsMarker) gpsMarker=mkGpsDotMarker(lat,lng);
+      else gpsMarker.setLngLat([lng,lat]);
+    }
     allParkings.forEach(p=>{
       const d=haversineKm(lat,lng,p.lat,p.lng);
       if(d<=5&&!alertedIds.has(p.id)){
