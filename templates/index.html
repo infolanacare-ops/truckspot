@@ -704,14 +704,45 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
 .msg-react-btn{border:1px solid var(--border);background:var(--panel);border-radius:8px;
   padding:.2rem .55rem;font-size:.75rem;cursor:pointer;color:var(--muted);transition:all .15s}
 .msg-react-btn:hover{border-color:var(--accent);color:var(--text)}
-/* Map messages panel */
+/* CB Chat panel */
 .msgs-panel{position:fixed;bottom:0;left:0;right:0;z-index:960;background:var(--panel);
-  border-top:2px solid #3b82f6;border-radius:20px 20px 0 0;padding:1rem 1rem 2.5rem;
-  max-height:75vh;overflow-y:auto;transform:translateY(100%);
+  border-top:2px solid #3b82f6;border-radius:20px 20px 0 0;padding:0;
+  height:68vh;display:flex;flex-direction:column;overflow:hidden;
+  transform:translateY(100%);
   transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:0 -4px 32px var(--shadow)}
 .msgs-panel.open{transform:translateY(0)}
-.msgs-refresh-btn{width:100%;padding:.5rem;border:1px solid var(--border);border-radius:10px;
-  background:var(--panel2);color:var(--muted);font-size:.78rem;cursor:pointer;margin-bottom:.7rem}
+body.navigating .msgs-panel{z-index:1250;height:65vh}
+.cb-chat-hdr{display:flex;align-items:center;gap:.5rem;padding:.65rem 1rem;
+  border-bottom:1px solid var(--border);flex-shrink:0}
+.cb-chat-hdr-title{font-family:var(--font-head);font-weight:800;font-size:.95rem;flex:1}
+.cb-chat-refresh{background:none;border:none;color:var(--muted);font-size:.85rem;cursor:pointer;padding:.2rem .5rem}
+.cb-cat-strip{display:flex;gap:.3rem;padding:.4rem .8rem;overflow-x:auto;
+  border-bottom:1px solid var(--border);flex-shrink:0;scrollbar-width:none}
+.cb-cat-strip::-webkit-scrollbar{display:none}
+.cb-cat-chip{flex-shrink:0;border:1.5px solid var(--border);border-radius:20px;
+  padding:.22rem .55rem;font-size:.72rem;font-weight:700;cursor:pointer;
+  background:var(--panel2);color:var(--muted);white-space:nowrap;transition:.15s}
+.cb-cat-chip.active{color:#fff}
+.cb-chat-msgs{flex:1;overflow-y:auto;padding:.6rem .9rem;display:flex;flex-direction:column;gap:.45rem}
+.cb-bubble{max-width:78%;padding:.45rem .7rem;border-radius:16px;font-size:.84rem;line-height:1.4}
+.cb-bubble.mine{align-self:flex-end;background:#2563eb;color:#fff;border-bottom-right-radius:4px}
+.cb-bubble.theirs{align-self:flex-start;background:var(--panel2);border-bottom-left-radius:4px}
+.cb-bubble-meta{font-size:.6rem;opacity:.65;margin-bottom:.18rem;display:flex;align-items:center;gap:.3rem}
+.cb-bubble-react{display:flex;gap:.4rem;margin-top:.3rem}
+.cb-bubble-react button{background:none;border:1px solid rgba(255,255,255,.2);border-radius:10px;
+  color:inherit;opacity:.7;font-size:.7rem;padding:.1rem .35rem;cursor:pointer}
+.cb-bubble.theirs .cb-bubble-react button{border-color:var(--border)}
+.cb-input-row{display:flex;align-items:flex-end;gap:.5rem;
+  padding:.55rem .8rem calc(.55rem + env(safe-area-inset-bottom,0px));
+  border-top:1px solid var(--border);background:var(--panel);flex-shrink:0}
+.cb-textarea{flex:1;background:var(--input-bg);border:1px solid var(--border);border-radius:20px;
+  color:var(--text);font-family:var(--font);font-size:.88rem;padding:.5rem .9rem;
+  resize:none;max-height:90px;line-height:1.4;outline:none}
+.cb-textarea:focus{border-color:#3b82f6}
+.cb-send-btn{width:40px;height:40px;border-radius:50%;background:#2563eb;border:none;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  box-shadow:0 2px 8px rgba(37,99,235,.5);transition:.15s}
+.cb-send-btn:active{transform:scale(.9)}
 
 /* ══ DM — prywatny chat ══ */
 .dm-panel{
@@ -3381,10 +3412,29 @@ body.navigating .convoy-btn{display:none}
 <!-- MESSAGES PANEL -->
 <div class="msgs-panel" id="msgs-panel">
   <div class="panel-handle"></div>
-  <button class="panel-close" onclick="closeMsgsPanel()">✕</button>
-  <h3 style="font-family:var(--font-head);font-size:1rem;font-weight:800;margin-bottom:.7rem">📻 CB Radio — wiadomości na mapie</h3>
-  <button class="msgs-refresh-btn" onclick="loadMapMessages(true)">🔄 Odśwież wiadomości</button>
-  <div id="msgs-list"><div style="text-align:center;color:var(--muted);font-size:.85rem;padding:1rem">Ładowanie...</div></div>
+  <div class="cb-chat-hdr">
+    <button class="panel-close" onclick="closeMsgsPanel()" style="position:relative;top:0;right:0;margin-right:.3rem;flex-shrink:0">✕</button>
+    <span class="cb-chat-hdr-title">📻 CB Radio</span>
+    <button class="cb-chat-refresh" onclick="loadMapMessages(true)" title="Odśwież">🔄</button>
+  </div>
+  <div class="cb-cat-strip" id="cb-chat-cats">
+    <button class="cb-cat-chip active" data-cat="traffic" onclick="pickCbChatCat(this)" style="border-color:#ef4444;background:#ef4444;color:#fff">🚗 Korek</button>
+    <button class="cb-cat-chip" data-cat="police" onclick="pickCbChatCat(this)">🚔 Kontrola</button>
+    <button class="cb-cat-chip" data-cat="accident" onclick="pickCbChatCat(this)">⚠️ Wypadek</button>
+    <button class="cb-cat-chip" data-cat="roadwork" onclick="pickCbChatCat(this)">🚧 Roboty</button>
+    <button class="cb-cat-chip" data-cat="weather" onclick="pickCbChatCat(this)">🌧️ Pogoda</button>
+    <button class="cb-cat-chip" data-cat="fuel" onclick="pickCbChatCat(this)">⛽ Paliwo</button>
+    <button class="cb-cat-chip" data-cat="help" onclick="pickCbChatCat(this)">🆘 Pomoc</button>
+    <button class="cb-cat-chip" data-cat="info" onclick="pickCbChatCat(this)">ℹ️ Info</button>
+  </div>
+  <div class="cb-chat-msgs" id="msgs-list"><div style="text-align:center;color:var(--muted);font-size:.85rem;padding:2rem">Ładowanie wiadomości...</div></div>
+  <div class="cb-input-row">
+    <textarea class="cb-textarea" id="cb-chat-input" placeholder="Napisz na CB..." maxlength="200" rows="1"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCbChat()}"></textarea>
+    <button class="cb-send-btn" onclick="sendCbChat()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
 </div>
 
 <!-- DM PANEL — prywatna rozmowa -->
@@ -9380,23 +9430,29 @@ async function loadMapMessages(forceRefresh){
     const listEl = document.getElementById('msgs-list');
     if(listEl){
       if(!msgs.length){
-        listEl.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:.85rem;padding:1.5rem">Brak wiadomości w tym obszarze.<br>Bądź pierwszy! Naciśnij 📢</div>';
+        listEl.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:.85rem;padding:2rem">Brak wiadomości w okolicy.<br><span style="font-size:.75rem;margin-top:.3rem;display:block">Napisz coś na CB!</span></div>';
       } else {
+        const author = getChatAuthor();
         listEl.innerHTML = msgs.map(m=>{
           const cat = MSG_CATS[m.cat]||MSG_CATS.info;
-          return `<div class="msg-popup-item" onclick="map.flyTo({center:[${m.lng},${m.lat}],zoom:14});closeMsgsPanel()">
-            <div class="msg-popup-header">
-              <div class="msg-author-dot" style="background:${m.color}">${m.emoji}</div>
-              <span class="msg-cat-badge" style="background:${cat.color}20;color:${cat.color}">${cat.icon} ${cat.label}</span>
-              <span class="msg-time" style="margin-left:auto">${msgTimeSince(m.ts)}</span>
+          const mine = m.color===author.color && m.emoji===author.emoji;
+          const id = m.id||'';
+          return `<div class="cb-bubble ${mine?'mine':'theirs'}">
+            <div class="cb-bubble-meta">
+              <span style="background:${m.color};width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.55rem">${m.emoji}</span>
+              <span>${_escHtml(m.display_name||'Kierowca')}</span>
+              <span style="background:${cat.color}22;color:${cat.color};border-radius:8px;padding:.05rem .3rem">${cat.icon} ${cat.label}</span>
+              <span style="margin-left:auto">${msgTimeSince(m.ts)}</span>
             </div>
-            <div class="msg-text">${m.text}</div>
-            <div class="msg-reacts">
-              <button class="msg-react-btn" onclick="event.stopPropagation();reactMsg(${m.id},'like',this)">👍 ${m.likes||0}</button>
-              <button class="msg-react-btn" onclick="event.stopPropagation();reactMsg(${m.id},'dislike',this)">👎 ${m.dislikes||0}</button>
+            <div>${_escHtml(m.text)}</div>
+            <div class="cb-bubble-react">
+              <button onclick="reactMsg('${id}','like',this)">👍 ${m.likes||0}</button>
+              <button onclick="reactMsg('${id}','dislike',this)">👎 ${m.dislikes||0}</button>
+              <button onclick="map.flyTo({center:[${m.lng},${m.lat}],zoom:14});closeMsgsPanel()" style="margin-left:auto">📍</button>
             </div>
           </div>`;
         }).join('');
+        listEl.scrollTop = listEl.scrollHeight;
       }
     }
   } catch(e){}
@@ -9409,6 +9465,52 @@ function openMsgsPanel(){
 
 function closeMsgsPanel(){
   document.getElementById('msgs-panel').classList.remove('open');
+}
+
+function pickCbChatCat(btn){
+  msgSelectedCat = btn.dataset.cat;
+  const cat = MSG_CATS[msgSelectedCat];
+  document.querySelectorAll('.cb-cat-chip').forEach(b=>{
+    b.classList.remove('active');
+    b.style.background=''; b.style.borderColor=''; b.style.color='';
+  });
+  btn.classList.add('active');
+  if(cat){ btn.style.background=cat.color; btn.style.borderColor=cat.color; btn.style.color='#fff'; }
+}
+
+async function sendCbChat(){
+  const ta = document.getElementById('cb-chat-input');
+  if(!ta) return;
+  const text = ta.value.trim();
+  if(!text) return;
+  ta.value = '';
+  const author = getChatAuthor();
+  const cat = MSG_CATS[msgSelectedCat||'info']||MSG_CATS.info;
+  // Optimistic bubble
+  const listEl = document.getElementById('msgs-list');
+  if(listEl){
+    const div = document.createElement('div');
+    div.className = 'cb-bubble mine';
+    div.innerHTML = `<div class="cb-bubble-meta"><span>${cat.icon} ${cat.label}</span><span style="margin-left:auto">teraz</span></div><div>${_escHtml(text)}</div>`;
+    listEl.appendChild(div);
+    listEl.scrollTop = listEl.scrollHeight;
+  }
+  try {
+    const headers = {'Content-Type':'application/json'};
+    if(_sbUser && _SB){
+      const sess = (await _SB.auth.getSession()).data?.session;
+      if(sess?.access_token) headers['Authorization']='Bearer '+sess.access_token;
+    }
+    await fetch('/api/messages',{
+      method:'POST', headers,
+      body:JSON.stringify({
+        text, cat: msgSelectedCat||'info',
+        lat: userLat||0, lng: userLng||0,
+        emoji: author.emoji, color: author.color,
+        display_name: author.name
+      })
+    });
+  } catch(e){ console.warn('CB send error',e); }
 }
 
 let _cbRealtimeSub = null;
