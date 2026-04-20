@@ -5348,26 +5348,28 @@ function drawRoute(coords, splitIdx){
     // ── Pozostała trasa (niebieska, ładna) ────────────────
     map.addSource('ts-route',{type:'geojson',data:geoAhead});
 
+    // Kolory z palety trybu — takie same jak karta manewru u góry
+    const pal = getNavPalette();
     // Ciemna obwódka
     map.addLayer({id:'ts-route-casing',type:'line',source:'ts-route',
       layout:{'line-join':'round','line-cap':'round'},
-      paint:{'line-color':'#1a5276',
+      paint:{'line-color':pal.casing,
         'line-width':['interpolate',['linear'],['zoom'],8,8,12,12,16,16],
         'line-opacity':1}
     }, firstSymbol);
-    // Główna linia — niebieski jak Google Maps
+    // Główna linia — kolor karty manewru
     map.addLayer({id:'ts-route-line',type:'line',source:'ts-route',
       layout:{'line-join':'round','line-cap':'round'},
-      paint:{'line-color':'#2980b9',
+      paint:{'line-color':pal.card,
         'line-width':['interpolate',['linear'],['zoom'],8,6,12,10,16,13],
         'line-opacity':1}
     }, firstSymbol);
-    // Subtelny centralny highlight — nie biały, jasnoniebieski
+    // Subtelny highlight środkowy
     map.addLayer({id:'ts-route-shine',type:'line',source:'ts-route',
       layout:{'line-join':'round','line-cap':'round'},
-      paint:{'line-color':'rgba(174,214,241,0.5)',
-        'line-width':['interpolate',['linear'],['zoom'],8,1.5,12,2.5,16,4],
-        'line-opacity':1}
+      paint:{'line-color':pal.route,
+        'line-width':['interpolate',['linear'],['zoom'],8,2,12,3,16,4],
+        'line-opacity':0.6}
     }, firstSymbol);
   });
   routeLayer = true;
