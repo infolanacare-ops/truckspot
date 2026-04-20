@@ -6983,6 +6983,31 @@ function _unlockSpeech(){
   } catch(e){}
 }
 
+// ── Audio keep-alive — trzyma audio focus Android w tle i przy zablokowanym ekranie ──
+// Cicha pętla audio = standard trick nawigacji (Waze, Google Maps robią to samo)
+let _bgKeepAlive = null;
+function _startAudioKeepAlive(){
+  if(_bgKeepAlive) return;
+  try {
+    _bgKeepAlive = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+    _bgKeepAlive.loop = true;
+    _bgKeepAlive.volume = 0.001; // nie zerowe — Android czasem ignoruje volume=0
+    _bgKeepAlive.play().catch(()=>{});
+    // MediaSession: Android traktuje app jako "odtwarzacz audio" → nie wycisza
+    if('mediaSession' in navigator){
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: 'TruckSpot Navigation',
+        artist: 'Nawigacja aktywna'
+      });
+      navigator.mediaSession.playbackState = 'playing';
+    }
+  } catch(e){}
+}
+function _stopAudioKeepAlive(){
+  if(_bgKeepAlive){ _bgKeepAlive.pause(); _bgKeepAlive = null; }
+  if('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
+}
+
 function _elPlayNext(){
   if(_elQueue.length === 0){ _navSpeaking = false; _navLastEndTs = Date.now(); return; }
   const {url, fallbackTxt, lang} = _elQueue.shift();
@@ -7016,7 +7041,7 @@ function _speakWebFallback(txt, lang, onEnd){
   speechSynthesis.speak(utt); // bez setTimeout — bezpośrednio
 }
 
-function speakNav(txt, priority=false){
+async function speakNav(txt, priority=false){
   if(navMuted) return;
   const clean = stripForTts(txt);
   if(!clean) return;
@@ -7029,7 +7054,24 @@ function speakNav(txt, priority=false){
     _navSpeaking = false;
   }
 
-  // Web Speech natychmiast — bez opóźnienia sieciowego (Android nie blokuje gestem)
+  // ElevenLabs (HTML5 Audio) — działa w tle, przy zablokowanym ekranie, przez muzykę
+  // Serwer cachuje MP3 — powtórne odtworzenie jest natychmiastowe
+  try {
+    const r = await fetch('/api/tts', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({text: clean})
+    });
+    const d = await r.json();
+    if(d.url){
+      _navSpeaking = true;
+      _elQueue.push({url: d.url, fallbackTxt: clean, lang});
+      if(!_elAudio) _elPlayNext();
+      return;
+    }
+  } catch(e){ /* serwer niedostępny — fallback */ }
+
+  // Fallback: Web Speech (działa tylko przy włączonym ekranie)
   _navSpeaking = true;
   _speakWebFallback(clean, lang, ()=>{ _navSpeaking=false; _navLastEndTs=Date.now(); });
 }
@@ -7305,8 +7347,9 @@ function _updateSpeedModuleBtn(){
 
 function startNavigation(){
   if(!routeSteps.length){ showAlert('⚠️','','Najpierw oblicz trasę'); return; }
-  _unlockAudio();   // odblokuj HTML5 Audio — kluczowe dla Android
-  _unlockSpeech();  // odblokuj speechSynthesis — Android wymaga user gesture
+  _unlockAudio();          // odblokuj HTML5 Audio — kluczowe dla Android
+  _unlockSpeech();         // odblokuj speechSynthesis — Android wymaga user gesture
+  _startAudioKeepAlive();  // cicha pętla = audio focus w tle i przy zablokowanym ekranie
   navActive=true; navStepIdx=0; navCIdx=0; navLastLat=null; navLastLng=null;
   _smoothBearing=null; _navLockedZoom=null; _zuptSnapLat=null; _zuptSnapLng=null;
   _snapEmaLat=null; _snapEmaLng=null;
@@ -8205,6 +8248,7 @@ function toggleNavOverview(){
 
 function stopNavigation(){
   navActive=false; navOverviewMode=false;
+  _stopAudioKeepAlive(); // zatrzymaj cichą pętlę audio
   // Zatrzymaj giroskop
   if(_gyroActive){
     window.removeEventListener('deviceorientationabsolute', _onOrientation, true);
