@@ -7143,7 +7143,7 @@ function _parseTurnLanes(raw, modifier){
 async function _fetchOsmLanesAt(lat, lng, modifier){
   const q = `[out:json][timeout:6];way(around:18,${lat.toFixed(6)},${lng.toFixed(6)})[highway][~"^turn:lanes"~"."];out tags;`;
   try {
-    const r = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`,
+    const r = await _overpassQueue.fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`,
       {signal: AbortSignal.timeout(5000)});
     const d = await r.json();
     if(!d.elements?.length) return null;
@@ -9126,6 +9126,14 @@ async function loadUserCameras(){
   } catch(e){ return []; }
 }
 
+// Globalny throttle Overpass — max 1 request co 400ms (limit: ~2 req/s)
+const _overpassQueue = { _last: 0, async fetch(url, opts){
+  const wait = Math.max(0, this._last + 400 - Date.now());
+  if(wait > 0) await new Promise(r => setTimeout(r, wait));
+  this._last = Date.now();
+  return fetch(url, opts);
+}};
+
 // Ładuje fotoradary dla całej trasy — segmentami wzdłuż trasy (dokładniejsze niż bbox)
 const _camCache = new Map(); // bbox_key → elements[], TTL 30min
 
@@ -9148,7 +9156,7 @@ async function _fetchCameraSegment([s,w,n,e]){
 );
 out center;`;
   try {
-    const resp = await fetch('https://overpass-api.de/api/interpreter', {
+    const resp = await _overpassQueue.fetch('https://overpass-api.de/api/interpreter', {
       method:'POST', body:'data='+encodeURIComponent(query)
     });
     if(!resp.ok) return [];
@@ -9207,7 +9215,7 @@ async function _fetchHeightSegment([s,w,n,e]){
 );
 out center;`;
   try {
-    const r = await fetch('https://overpass-api.de/api/interpreter',
+    const r = await _overpassQueue.fetch('https://overpass-api.de/api/interpreter',
       {method:'POST', body:'data='+encodeURIComponent(query)});
     if(!r.ok) return [];
     const data = await r.json();
@@ -10049,7 +10057,7 @@ async function fetchNearbyAttractions(lat, lng){
 
   let elements;
   try {
-    const r = await fetch(url);
+    const r = await _overpassQueue.fetch(url);
     const j = await r.json();
     elements = j.elements || [];
   } catch(e){ return; }
