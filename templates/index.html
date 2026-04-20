@@ -8175,25 +8175,38 @@ async function rerouteNavigation(fromLat, fromLng){
 
   const fromStr = `${fromLng},${fromLat}`;
   const destStr = `${navDestLng},${navDestLat}`;
-  // Prosty direct reroute: current → cel
-  // Mapbox znajdzie optymalną trasę uwzględniając kierunek jazdy (bearing)
   const coordStr = `${fromStr};${destStr}`;
 
-  try {
-    const mbUrl = buildRouteUrl(coordStr, heading);
-    const r = await fetch(mbUrl);
-    const data = await r.json();
-    if(!data.routes?.length){
-      // Fallback: bez bearing i bez intermediate
-      const r2 = await fetch(buildRouteUrl(`${fromStr};${destStr}`));
-      const data2 = await r2.json();
-      if(!data2.routes?.length){
-        setEl('nav-street-name', '⚠️ Błąd trasy – brak sieci?');
-        speakNav(currentLang==='pl' ? 'Błąd przeliczania trasy.' : 'Route error.', true);
-        return;
-      }
-      data.routes = data2.routes;
+  // 3 poziomy fallback: bearing → bez bearing → goli driving bez TIR
+  const attempts = [
+    () => buildRouteUrl(coordStr, heading),
+    () => buildRouteUrl(coordStr, null),
+    () => {
+      const p = new URLSearchParams({
+        geometries:'geojson', steps:'true',
+        overview:'full', access_token: MAPBOX_TOKEN
+      });
+      return `https://api.mapbox.com/directions/v5/mapbox/driving/${coordStr}?${p}`;
     }
+  ];
+
+  let data = null;
+  for(const buildUrl of attempts){
+    try {
+      const r = await fetch(buildUrl());
+      if(!r.ok) continue;
+      const d = await r.json();
+      if(d.routes?.length){ data = d; break; }
+    } catch(e){ continue; }
+  }
+
+  if(!data){
+    setEl('nav-street-name', '⚠️ Błąd trasy – brak sieci?');
+    speakNav(currentLang==='pl' ? 'Błąd przeliczania trasy.' : 'Route error.', true);
+    return;
+  }
+
+  try {
 
     const oldDur = routeTotalDur || 0;
     const route  = data.routes[0];
