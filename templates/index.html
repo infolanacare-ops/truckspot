@@ -2121,6 +2121,15 @@ body.navigating .convoy-btn{display:none}
 .lm-icon .ts-icon svg{width:18px;height:18px;stroke:currentColor}
 .nav-sheet-btn .ts-icon svg{width:18px;height:18px;stroke:currentColor;vertical-align:middle;margin-right:4px}
 .ai-gb-icon .ts-icon svg{width:22px;height:22px;stroke:currentColor}
+.fab-ai .ts-icon svg,.fab-layers .ts-icon svg{width:24px;height:24px;stroke:currentColor}
+.vol-btn .ts-icon svg{width:20px;height:20px;stroke:currentColor}
+.gps-fill-btn .ts-icon svg{width:18px;height:18px;stroke:currentColor}
+.star-btn .ts-icon svg{width:22px;height:22px;stroke:currentColor}
+.star-btn.active .ts-icon svg,.star-btn:hover .ts-icon svg{stroke:var(--accent,#d4af37);fill:var(--accent,#d4af37)}
+.ts-icon-inline svg{width:16px;height:16px;stroke:currentColor;display:inline-block;vertical-align:middle;margin-right:3px}
+.ts-icon-md svg{width:20px;height:20px;stroke:currentColor;display:block}
+.ts-icon-lg svg{width:32px;height:32px;stroke:currentColor;display:block}
+.info-box-icon .ts-icon svg{width:20px;height:20px;stroke:currentColor}
 /* Menu icons with SVG */
 .menu-icon .si svg{width:20px;height:20px;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
 /* Bottom nav SVG */
@@ -2248,6 +2257,75 @@ body.navigating .convoy-btn{display:none}
     <line x1="12" y1="19" x2="12" y2="23"/>
     <line x1="8" y1="23" x2="16" y2="23"/>
   </symbol>
+
+  <!-- Star -->
+  <symbol id="ts-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+  </symbol>
+
+  <!-- Star filled (for active ratings) -->
+  <symbol id="ts-star-fill" viewBox="0 0 24 24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor"/>
+  </symbol>
+
+  <!-- Search -->
+  <symbol id="ts-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+    <circle cx="11" cy="11" r="8"/>
+    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+  </symbol>
+
+  <!-- Volume / speaker -->
+  <symbol id="ts-volume" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+  </symbol>
+
+  <!-- Compass / north -->
+  <symbol id="ts-compass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+    <circle cx="12" cy="12" r="10"/>
+    <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill="currentColor" stroke="none"/>
+  </symbol>
+
+  <!-- Settings / gear -->
+  <symbol id="ts-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+  </symbol>
+
+  <!-- Navigate (arrow in circle) -->
+  <symbol id="ts-navigate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+    <polygon points="3 11 22 2 13 21 11 13 3 11" fill="currentColor" stroke="none"/>
+  </symbol>
+
+  <!-- Flag / destination -->
+  <symbol id="ts-flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+    <line x1="4" y1="22" x2="4" y2="15"/>
+  </symbol>
+
+  <!-- Chat bubble -->
+  <symbol id="ts-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </symbol>
+
+  <!-- GPS / signal -->
+  <symbol id="ts-gps" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="22" y1="12" x2="18" y2="12"/>
+    <line x1="6" y1="12" x2="2" y2="12"/>
+    <line x1="12" y1="6" x2="12" y2="2"/>
+    <line x1="12" y1="22" x2="12" y2="18"/>
+    <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/>
+  </symbol>
+
+  <!-- Users / convoy -->
+  <symbol id="ts-convoy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+    <circle cx="9" cy="7" r="4"/>
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+  </symbol>
 </svg>
 
 <!-- ══════════════════════════════════════
@@ -2259,7 +2337,7 @@ body.navigating .convoy-btn{display:none}
 
   <!-- STEP 1 — Language -->
   <div class="ob-step active" id="step-lang">
-    <div style="font-size:2.8rem;margin-bottom:.5rem">🚛</div>
+    <div style="margin-bottom:.5rem;display:flex;justify-content:center"><span class="ts-icon ts-icon-lg" style="color:var(--accent,#d4af37)"><svg style="width:52px;height:52px"><use href="#ts-truck"/></svg></span></div>
     <div class="ob-logo">TruckSpot</div>
     <div class="ob-sub" id="ob-sub-lang">Choose your language</div>
     <div class="ob-dots">
@@ -2291,7 +2369,7 @@ body.navigating .convoy-btn{display:none}
 
   <!-- STEP 2 — Login -->
   <div class="ob-step" id="step-login">
-    <div style="font-size:2.6rem;margin-bottom:.3rem">🚛</div>
+    <div style="margin-bottom:.3rem;display:flex;justify-content:center"><span class="ts-icon" style="color:var(--accent,#d4af37)"><svg style="width:48px;height:48px"><use href="#ts-truck"/></svg></span></div>
     <div class="auth-title">Dołącz do TruckSpot</div>
     <div class="auth-sub">Zaloguj się, aby AI pamiętała Cię na zawsze</div>
     <div class="ob-dots" style="margin-bottom:.7rem">
@@ -2378,7 +2456,7 @@ body.navigating .convoy-btn{display:none}
 
 <!-- KONWÓJ button -->
 <button class="convoy-btn" id="convoy-btn" onclick="toggleConvoyPanel(); clearConvoyMsgBadge()" title="MOBILKI" style="position:relative">
-  🚛
+  <span class="ts-icon"><svg style="width:22px;height:22px"><use href="#ts-convoy"/></svg></span>
   <span class="convoy-btn-count" id="convoy-btn-count">0</span>
   <span class="convoy-msg-badge" id="convoy-msg-badge"></span>
 </button>
@@ -2387,7 +2465,7 @@ body.navigating .convoy-btn{display:none}
 <div class="report-dial" id="report-dial">
   <div class="report-dial-items" id="report-dial-items">
     <button class="report-dial-item" onclick="submitReport('place');closeReportDial()" title="Fajne miejsce">
-      ⭐<span class="rdi-lbl">Fajne miejsce</span>
+      <span class="ts-icon"><svg style="width:20px;height:20px;fill:currentColor;stroke:currentColor"><use href="#ts-star-fill"/></svg></span><span class="rdi-lbl">Fajne miejsce</span>
     </button>
     <button class="report-dial-item" onclick="openCamTypePicker()" title="Fotoradar">
       📸<span class="rdi-lbl">Fotoradar</span>
@@ -2467,7 +2545,7 @@ body.navigating .convoy-btn{display:none}
   <div class="map-attrib">© Mapbox © OpenStreetMap</div>
 
   <!-- Layer switcher -->
-  <button class="fab-layers" id="fab-layers" onclick="toggleLayersMenu()" title="Zmień styl mapy">🗺️</button>
+  <button class="fab-layers" id="fab-layers" onclick="toggleLayersMenu()" title="Zmień styl mapy"><span class="ts-icon"><svg><use href="#ts-map"/></svg></span></button>
   <div class="layers-menu" id="layers-menu">
     <button class="layers-menu-item active" id="lm-streets" onclick="setMapLayer('streets')"><span class="lm-icon"><span class="ts-icon"><svg><use href="#ts-map"/></svg></span></span>Mapa</button>
     <button class="layers-menu-item" id="lm-satellite" onclick="setMapLayer('satellite')"><span class="lm-icon"><span class="ts-icon"><svg><use href="#ts-antenna"/></svg></span></span>Satelita</button>
@@ -2668,11 +2746,11 @@ body.navigating .convoy-btn{display:none}
   <div class="form-group">
     <label class="form-label" data-i="add_rating_lbl">Rating</label>
     <div class="star-row">
-      <span class="star-btn active" data-v="1" onclick="pickStar(1)">⭐</span>
-      <span class="star-btn" data-v="2" onclick="pickStar(2)">⭐</span>
-      <span class="star-btn" data-v="3" onclick="pickStar(3)">⭐</span>
-      <span class="star-btn" data-v="4" onclick="pickStar(4)">⭐</span>
-      <span class="star-btn" data-v="5" onclick="pickStar(5)">⭐</span>
+      <span class="star-btn active" data-v="1" onclick="pickStar(1)"><span class="ts-icon"><svg><use href="#ts-star-fill"/></svg></span></span>
+      <span class="star-btn" data-v="2" onclick="pickStar(2)"><span class="ts-icon"><svg><use href="#ts-star"/></svg></span></span>
+      <span class="star-btn" data-v="3" onclick="pickStar(3)"><span class="ts-icon"><svg><use href="#ts-star"/></svg></span></span>
+      <span class="star-btn" data-v="4" onclick="pickStar(4)"><span class="ts-icon"><svg><use href="#ts-star"/></svg></span></span>
+      <span class="star-btn" data-v="5" onclick="pickStar(5)"><span class="ts-icon"><svg><use href="#ts-star"/></svg></span></span>
     </div>
   </div>
   <div style="font-size:.78rem;color:var(--muted);margin-bottom:.8rem" id="spot-coords-info">📍 Tap the map to select location</div>
@@ -2822,7 +2900,7 @@ body.navigating .convoy-btn{display:none}
     <label class="form-label" data-i="route_from">From</label>
     <div class="route-input-row">
       <input class="form-input" id="route-from" placeholder="My location">
-      <button class="gps-fill-btn" onclick="useGpsForRoute()" title="Use GPS">📡</button>
+      <button class="gps-fill-btn" onclick="useGpsForRoute()" title="Use GPS"><span class="ts-icon"><svg><use href="#ts-gps"/></svg></span></button>
     </div>
   </div>
   <!-- WAYPOINTS -->
@@ -2834,7 +2912,7 @@ body.navigating .convoy-btn{display:none}
   </div>
   <!-- OPCJE TRASY -->
   <button class="route-opts-toggle" id="route-opts-toggle" onclick="toggleRouteOpts()">
-    <span>⚙️ Opcje trasy</span>
+    <span><span class="ts-icon-inline"><svg><use href="#ts-settings"/></svg></span> Opcje trasy</span>
     <span id="route-opts-summary" style="flex:1;font-size:.72rem;color:var(--accent);text-align:right;margin-right:.3rem"></span>
     <span class="rot-arrow">▾</span>
   </button>
@@ -2934,7 +3012,7 @@ body.navigating .convoy-btn{display:none}
 
   <!-- TIR Safety bar — aktywny profil pojazdu -->
   <div class="nav-tir-bar" id="nav-tir-bar">
-    <span class="nav-tir-bar-icon">🚛</span>
+    <span class="nav-tir-bar-icon ts-icon"><svg style="width:20px;height:16px"><use href="#ts-truck"/></svg></span>
     <div class="nav-tir-bar-params" id="nav-tir-bar-params"></div>
   </div>
 
@@ -3024,7 +3102,7 @@ body.navigating .convoy-btn{display:none}
   </div>
   <div class="ai-panel-bottom">
     <input class="ai-input" id="ai-input" placeholder="Wpisz lub naciśnij mikrofon..." onkeydown="if(event.key==='Enter')sendAiMessage()">
-    <button class="ai-mic-btn" id="ai-mic-btn" onclick="toggleAiMic()">🎙</button>
+    <button class="ai-mic-btn" id="ai-mic-btn" onclick="toggleAiMic()"><span class="ts-icon"><svg style="width:22px;height:22px"><use href="#ts-mic"/></svg></span></button>
     <button class="ai-send-btn" onclick="sendAiMessage()">➤</button>
   </div>
 </div>
@@ -3041,12 +3119,12 @@ body.navigating .convoy-btn{display:none}
   <div class="nav-sheet-actions" style="margin-bottom:.7rem">
 
     <button class="nav-sheet-btn" id="nav-pitch-btn" onclick="cycleNavPitch()">3D</button>
-    <button class="nav-sheet-btn" id="nav-northup-btn" onclick="toggleNavNorthUp()">🧭 Północ</button>
+    <button class="nav-sheet-btn" id="nav-northup-btn" onclick="toggleNavNorthUp()"><span class="ts-icon"><svg><use href="#ts-compass"/></svg></span> Północ</button>
     <button class="nav-sheet-btn" id="mod-speed-btn" onclick="toggleSpeedModule()">✅ Prędkość</button>
     <button class="nav-sheet-btn" onclick="closeNavSheet(); togglePoisStrip()"><span class="ts-icon"><svg><use href="#ts-pin"/></svg></span> Oś trasy</button>
     <button class="nav-sheet-btn" onclick="closeNavSheet(); toggleNavOverview()"><span class="ts-icon"><svg><use href="#ts-map"/></svg></span> Widok</button>
     <button class="nav-sheet-btn nav-sheet-convoy" onclick="closeNavSheet(); toggleConvoyPanel()">
-      🚛 MOBILKI <span id="nav-sheet-convoy-cnt" style="display:none;background:rgba(16,185,129,.25);border-radius:8px;padding:.05rem .35rem;font-size:.75rem;margin-left:.2rem">0</span>
+      <span class="ts-icon"><svg style="width:18px;height:15px;margin-right:4px;vertical-align:middle"><use href="#ts-truck"/></svg></span>MOBILKI <span id="nav-sheet-convoy-cnt" style="display:none;background:rgba(16,185,129,.25);border-radius:8px;padding:.05rem .35rem;font-size:.75rem;margin-left:.2rem">0</span>
     </button>
   </div>
 
@@ -3090,18 +3168,18 @@ body.navigating .convoy-btn{display:none}
 <div class="convoy-panel" id="convoy-panel">
   <div class="convoy-panel-handle"></div>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
-    <div class="convoy-panel-title" style="margin-bottom:0">🚛 MOBILKI</div>
+    <div class="convoy-panel-title" style="margin-bottom:0;display:flex;align-items:center;gap:.4rem"><span class="ts-icon"><svg style="width:20px;height:16px"><use href="#ts-truck"/></svg></span> MOBILKI</div>
     <button onclick="toggleConvoyPanel()" style="background:rgba(255,255,255,.1);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
   </div>
   <div class="convoy-panel-sub" id="convoy-panel-sub">Dołącz do MOBILKI — bądź widoczny na mapie</div>
 
   <!-- Status kierowcy -->
   <div class="convoy-status-row">
-    <button class="convoy-status-btn active" id="cs-driving" onclick="setConvoyStatus('driving')">🚛 Jadę</button>
+    <button class="convoy-status-btn active" id="cs-driving" onclick="setConvoyStatus('driving')"><span class="ts-icon"><svg style="width:16px;height:13px;margin-right:3px;vertical-align:middle"><use href="#ts-truck"/></svg></span>Jadę</button>
     <button class="convoy-status-btn" id="cs-coffee"  onclick="setConvoyStatus('coffee')">☕ Kawa</button>
     <button class="convoy-status-btn" id="cs-grill"   onclick="setConvoyStatus('grill')">🔥 Grill</button>
     <button class="convoy-status-btn" id="cs-cooking" onclick="setConvoyStatus('cooking')">🍲 Gotuję</button>
-    <button class="convoy-status-btn" id="cs-chat"    onclick="setConvoyStatus('chat')">💬 Pogadam</button>
+    <button class="convoy-status-btn" id="cs-chat"    onclick="setConvoyStatus('chat')"><span class="ts-icon"><svg style="width:15px;height:15px;margin-right:3px;vertical-align:middle"><use href="#ts-chat"/></svg></span>Pogadam</button>
     <button class="convoy-status-btn" id="cs-walk"    onclick="setConvoyStatus('walk')">🚶 Spacer</button>
     <button class="convoy-status-btn" id="cs-run"     onclick="setConvoyStatus('run')">🏃 Ćwiczę</button>
     <button class="convoy-status-btn" id="cs-sleep"   onclick="setConvoyStatus('sleep')">🛌 Śpię</button>
@@ -3120,7 +3198,7 @@ body.navigating .convoy-btn{display:none}
       style="flex:1;padding:.7rem;border:none;border-radius:14px;cursor:pointer;
              background:linear-gradient(135deg,#10b981,#059669);color:#fff;
              font-family:var(--font-head);font-size:.95rem;font-weight:900">
-      📡 Włącz widoczność
+      <span class="ts-icon"><svg style="width:18px;height:18px;margin-right:5px;vertical-align:middle"><use href="#ts-gps"/></svg></span>Włącz widoczność
     </button>
   </div>
 
@@ -3154,7 +3232,7 @@ body.navigating .convoy-btn{display:none}
   <div class="driver-card-broadcast" id="dcard-broadcast" style="display:none"></div>
   <div class="driver-card-actions">
     <button class="driver-card-btn driver-card-btn-chat" id="dcard-chat-btn">✉ Napisz wiadomość</button>
-    <button class="driver-card-btn driver-card-btn-map" id="dcard-map-btn">📍 Pokaż na mapie</button>
+    <button class="driver-card-btn driver-card-btn-map" id="dcard-map-btn"><span class="ts-icon-inline"><svg><use href="#ts-pin"/></svg></span> Pokaż na mapie</button>
   </div>
 </div>
 
@@ -3179,7 +3257,7 @@ body.navigating .convoy-btn{display:none}
 <!-- TIR CONFIRM MODAL — wymuszony przed nawigacją TIR -->
 <div class="tir-confirm-modal" id="tir-confirm-modal">
   <div class="tir-confirm-box">
-    <div class="tir-confirm-title">🚛 Profil pojazdu TIR</div>
+    <div class="tir-confirm-title"><span class="ts-icon" style="vertical-align:middle;margin-right:.4rem"><svg style="width:24px;height:20px"><use href="#ts-truck"/></svg></span>Profil pojazdu TIR</div>
     <div class="tir-confirm-subtitle">Sprawdź wymiary przed nawigacją.<br>Błędne dane mogą prowadzić do wypadku!</div>
     <div class="tir-confirm-warning">
       ⚠️ <strong>UWAGA:</strong> Trasa zostanie obliczona z uwzględnieniem tych parametrów. Zły profil = ryzyko wjazdu pod wiadukt lub na drogę zakazaną dla TIR.
@@ -3223,7 +3301,7 @@ body.navigating .convoy-btn{display:none}
     </div>
   </div>
   <div class="vol-wrap">
-    <button class="vol-btn" id="vol-btn" onclick="toggleVolSlider(event)">🔊</button>
+    <button class="vol-btn" id="vol-btn" onclick="toggleVolSlider(event)"><span class="ts-icon"><svg><use href="#ts-volume"/></svg></span></button>
     <div class="vol-popup" id="vol-popup">
       <span class="vol-pct" id="vol-pct">70%</span>
       <input type="range" class="vol-vertical" id="radio-vol" min="0" max="100" step="5" value="70"
@@ -3251,8 +3329,8 @@ body.navigating .convoy-btn{display:none}
   </div>
   <div class="radio-tabs">
     <div class="rtab active" onclick="radioTab(this,'stations')">📻 Stacje</div>
-    <div class="rtab" onclick="radioTab(this,'search')">🔍 Szukaj</div>
-    <div class="rtab" onclick="radioTab(this,'favs')">⭐ Ulubione</div>
+    <div class="rtab" onclick="radioTab(this,'search')"><span class="ts-icon-inline"><svg><use href="#ts-search"/></svg></span>Szukaj</div>
+    <div class="rtab" onclick="radioTab(this,'favs')"><span class="ts-icon-inline"><svg><use href="#ts-star"/></svg></span>Ulubione</div>
   </div>
   <div class="radio-tab-content" id="rtab-stations">
     <!-- rendered by JS -->
@@ -3260,7 +3338,7 @@ body.navigating .convoy-btn{display:none}
   <div class="radio-tab-content" id="rtab-search" style="display:none">
     <div class="radio-search-row">
       <input class="radio-search-input" id="radio-search-q" placeholder="np. RMF, Rock, Jazz..." onkeydown="if(event.key==='Enter')radioSearch()">
-      <button class="radio-search-btn" onclick="radioSearch()">🔍 Szukaj</button>
+      <button class="radio-search-btn" onclick="radioSearch()"><span class="ts-icon-inline"><svg><use href="#ts-search"/></svg></span>Szukaj</button>
     </div>
     <div id="radio-search-results"></div>
     <div style="margin-top:1rem;font-size:.72rem;color:var(--muted);margin-bottom:.4rem">Lub wklej URL strumienia:</div>
@@ -3277,7 +3355,7 @@ body.navigating .convoy-btn{display:none}
 
 <!-- FAB -->
 <button class="fab-add" id="fab-add" onclick="togglePicking()" style="display:none">＋</button>
-<button class="fab-ai" id="fab-ai" onclick="openAiAssistant()" title="Asystent AI">🎙</button>
+<button class="fab-ai" id="fab-ai" onclick="openAiAssistant()" title="Asystent AI"><span class="ts-icon"><svg><use href="#ts-mic"/></svg></span></button>
 
 <!-- Radio — mała pigułka -->
 <div class="radio-pill" id="radio-player">
@@ -3288,7 +3366,7 @@ body.navigating .convoy-btn{display:none}
 
 <!-- ALERT TOAST -->
 <div class="alert-toast" id="alert-toast">
-  <div class="alert-icon" id="alert-icon">📍</div>
+  <div class="alert-icon" id="alert-icon"><span class="ts-icon"><svg style="width:22px;height:26px"><use href="#ts-pin"/></svg></span></div>
   <div class="alert-text">
     <div class="alert-title" id="alert-title">Nearby spot!</div>
     <div class="alert-desc" id="alert-desc">–</div>
@@ -4247,10 +4325,10 @@ async function showDetail(p){
   const amenHtml=(p.amenities||[]).filter(a=>cfg.amenityFilter.includes(a)).map(amenityHtml).join('');
   const poiHtml=(p.poi||[]).filter(x=>cfg.poiFilter.includes(x.type)).map(x=>`<div class="poi-row"><span>${POI_ICONS[x.type]||'📍'}</span><span style="flex:1">${x.name}</span><span class="poi-dist">${x.dist_km} km</span></div>`).join('');
   const boxes=[
-    p.spots_tir>0?`<div class="info-box"><span class="info-box-icon">🚛</span><div class="info-box-val">${p.spots_tir}</div><div class="info-box-lbl">Miejsca TIR</div></div>`:'',
+    p.spots_tir>0?`<div class="info-box"><span class="info-box-icon ts-icon"><svg style="width:20px;height:16px"><use href="#ts-truck"/></svg></span><div class="info-box-val">${p.spots_tir}</div><div class="info-box-lbl">Miejsca TIR</div></div>`:'',
     p.spots_camper>0?`<div class="info-box"><span class="info-box-icon">🏕️</span><div class="info-box-val">${p.spots_camper}</div><div class="info-box-lbl">Camper</div></div>`:'',
     `<div class="info-box"><span class="info-box-icon">💶</span><div class="info-box-val">${p.price_eur===0?'FREE':p.price_eur+'€'}</div><div class="info-box-lbl">za noc</div></div>`,
-    `<div class="info-box"><span class="info-box-icon">⭐</span><div class="info-box-val">${p.rating}</div><div class="info-box-lbl">Ocena</div></div>`,
+    `<div class="info-box"><span class="info-box-icon ts-icon"><svg style="width:18px;height:18px;fill:currentColor;stroke:currentColor"><use href="#ts-star-fill"/></svg></span><div class="info-box-val">${p.rating}</div><div class="info-box-lbl">Ocena</div></div>`,
   ].filter(Boolean).join('');
 
   // Render immediately without weather/comments
@@ -4260,7 +4338,7 @@ async function showDetail(p){
     <div style="display:flex;align-items:flex-start;gap:.4rem">
       <div style="flex:1">
         <div class="panel-name">${p.name}</div>
-        <div class="panel-addr">📍 ${p.city}, ${p.country}</div>
+        <div class="panel-addr"><svg style="width:12px;height:14px;stroke:currentColor;fill:none;stroke-width:1.5;vertical-align:middle;margin-right:3px"><use href="#ts-pin"/></svg>${p.city}, ${p.country}</div>
       </div>
       <button class="fav-btn" id="fav-btn-${p.id}" onclick="toggleFavParking(${JSON.stringify(p).replace(/"/g,'&quot;')})" title="Ulubione">${isFav?'❤️':'🤍'}</button>
     </div>
@@ -4269,7 +4347,7 @@ async function showDetail(p){
     <div class="info-grid">${boxes}</div>
     ${amenHtml?`<div class="amenities">${amenHtml}</div>`:''}
     ${poiHtml?`<div class="poi-title">🗺 Nearby</div><div class="poi-list">${poiHtml}</div>`:''}
-    <button class="nav-btn" onclick="navigateTo(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')">🧭 Nawiguj</button>
+    <button class="nav-btn" onclick="navigateTo(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')"><span class="ts-icon-inline"><svg><use href="#ts-navigate"/></svg></span>Nawiguj</button>
     <button class="share-btn" onclick="shareParking(${p.id},'${p.name.replace(/'/g,"\\'")}')">🔗 Udostępnij parking</button>
     ${occWidgetHtml(p.id)}
     <div id="pd-comments"><div style="font-size:.78rem;color:var(--muted);padding:.8rem 0;text-align:center">⏳ Ładowanie opinii...</div></div>`;
@@ -4296,19 +4374,20 @@ function showOsmDetail(p){
       <div class="panel-name" style="flex:1">${p.name}</div>
       <span style="font-size:.65rem;background:rgba(16,185,129,.15);color:#10b981;border-radius:8px;padding:.15rem .45rem;font-weight:700">OSM</span>
     </div>
-    <div class="panel-addr">📍 ${p.city||'–'}, ${p.country||'–'}</div>
+    <div class="panel-addr"><svg style="width:12px;height:14px;stroke:currentColor;fill:none;stroke-width:1.5;vertical-align:middle;margin-right:3px"><use href="#ts-pin"/></svg>${p.city||'–'}, ${p.country||'–'}</div>
     <div class="info-grid">
       ${p.spots_tir>0?`<div class="info-box"><div class="info-box-val">${p.spots_tir}</div><div class="info-box-lbl">spots</div></div>`:''}
       <div class="info-box"><div class="info-box-val">FREE</div><div class="info-box-lbl">price</div></div>
     </div>
     ${amenHtml?`<div class="amenities">${amenHtml}</div>`:''}
-    <button class="nav-btn" onclick="navigateTo(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')">🧭 Nawiguj</button>`;
+    <button class="nav-btn" onclick="navigateTo(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')"><span class="ts-icon-inline"><svg><use href="#ts-navigate"/></svg></span>Nawiguj</button>`;
   document.getElementById('detail-panel').classList.add('open');
   map.panTo([p.lng,p.lat]);
 }
 
 function showUserSpotDetail(spot){
-  const stars='⭐'.repeat(spot.stars||0);
+  const starSvg='<svg style="width:14px;height:14px;fill:#d4af37;stroke:#d4af37;stroke-width:1;display:inline-block;vertical-align:middle"><use href="#ts-star-fill"/></svg>';
+  const stars=starSvg.repeat(spot.stars||0);
   document.getElementById('panel-content').innerHTML=`
     ${locationPhotoHtml(spot.lat, spot.lng, 'spot'+spot.id)}
     <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem">
@@ -4317,7 +4396,7 @@ function showUserSpotDetail(spot){
     </div>
     <div style="font-size:1.1rem;margin-bottom:.5rem">${stars}</div>
     ${spot.desc?`<div style="font-size:.85rem;color:var(--muted);margin-bottom:.9rem;line-height:1.5">${spot.desc}</div>`:''}
-    <button class="nav-btn" onclick="navigateTo(${spot.lat},${spot.lng},'${spot.name.replace(/'/g,"\\'")}')">🧭 Nawiguj</button>`;
+    <button class="nav-btn" onclick="navigateTo(${spot.lat},${spot.lng},'${spot.name.replace(/'/g,"\\'")}')"><span class="ts-icon-inline"><svg><use href="#ts-navigate"/></svg></span>Nawiguj</button>`;
   document.getElementById('detail-panel').classList.add('open');
   map.panTo([spot.lng,spot.lat]);
 }
@@ -5507,7 +5586,7 @@ async function searchRoute(navMode){
       .sort((a,b)=>a.dist-b.dist);
 
     const header = `<div style="display:flex;align-items:center;gap:.5rem;margin:.7rem 0 .5rem">
-      <span style="font-size:.8rem;color:var(--muted)">📍 <b>${distKm} km</b> · ⏱ <b>${durTxt}</b></span>
+      <span style="font-size:.8rem;color:var(--muted)"><svg style="width:10px;height:12px;stroke:currentColor;fill:none;stroke-width:1.5;vertical-align:middle;margin-right:2px"><use href="#ts-pin"/></svg><b>${distKm} km</b> · ⏱ <b>${durTxt}</b></span>
       <span style="margin-left:auto;font-size:.75rem;color:var(--blue);font-weight:700">${onRoute.length} ${t('route_found')}</span>
     </div>`;
 
@@ -6109,13 +6188,13 @@ function toggleConvoyVisible(){
   convoyVisible = !convoyVisible;
   const btn = document.getElementById('convoy-toggle-btn');
   if(convoyVisible){
-    btn.innerHTML = '👁️ Widoczny dla innych';
+    btn.innerHTML = '<span class="ts-icon"><svg style="width:18px;height:18px;margin-right:5px;vertical-align:middle"><use href="#ts-gps"/></svg></span>Widoczny dla innych';
     btn.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
     document.getElementById('convoy-btn').classList.add('active');
     convoyPing();
     convoyPingTimer = setInterval(convoyPing, 15000);
   } else {
-    btn.innerHTML = '📡 Włącz widoczność';
+    btn.innerHTML = '<span class="ts-icon"><svg style="width:18px;height:18px;margin-right:5px;vertical-align:middle"><use href="#ts-gps"/></svg></span>Włącz widoczność';
     btn.style.background = 'linear-gradient(135deg,#10b981,#059669)';
     document.getElementById('convoy-btn').classList.remove('active');
     clearInterval(convoyPingTimer);
@@ -6235,7 +6314,7 @@ function renderRouteTimeline(){
 
   // Ty na dole
   rows.push(`<div class="nav-tl-item">
-    <div class="nav-tl-dot is-cur">📍</div>
+    <div class="nav-tl-dot is-cur"><svg style="width:14px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5"><use href="#ts-pin"/></svg></div>
     <div class="nav-tl-info">
       <div class="nav-tl-name">Tutaj</div>
       <div class="nav-tl-dist">${distTxt(myDistKm)} za sobą</div>
@@ -6983,7 +7062,7 @@ function renderNavPois(){
 
   // START
   const startHtml = `<div class="nav-poi-start">
-    <div class="nav-poi-start-dot">📍</div>
+    <div class="nav-poi-start-dot"><svg style="width:14px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5"><use href="#ts-pin"/></svg></div>
     <div class="nav-poi-start-lbl">Start</div>
   </div>`;
 
@@ -7621,7 +7700,11 @@ const LAYER_STYLES = {
   satellite: () => 'mapbox://styles/mapbox/satellite-streets-v12',
   dark:      () => 'mapbox://styles/mapbox/dark-v11',
 };
-const LAYER_ICONS = { streets:'🗺️', satellite:'🛰️', dark:'🌙' };
+const LAYER_ICONS = {
+  streets:   '<span class="ts-icon"><svg><use href="#ts-map"/></svg></span>',
+  satellite: '<span class="ts-icon"><svg><use href="#ts-antenna"/></svg></span>',
+  dark:      '<span class="ts-icon"><svg><use href="#ts-moon"/></svg></span>',
+};
 
 function toggleLayersMenu(){
   document.getElementById('layers-menu').classList.toggle('open');
@@ -7635,7 +7718,7 @@ function _closeLayersOutside(e){
 function setMapLayer(layer){
   _currentLayer = layer;
   document.getElementById('layers-menu').classList.remove('open');
-  document.getElementById('fab-layers').textContent = LAYER_ICONS[layer];
+  document.getElementById('fab-layers').innerHTML = LAYER_ICONS[layer];
   ['streets','satellite','dark'].forEach(k=>{
     document.getElementById('lm-'+k)?.classList.toggle('active', k===layer);
   });
@@ -7821,7 +7904,7 @@ function openFavsPanel(){
         <span style="font-size:1.3rem">❤️</span>
         <div class="fav-item-info">
           <div class="fav-item-name">${f.name}</div>
-          <div class="fav-item-addr">📍 ${f.city}${f.country?', '+f.country:''}</div>
+          <div class="fav-item-addr"><svg style="width:10px;height:12px;stroke:currentColor;fill:none;stroke-width:1.5;vertical-align:middle;margin-right:2px"><use href="#ts-pin"/></svg>${f.city}${f.country?', '+f.country:''}</div>
         </div>
         <button class="fav-item-del" onclick="event.stopPropagation();removeFav('${f.id}')" title="Usuń">✕</button>
       </div>`).join('');
@@ -7897,7 +7980,7 @@ function routeHistoryHtml(){
     <div class="rh-item" onclick="loadRouteHistory(${i})">
       <span style="font-size:1.1rem">🕐</span>
       <div class="rh-item-text">
-        <div class="rh-from">📍 ${h.from||'GPS'} → ${h.to}</div>
+        <div class="rh-from"><svg style="width:10px;height:12px;stroke:currentColor;fill:none;stroke-width:1.5;vertical-align:middle;margin-right:2px"><use href="#ts-pin"/></svg>${h.from||'GPS'} → ${h.to}</div>
         ${h.waypoints?.length ? `<div class="rh-to">przez: ${h.waypoints.join(', ')}</div>` : ''}
       </div>
       <span style="font-size:.68rem;color:var(--muted)">${timeSince(h.ts)}</span>
@@ -8200,14 +8283,14 @@ function showAutobahnDetail(p){
       <div class="panel-name" style="flex:1">🇩🇪 ${p.name}</div>
       <span style="font-size:.65rem;background:rgba(0,100,200,.15);color:#0064c8;border-radius:8px;padding:.15rem .45rem;font-weight:700">${p.road}</span>
     </div>
-    <div class="panel-addr">📍 ${p.subtitle||'Autostrada '+p.road} · Niemcy</div>
+    <div class="panel-addr"><svg style="width:12px;height:14px;stroke:currentColor;fill:none;stroke-width:1.5;vertical-align:middle;margin-right:3px"><use href="#ts-pin"/></svg>${p.subtitle||'Autostrada '+p.road} · Niemcy</div>
     ${amenHtml?`<div class="amenities">${amenHtml}</div>`:''}
     ${p.desc_html?`<div style="font-size:.79rem;color:var(--muted);margin:.6rem 0;line-height:1.5">${p.desc_html}</div>`:''}
     <div style="font-size:.7rem;color:var(--muted);margin:.5rem 0">
       📡 Dane: <a href="https://autobahn.api.bund.dev" target="_blank" style="color:var(--blue)">Autobahn GmbH / Bundesministerium (oficjalne)</a>
     </div>
     ${occWidgetHtml(p.id)}
-    <button class="nav-btn" onclick="navigateTo(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')">🧭 Nawiguj</button>`;
+    <button class="nav-btn" onclick="navigateTo(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')"><span class="ts-icon-inline"><svg><use href="#ts-navigate"/></svg></span>Nawiguj</button>`;
   document.getElementById('detail-panel').classList.add('open');
   map.panTo([p.lng,p.lat]);
   loadOccupancy(p.id);
@@ -8339,7 +8422,7 @@ function showMarketDetail(m){
       <div class="panel-name" style="flex:1">${flag} 🛍 ${m.name}</div>
       <span style="font-size:.65rem;background:rgba(249,115,22,.15);color:#f97316;border-radius:8px;padding:.15rem .45rem;font-weight:700">${typeLabel}</span>
     </div>
-    <div class="panel-addr">📍 ${m.city}${m.state?', '+m.state:''}${m.country?' ('+m.country+')':''}</div>
+    <div class="panel-addr"><svg style="width:12px;height:14px;stroke:currentColor;fill:none;stroke-width:1.5;vertical-align:middle;margin-right:3px"><use href="#ts-pin"/></svg>${m.city}${m.state?', '+m.state:''}${m.country?' ('+m.country+')':''}</div>
     <div style="font-size:.8rem;color:var(--text);margin-bottom:.5rem">📅 ${m.schedule||'–'} · ⏰ ${m.time_from||''}–${m.time_to||''}</div>
     <div class="amenities" style="margin-bottom:.7rem">
       <span class="amenity">${entryTxt}</span>
@@ -8349,7 +8432,7 @@ function showMarketDetail(m){
     </div>
     ${m.description?`<div style="font-size:.82rem;color:var(--muted);line-height:1.5;margin-bottom:.9rem">${m.description}</div>`:''}
     ${m.website?`<a href="${m.website}" target="_blank" style="display:block;text-align:center;padding:.6rem;border-radius:10px;background:rgba(249,115,22,.12);color:#f97316;font-size:.82rem;font-weight:700;text-decoration:none;margin-bottom:.6rem">🌐 Website</a>`:''}
-    <button class="nav-btn" onclick="navigateTo(${m.lat},${m.lng},'${m.name.replace(/'/g,"\\'")}')">🧭 Nawiguj</button>`;
+    <button class="nav-btn" onclick="navigateTo(${m.lat},${m.lng},'${m.name.replace(/'/g,"\\'")}')"><span class="ts-icon-inline"><svg><use href="#ts-navigate"/></svg></span>Nawiguj</button>`;
   document.getElementById('detail-panel').classList.add('open');
   map.panTo([m.lng, m.lat]);
 }
@@ -9394,7 +9477,7 @@ function showScenicDetail(s){
       <div class="panel-name" style="flex:1">${flag} ${s.name}</div>
       <span style="font-size:.65rem;background:${color}22;color:${color};border-radius:8px;padding:.15rem .45rem;font-weight:700">${typeLabel}</span>
     </div>
-    <div class="panel-addr">📍 ${s.region}${s.country?' ('+s.country+')':''}</div>
+    <div class="panel-addr"><svg style="width:12px;height:14px;stroke:currentColor;fill:none;stroke-width:1.5;vertical-align:middle;margin-right:3px"><use href="#ts-pin"/></svg>${s.region}${s.country?' ('+s.country+')':''}</div>
     ${s.elevation?`<div style="font-size:.8rem;color:var(--muted);margin-bottom:.3rem">⛰️ ${s.elevation} m n.p.m.</div>`:''}
     ${s.best_season?`<div style="font-size:.8rem;color:var(--muted);margin-bottom:.5rem">📅 Najlepszy czas: ${s.best_season}</div>`:''}
     <div class="amenities" style="margin-bottom:.7rem">
@@ -9712,7 +9795,7 @@ function commentsHtml(comments, parkingId){
         <div class="comment-header" style="display:flex;align-items:center;gap:.5rem">
           ${commentAvatar(c.user)}
           <span class="comment-user" style="flex:1">${c.user}</span>
-          <span class="comment-stars">${'⭐'.repeat(c.stars)}</span>
+          <span class="comment-stars">${'<svg style="width:12px;height:12px;fill:#d4af37;stroke:#d4af37;stroke-width:1;display:inline-block;vertical-align:middle"><use href="#ts-star-fill"/></svg>'.repeat(c.stars)}</span>
           <span class="comment-date">${c.date ? c.date.slice(0,10) : ''}</span>
         </div>
         <div class="comment-text">${c.text}</div>
