@@ -3828,6 +3828,7 @@ function enterMode(mode){
     map.addControl(new mapboxgl.NavigationControl({showCompass:false}), 'top-left');
     map.on('click', (e)=>{ onMapClickForMsg(e); onMapClick(e); });
     map.on('moveend', ()=>{ if(map.getZoom()>=8) loadOsmParkings(); loadReports(); if(activeFuelCards().length>0) loadFuelStations(); });
+    map.once('load', ()=>{ if(!gpsActive) startGps(); });
     // Inicjalizuj draggable widget osi trasy
     _initPoiDrag();
     // Wykryj ręczne operacje na mapie podczas nawigacji
