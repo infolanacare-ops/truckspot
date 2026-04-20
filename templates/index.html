@@ -908,6 +908,36 @@ body.light .menu-icon{background:rgba(0,0,0,.04)}
   content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);
   border:5px solid transparent;border-top-color:rgba(20,24,40,.92);
 }
+
+/* ══ METAVERSE — strefa aktywności ══ */
+.zone-badge{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  cursor:pointer;pointer-events:auto;
+  animation:zone-in .4s cubic-bezier(.34,1.56,.64,1);
+  transform-origin:50% 50%;
+}
+@keyframes zone-in{
+  from{transform:scale(0);opacity:0}
+  to{transform:scale(1);opacity:1}
+}
+.zone-count{
+  background:linear-gradient(135deg,rgba(16,185,129,.9),rgba(5,150,105,.95));
+  border:2px solid rgba(255,255,255,.5);
+  color:#fff;font-family:var(--font-head);font-size:.75rem;font-weight:900;
+  padding:4px 10px;border-radius:20px;
+  box-shadow:0 0 18px rgba(16,185,129,.6),0 2px 8px rgba(0,0,0,.4);
+  white-space:nowrap;letter-spacing:.03em;
+  animation:zone-glow 2.5s ease-in-out infinite;
+}
+@keyframes zone-glow{
+  0%,100%{box-shadow:0 0 18px rgba(16,185,129,.6),0 2px 8px rgba(0,0,0,.4)}
+  50%{box-shadow:0 0 32px rgba(16,185,129,.9),0 0 60px rgba(16,185,129,.25),0 2px 8px rgba(0,0,0,.4)}
+}
+.zone-label{
+  font-size:.55rem;font-weight:700;color:rgba(255,255,255,.7);
+  background:rgba(0,0,0,.5);backdrop-filter:blur(6px);
+  padding:1px 6px;border-radius:6px;letter-spacing:.05em;text-transform:uppercase;
+}
 .nav-arrow{width:52px;height:66px;display:block;}
 .mk-user{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
   background:var(--purple);border:3px solid #fff;box-shadow:0 3px 10px rgba(139,92,246,.5);font-size:.95rem}
@@ -11192,6 +11222,15 @@ function _startPresence(){
         delete _peerBubbleTimers[key];
       }
     });
+
+    // Przelicz strefy aktywności
+    const peersSnap = {};
+    Object.entries(_presenceCh.presenceState()).forEach(([key, presences]) => {
+      if(key === _sbUser?.id) return;
+      const p = presences[0];
+      if(p && p.lat && p.lng) peersSnap[key] = p;
+    });
+    _updateZones(peersSnap);
   });
 
   _presenceCh.subscribe(async status => {
@@ -11264,8 +11303,126 @@ function _showPeerCbBubble(userId, text){
 }
 
 function _peerTap(key){
-  // kliknięcie w avatar — pokaż info
   showAlert('👤', 'Kierowca', 'Ten użytkownik jest online w pobliżu');
+}
+
+// ══════════════════════════════════════════════════════
+// METAVERSE — Strefy aktywności (Etap 2)
+// ══════════════════════════════════════════════════════
+const ZONE_RADIUS_M  = 200;  // promień klastra
+const ZONE_MIN_USERS = 3;    // min liczba userów żeby strefa świeciła
+
+let _zoneMarkers  = [];   // DOM markery badge
+let _zonesInited  = false;
+
+function _initZoneLayers(){
+  if(_zonesInited || !map) return;
+  _zonesInited = true;
+  map.addSource('ts-zones', {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: [] }
+  });
+  // Zewnętrzny świecący okrąg
+  map.addLayer({
+    id: 'ts-zones-glow',
+    type: 'circle',
+    source: 'ts-zones',
+    paint: {
+      'circle-radius': ['interpolate',['linear'],['zoom'], 8,12, 14,60, 18,200],
+      'circle-color': '#10b981',
+      'circle-opacity': 0.12,
+      'circle-blur': 1,
+    }
+  });
+  // Wewnętrzny twardy okrąg
+  map.addLayer({
+    id: 'ts-zones-fill',
+    type: 'circle',
+    source: 'ts-zones',
+    paint: {
+      'circle-radius': ['interpolate',['linear'],['zoom'], 8,6, 14,30, 18,100],
+      'circle-color': '#10b981',
+      'circle-opacity': 0.18,
+      'circle-stroke-width': 2,
+      'circle-stroke-color': 'rgba(16,185,129,.55)',
+    }
+  });
+  // Animacja pulsu (zmiana opacity co 1.5s)
+  let _glowDir = -1, _glowVal = 0.12;
+  setInterval(() => {
+    if(!map.getLayer('ts-zones-glow')) return;
+    _glowVal += _glowDir * 0.03;
+    if(_glowVal <= 0.06){ _glowVal = 0.06; _glowDir = 1; }
+    if(_glowVal >= 0.22){ _glowVal = 0.22; _glowDir = -1; }
+    map.setPaintProperty('ts-zones-glow', 'circle-opacity', _glowVal);
+  }, 100);
+}
+
+function _updateZones(peersMap){
+  if(!map) return;
+  _initZoneLayers();
+
+  // Zbierz wszystkich (peerzy + siebie)
+  const pts = [];
+  Object.entries(peersMap).forEach(([id, p]) => {
+    if(p.lat && p.lng) pts.push({ id, lat: p.lat, lng: p.lng, name: p.name||'?', emoji: p.emoji||'🚛' });
+  });
+  if(userLat && userLng && _sbUser){
+    const pr = (()=>{ try{ return JSON.parse(localStorage.getItem('ts_profile')||'{}'); }catch(e){ return {}; } })();
+    pts.push({ id: _sbUser.id, lat: userLat, lng: userLng, name: pr.display_name||pr.name||'Ty', emoji: pr.emoji||'🚛', isSelf: true });
+  }
+
+  // Klastry — prosty greedy: oznaczaj odwiedzonych
+  const visited = new Set();
+  const clusters = [];
+  for(let i = 0; i < pts.length; i++){
+    if(visited.has(pts[i].id)) continue;
+    const cluster = [pts[i]];
+    visited.add(pts[i].id);
+    for(let j = i+1; j < pts.length; j++){
+      if(visited.has(pts[j].id)) continue;
+      if(haversineKm(pts[i].lat, pts[i].lng, pts[j].lat, pts[j].lng) * 1000 <= ZONE_RADIUS_M){
+        cluster.push(pts[j]);
+        visited.add(pts[j].id);
+      }
+    }
+    if(cluster.length >= ZONE_MIN_USERS) clusters.push(cluster);
+  }
+
+  // Usuń stare markery badge
+  _zoneMarkers.forEach(m => m.remove());
+  _zoneMarkers = [];
+
+  // Zaktualizuj źródło Mapbox (geojson)
+  const features = clusters.map(cl => {
+    const cLat = cl.reduce((s,p)=>s+p.lat,0)/cl.length;
+    const cLng = cl.reduce((s,p)=>s+p.lng,0)/cl.length;
+    return { type:'Feature', geometry:{ type:'Point', coordinates:[cLng,cLat] }, properties:{} };
+  });
+  if(map.getSource('ts-zones')){
+    map.getSource('ts-zones').setData({ type:'FeatureCollection', features });
+  }
+
+  // Stwórz DOM badge dla każdego klastra
+  clusters.forEach(cl => {
+    const cLat = cl.reduce((s,p)=>s+p.lat,0)/cl.length;
+    const cLng = cl.reduce((s,p)=>s+p.lng,0)/cl.length;
+    const names = cl.map(p=>p.emoji).join(' ');
+    const el = document.createElement('div');
+    el.innerHTML = `<div class="zone-badge" onclick="_zoneTap(${JSON.stringify(cl.map(p=>p.name)).replace(/"/g,"'")})">
+      <div class="zone-count">🟢 ${cl.length} online</div>
+      <div class="zone-label">${names}</div>
+    </div>`;
+    el.style.cssText = 'pointer-events:auto;line-height:0;user-select:none;z-index:185';
+    const mk = new mapboxgl.Marker({ element: el, anchor: 'center' })
+      .setLngLat([cLng, cLat]).addTo(map);
+    _zoneMarkers.push(mk);
+  });
+}
+
+function _zoneTap(names){
+  const list = Array.isArray(names) ? names.join(', ') : names;
+  showAlert('🟢', 'Strefa aktywna', `Tu jest ${list}`);
 }
 
 // Inicjalizacja — sprawdź czy użytkownik jest zalogowany
