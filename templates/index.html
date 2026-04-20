@@ -6434,17 +6434,19 @@ let _navVoiceCache = {};
 // AI voice:  inny głos jeśli dostępny — bardziej konwersacyjny
 const VOICE_PREFS = {
   nav: {
-    'pl-PL': ['Google polski','Microsoft Paulina - Polish (Poland)','Paulina','Polish Female','pl-PL'],
-    'de-DE': ['Google Deutsch','Microsoft Hedda - German (Germany)','Hedda','German Female','de-DE'],
-    'en-US': ['Google US English','Microsoft Zira - English (United States)','Zira','Samantha','en-US'],
+    'pl-PL': ['Google polski','Microsoft Paulina','Paulina','Polish Female','pfv','pfs','pl-pl-x-pfv','pl-pl-x-pfs'],
+    'de-DE': ['Google Deutsch','Microsoft Hedda','Hedda','German Female','de-DE'],
+    'en-US': ['Google US English Female','Microsoft Zira','Zira','Samantha','en-US'],
     'en-GB': ['Google UK English Female','Microsoft Hazel','Hazel','en-GB'],
   },
   ai: {
-    'pl-PL': ['Microsoft Adam - Polish (Poland)','Adam','Google polski','Microsoft Paulina - Polish (Poland)','pl-PL'],
-    'de-DE': ['Microsoft Stefan - German (Germany)','Stefan','Google Deutsch','de-DE'],
-    'en-US': ['Google US English Male','Microsoft David - English (United States)','David','Alex','Google US English','en-US'],
+    'pl-PL': ['Microsoft Adam','Google polski','Microsoft Paulina','Paulina','pl-PL'],
+    'de-DE': ['Microsoft Stefan','Stefan','Google Deutsch','de-DE'],
+    'en-US': ['Google US English Male','Microsoft David','David','Alex','Google US English','en-US'],
   },
 };
+// Słowa kluczowe wskazujące na głos męski — używane do filtrowania fallbacku
+const MALE_VOICE_KEYWORDS = ['male','adam','stefan','david','alex','daniel','jorge','diego','luca','jan','piotr','marcin','pawel','marek','tomasz','andrzej'];
 
 function _pickVoice(lang, role='nav'){
   const cacheKey = lang+'_'+role;
@@ -6456,8 +6458,15 @@ function _pickVoice(lang, role='nav'){
     const v = voices.find(v => v.name.toLowerCase().includes(p.toLowerCase()));
     if(v){ _navVoiceCache[cacheKey]=v; return v; }
   }
-  // fallback: any matching language
-  const v = voices.find(v => v.lang===lang) || voices.find(v => v.lang.startsWith(lang.split('-')[0]));
+  // fallback: matching language — dla nav preferuj żeński, odfiltruj męskie
+  const langBase = lang.split('-')[0];
+  const langVoices = voices.filter(v => v.lang===lang || v.lang.startsWith(langBase));
+  const isMale = v => MALE_VOICE_KEYWORDS.some(k => v.name.toLowerCase().includes(k));
+  const isFemale = v => !isMale(v) && (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('girl') || ['paulina','zofia','monika','maja','lena','hedda','hazel','zira','samantha','anna','sara','sofia','emma'].some(n=>v.name.toLowerCase().includes(n)));
+  const wantFemale = (role==='nav');
+  const v = (wantFemale ? langVoices.find(isFemale) : langVoices.find(isMale))
+         || langVoices.find(v => !isMale(v))
+         || langVoices[0];
   if(v){ _navVoiceCache[cacheKey]=v; return v; }
   return null;
 }
