@@ -7608,6 +7608,38 @@ function setNavSpeed(kmh, limitKmh){
   if(limitKmh > 0) updateSpeedSign(limitKmh);
 }
 
+// ── Right-lane positioning ───────────────────────────────────────────────────
+// Pobiera liczbę pasów z kafli wektorowych Mapbox (OSM lanes tag)
+function _getRoadLanes(lat, lng){
+  try {
+    const pt = map.project([lng, lat]);
+    const feats = map.queryRenderedFeatures(
+      [[pt.x-8, pt.y-8],[pt.x+8, pt.y+8]]
+    ).filter(f => f.sourceLayer === 'road' || f.sourceLayer === 'transportation');
+    if(!feats.length) return 2;
+    const best = feats.find(f => f.properties?.lanes) || feats[0];
+    const l = parseInt(best.properties?.lanes) || 2;
+    return Math.max(1, l);
+  } catch(e){ return 2; }
+}
+
+// Przesuwa pozycję na centrum prawego pasa
+// bearing = kierunek jazdy (stopnie), offsetM = przesunięcie w metrach w prawo
+function _applyRightLaneOffset(lat, lng, bearing){
+  const lanes = _getRoadLanes(lat, lng);
+  // Na autostradzie (≥4 pasy) TIR jedzie 1 pasem od prawej
+  // Na zwykłej drodze (2 pasy) — prawy = 1.75m od środka
+  const laneW = 3.5; // standardowa szerokość pasa [m]
+  const rightLaneCenter = Math.floor(lanes / 2) * laneW - laneW / 2;
+  const offsetM = Math.min(rightLaneCenter, 7.0); // max 7m od środka
+  if(offsetM < 0.5) return {lat, lng};
+  // Prawy prostopadły kierunek: bearing + 90°
+  const rightRad = ((bearing + 90) % 360) * Math.PI / 180;
+  const dLat = Math.cos(rightRad) * offsetM / 111320;
+  const dLng = Math.sin(rightRad) * offsetM / (111320 * Math.cos(lat * Math.PI / 180));
+  return {lat: lat + dLat, lng: lng + dLng};
+}
+
 // Mapbox Map Matching — snap GPS do rzeczywistej drogi (nie tylko do trasy)
 // Buforuje 3 ostatnie punkty GPS, wysyła do API, dostaje pozycję na drodze
 async function _runSnapToRoad(lat, lng){
@@ -7676,9 +7708,11 @@ function onNavPosition(pos){
   // Snap to Road: wyślij GPS do Mapbox Map Matching (async, nie blokuje)
   // Używa ostatniego dobrego wyniku — fallback na route snap gdy API nie odpowiedziało
   _runSnapToRoad(lat, lng);
-  const arrowLat = _strLat ?? snapLat;
-  const arrowLng = _strLng ?? snapLng;
-  setGpsArrow(arrowLat, arrowLng);
+  const baseArrowLat = _strLat ?? snapLat;
+  const baseArrowLng = _strLng ?? snapLng;
+  // Przesuń na prawy pas na podstawie danych OSM z kafli Mapbox
+  const rlo = _applyRightLaneOffset(baseArrowLat, baseArrowLng, navCurrentHeading);
+  setGpsArrow(rlo.lat, rlo.lng);
 
   // Heading: GPS velocity (stabilny podczas jazdy) → delta pozycji → giroskop tylko gdy stoi
   // Google Maps / TomTom standard: kompas NIE jest używany podczas jazdy — zbyt szumny
@@ -7765,8 +7799,8 @@ function onNavPosition(pos){
   }
 
   // Centrum na samochodzie + padding żeby strzałka była w dolnej części widocznej mapy
-  const camLat = _strLat ?? snapLat;
-  const camLng = _strLng ?? snapLng;
+  const camLat = rlo.lat;
+  const camLng = rlo.lng;
   if(!navOverviewMode && !navUserInteracting){
     const navBarH  = document.getElementById('nav-bottom')?.offsetHeight || 100;
     const navCardH = (document.getElementById('nav-maneuver-card')?.offsetHeight || 0)
