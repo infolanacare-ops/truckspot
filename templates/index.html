@@ -6323,8 +6323,8 @@ function distToSegmentM(lat, lng, lat1, lng1, lat2, lng2){
 // Najlepsza prostopadła odległość od użytkownika do trasy wokół indeksu idx
 function perpendicularDistFromRoute(lat, lng, idx){
   if(!routeCoords || routeCoords.length < 2) return 0;
-  const start = Math.max(0, idx - 8);
-  const end   = Math.min(routeCoords.length - 2, idx + 8);
+  const start = Math.max(0, idx - 20);
+  const end   = Math.min(routeCoords.length - 2, idx + 20);
   let minD = Infinity;
   for(let i = start; i <= end; i++){
     const d = distToSegmentM(lat, lng,
@@ -7810,14 +7810,14 @@ function onNavPosition(pos){
   const rerouteCooldown = 15000; // 15s między reroutingami
   if(navDestLat !== null && navSpeedKmh > 5){
     const now = Date.now();
-    if(distFromRoute > 40){      // 40m od trasy = zjechałeś (było 100m)
+    if(distFromRoute > 30){      // 30m od trasy = zjechałeś
       navOffRouteTicks++;
     } else {
       navOffRouteTicks = 0;
       navRerouteWarned = false;
     }
-    if(navOffRouteTicks >= 3 && now - navRerouteTs > rerouteCooldown){
-      // 3 ticki poza trasą → przelicz (było 5)
+    if(navOffRouteTicks >= 2 && now - navRerouteTs > rerouteCooldown){
+      // 2 ticki poza trasą → przelicz
       navOffRouteTicks = 0;
       navRerouteTs = now;
       navRerouteWarned = false;
@@ -7910,6 +7910,7 @@ async function rerouteNavigation(fromLat, fromLng){
     navAnnouncedReports = new Set();
     navOffRouteTicks   = 0;
     navRerouteWarned   = false;
+    _snapEmaLat = null; _snapEmaLng = null; // reset EMA — strzałka skacze od razu na nową trasę
 
     buildRouteDistances();
     clearRouteLayer();
