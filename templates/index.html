@@ -6293,15 +6293,17 @@ let _dcPollTimer = null;
 let _dcLastTs  = 0;
 
 function openDriverChat(toId, name, avatar, color, status){
+  const chat = document.getElementById('driver-chat');
+  if(!chat) return;
   _dcToId = toId;
-  _dcLastTs = Date.now() / 1000 - 300; // załaduj ostatnie 5 min
-  document.getElementById('dc-avatar').textContent = avatar;
-  document.getElementById('dc-avatar').style.background = color;
-  document.getElementById('dc-name').textContent = name;
-  document.getElementById('dc-status').textContent = status;
-  document.getElementById('dc-messages').innerHTML = '';
-  document.getElementById('driver-chat').classList.add('open');
-  document.getElementById('dc-input').focus();
+  _dcLastTs = Date.now() / 1000 - 300;
+  const av = document.getElementById('dc-avatar');
+  if(av){ av.textContent = avatar; av.style.background = color; }
+  const nm = document.getElementById('dc-name');   if(nm) nm.textContent = name;
+  const st = document.getElementById('dc-status'); if(st) st.textContent = status;
+  const ms = document.getElementById('dc-messages'); if(ms) ms.innerHTML = '';
+  chat.classList.add('open');
+  document.getElementById('dc-input')?.focus();
   // Zamknij panel konwoju
   document.getElementById('convoy-panel').classList.remove('open');
   document.getElementById('convoy-panel-backdrop').classList.remove('open');
