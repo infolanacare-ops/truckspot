@@ -6677,8 +6677,9 @@ function startNavigation(){
   navAnnouncedPois=new Set(); navAnnouncedSteps=new Set(); navSpeedKmh=0;
   window._lastPoiAnnounceTs = 0;
   navAnnouncedReports=new Set(); navRerouteWarned=false; navRerouteTs=0; navOffRouteTicks=0;
-  // Usuń istniejącą kropkę GPS — setGpsArrow stworzy strzałkę
+  // Usuń kropkę GPS i od razu pokaż strzałkę nawigacyjną
   if(gpsMarker){ gpsMarker.remove(); gpsMarker=null; }
+  if(userLat && userLng) setGpsArrow(userLat, userLng);
   document.getElementById('nav-overlay').classList.add('active');
   // Inicjuj przeciągalne moduły HUD
   setTimeout(_initSpeedModule, 100);
