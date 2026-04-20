@@ -11676,34 +11676,75 @@ function _showPeerCbBubble(userId, text){
 }
 
 function _peerTap(key){
-  // Pobierz dane peera z presence state
   const state = _presenceCh?.presenceState() || {};
-  const presences = state[key];
-  const p = presences?.[0] || {};
-  const name  = p.name  || 'Kierowca';
-  const emoji = p.emoji || '👤';
+  const p = (state[key]?.[0]) || {};
+  // demo fallback
+  const demo = window._DEMO_PEERS?.find(d=>d.id===key);
+  const name  = p.name  || demo?.name  || 'Kierowca';
+  const emoji = p.emoji || demo?.emoji || '👤';
+  const color = p.color || demo?.color || '#3b82f6';
+  const lastMsg = (() => {
+    const el = document.getElementById('peer-'+key);
+    return el?.querySelector('.peer-cb-bubble')?.textContent?.trim() || null;
+  })();
 
-  // Sheet z opcjami
+  const id = 'peer-sheet-'+Date.now();
   const sheet = document.createElement('div');
-  sheet.style.cssText = 'position:fixed;inset:0;z-index:3200;background:rgba(0,0,0,.55)';
+  sheet.id = id;
+  sheet.style.cssText = 'position:fixed;inset:0;z-index:3200;background:rgba(0,0,0,.6);display:flex;flex-direction:column;justify-content:flex-end';
   sheet.innerHTML = `
-    <div onclick="event.stopPropagation()" style="position:absolute;bottom:0;left:0;right:0;
-      background:var(--panel);border-radius:20px 20px 0 0;padding:1.4rem 1.2rem 2rem">
-      <div style="text-align:center;font-size:2rem;margin-bottom:.3rem">${emoji}</div>
-      <div style="text-align:center;font-weight:800;font-size:1rem;margin-bottom:1.2rem">${name}</div>
-      <button onclick="this.closest('[style*=fixed]').remove(); _openDm('${key}','${name}','${emoji}')"
-        style="width:100%;padding:.9rem;margin-bottom:.6rem;border:none;border-radius:14px;
-        background:var(--blue);color:#fff;font-size:.95rem;cursor:pointer;font-family:var(--font);font-weight:600">
-        💬 Napisz prywatną wiadomość
-      </button>
-      <button onclick="this.closest('[style*=fixed]').remove()"
-        style="width:100%;padding:.75rem;border:none;border-radius:14px;
-        background:transparent;color:var(--muted);font-size:.9rem;cursor:pointer;font-family:var(--font)">
+    <div onclick="event.stopPropagation()" style="
+      background:var(--panel);border-radius:22px 22px 0 0;
+      padding:0 0 calc(1.5rem + env(safe-area-inset-bottom,0px));
+      box-shadow:0 -8px 40px rgba(0,0,0,.5);
+      transform:translateY(100%);transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+      will-change:transform" id="${id}-inner">
+      <div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:10px auto 0"></div>
+      <!-- Avatar + info -->
+      <div style="display:flex;align-items:center;gap:.9rem;padding:1.1rem 1.3rem .8rem">
+        <div style="width:52px;height:52px;border-radius:50%;background:${color};
+          display:flex;align-items:center;justify-content:center;font-size:1.5rem;
+          box-shadow:0 2px 12px ${color}88;flex-shrink:0">${emoji}</div>
+        <div>
+          <div style="font-weight:800;font-size:1rem">${name}</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:.1rem">
+            ${lastMsg ? `💬 "${lastMsg.substring(0,40)}${lastMsg.length>40?'…':''}"` : '🟢 Online'}
+          </div>
+        </div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:0 1.3rem .5rem"></div>
+      <!-- Akcje -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;padding:.5rem 1.3rem">
+        <button onclick="document.getElementById('${id}').remove(); _openDm('${key}','${name}','${emoji}')"
+          style="display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:1rem .5rem;
+          border:none;border-radius:16px;background:var(--blue);color:#fff;cursor:pointer;font-family:var(--font)">
+          <span style="font-size:1.5rem">💬</span>
+          <span style="font-size:.78rem;font-weight:700">Napisz</span>
+        </button>
+        <button onclick="document.getElementById('${id}').remove(); _peerLike('${key}','${name}')"
+          style="display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:1rem .5rem;
+          border:none;border-radius:16px;background:var(--panel2);color:var(--text);cursor:pointer;font-family:var(--font);border:1px solid var(--border)">
+          <span style="font-size:1.5rem">👍</span>
+          <span style="font-size:.78rem;font-weight:700">Kciuk</span>
+        </button>
+      </div>
+      <button onclick="document.getElementById('${id}').remove()"
+        style="width:calc(100% - 2.6rem);margin:.3rem 1.3rem 0;padding:.75rem;border:none;border-radius:14px;
+        background:transparent;color:var(--muted);font-size:.88rem;cursor:pointer;font-family:var(--font)">
         Anuluj
       </button>
     </div>`;
-  sheet.onclick = () => sheet.remove();
+  sheet.onclick = ()=>sheet.remove();
   document.body.appendChild(sheet);
+  // Animacja wjazdu
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    const inner = document.getElementById(id+'-inner');
+    if(inner) inner.style.transform='translateY(0)';
+  }));
+}
+
+function _peerLike(key, name){
+  showAlert('👍', 'Kciuk wysłany!', `Polubiłeś kierowcę ${name}`);
 }
 
 // ══════════════════════════════════════════════════════
