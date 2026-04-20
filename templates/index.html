@@ -11691,14 +11691,15 @@ function _peerTap(key){
   const id = 'peer-sheet-'+Date.now();
   const sheet = document.createElement('div');
   sheet.id = id;
-  sheet.style.cssText = 'position:fixed;inset:0;z-index:3200;background:rgba(0,0,0,.6);display:flex;flex-direction:column;justify-content:flex-end';
+  sheet.style.cssText = 'position:fixed;inset:0;z-index:3200;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:1.5rem';
   sheet.innerHTML = `
     <div onclick="event.stopPropagation()" style="
-      background:var(--panel);border-radius:22px 22px 0 0;
-      padding:0 0 calc(1.5rem + env(safe-area-inset-bottom,0px));
-      box-shadow:0 -8px 40px rgba(0,0,0,.5);
-      transform:translateY(100%);transition:transform .3s cubic-bezier(.34,1.56,.64,1);
-      will-change:transform" id="${id}-inner">
+      width:100%;max-width:320px;
+      background:var(--panel);border-radius:22px;
+      padding:0 0 1rem;
+      box-shadow:0 8px 48px rgba(0,0,0,.6);
+      transform:scale(.85);opacity:0;transition:transform .25s cubic-bezier(.34,1.56,.64,1),opacity .2s;
+      will-change:transform,opacity" id="${id}-inner">
       <div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:10px auto 0"></div>
       <!-- Avatar + info -->
       <div style="display:flex;align-items:center;gap:.9rem;padding:1.1rem 1.3rem .8rem">
@@ -11739,7 +11740,7 @@ function _peerTap(key){
   // Animacja wjazdu
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     const inner = document.getElementById(id+'-inner');
-    if(inner) inner.style.transform='translateY(0)';
+    if(inner){ inner.style.transform='scale(1)'; inner.style.opacity='1'; }
   }));
 }
 
