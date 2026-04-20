@@ -5329,18 +5329,21 @@ function drawRoute(coords, splitIdx){
       return;
     }
 
+    // Znajdź pierwszą warstwę symboli (labele dróg) — trasa idzie POD nią
+    const firstSymbol = map.getStyle().layers.find(l => l.type === 'symbol')?.id;
+
     // ── Przejechana trasa (szara) ─────────────────────────
     map.addSource('ts-route-passed',{type:'geojson',data:geoPassed});
     map.addLayer({id:'ts-passed-casing',type:'line',source:'ts-route-passed',
       layout:{'line-join':'round','line-cap':'round'},
       paint:{'line-color':'#fff','line-width':
         ['interpolate',['linear'],['zoom'],8,8,12,13,16,17],'line-opacity':.35}
-    });
+    }, firstSymbol);
     map.addLayer({id:'ts-passed-line',type:'line',source:'ts-route-passed',
       layout:{'line-join':'round','line-cap':'round'},
       paint:{'line-color':'#6b7280','line-width':
         ['interpolate',['linear'],['zoom'],8,5,12,9,16,13],'line-opacity':.7}
-    });
+    }, firstSymbol);
 
     // ── Pozostała trasa (niebieska, ładna) ────────────────
     map.addSource('ts-route',{type:'geojson',data:geoAhead});
@@ -5351,28 +5354,28 @@ function drawRoute(coords, splitIdx){
       paint:{'line-color':'#006d77',
         'line-width':['interpolate',['linear'],['zoom'],8,12,12,18,16,24],
         'line-opacity':0.18,'line-blur':6}
-    });
+    }, firstSymbol);
     // Ciemna obwódka — odcina trasę od mapy
     map.addLayer({id:'ts-route-casing',type:'line',source:'ts-route',
       layout:{'line-join':'round','line-cap':'round'},
       paint:{'line-color':'#003d44',
         'line-width':['interpolate',['linear'],['zoom'],8,8,12,12,16,16],
         'line-opacity':1}
-    });
+    }, firstSymbol);
     // Główna linia — żywy niebieski
     map.addLayer({id:'ts-route-line',type:'line',source:'ts-route',
       layout:{'line-join':'round','line-cap':'round'},
       paint:{'line-color':'#00838f',
         'line-width':['interpolate',['linear'],['zoom'],8,6,12,10,16,13],
         'line-opacity':0.92}
-    });
+    }, firstSymbol);
     // Biały centralny pasek — efekt "świecącej drogi"
     map.addLayer({id:'ts-route-shine',type:'line',source:'ts-route',
       layout:{'line-join':'round','line-cap':'round'},
       paint:{'line-color':'rgba(255,255,255,0.5)',
         'line-width':['interpolate',['linear'],['zoom'],8,1.5,12,3,16,4.5],
         'line-opacity':1}
-    });
+    }, firstSymbol);
   });
   routeLayer = true;
 }
