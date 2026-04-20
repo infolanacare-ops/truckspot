@@ -10875,6 +10875,15 @@ _SB.auth.getSession().then(({ data: { session } }) => {
 });
 _SB.auth.onAuthStateChange((_event, session) => {
   _onAuthUser(session?.user || null);
+  // wyślij email powitalny przy pierwszym logowaniu przez Google
+  if (_event === 'SIGNED_IN' && session?.user) {
+    const u = session.user;
+    const isGoogle = u.app_metadata?.provider === 'google';
+    const isNew = u.created_at && (Date.now() - new Date(u.created_at).getTime()) < 30000;
+    if (isGoogle && isNew) {
+      fetch('/api/send-welcome', { method: 'POST', headers: { Authorization: 'Bearer ' + session.access_token } }).catch(()=>{});
+    }
+  }
 });
 
 function _onAuthUser(user) {
