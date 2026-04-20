@@ -9857,7 +9857,6 @@ function openAiAssistant(){
     _navMutedByAssistant = true;
     toggleNavMute();
   }
-  _unlockSpeech(); // odblokuj audio w kontekście kliknięcia
   speechSynthesis.cancel();
   const name = profile.name || localStorage.getItem('ts_driver_name') || '';
   const greetings = name ? [
