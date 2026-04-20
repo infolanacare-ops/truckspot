@@ -4075,8 +4075,11 @@ function renderFuelStations(stations){
       <span style="font-size:17px;line-height:1">⛽</span>
       ${pays.length||s.adblue ? `<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:2px;margin-top:1px">${payBadges}${adblueIcon}</div>` : ''}
     </div>`;
-    el.querySelector('div').addEventListener('mouseenter', e=>{ e.currentTarget.style.transform='scale(1.08)'; });
-    el.querySelector('div').addEventListener('mouseleave', e=>{ e.currentTarget.style.transform=''; });
+    const elDiv = el.querySelector('div');
+    if(elDiv){
+      elDiv.addEventListener('mouseenter', e=>{ e.currentTarget.style.transform='scale(1.08)'; });
+      elDiv.addEventListener('mouseleave', e=>{ e.currentTarget.style.transform=''; });
+    }
     el.style.cssText='cursor:pointer;line-height:0;user-select:none;z-index:190';
     const mk = new mapboxgl.Marker({element:el, anchor:'bottom'}).setLngLat([s.lng,s.lat]).addTo(map);
     el.addEventListener('click', ev=>{ ev.stopPropagation(); showFuelStationDetail(s); });
