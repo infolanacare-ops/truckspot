@@ -9871,6 +9871,8 @@ function openAiAssistant(){
   ];
   const greeting = greetings[Math.floor(Math.random() * greetings.length)];
   speakAi(greeting);
+  // Mic startuje po powitaniu — niezależnie czy audio zagrało
+  setTimeout(() => { if(_bgAssistantActive && !window._bgRecognition) startBgListening(); }, 2000);
 }
 
 function startBgListening(){
