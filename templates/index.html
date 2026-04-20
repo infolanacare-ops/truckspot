@@ -5328,8 +5328,14 @@ function drawRoute(coords, splitIdx){
       return;
     }
 
-    // Znajdź pierwszą warstwę symboli (labele dróg) — trasa idzie POD nią
-    const firstSymbol = map.getStyle().layers.find(l => l.type === 'symbol')?.id;
+    // Wstaw trasę tuż przed labelami dróg — powyżej linii dróg, poniżej napisów
+    const _layers = map.getStyle().layers;
+    const firstSymbol = (
+      _layers.find(l => l.id === 'road-label') ||
+      _layers.find(l => l.id === 'road-number-shield') ||
+      _layers.find(l => l.id.includes('road-label')) ||
+      _layers.find(l => l.type === 'symbol')
+    )?.id;
 
     // ── Przejechana trasa (szara) ─────────────────────────
     map.addSource('ts-route-passed',{type:'geojson',data:geoPassed});
@@ -5353,14 +5359,14 @@ function drawRoute(coords, splitIdx){
     map.addLayer({id:'ts-route-casing',type:'line',source:'ts-route',
       layout:{'line-join':'round','line-cap':'round'},
       paint:{'line-color':pal.casing,
-        'line-width':['interpolate',['linear'],['zoom'],8,8,12,12,16,16],
+        'line-width':['interpolate',['linear'],['zoom'],8,10,12,15,16,20],
         'line-opacity':1}
     }, firstSymbol);
     // Główna linia — kolor karty manewru
     map.addLayer({id:'ts-route-line',type:'line',source:'ts-route',
       layout:{'line-join':'round','line-cap':'round'},
-      paint:{'line-color':pal.card,
-        'line-width':['interpolate',['linear'],['zoom'],8,6,12,10,16,13],
+      paint:{'line-color':pal.route,
+        'line-width':['interpolate',['linear'],['zoom'],8,7,12,12,16,16],
         'line-opacity':1}
     }, firstSymbol);
     // Subtelny highlight środkowy
@@ -5990,7 +5996,7 @@ const NAV_SVG_PATHS = {
 // Card background colours
 // Premium palety kolorów nawigacji per tryb
 const NAV_PALETTES = {
-  tir:     { card:'#006d77', strip:'#005560', arrow:'#d4af37', route:'#00838f', casing:'#003d44', glow:'#006d77' },
+  tir:     { card:'#006d77', strip:'#005560', arrow:'#d4af37', route:'#00b4c8', casing:'#004a52', glow:'#006d77' },
   bus:     { card:'#065f46', strip:'#054d38', arrow:'#10b981', route:'#059669', casing:'#023d2e', glow:'#065f46' },
   tourist: { card:'#1e3a5f', strip:'#162d4a', arrow:'#60a5fa', route:'#2563eb', casing:'#0f2340', glow:'#1e3a5f' },
 };
