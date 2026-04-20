@@ -12052,15 +12052,29 @@ function _zoneTap(names){
 // DEMO MODE — przykładowe avatary na mapie
 // ══════════════════════════════════════════════════════
 const _DEMO_PEERS = [
-  { id:'demo-1', name:'Marek TIR',   emoji:'🚛', color:'#3b82f6', msg:'Uwaga! Korek na A1 za Łodzią 🚗' },
-  { id:'demo-2', name:'Ewa Logistyk',emoji:'🚚', color:'#10b981', msg:null },
-  { id:'demo-3', name:'Hans DE',     emoji:'🏎️', color:'#f97316', msg:'Guten Morgen! Kontrola na granicy' },
-  { id:'demo-4', name:'Piotr B.',    emoji:'🛻', color:'#8b5cf6', msg:null },
-  { id:'demo-5', name:'Maria ES',    emoji:'🚌', color:'#ec4899', msg:'Tanie paliwo w Barcelonie ⛽ 1.45€' },
+  { id:'demo-1', name:'Marek TIR',   emoji:'🚛', color:'#3b82f6' },
+  { id:'demo-2', name:'Ewa Logistyk',emoji:'🚚', color:'#10b981' },
+  { id:'demo-3', name:'Hans DE',     emoji:'🏎️', color:'#f97316' },
+  { id:'demo-4', name:'Piotr B.',    emoji:'🛻', color:'#8b5cf6' },
+  { id:'demo-5', name:'Maria ES',    emoji:'🚌', color:'#ec4899' },
+];
+// Pula wiadomości cyklicznych
+const _DEMO_MSGS = [
+  'Uwaga! Korek na A1 za Łodzią 🚗',
+  'Tanie paliwo tutaj ⛽ 6.89 zł',
+  'Kontrola TIR 3km dalej 🚔',
+  'Parking wolne miejsca 🅿️',
+  'Wypadek na DK1, objazd 💥',
+  'Dobra pogoda, jedź! ☀️',
+  'Roboty drogowe, zwolnij 🚧',
+  'Fajny parking z prysznicem 🚿',
+  'Korek się rozładowuje 👍',
+  'Stacja benzynowa zamknięta ⛔',
 ];
 let _demoMarkers  = [];
 let _demoActive   = false;
 let _demoMoveTimer = null;
+let _demoBubbleTimer = null;
 
 function toggleDemoMode(){
   if(_demoActive) _stopDemo(); else _startDemo();
@@ -12070,24 +12084,26 @@ function _startDemo(){
   if(!map) return;
   _demoActive = true;
   const center = map.getCenter();
-  // Rozrzut ~30-80km (1 stopień ≈ 111km)
+  // 2 peery blisko (1-2km) + 3 dalej (30-60km)
   const offsets = [
-    { dlat: 0.45, dlng: 0.55 },
-    { dlat:-0.55, dlng: 0.35 },
-    { dlat: 0.25, dlng:-0.65 },
-    { dlat:-0.35, dlng:-0.45 },
-    { dlat: 0.60, dlng:-0.20 },
+    { dlat: 0.008, dlng: 0.012 },   // ~1km — od razu widoczny
+    { dlat:-0.010, dlng: 0.008 },   // ~1km — od razu widoczny
+    { dlat: 0.45,  dlng: 0.55  },   // ~60km
+    { dlat:-0.35,  dlng:-0.45  },   // ~50km
+    { dlat: 0.60,  dlng:-0.20  },   // ~65km
   ];
   _DEMO_PEERS.forEach((p, i) => {
     const lat = center.lat + offsets[i].dlat;
     const lng = center.lng + offsets[i].dlng;
     const mk = _mkPeerMarker(p.id, { ...p, lat, lng });
     _demoMarkers.push({ mk, lat, lng, peerId: p.id });
-    if(p.msg){
-      setTimeout(() => _showPeerCbBubble(p.id, p.msg), 800 + i * 400);
-    }
+    _peerMarkers[p.id] = mk;
   });
-  // Lekki ruch co 4s
+
+  // Dymki natychmiast
+  _demoShowBubbles();
+
+  // Ruch co 4s
   _demoMoveTimer = setInterval(() => {
     _demoMarkers.forEach(d => {
       d.lat += (Math.random() - 0.5) * 0.006;
@@ -12095,7 +12111,6 @@ function _startDemo(){
       d.mk.setLngLat([d.lng, d.lat]);
       _peerMarkers[d.peerId] = d.mk;
     });
-    // Przelicz strefy z demo peerami
     const snap = {};
     _demoMarkers.forEach(d => {
       const peer = _DEMO_PEERS.find(p => p.id === d.peerId);
@@ -12104,16 +12119,26 @@ function _startDemo(){
     _updateZones(snap);
   }, 4000);
 
-  // Dodaj demo markery do _peerMarkers żeby _showPeerCbBubble działało
-  _demoMarkers.forEach((d, i) => { _peerMarkers[d.peerId] = d.mk; });
+  // Nowe dymki co 7s
+  _demoBubbleTimer = setInterval(_demoShowBubbles, 7000);
 
   _updateDemoBtn();
-  showAlert('🌐','Demo Mode ON','Widzisz przykładowych kierowców na mapie');
+  showAlert('🌐','Metaverse ON','Kierowcy w pobliżu są online!');
+}
+
+function _demoShowBubbles(){
+  // Losuj 2-3 peerów i pokaż im nowe wiadomości
+  const shuffled = [..._DEMO_PEERS].sort(()=>Math.random()-.5).slice(0,3);
+  shuffled.forEach((p, i) => {
+    const msg = _DEMO_MSGS[Math.floor(Math.random()*_DEMO_MSGS.length)];
+    setTimeout(() => _showPeerCbBubble(p.id, msg), i * 300);
+  });
 }
 
 function _stopDemo(){
   _demoActive = false;
   clearInterval(_demoMoveTimer);
+  clearInterval(_demoBubbleTimer);
   _demoMarkers.forEach(d => {
     d.mk.remove();
     delete _peerMarkers[d.peerId];
