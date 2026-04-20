@@ -6302,7 +6302,7 @@ function closestRouteIdx(lat, lng){
 function closestRouteIdxForward(lat, lng, fromIdx){
   if(fromIdx == null || fromIdx < 0 || routeCoords.length === 0)
     return closestRouteIdx(lat, lng);
-  const start = Math.max(0, fromIdx - 5);  // max 5 punktów wstecz — bez dużych skoków
+  const start = fromIdx;  // nigdy wstecz — snap może tylko iść do przodu
   const end   = Math.min(routeCoords.length - 1, fromIdx + 250);
   let minIdx = fromIdx, minD = Infinity;
   for(let i = start; i <= end; i++){
@@ -7591,8 +7591,9 @@ function onNavPosition(pos){
   setNavSpeed(navSpeedKmh, navCurrentSpeedLimit);
 
   // GPS arrow — snap tylko do przodu, nigdy wstecz
-  const cIdx = closestRouteIdxForward(lat, lng, navCIdx);
-  if(cIdx > navCIdx) navCIdx = cIdx; // indeks może tylko rosnąć
+  const rawCIdx = closestRouteIdxForward(lat, lng, navCIdx);
+  if(rawCIdx > navCIdx) navCIdx = rawCIdx; // indeks może tylko rosnąć
+  const cIdx = navCIdx; // projekcja ZAWSZE na aktualny lub dalszy segment, nigdy wstecz
 
   // Segment projection — interpoluj pozycję na odcinku między cIdx a cIdx+1
   // zamiast skakać między dyskretnymi punktami (sub-point precision jak TomTom)
