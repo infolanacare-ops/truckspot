@@ -8626,10 +8626,11 @@ function updateFavsCount(){
   el.style.display = n ? '' : 'none';
 }
 
-function toggleFavParking(p){
+async function toggleFavParking(p){
   let favs = favsLoad();
   const idx = favs.findIndex(f=>String(f.id)===String(p.id));
-  if(idx>=0){
+  const removing = idx >= 0;
+  if(removing){
     favs.splice(idx,1);
     showAlert('🤍','Usunięto z ulubionych','');
   } else {
@@ -8640,6 +8641,23 @@ function toggleFavParking(p){
   favsSave(favs);
   const btn = document.getElementById(`fav-btn-${p.id}`);
   if(btn) btn.textContent = favIsStored(p.id) ? '❤️' : '🤍';
+
+  // Sync z Supabase jeśli zalogowany
+  if(_sbUser){
+    const { data: { session } } = await _SB.auth.getSession();
+    if(!session) return;
+    if(removing){
+      await fetch(`/api/favorites/parking/${p.id}`, {
+        method:'DELETE', headers:{ Authorization:'Bearer '+session.access_token }
+      });
+    } else {
+      await fetch('/api/favorites', {
+        method:'POST',
+        headers:{ Authorization:'Bearer '+session.access_token, 'Content-Type':'application/json' },
+        body: JSON.stringify({ spot_type:'parking', spot_id: p.id })
+      });
+    }
+  }
 }
 
 function openFavsPanel(){
@@ -10933,6 +10951,20 @@ function _loadUserProfile() {
           const nameEl = document.getElementById('drawer-name');
           if (nameEl) nameEl.textContent = p.display_name.toUpperCase();
         }
+      }).catch(() => {});
+    // Załaduj ulubione z Supabase i scal z localStorage
+    fetch('/api/favorites', { headers: { Authorization: 'Bearer ' + session.access_token } })
+      .then(r => r.json()).then(data => {
+        if (!Array.isArray(data)) return;
+        const localFavs = favsLoad();
+        const remoteIds = new Set(data.map(f => String(f.spot_id)));
+        // dodaj brakujące z serwera do localStorage
+        data.forEach(f => {
+          if (!localFavs.some(lf => String(lf.id) === String(f.spot_id))) {
+            localFavs.unshift({ id: f.spot_id, name: f.name||'', city:'', country:'', lat:0, lng:0, ts: Date.now() });
+          }
+        });
+        favsSave(localFavs);
       }).catch(() => {});
   });
 }
