@@ -7873,18 +7873,14 @@ function onNavPosition(pos){
   } else {
     snapLat = lat; snapLng = lng;
   }
-  // Snap to Road: wyślij GPS do Mapbox Map Matching (async, nie blokuje)
-  // Używa ostatniego dobrego wyniku — fallback na route snap gdy API nie odpowiedziało
+  // Strzałka siedzi na linii trasy (route projection) — stabilna, bez async skoków
+  // Map matching odpala w tle tylko dla debug overlay
   _runSnapToRoad(lat, lng);
-  const baseArrowLat = _strLat ?? snapLat;
-  const baseArrowLng = _strLng ?? snapLng;
-  // Przesuń na prawy pas na podstawie danych OSM z kafli Mapbox
-  const rlo = _applyRightLaneOffset(baseArrowLat, baseArrowLng, navCurrentHeading);
-  setGpsArrow(rlo.lat, rlo.lng);
+  setGpsArrow(snapLat, snapLng);
   _updateGpsDebug(
     {lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy},
     {lat, lng},
-    {lat: baseArrowLat, lng: baseArrowLng}
+    {lat: snapLat, lng: snapLng}
   );
 
   // Heading: GPS velocity (stabilny podczas jazdy) → delta pozycji → giroskop tylko gdy stoi
