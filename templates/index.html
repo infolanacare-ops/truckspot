@@ -6399,6 +6399,20 @@ function getBestVoice(lang){
 }
 if(typeof speechSynthesis !== 'undefined'){
   speechSynthesis.onvoiceschanged = () => { _navVoiceCache = {}; };
+  // Android WebView bug: speechSynthesis pauses silently after ~14s
+  // Keep-alive: resume every 5s while navigating
+  setInterval(()=>{
+    if(navActive && !navMuted && speechSynthesis.paused) speechSynthesis.resume();
+  }, 5000);
+}
+
+// Android: TTS wymaga user-gesture — wrap speak() w setTimeout gdy nie ma aktywnej wypowiedzi
+function _safespeak(utt){
+  if(speechSynthesis.speaking || speechSynthesis.pending){
+    speechSynthesis.speak(utt);
+  } else {
+    setTimeout(()=> speechSynthesis.speak(utt), 80);
+  }
 }
 function openVoicePicker(){}
 function closeVoicePicker(){}
@@ -6913,7 +6927,7 @@ function speakNav(txt, priority=false){
   utt.onstart = () => { _navSpeaking = true; };
   utt.onend   = () => { _navSpeaking = false; _navLastEndTs = Date.now(); };
   utt.onerror = () => { _navSpeaking = false; _navLastEndTs = Date.now(); };
-  speechSynthesis.speak(utt);
+  _safespeak(utt);
 }
 
 const AI_NAV_SILENCE_MS = 7000;
@@ -6933,7 +6947,7 @@ function speakAi(txt){
         setTimeout(() => { if(_bgAssistantActive) startBgListening(); }, 400);
       }
     };
-    speechSynthesis.speak(utt);
+    _safespeak(utt);
   };
   const navRecentlySilent = () =>
     !_navSpeaking && !speechSynthesis.speaking &&
@@ -9278,7 +9292,7 @@ function openAiAssistant(){
   const voice = getBestVoice('pl-PL');
   if(voice) utt.voice = voice;
   utt.onend = () => { if(_bgAssistantActive) startBgListening(); };
-  speechSynthesis.speak(utt);
+  _safespeak(utt);
 }
 
 function startBgListening(){
