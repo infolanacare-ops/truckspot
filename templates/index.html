@@ -5291,6 +5291,22 @@ function mkCircleMk(lat, lng, color='#10b981', size=16){
   return new mapboxgl.Marker({element:el, anchor:'center'}).setLngLat([lng,lat]).addTo(map);
 }
 
+// Wygładzanie Chaikina — podcina ostre kąty, płynne zakręty (tylko wizualne)
+function chaikinSmooth(pts, iterations=3){
+  if(pts.length < 3) return pts;
+  let p = pts;
+  for(let it=0; it<iterations; it++){
+    const s = [p[0]];
+    for(let i=0; i<p.length-1; i++){
+      s.push([p[i][0]*0.75 + p[i+1][0]*0.25, p[i][1]*0.75 + p[i+1][1]*0.25]);
+      s.push([p[i][0]*0.25 + p[i+1][0]*0.75, p[i][1]*0.25 + p[i+1][1]*0.75]);
+    }
+    s.push(p[p.length-1]);
+    p = s;
+  }
+  return p;
+}
+
 // Rysuje linię trasy (zastępuje L.polyline)
 let routeCircleMarkers = [];
 function drawRoute(coords, splitIdx){
@@ -5298,8 +5314,8 @@ function drawRoute(coords, splitIdx){
   const ahead   = splitIdx > 0 ? coords.slice(splitIdx) : coords;
   const passed  = splitIdx > 0 ? coords.slice(0, splitIdx + 1) : [];
 
-  const geoAhead  = {type:'Feature',geometry:{type:'LineString',coordinates:ahead}};
-  const geoPassed = {type:'Feature',geometry:{type:'LineString',coordinates:passed.length > 1 ? passed : [[0,0],[0,0]]}};
+  const geoAhead  = {type:'Feature',geometry:{type:'LineString',coordinates:chaikinSmooth(ahead)}};
+  const geoPassed = {type:'Feature',geometry:{type:'LineString',coordinates:passed.length > 1 ? chaikinSmooth(passed) : [[0,0],[0,0]]}};
 
   const waitForStyle = (fn) => map.isStyleLoaded() ? fn() : map.once('style.load', fn);
   waitForStyle(()=>{
@@ -5363,10 +5379,10 @@ function updateTraveledRoute(){
   const ahead  = routeCoords.slice(navCIdx);
   const passed = routeCoords.slice(0, navCIdx + 1);
   map.getSource('ts-route').setData(
-    {type:'Feature',geometry:{type:'LineString',coordinates:ahead.length>1?ahead:[[0,0],[0,0]]}}
+    {type:'Feature',geometry:{type:'LineString',coordinates:ahead.length>1?chaikinSmooth(ahead):[[0,0],[0,0]]}}
   );
   map.getSource('ts-route-passed')?.setData(
-    {type:'Feature',geometry:{type:'LineString',coordinates:passed.length>1?passed:[[0,0],[0,0]]}}
+    {type:'Feature',geometry:{type:'LineString',coordinates:passed.length>1?chaikinSmooth(passed):[[0,0],[0,0]]}}
   );
 }
 
