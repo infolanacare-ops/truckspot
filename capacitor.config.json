@@ -4,7 +4,7 @@
   "webDir": "www",
   "bundledWebRuntime": false,
   "server": {
-    "url": "https://truckspot.onrender.com",
+    "url": "https://truckspot.pl",
     "cleartext": false
   },
   "plugins": {

@@ -5966,6 +5966,7 @@ let navRouteDistances = [];  // cumulative distances along routeCoords
 let navDestLat = null, navDestLng = null; // cel nawigacji (do reroutingu)
 let navDestName = '';
 let navRerouteTs = 0;        // timestamp ostatniego reroutingu (cooldown)
+let _reroutingInProgress = false; // blokada — nie startuj drugiego reroute naraz
 let navRerouteWarned = false; // czy pokazano ostrzeżenie "zawróć"
 let navOffRouteTicks = 0;    // ile kolejnych GPS ticków poza trasą (histereza)
 let navCurrentHeading = 0;   // aktualny kierunek jazdy (stopnie, 0=N) — do reroutingu forward
@@ -7101,7 +7102,8 @@ async function speakNav(txt, priority=false){
     });
     _navSpeaking = true;
     gttsAudio.onended = () => { _navSpeaking=false; _navLastEndTs=Date.now(); };
-    gttsAudio.play().catch(()=>{});
+    gttsAudio.onerror = () => { _navSpeaking=false; };
+    gttsAudio.play().catch(()=>{ _navSpeaking=false; });
     return;
   } catch(e){ /* google tts niedostępne */ }
 
@@ -7811,7 +7813,6 @@ async function _runSnapToRoad(lat, lng){
   if(_strBuf.length < 2) return;
   if(_strPending) return; // request w toku — użyj ostatniego dobrego wyniku
   _strPending = true;
-  // Snapshot bufora — kolejne punkty nie nadpiszą tego wywołania
   const bufSnapshot = [..._strBuf];
   try {
     const coords   = bufSnapshot.map(p => p.join(',')).join(';');
@@ -7819,15 +7820,15 @@ async function _runSnapToRoad(lat, lng){
     const url = `https://api.mapbox.com/matching/v5/mapbox/driving/${coords}?geometries=geojson&radiuses=${radiuses}&steps=false&overview=false&access_token=${MAPBOX_TOKEN}`;
     const r = await fetch(url, {signal: AbortSignal.timeout(3000)});
     const d = await r.json();
-    // Ostatni non-null tracepoint = aktualna pozycja na drodze
     if(d.tracepoints){
       for(let i = d.tracepoints.length - 1; i >= 0; i--){
         const tp = d.tracepoints[i];
         if(tp?.location){ _strLat = tp.location[1]; _strLng = tp.location[0]; break; }
       }
     }
-  } catch(e){}
-  _strPending = false;
+  } catch(e){} finally {
+    _strPending = false; // zawsze odblokuj, nawet gdy JSON crashuje
+  }
 }
 
 function onNavPosition(pos){
@@ -8161,6 +8162,9 @@ function _findRoutePointAheadM(metres){
 }
 
 async function rerouteNavigation(fromLat, fromLng){
+  if(_reroutingInProgress) return;
+  if(navDestLat === null || navDestLng === null) return;
+  _reroutingInProgress = true;
   const heading = navCurrentHeading;
   setEl('nav-street-name', currentLang==='pl' ? '🔄 Przeliczam trasę...' : '🔄 Recalculating...');
 
@@ -8247,6 +8251,8 @@ async function rerouteNavigation(fromLat, fromLng){
     console.error('[Nav] Reroute failed:', e);
     setEl('nav-street-name', '⚠️ Błąd trasy – brak sieci?');
     speakNav(currentLang==='pl' ? 'Błąd przeliczania trasy.' : 'Route error.', true);
+  } finally {
+    _reroutingInProgress = false;
   }
 }
 
