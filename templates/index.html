@@ -5913,14 +5913,44 @@ function closeNavSheet(){
   document.getElementById('nav-hamburger')?.classList.remove('open');
 }
 
-// ── Voice — wyłączony, własny TTS w przyszłości ──────────────────────────────
 let navMuted = false;
-function toggleNavMute(){}
-function stripForTts(txt){ return (txt||'').replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}]/gu,'').replace(/\s+/g,' ').trim(); }
+function toggleNavMute(){
+  navMuted = !navMuted;
+  if(navMuted) speechSynthesis.cancel();
+}
+function stripForTts(txt){
+  return (txt||'').replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}]/gu,'').replace(/[⚠️🔄↩🏁·•]/g,'').replace(/\s+/g,' ').trim();
+}
+const VOICE_STORAGE_KEY = 'ts_nav_voice';
+let _selectedVoiceName = localStorage.getItem(VOICE_STORAGE_KEY) || null;
+let _navVoiceCache = {};
+function getBestVoice(lang){
+  if(_selectedVoiceName){
+    const found = speechSynthesis.getVoices().find(v => v.name === _selectedVoiceName);
+    if(found) return found;
+  }
+  if(_navVoiceCache[lang]) return _navVoiceCache[lang];
+  const voices = speechSynthesis.getVoices();
+  if(!voices.length) return null;
+  const preferred = {
+    'pl-PL': ['Google polski','Microsoft Paulina','Polish','pl'],
+    'de-DE': ['Google Deutsch','Microsoft Hedda','German','de'],
+    'en-US': ['Google US English','Microsoft Zira','Microsoft David','en-US'],
+  };
+  for(const p of (preferred[lang]||[])){
+    const v = voices.find(v => v.name.toLowerCase().includes(p.toLowerCase()) && v.lang.startsWith(lang.split('-')[0]));
+    if(v){ _navVoiceCache[lang]=v; return v; }
+  }
+  const v = voices.find(v => v.lang === lang) || voices.find(v => v.lang.startsWith(lang.split('-')[0]));
+  if(v){ _navVoiceCache[lang]=v; return v; }
+  return null;
+}
+if(typeof speechSynthesis !== 'undefined'){
+  speechSynthesis.onvoiceschanged = () => { _navVoiceCache = {}; };
+}
 function openVoicePicker(){}
 function closeVoicePicker(){}
 function updateVoiceBadge(){}
-function getBestVoice(){ return null; }
 function _fillVoiceList(){}
 
 // ══════════════════════════════════════
@@ -6410,9 +6440,54 @@ function clearConvoyMsgBadge(){
 let _navSpeaking = false;
 let _navLastEndTs = 0; // timestamp ostatniej zakończonej komendy nawi
 
-function speakNav(){}
+function speakNav(txt, priority=false){
+  if(navMuted) return;
+  if(!('speechSynthesis' in window)) return;
+  const clean = stripForTts(txt);
+  if(!clean) return;
+  if(priority) speechSynthesis.cancel();
+  const lang = currentLang==='pl'?'pl-PL':currentLang==='de'?'de-DE':currentLang==='es'?'es-ES':'en-US';
+  const utt = new SpeechSynthesisUtterance(clean);
+  utt.lang = lang; utt.rate = 0.92; utt.pitch = 1.0; utt.volume = 1.0;
+  const voice = getBestVoice(lang);
+  if(voice) utt.voice = voice;
+  utt.onstart = () => { _navSpeaking = true; };
+  utt.onend   = () => { _navSpeaking = false; _navLastEndTs = Date.now(); };
+  utt.onerror = () => { _navSpeaking = false; _navLastEndTs = Date.now(); };
+  speechSynthesis.speak(utt);
+}
+
 const AI_NAV_SILENCE_MS = 7000;
-function speakAi(){}
+function speakAi(txt){
+  if(navMuted) return;
+  if(!('speechSynthesis' in window)) return;
+  const clean = stripForTts(txt);
+  if(!clean) return;
+  const lang = currentLang==='pl'?'pl-PL':currentLang==='de'?'de-DE':currentLang==='es'?'es-ES':'en-US';
+  const _do = () => {
+    const utt = new SpeechSynthesisUtterance(clean);
+    utt.lang = lang; utt.rate = 0.92; utt.pitch = 1.0; utt.volume = 1.0;
+    const voice = getBestVoice(lang);
+    if(voice) utt.voice = voice;
+    utt.onend = () => {
+      if(_bgAssistantActive && !window._bgRecognition){
+        setTimeout(() => { if(_bgAssistantActive) startBgListening(); }, 400);
+      }
+    };
+    speechSynthesis.speak(utt);
+  };
+  const navRecentlySilent = () =>
+    !_navSpeaking && !speechSynthesis.speaking &&
+    (Date.now() - _navLastEndTs) >= AI_NAV_SILENCE_MS;
+  if(_navLastEndTs === 0 && !_navSpeaking && !speechSynthesis.speaking){ return _do(); }
+  let tries = 0;
+  const wait = () => {
+    if(tries++ > 60) return;
+    if(!navRecentlySilent()) return setTimeout(wait, 700);
+    _do();
+  };
+  setTimeout(wait, 700);
+}
 
 // ── Lane guidance — SVG arrows ────────────────────────────────────────────────
 // Strzałki pasów — grube, wypełnione path, TomTom truck style
@@ -7211,7 +7286,7 @@ function onNavPosition(pos){
   if(activeFilters.size > 0){
     const now2 = Date.now();
     if(!window._lastPoiAnnounceTs) window._lastPoiAnnounceTs = 0;
-    if(now2 - window._lastPoiAnnounceTs >= 45000){
+    if(now2 - window._lastPoiAnnounceTs >= 45000 && !speechSynthesis.speaking){
       for(const p of getFilteredNavPois()){
         if(navAnnouncedPois.has(p.id)) continue;
         const d = haversineKm(lat, lng, p.lat, p.lng);
@@ -8738,7 +8813,15 @@ function openAiAssistant(){
     _navMutedByAssistant = true;
     toggleNavMute();
   }
-  startBgListening();
+  speechSynthesis.cancel();
+  const name = profile.name || localStorage.getItem('ts_driver_name') || '';
+  const greeting = name ? `Hej ${name}, słucham!` : `Słucham, mów!`;
+  const utt = new SpeechSynthesisUtterance(greeting);
+  utt.lang = 'pl-PL'; utt.rate = 0.92;
+  const voice = getBestVoice('pl-PL');
+  if(voice) utt.voice = voice;
+  utt.onend = () => { if(_bgAssistantActive) startBgListening(); };
+  speechSynthesis.speak(utt);
 }
 
 function startBgListening(){
@@ -8761,7 +8844,7 @@ function startBgListening(){
 
   rec.onresult = e => {
     // Ignoruj gdy AI mówi lub przetwarza
-    if(_aiProcessing) return;
+    if(speechSynthesis.speaking || _aiProcessing) return;
     const last = e.results[e.results.length - 1];
     if(!last.isFinal) return;
     const transcript = last[0].transcript.trim();
@@ -8784,7 +8867,10 @@ function startBgListening(){
     window._bgRecognition = null;
     if(!_bgAssistantActive) return;
     // Poczekaj aż AI skończy mówić, potem wznów
-    const resume = () => { if(_bgAssistantActive) startBgListening(); };
+    const resume = () => {
+      if(speechSynthesis.speaking) return setTimeout(resume, 600);
+      if(_bgAssistantActive) startBgListening();
+    };
     setTimeout(resume, 600);
   };
 
@@ -9259,6 +9345,10 @@ function tachoToggle(){
     tachoState.segStart = now;
     stopTachoTick();
     showAlert('☕','Przerwa','Jedź po przerwie 45 min');
+    if('speechSynthesis' in window){
+      const u=new SpeechSynthesisUtterance(currentLang==='pl'?'Przerwa. Odpoczywaj 45 minut.':'Break time. Rest for 45 minutes.');
+      u.lang=currentLang==='pl'?'pl-PL':'en-US'; speechSynthesis.speak(u);
+    }
   } else if(tachoState.mode === 'breaking'){
     // End break → drive
     const elapsed = (now - tachoState.segStart) / 1000;
@@ -9292,6 +9382,10 @@ function tachoStartTick(){
     if(driven >= TACHO_LIMIT_S){
       clearInterval(tachoInterval);
       showAlert('🛑','STOP — wymagana przerwa!','45 min odpoczynku');
+      if('speechSynthesis' in window){
+        const u=new SpeechSynthesisUtterance(currentLang==='pl'?'Uwaga! Wymagana przerwa 45 minut.':'Alert! Mandatory 45-minute break required.');
+        u.lang=currentLang==='pl'?'pl-PL':'en-US'; speechSynthesis.speak(u);
+      }
     }
   }, 1000);
 }
