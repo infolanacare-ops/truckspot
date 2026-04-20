@@ -7829,17 +7829,14 @@ function onNavPosition(pos){
       navRerouteWarned = false;
     }
     if(navOffRouteTicks >= 2 && now - navRerouteTs > rerouteCooldown){
-      // 2 ticki poza trasą → przelicz
+      // 2 ticki poza trasą → głosowe "Zawróć!" + natychmiastowe przeliczenie
       navOffRouteTicks = 0;
       navRerouteTs = now;
       navRerouteWarned = false;
+      speakNav(currentLang==='pl' ? 'Zawróć! Przeliczam trasę.' : 'Make a U-turn. Recalculating.', true);
+      setEl('nav-street-name', currentLang==='pl' ? '🔄 Przeliczam trasę...' : '🔄 Recalculating...');
       rerouteNavigation(lat, lng);
       return;
-    } else if(navOffRouteTicks >= 2 && !navRerouteWarned && now - navRerouteTs > rerouteCooldown){
-      // 2 ticki → ostrzeżenie głosowe
-      navRerouteWarned = true;
-      speakNav(currentLang==='pl' ? 'Zboczyłeś z trasy. Przeliczam...' : 'Off route. Recalculating...', true);
-      setEl('nav-street-name', currentLang==='pl' ? '🔄 Przeliczam trasę' : '🔄 Recalculating');
     }
   }
 
@@ -7953,19 +7950,19 @@ async function rerouteNavigation(fromLat, fromLng){
     setEl('nav-total-dist', Math.round(routeTotalDist/1000)+' km');
     setNavEta(routeTotalDur);
 
-    // TomTom-style komunikat:
-    // • znalazł lepszą trasę → informuje ile minut zaoszczędzi
-    // • trasa podobna lub dłuższa → cicha aktualizacja bez mówienia "zawróć"
+    // Po przeliczeniu: zawsze informuj że prowadzi z bieżącej pozycji
+    // przy skrócie (≥2 min oszczędności) dodatkowo podaj zysk czasowy
     const savedMin = Math.round((oldDur - routeTotalDur) / 60);
     if(savedMin >= 2){
       const msg = currentLang==='pl'
-        ? `Znalazłem lepszą trasę. Oszczędność ${savedMin} minut.`
-        : `Better route found. Save ${savedMin} minutes.`;
+        ? `Znalazłem skrót. Oszczędzasz ${savedMin} minut.`
+        : `Shortcut found. Save ${savedMin} minutes.`;
       speakNav(msg, true);
     } else {
-      // Cicha aktualizacja — tylko krótki sygnał w UI, brak "zawracaj"
-      const msg = currentLang==='pl' ? 'Trasa zaktualizowana' : 'Route updated';
-      setEl('nav-street-name', msg);
+      const msg = currentLang==='pl'
+        ? 'Prowadzę z bieżącej pozycji.'
+        : 'Navigating from current position.';
+      speakNav(msg, false);
     }
 
   } catch(e) {
