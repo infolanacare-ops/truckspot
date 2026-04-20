@@ -5275,7 +5275,7 @@ function setGpsArrow(lat, lng){
   if(_markerAnimId){ cancelAnimationFrame(_markerAnimId); _markerAnimId = null; }
   const cur = gpsMarker.getLngLat();
   const fromLat = cur.lat, fromLng = cur.lng;
-  const dur = 100;
+  const dur = 850;
   const t0 = performance.now();
   function lerpStep(now){
     const p = Math.min((now - t0) / dur, 1);
@@ -7934,7 +7934,7 @@ function onNavPosition(pos){
     snapLat = lat; snapLng = lng;
   }
   // EMA wygładzenie snap pozycji — eliminuje drgania strzałki między tickami GPS
-  const EMA_A = 0.6;
+  const EMA_A = 0.4;
   if(_snapEmaLat === null){ _snapEmaLat = snapLat; _snapEmaLng = snapLng; }
   _snapEmaLat = EMA_A * snapLat + (1 - EMA_A) * _snapEmaLat;
   _snapEmaLng = EMA_A * snapLng + (1 - EMA_A) * _snapEmaLng;
