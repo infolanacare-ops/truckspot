@@ -4176,12 +4176,12 @@ async function showDetail(p){
   fetchWeather(p.lat, p.lng).then(w=>{
     const el = document.getElementById('pd-weather');
     if(el) el.innerHTML = weatherHtml(w);
-  });
+  }).catch(()=>{});
   loadOccupancy(p.id);
   loadComments(p.id).then(comments=>{
     const el = document.getElementById('pd-comments');
     if(el) el.innerHTML = commentsHtml(comments, p.id);
-  });
+  }).catch(()=>{ const el=document.getElementById('pd-comments'); if(el) el.innerHTML=''; });
 }
 
 function showOsmDetail(p){
