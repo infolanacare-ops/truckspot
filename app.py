@@ -104,7 +104,8 @@ VAPID_EMAIL       = os.environ.get("VAPID_EMAIL", "mailto:admin@truckspot.app")
 MAPBOX_TOKEN      = os.environ.get("MAPBOX_TOKEN", "")
 
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-OPENAI_TTS_VOICE = os.environ.get("OPENAI_TTS_VOICE", "nova")  # nova = żeński, naturalny
+OPENAI_TTS_VOICE = os.environ.get("OPENAI_TTS_VOICE", "nova")
+GOOGLE_TTS_KEY = os.environ.get("GOOGLE_TTS_KEY", "")
 TTS_CACHE_DIR        = os.path.join(os.path.dirname(__file__), "static", "audio", "nav")
 os.makedirs(TTS_CACHE_DIR, exist_ok=True)
 
@@ -1432,34 +1433,50 @@ def api_ai_chat():
 
 @app.route("/api/tts", methods=["POST"])
 def api_tts():
-    """OpenAI TTS z cache'owaniem. Zwraca URL do MP3."""
-    if not OPENAI_API_KEY:
-        return jsonify({"error": "no_key"}), 503
-
+    """Google Cloud TTS (Wavenet) z cache'owaniem. Zwraca URL do MP3."""
     data = request.get_json(force=True, silent=True) or {}
     text = (data.get("text") or "").strip()[:300]
+    lang = (data.get("lang") or "pl-PL")[:10]
     if not text:
         return jsonify({"error": "empty"}), 400
 
-    cache_key  = hashlib.md5(f"openai:{OPENAI_TTS_VOICE}:{text}".encode()).hexdigest()
+    # dobierz głos Wavenet do języka
+    voice_map = {
+        "pl-PL": ("pl-PL-Wavenet-E", "FEMALE"),
+        "de-DE": ("de-DE-Wavenet-F", "FEMALE"),
+        "en-US": ("en-US-Wavenet-F", "FEMALE"),
+        "en-GB": ("en-GB-Wavenet-A", "FEMALE"),
+        "es-ES": ("es-ES-Wavenet-C", "FEMALE"),
+    }
+    voice_name, gender = voice_map.get(lang, ("pl-PL-Wavenet-E", "FEMALE"))
+
+    cache_key  = hashlib.md5(f"gcloud:{voice_name}:{text}".encode()).hexdigest()
     cache_file = os.path.join(TTS_CACHE_DIR, f"{cache_key}.mp3")
     cache_url  = f"/static/audio/nav/{cache_key}.mp3"
 
     if os.path.exists(cache_file):
         return jsonify({"url": cache_url, "cached": True})
 
+    if not GOOGLE_TTS_KEY:
+        return jsonify({"error": "no_key"}), 503
+
     try:
         resp = _requests.post(
-            "https://api.openai.com/v1/audio/speech",
-            headers={"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"},
-            json={"model": "tts-1", "voice": OPENAI_TTS_VOICE, "input": text},
+            f"https://texttospeech.googleapis.com/v1/text:synthesize?key={GOOGLE_TTS_KEY}",
+            json={
+                "input": {"text": text},
+                "voice": {"languageCode": lang, "name": voice_name, "ssmlGender": gender},
+                "audioConfig": {"audioEncoding": "MP3", "speakingRate": 1.0, "pitch": 0}
+            },
             timeout=10
         )
         if resp.status_code != 200:
-            return jsonify({"error": "openai_error", "status": resp.status_code}), 502
+            return jsonify({"error": "google_tts_error", "status": resp.status_code}), 502
 
+        import base64
+        audio_content = base64.b64decode(resp.json()["audioContent"])
         with open(cache_file, "wb") as f:
-            f.write(resp.content)
+            f.write(audio_content)
 
         return jsonify({"url": cache_url, "cached": False})
 
