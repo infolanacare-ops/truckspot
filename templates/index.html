@@ -7806,18 +7806,21 @@ function _applyRightLaneOffset(lat, lng, bearing){
 }
 
 // Mapbox Map Matching — snap GPS do rzeczywistej drogi (nie tylko do trasy)
-// Buforuje 3 ostatnie punkty GPS, wysyła do API, dostaje pozycję na drodze
+// Buforuje 4 ostatnie punkty GPS, wysyła do API, dostaje pozycję na drodze
 async function _runSnapToRoad(lat, lng){
-  if(_strPending) return;
+  // Zawsze buforuj punkt — nawet gdy request jest w toku
   _strBuf.push([lng, lat]);
-  if(_strBuf.length > 3) _strBuf.shift();
+  if(_strBuf.length > 4) _strBuf.shift();
   if(_strBuf.length < 2) return;
+  if(_strPending) return; // request w toku — użyj ostatniego dobrego wyniku
   _strPending = true;
+  // Snapshot bufora — kolejne punkty nie nadpiszą tego wywołania
+  const bufSnapshot = [..._strBuf];
   try {
-    const coords   = _strBuf.map(p => p.join(',')).join(';');
-    const radiuses = _strBuf.map(() => '25').join(';');
+    const coords   = bufSnapshot.map(p => p.join(',')).join(';');
+    const radiuses = bufSnapshot.map(() => '40').join(';');
     const url = `https://api.mapbox.com/matching/v5/mapbox/driving/${coords}?geometries=geojson&radiuses=${radiuses}&steps=false&overview=false&access_token=${MAPBOX_TOKEN}`;
-    const r = await fetch(url);
+    const r = await fetch(url, {signal: AbortSignal.timeout(3000)});
     const d = await r.json();
     // Ostatni non-null tracepoint = aktualna pozycja na drodze
     if(d.tracepoints){
