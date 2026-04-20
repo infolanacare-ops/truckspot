@@ -8076,21 +8076,20 @@ function onNavPosition(pos){
 
   // ── Off-route detection (TomTom-style: prostopadła odległość + histereza) ──
   const distFromRoute = perpendicularDistFromRoute(lat, lng, cIdx);
-  const rerouteCooldown = 15000; // 15s między reroutingami
-  if(navDestLat !== null && navSpeedKmh > 2){
+  const rerouteCooldown = 12000; // 12s między reroutingami
+  if(navDestLat !== null){
     const now = Date.now();
-    if(distFromRoute > 30){      // 30m od trasy = zjechałeś
+    if(distFromRoute > 40){      // 40m od trasy = zjechałeś
       navOffRouteTicks++;
     } else {
       navOffRouteTicks = 0;
       navRerouteWarned = false;
     }
-    if(navOffRouteTicks >= 2 && now - navRerouteTs > rerouteCooldown){
-      // 2 ticki poza trasą → głosowe "Zawróć!" + natychmiastowe przeliczenie
+    if(navOffRouteTicks >= 3 && now - navRerouteTs > rerouteCooldown){
       navOffRouteTicks = 0;
       navRerouteTs = now;
       navRerouteWarned = false;
-      speakNav(currentLang==='pl' ? 'Zawróć! Przeliczam trasę.' : 'Make a U-turn. Recalculating.', true);
+      speakNav(currentLang==='pl' ? 'Przeliczam trasę.' : 'Recalculating.', true);
       setEl('nav-street-name', currentLang==='pl' ? '🔄 Przeliczam trasę...' : '🔄 Recalculating...');
       rerouteNavigation(lat, lng);
       return;
@@ -8174,19 +8173,11 @@ async function rerouteNavigation(fromLat, fromLng){
   const heading = navCurrentHeading;
   setEl('nav-street-name', currentLang==='pl' ? '🔄 Przeliczam trasę...' : '🔄 Recalculating...');
 
-  // Forward reroute: current → punkt na oryginalnej trasie PRZED użytkownikiem → cel
-  // Mapbox samodzielnie znajdzie najbliższe skrzyżowanie/rondo między tymi punktami
-  // Minimalna odległość zależy od prędkości — czas na wykonanie manewru
-  const minAheadM = Math.max(350, navSpeedKmh * 6); // 350m min, przy 90km/h = 540m
-  const aheadIdx  = _findRoutePointAheadM(minAheadM);
-
   const fromStr = `${fromLng},${fromLat}`;
   const destStr = `${navDestLng},${navDestLat}`;
-
-  // Buduj URL: 2-punktowy (fallback) lub 3-punktowy (forward)
-  const coordStr = aheadIdx !== null
-    ? `${fromStr};${routeCoords[aheadIdx][0]},${routeCoords[aheadIdx][1]};${destStr}`
-    : `${fromStr};${destStr}`;
+  // Prosty direct reroute: current → cel
+  // Mapbox znajdzie optymalną trasę uwzględniając kierunek jazdy (bearing)
+  const coordStr = `${fromStr};${destStr}`;
 
   try {
     const mbUrl = buildRouteUrl(coordStr, heading);
