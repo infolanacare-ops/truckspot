@@ -6926,6 +6926,19 @@ let _navLastEndTs = 0; // timestamp ostatniej zakończonej komendy nawi
 // ── ElevenLabs TTS engine ─────────────────────────────────────────────────────
 let _elAudio = null;  // aktywny element Audio
 let _elQueue = [];    // kolejka fraz do odtworzenia
+let _audioUnlocked = false;
+
+// Odblokuj HTML5 Audio — musi być wywołane w user gesture context (klik przycisku)
+// Android Chrome blokuje audio.play() z callbacków GPS (brak user gesture)
+function _unlockAudio(){
+  if(_audioUnlocked) return;
+  try {
+    // Cichy WAV (44 bajty, 0 sampli) — tylko żeby przebudzić autoplay policy
+    const a = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+    a.volume = 0;
+    a.play().then(()=>{ _audioUnlocked = true; a.pause(); }).catch(()=>{});
+  } catch(e){}
+}
 
 function _elPlayNext(){
   if(_elQueue.length === 0){ _navSpeaking = false; _navLastEndTs = Date.now(); return; }
@@ -7199,6 +7212,7 @@ function _updateSpeedModuleBtn(){
 
 function startNavigation(){
   if(!routeSteps.length){ showAlert('⚠️','','Najpierw oblicz trasę'); return; }
+  _unlockAudio(); // odblokuj HTML5 Audio w user gesture context — kluczowe dla Android
   navActive=true; navStepIdx=0; navCIdx=0; navLastLat=null; navLastLng=null;
   _smoothBearing=null; _navLockedZoom=null; _zuptSnapLat=null; _zuptSnapLng=null;
   _snapEmaLat=null; _snapEmaLng=null;
