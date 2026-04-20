@@ -5274,7 +5274,7 @@ function setGpsArrow(lat, lng){
   if(_markerAnimId){ cancelAnimationFrame(_markerAnimId); _markerAnimId = null; }
   const cur = gpsMarker.getLngLat();
   const fromLat = cur.lat, fromLng = cur.lng;
-  const dur = 350;
+  const dur = 100;
   const t0 = performance.now();
   function lerpStep(now){
     const p = Math.min((now - t0) / dur, 1);
