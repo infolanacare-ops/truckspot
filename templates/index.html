@@ -5903,6 +5903,7 @@ function clearRoute(){
 // ══════════════════════════════════════
 let navActive=false, navWatchId=null, navStepIdx=0, navLastLat=null, navLastLng=null;
 let navSpeedKmh = 0;
+let _lastNavTickTs = 0; // timestamp poprzedniego GPS ticka — do obliczania prędkości z delty
 let _zuptSnapLat = null, _zuptSnapLng = null; // ZUPT: pozycja zamrożona gdy < 1 km/h
 let _snapEmaLat = null, _snapEmaLng = null;   // EMA wygładzenie snap pozycji (lewo/prawo)
 let _navLockedZoom = null; // Zoom lock: zamrożony zoom gdy < 5 km/h (TomTom standard)
@@ -7576,7 +7577,15 @@ function onNavPosition(pos){
   if(!navActive) return;
   const lat=pos.coords.latitude, lng=pos.coords.longitude;
   const rawSpeed = pos.coords.speed; // m/s or null
-  navSpeedKmh = rawSpeed != null ? Math.round(rawSpeed*3.6) : navSpeedKmh;
+  if(rawSpeed != null){
+    navSpeedKmh = Math.round(rawSpeed * 3.6);
+  } else if(navLastLat != null && _lastNavTickTs > 0){
+    // Fallback: prędkość z delty pozycji — gdy GPS nie zwraca speed (niektóre Android)
+    const dKm = haversineKm(lat, lng, navLastLat, navLastLng);
+    const dtH = (Date.now() - _lastNavTickTs) / 3600000;
+    if(dtH > 0) navSpeedKmh = Math.min(Math.round(dKm / dtH), 200);
+  }
+  _lastNavTickTs = Date.now();
   setNavSpeed(navSpeedKmh, navCurrentSpeedLimit);
 
   // GPS arrow — snap tylko do przodu, nigdy wstecz
@@ -7808,7 +7817,7 @@ function onNavPosition(pos){
   // ── Off-route detection (TomTom-style: prostopadła odległość + histereza) ──
   const distFromRoute = perpendicularDistFromRoute(lat, lng, cIdx);
   const rerouteCooldown = 15000; // 15s między reroutingami
-  if(navDestLat !== null && navSpeedKmh > 5){
+  if(navDestLat !== null && navSpeedKmh > 2){
     const now = Date.now();
     if(distFromRoute > 30){      // 30m od trasy = zjechałeś
       navOffRouteTicks++;
