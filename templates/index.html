@@ -2786,12 +2786,12 @@ body.navigating .convoy-btn{display:none}
 <!-- SIDE DRAWER -->
 <div class="drawer" id="drawer">
   <div class="drawer-header">
-    <div class="profile-row" onclick="closeDrawer();setTimeout(openProfile,300)">
+    <div class="profile-row" onclick="_sbUser ? (closeDrawer(),setTimeout(openProfile,300)) : (closeDrawer(),setTimeout(openAuthModal,200))">
       <div class="avatar" id="drawer-avatar">🚛</div>
       <div>
         <div class="profile-name" id="drawer-name">TRUCKER</div>
-        <div class="profile-sub" id="drawer-mode-sub">Mode: TIR</div>
-        <div class="avatar-edit-hint">✏️ Edytuj profil</div>
+        <div class="profile-sub" id="drawer-mode-sub">Zaloguj się →</div>
+        <div class="avatar-edit-hint" id="drawer-profile-hint">✏️ Edytuj profil</div>
       </div>
     </div>
     <div class="stats-row">
@@ -2843,6 +2843,13 @@ body.navigating .convoy-btn{display:none}
 
     <div class="menu-item" onclick="drawerAction('lang')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span></div><span class="menu-label" data-i="menu_lang">Language</span></div>
     <div class="menu-item" onclick="drawerAction('mode')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span></div><span class="menu-label" data-i="menu_mode">Change mode</span></div>
+    <div class="menu-sep"></div>
+    <div id="auth-menu-item" class="menu-item" onclick="closeDrawer();setTimeout(_sbUser?_authSignOut:openAuthModal,200)">
+      <div class="menu-icon" style="background:rgba(0,180,200,.12);border-color:#00b4c8">
+        <span class="si"><svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg></span>
+      </div>
+      <span class="menu-label" id="auth-menu-label">Zaloguj się</span>
+    </div>
   </div>
 </div>
 
@@ -3596,6 +3603,7 @@ body.navigating .convoy-btn{display:none}
   <button class="alert-close" onclick="closeAlert()">✕</button>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
 <script>mapboxgl.accessToken='{{ mapbox_token }}';</script>
 <script>
@@ -10818,6 +10826,165 @@ if(savedMode && savedProfile){
   // lang set, skip to login
   goToStep('step-login');
 }
+</script>
+
+<!-- ── AUTH MODAL ──────────────────────────────────────────────────────────── -->
+<div id="auth-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.75);display:flex;align-items:flex-end;justify-content:center">
+  <div style="background:#1a1f2e;border-radius:24px 24px 0 0;padding:32px 24px 40px;width:100%;max-width:480px;box-shadow:0 -8px 40px rgba(0,0,0,.5)">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:2rem;margin-bottom:8px">🚛</div>
+      <div style="font-size:1.3rem;font-weight:700;color:#fff" id="auth-title">Zaloguj się do TruckSpot</div>
+      <div style="font-size:.85rem;color:#94a3b8;margin-top:4px" id="auth-sub">Twoje trasy, ulubione miejsca i historia AI</div>
+    </div>
+
+    <div id="auth-error" style="display:none;background:#ef444422;border:1px solid #ef4444;border-radius:10px;padding:10px 14px;color:#fca5a5;font-size:.85rem;margin-bottom:16px"></div>
+
+    <input id="auth-email" type="email" placeholder="E-mail" autocomplete="email"
+      style="width:100%;box-sizing:border-box;background:#0f1623;border:1px solid #334155;border-radius:12px;padding:14px 16px;color:#fff;font-size:1rem;margin-bottom:12px;outline:none">
+    <input id="auth-password" type="password" placeholder="Hasło (min. 6 znaków)" autocomplete="current-password"
+      style="width:100%;box-sizing:border-box;background:#0f1623;border:1px solid #334155;border-radius:12px;padding:14px 16px;color:#fff;font-size:1rem;margin-bottom:16px;outline:none">
+
+    <button onclick="_authSubmit()" id="auth-btn"
+      style="width:100%;background:linear-gradient(135deg,#00b4c8,#0ea5e9);border:none;border-radius:12px;padding:16px;color:#fff;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:12px">
+      Zaloguj się
+    </button>
+
+    <button onclick="_authGoogle()"
+      style="width:100%;background:#fff;border:none;border-radius:12px;padding:14px;color:#1a1f2e;font-size:.95rem;font-weight:600;cursor:pointer;margin-bottom:20px;display:flex;align-items:center;justify-content:center;gap:10px">
+      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.07 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-3.57-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Kontynuuj przez Google
+    </button>
+
+    <div style="text-align:center">
+      <span style="color:#94a3b8;font-size:.85rem" id="auth-toggle-text">Nie masz konta?</span>
+      <button onclick="_authToggleMode()" style="background:none;border:none;color:#00b4c8;font-size:.85rem;cursor:pointer;font-weight:600" id="auth-toggle-btn">Zarejestruj się</button>
+    </div>
+    <button onclick="_authClose()" style="position:absolute;top:16px;right:20px;background:none;border:none;color:#94a3b8;font-size:1.4rem;cursor:pointer">✕</button>
+  </div>
+</div>
+
+<script>
+// ── SUPABASE AUTH ─────────────────────────────────────────────────────────────
+const _SB = supabase.createClient(
+  'https://sabeurtjyasiwozekguh.supabase.co',
+  'sb_publishable_CYTVbJX_l39QajRGz1qb6g_4NpHw1R1'
+);
+
+let _sbUser = null;
+let _authMode = 'login'; // 'login' | 'register'
+
+// Inicjalizacja — sprawdź czy użytkownik jest zalogowany
+_SB.auth.getSession().then(({ data: { session } }) => {
+  if (session) _onAuthUser(session.user);
+});
+_SB.auth.onAuthStateChange((_event, session) => {
+  _onAuthUser(session?.user || null);
+});
+
+function _onAuthUser(user) {
+  _sbUser = user;
+  const nameEl   = document.getElementById('drawer-name');
+  const subEl    = document.getElementById('drawer-mode-sub');
+  const avatarEl = document.getElementById('drawer-avatar');
+  const menuLbl  = document.getElementById('auth-menu-label');
+  const hintEl   = document.getElementById('drawer-profile-hint');
+  if (user) {
+    const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Trucker';
+    if (nameEl)   nameEl.textContent   = name.toUpperCase();
+    if (subEl)    subEl.textContent    = user.email;
+    if (avatarEl) avatarEl.textContent = name[0].toUpperCase();
+    if (menuLbl)  menuLbl.textContent  = 'Wyloguj się';
+    if (hintEl)   hintEl.textContent   = '✏️ Edytuj profil';
+    document.getElementById('auth-modal').style.display = 'none';
+    _loadUserProfile();
+  } else {
+    if (nameEl)   nameEl.textContent   = 'TRUCKER';
+    if (subEl)    subEl.textContent    = 'Zaloguj się →';
+    if (avatarEl) avatarEl.textContent = '🚛';
+    if (menuLbl)  menuLbl.textContent  = 'Zaloguj się';
+    if (hintEl)   hintEl.textContent   = '👆 Kliknij aby się zalogować';
+  }
+}
+
+function _loadUserProfile() {
+  if (!_sbUser) return;
+  _SB.auth.getSession().then(({ data: { session } }) => {
+    if (!session) return;
+    fetch('/api/profile', { headers: { Authorization: 'Bearer ' + session.access_token } })
+      .then(r => r.json()).then(p => {
+        if (p.display_name) {
+          const nameEl = document.getElementById('drawer-name');
+          if (nameEl) nameEl.textContent = p.display_name.toUpperCase();
+        }
+      }).catch(() => {});
+  });
+}
+
+function openAuthModal() {
+  document.getElementById('auth-modal').style.display = 'flex';
+  document.getElementById('auth-error').style.display = 'none';
+  document.getElementById('auth-email').value = '';
+  document.getElementById('auth-password').value = '';
+}
+
+function _authClose() {
+  document.getElementById('auth-modal').style.display = 'none';
+}
+
+function _authToggleMode() {
+  _authMode = _authMode === 'login' ? 'register' : 'login';
+  document.getElementById('auth-title').textContent    = _authMode === 'login' ? 'Zaloguj się do TruckSpot' : 'Utwórz konto TruckSpot';
+  document.getElementById('auth-btn').textContent      = _authMode === 'login' ? 'Zaloguj się' : 'Zarejestruj się';
+  document.getElementById('auth-toggle-text').textContent = _authMode === 'login' ? 'Nie masz konta?' : 'Masz już konto?';
+  document.getElementById('auth-toggle-btn').textContent  = _authMode === 'login' ? 'Zarejestruj się' : 'Zaloguj się';
+}
+
+async function _authSubmit() {
+  const email = document.getElementById('auth-email').value.trim();
+  const pass  = document.getElementById('auth-password').value;
+  const errEl = document.getElementById('auth-error');
+  errEl.style.display = 'none';
+  if (!email || !pass) { errEl.textContent = 'Podaj e-mail i hasło.'; errEl.style.display = 'block'; return; }
+  const btn = document.getElementById('auth-btn');
+  btn.textContent = '...';
+  btn.disabled = true;
+  try {
+    let res;
+    if (_authMode === 'login') {
+      res = await _SB.auth.signInWithPassword({ email, password: pass });
+    } else {
+      res = await _SB.auth.signUp({ email, password: pass });
+    }
+    if (res.error) throw res.error;
+    if (_authMode === 'register' && !res.data.session) {
+      errEl.style.background = '#16532422'; errEl.style.borderColor = '#22c55e'; errEl.style.color = '#86efac';
+      errEl.textContent = '✉️ Sprawdź e-mail — wysłaliśmy link potwierdzający konto.';
+      errEl.style.display = 'block';
+    }
+  } catch(e) {
+    const msg = e.message || 'Błąd logowania';
+    errEl.textContent = msg.includes('Invalid login') ? 'Nieprawidłowy e-mail lub hasło.' : msg;
+    errEl.style.display = 'block';
+  } finally {
+    btn.textContent = _authMode === 'login' ? 'Zaloguj się' : 'Zarejestruj się';
+    btn.disabled = false;
+  }
+}
+
+async function _authGoogle() {
+  await _SB.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin }
+  });
+}
+
+async function _authSignOut() {
+  await _SB.auth.signOut();
+  showAlert('👋', '', 'Wylogowano');
+}
+
+// Kliknięcie w profil w drawerze — otwórz login lub pokaż opcje
+const _origProfileRow = document.querySelector?.('.profile-row');
 </script>
 </body>
 </html>
