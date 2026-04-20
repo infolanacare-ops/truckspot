@@ -7933,14 +7933,9 @@ function onNavPosition(pos){
   } else {
     snapLat = lat; snapLng = lng;
   }
-  // EMA wygładzenie snap pozycji — eliminuje drgania strzałki między tickami GPS
-  const EMA_A = 0.4;
-  if(_snapEmaLat === null){ _snapEmaLat = snapLat; _snapEmaLng = snapLng; }
-  _snapEmaLat = EMA_A * snapLat + (1 - EMA_A) * _snapEmaLat;
-  _snapEmaLng = EMA_A * snapLng + (1 - EMA_A) * _snapEmaLng;
   // Map matching odpala w tle tylko dla debug overlay
   _runSnapToRoad(lat, lng);
-  setGpsArrow(_snapEmaLat, _snapEmaLng);
+  setGpsArrow(snapLat, snapLng);
   _updateGpsDebug(
     {lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy},
     {lat, lng},
