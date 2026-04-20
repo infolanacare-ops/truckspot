@@ -5942,7 +5942,7 @@ const _kalman = {
   lat: null, lng: null,
   variance: -1,          // <0 = niezainicjowany
   lastTs: 0,
-  Q: 1,                  // szum procesu [m/s] — jak szybko pozycja może się zmieniać
+  Q: 2,                  // szum procesu [m/s] — jak szybko pozycja może się zmieniać
   process(lat, lng, accuracy, ts){
     if(this.variance < 0){
       this.lat = lat; this.lng = lng;
@@ -7887,7 +7887,7 @@ function onNavPosition(pos){
     snapLat = lat; snapLng = lng;
   }
   // EMA wygładzenie snap pozycji — eliminuje drgania strzałki między tickami GPS
-  const EMA_A = 0.35;
+  const EMA_A = 0.6;
   if(_snapEmaLat === null){ _snapEmaLat = snapLat; _snapEmaLng = snapLng; }
   _snapEmaLat = EMA_A * snapLat + (1 - EMA_A) * _snapEmaLat;
   _snapEmaLng = EMA_A * snapLng + (1 - EMA_A) * _snapEmaLng;
