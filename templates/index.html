@@ -1860,6 +1860,40 @@ body.navigating .fab-ai{display:none}
 }
 .nav-speed-row:active{cursor:grabbing}
 .nav-speed-row.mod-hidden{display:none!important}
+
+/* ── CB Radio draggable module ── */
+.cb-module{
+  position:fixed;z-index:1210;
+  pointer-events:auto;touch-action:none;cursor:grab;
+  right:12px;top:280px;
+}
+.cb-module:active{cursor:grabbing}
+.cb-module.mod-hidden{display:none!important}
+.cb-module-circle{
+  width:62px;height:62px;border-radius:50%;
+  background:linear-gradient(135deg,#1e3a6e,#2563eb);
+  border:2.5px solid rgba(96,165,250,.6);
+  box-shadow:0 4px 18px rgba(37,99,235,.55),0 0 0 0 rgba(37,99,235,.4);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:1px;transition:box-shadow .25s;
+}
+.cb-module-circle.active{
+  box-shadow:0 4px 18px rgba(37,99,235,.7),0 0 0 6px rgba(37,99,235,.2);
+  animation:cb-pulse 2s infinite;
+}
+@keyframes cb-pulse{
+  0%,100%{box-shadow:0 4px 18px rgba(37,99,235,.7),0 0 0 6px rgba(37,99,235,.2)}
+  50%{box-shadow:0 4px 24px rgba(37,99,235,.9),0 0 0 10px rgba(37,99,235,.08)}
+}
+.cb-module-label{font-size:.6rem;font-weight:800;color:rgba(255,255,255,.55);letter-spacing:.06em;font-family:var(--font-head)}
+.cb-module-cnt{
+  position:absolute;top:-4px;right:-4px;
+  background:#ef4444;color:#fff;
+  font-size:.6rem;font-weight:700;
+  min-width:16px;height:16px;border-radius:8px;padding:0 4px;
+  display:flex;align-items:center;justify-content:center;
+  border:1.5px solid var(--bg);
+}
 /* ── Speed combo: TomTom style — znak limitu po lewej + pill po prawej ── */
 .nav-speed-combo{
   display:flex;align-items:center;flex-shrink:0;
@@ -3278,6 +3312,15 @@ body.navigating .convoy-btn{display:none}
     </div>
   </div>
 
+  <!-- CB Radio draggable module -->
+  <div class="cb-module mod-hidden" id="cb-module">
+    <div class="cb-module-circle" id="cb-module-circle" onclick="_cbModuleTap()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg>
+      <span class="cb-module-label">CB</span>
+    </div>
+    <span class="cb-module-cnt" id="cb-module-cnt" style="display:none">0</span>
+  </div>
+
   <!-- GPS debug overlay (toggled by tap on speedometer) -->
   <div id="gps-debug" style="display:none;position:absolute;bottom:90px;left:8px;z-index:999;background:rgba(0,0,0,.82);color:#0f0;font:10px/1.5 monospace;padding:6px 8px;border-radius:6px;pointer-events:none;max-width:220px"></div>
 
@@ -3350,6 +3393,7 @@ body.navigating .convoy-btn{display:none}
     <button class="nav-sheet-btn" id="nav-pitch-btn" onclick="cycleNavPitch()">3D</button>
     <button class="nav-sheet-btn" id="nav-northup-btn" onclick="toggleNavNorthUp()"><span class="ts-icon"><svg><use href="#ts-compass"/></svg></span> Północ</button>
     <button class="nav-sheet-btn" id="mod-speed-btn" onclick="toggleSpeedModule()">✅ Prędkość</button>
+    <button class="nav-sheet-btn" id="mod-cb-btn" onclick="toggleCbModule()">📻 CB Radio</button>
     <button class="nav-sheet-btn" onclick="closeNavSheet(); togglePoisStrip()"><span class="ts-icon"><svg><use href="#ts-pin"/></svg></span> Oś trasy</button>
     <button class="nav-sheet-btn" onclick="closeNavSheet(); toggleNavOverview()"><span class="ts-icon"><svg><use href="#ts-map"/></svg></span> Widok</button>
     <button class="nav-sheet-btn nav-sheet-convoy" onclick="closeNavSheet(); toggleConvoyPanel()">
@@ -7404,6 +7448,55 @@ const MOD_SPEED_KEY   = 'ts_mod_speed_pos2';
 const MOD_SPEED_VIS   = 'ts_mod_speed_vis';
 let _speedModuleInited = false;
 
+// ── CB Radio module (draggable circle in nav) ──────────────────────────────
+const MOD_CB_KEY = 'ts_mod_cb_pos';
+const MOD_CB_VIS = 'ts_mod_cb_vis';
+let _cbModuleInited = false;
+
+function _initCbModule(){
+  const el = document.getElementById('cb-module');
+  if(!el) return;
+  if(!_cbModuleInited){ _cbModuleInited = true; _makeDraggableModule(el, MOD_CB_KEY); }
+  const hidden = localStorage.getItem(MOD_CB_VIS) === 'hidden';
+  el.classList.toggle('mod-hidden', hidden);
+  _updateCbModuleBtn();
+}
+
+function toggleCbModule(){
+  const el = document.getElementById('cb-module');
+  if(!el) return;
+  const nowHidden = el.classList.toggle('mod-hidden');
+  try{ localStorage.setItem(MOD_CB_VIS, nowHidden ? 'hidden' : 'visible'); }catch(e){}
+  _updateCbModuleBtn();
+}
+
+function _updateCbModuleBtn(){
+  const btn = document.getElementById('mod-cb-btn');
+  if(!btn) return;
+  const hidden = document.getElementById('cb-module')?.classList.contains('mod-hidden');
+  btn.style.opacity = hidden ? '0.45' : '1';
+  btn.textContent = (hidden ? '🚫 ' : '📻 ') + 'CB Radio';
+}
+
+function _updateCbModuleCnt(n){
+  const cnt = document.getElementById('cb-module-cnt');
+  const circle = document.getElementById('cb-module-circle');
+  if(!cnt) return;
+  if(n > 0){
+    cnt.textContent = n > 99 ? '99+' : n;
+    cnt.style.display = '';
+    circle?.classList.add('active');
+  } else {
+    cnt.style.display = 'none';
+    circle?.classList.remove('active');
+  }
+}
+
+function _cbModuleTap(){
+  // Otwórz panel CB jeśli tap (nie drag — _makeDraggableModule obsługuje to przez dragging flag)
+  openMsgsPanel();
+}
+
 function _initSpeedModule(){
   const el = document.getElementById('speed-module');
   if(!el) return;
@@ -7459,6 +7552,7 @@ function startNavigation(){
   document.getElementById('nav-overlay').classList.add('active');
   // Inicjuj przeciągalne moduły HUD
   setTimeout(_initSpeedModule, 100);
+  setTimeout(_initCbModule, 120);
   document.body.classList.add('navigating');
   // Ukryj msg-fab podczas nawigacji (report-dial zostaje)
   const msgFab = document.getElementById('msg-fab');
@@ -8958,12 +9052,13 @@ async function loadMapMessages(forceRefresh){
 
     msgs.forEach(renderMsgMarker);
 
-    // Update badge
+    // Update badge + CB module circle counter
     const badge = document.getElementById('msgs-count-badge');
     if(badge){
       badge.textContent = msgs.length;
       badge.style.display = msgs.length ? '' : 'none';
     }
+    _updateCbModuleCnt(msgs.length);
 
     // Update panel list if open
     const listEl = document.getElementById('msgs-list');
