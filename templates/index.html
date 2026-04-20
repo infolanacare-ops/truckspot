@@ -7071,6 +7071,63 @@ function speakAi(txt){
 
 // ── Lane guidance — SVG arrows ────────────────────────────────────────────────
 // Strzałki pasów — grube, wypełnione path, TomTom truck style
+// ── OSM Lane Data (turn:lanes z Overpass) ────────────────────────────────────
+let navOsmLanes = {}; // stepIdx → [{dir, active, valid}]
+
+function _parseTurnLanes(raw, modifier){
+  const mod = (modifier || 'straight').toLowerCase();
+  // Które wartości OSM pasują do manewru
+  const match = new Set(['through']); // through zawsze valid
+  if(mod.includes('left'))  { match.add('left');  match.add('slight_left');  match.add('sharp_left');  }
+  if(mod.includes('right')) { match.add('right'); match.add('slight_right'); match.add('sharp_right'); }
+  if(mod === 'uturn')       { match.add('reverse'); }
+  // aktywne = ściśle pasują do manewru (nie przez 'through')
+  const active = new Set();
+  if(mod.includes('straight') || mod === 'merge') active.add('through');
+  if(mod.includes('left'))  { active.add('left');  if(mod.includes('slight')) active.add('slight_left');  if(mod.includes('sharp')) active.add('sharp_left');  }
+  if(mod.includes('right')) { active.add('right'); if(mod.includes('slight')) active.add('slight_right'); if(mod.includes('sharp')) active.add('sharp_right'); }
+  if(mod === 'uturn') active.add('reverse');
+
+  return raw.split('|').map(laneStr => {
+    const dirs = laneStr.split(';').map(s => s.trim().replace(/ /g,'_').toLowerCase());
+    const isActive = dirs.some(d => active.has(d));
+    const isValid  = isActive || dirs.some(d => match.has(d));
+    return { dir: dirs[0].replace(/_/g,' '), active: isActive, valid: isValid };
+  });
+}
+
+async function _fetchOsmLanesAt(lat, lng, modifier){
+  const q = `[out:json][timeout:6];way(around:18,${lat.toFixed(6)},${lng.toFixed(6)})[highway][~"^turn:lanes"~"."];out tags;`;
+  try {
+    const r = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`,
+      {signal: AbortSignal.timeout(5000)});
+    const d = await r.json();
+    if(!d.elements?.length) return null;
+    const way = d.elements.find(e => e.tags?.['turn:lanes:forward'] || e.tags?.['turn:lanes']) || d.elements[0];
+    const raw = way.tags?.['turn:lanes:forward'] || way.tags?.['turn:lanes'];
+    return raw ? _parseTurnLanes(raw, modifier) : null;
+  } catch(e){ return null; }
+}
+
+async function loadOsmLaneData(){
+  if(!routeSteps.length) return;
+  navOsmLanes = {};
+  const toFetch = routeSteps
+    .map((s,i) => ({s,i}))
+    .filter(({s}) => { const t=s.maneuver?.type; return t && t!=='depart' && t!=='arrive'; })
+    .slice(0, 25); // max 25 manewrów
+
+  // Zapytania po 3 równolegle — nie przeciążamy Overpass
+  for(let i = 0; i < toFetch.length; i += 3){
+    await Promise.all(toFetch.slice(i, i+3).map(async ({s,i:idx}) => {
+      const loc = s.maneuver?.location;
+      if(!loc) return;
+      const lanes = await _fetchOsmLanesAt(loc[1], loc[0], s.maneuver?.modifier);
+      if(lanes?.length) navOsmLanes[idx] = lanes;
+    }));
+  }
+}
+
 // Kolor kontrolowany przez CSS (.nav-lane svg path { fill: ... })
 function laneSvg(dir){
   const W=32,H=36;
@@ -7131,30 +7188,34 @@ function updateLaneGuidance(dToManeuver){
   if(!step || dToManeuver > laneShowDist || dToManeuver < 20){
     el.style.display='none'; return;
   }
-  let lanes = null;
-  for(const bi of (step.bannerInstructions||[])){
-    const comps = bi.sub?.components?.filter(c=>c.type==='lane');
-    if(comps?.length){ lanes = comps; break; }
-  }
-  if(!lanes?.length){ el.style.display='none'; return; }
-  el.style.display = 'flex';
-  // Wykryj czy to rondo — potrzebujemy numeru zjazdu
-  const maneuver = (routeSteps[navStepIdx]?.maneuver?.type||'').toLowerCase();
-  const isRoundabout = maneuver.includes('roundabout') || maneuver.includes('rotary');
-  const exitNum = routeSteps[navStepIdx]?.maneuver?.exit;
-  el.innerHTML = lanes.map(l=>{
-    const dir = (l.active_direction || l.directions?.[0] || 'straight').toLowerCase();
-    const cls = l.active ? 'active' : (l.valid ? 'valid' : '');
-    // Etykieta pod strzałką
-    let label = '';
-    if(l.active){
-      if(isRoundabout && exitNum){
-        label = `ZJAZD ${exitNum}`;
-      } else {
-        label = 'TWÓJ PAS';
+
+  // OSM turn:lanes — priorytet (dokładniejsze niż Mapbox banner)
+  let lanes = navOsmLanes[navStepIdx] || null;
+
+  // Fallback: Mapbox banner instructions
+  if(!lanes){
+    for(const bi of (step.bannerInstructions||[])){
+      const comps = bi.sub?.components?.filter(c=>c.type==='lane');
+      if(comps?.length){
+        lanes = comps.map(c=>({
+          dir: (c.active_direction||c.directions?.[0]||'straight').toLowerCase(),
+          active: !!c.active, valid: !!c.valid
+        }));
+        break;
       }
     }
-    return `<div class="nav-lane ${cls}">${laneSvg(dir)}<div class="nav-lane-label">${label}</div></div>`;
+  }
+  if(!lanes?.length){ el.style.display='none'; return; }
+
+  el.style.display = 'flex';
+  const maneuver = (step.maneuver?.type||'').toLowerCase();
+  const isRoundabout = maneuver.includes('roundabout') || maneuver.includes('rotary');
+  const exitNum = step.maneuver?.exit;
+
+  el.innerHTML = lanes.map(l=>{
+    const cls = l.active ? 'active' : (l.valid ? 'valid' : '');
+    const label = l.active ? (isRoundabout && exitNum ? `ZJAZD ${exitNum}` : 'TWÓJ PAS') : '';
+    return `<div class="nav-lane ${cls}">${laneSvg(l.dir||'straight')}<div class="nav-lane-label">${label}</div></div>`;
   }).join('');
 }
 
@@ -7290,6 +7351,7 @@ function startNavigation(){
   loadNavCameras();
   navWarnedHeightIds = new Set();
   loadNavHeightRestrictions();
+  loadOsmLaneData();
   map.easeTo({pitch:65, duration:1500});
   acquireWakeLock();
   // Pokaż profil TIR podczas nawigacji
@@ -8032,6 +8094,7 @@ async function rerouteNavigation(fromLat, fromLng){
     clearRouteLayer();
     drawRoute(routeCoords);
     loadNavHeightRestrictions();
+    loadOsmLaneData();
     loadRoutePois();
     updateNavStep(0);
     setEl('nav-total-dist', Math.round(routeTotalDist/1000)+' km');
