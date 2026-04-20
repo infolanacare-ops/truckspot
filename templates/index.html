@@ -3881,14 +3881,10 @@ function loginWithEmail(){
 }
 
 function loginWithGoogle(){
-  // TODO: Google OAuth / Supabase OAuth — na razie pyta o imię
-  profile.loginType = 'google';
-  document.getElementById('auth-email-form').style.display = 'none';
-  document.querySelectorAll('.auth-btn').forEach(b => b.style.display='none');
-  document.querySelectorAll('.auth-sep').forEach(s => s.style.display='none');
-  const wrap = document.getElementById('auth-name-wrap');
-  wrap.classList.add('visible');
-  document.getElementById('auth-oauth-name').focus();
+  _SB.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin }
+  });
 }
 
 function loginWithFacebook(){
