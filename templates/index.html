@@ -7924,8 +7924,7 @@ function onNavPosition(pos){
   }
   // Upewnij się że trasa jest narysowana (może zniknąć po zmianie stylu)
   if(routeCoords.length && !map.getSource('ts-route')){ drawRoute(routeCoords); setTimeout(applyNavPalette,200); }
-  // Aktualizuj szarą "przejechana" część — co 3 ticki GPS
-  if(navCIdx % 3 === 0) updateTraveledRoute();
+  updateTraveledRoute();
 
   // ── Remaining distance along route ──────────────────────────────────
   // cIdx + navCIdx już ustawione powyżej (forward-looking snap)
