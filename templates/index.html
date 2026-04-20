@@ -9430,18 +9430,61 @@ function renderMsgMarker(m, isNew){
 
 function showMsgDetail(m){
   const cat = MSG_CATS[m.cat] || MSG_CATS.info;
-  document.getElementById('panel-content').innerHTML = `
-    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.9rem">
-      <div class="msg-author-dot" style="background:${m.color}">${m.emoji}</div>
-      <span class="msg-cat-badge" style="background:${cat.color}20;color:${cat.color}">${cat.icon} ${cat.label}</span>
-      <span class="msg-time" style="margin-left:auto">${msgTimeSince(m.ts)}</span>
-    </div>
-    <div style="font-size:1rem;line-height:1.5;margin-bottom:1rem">${m.text}</div>
-    <div style="display:flex;gap:.6rem">
-      <button class="msg-react-btn" id="react-like-${m.id}" onclick="reactMsg(${m.id},'like',this)">👍 ${m.likes||0}</button>
-      <button class="msg-react-btn" id="react-dis-${m.id}"  onclick="reactMsg(${m.id},'dislike',this)">👎 ${m.dislikes||0}</button>
+  const mid = 'msg-modal-'+Date.now();
+  const dmBtn = m.user_id ? `
+    <button onclick="document.getElementById('${mid}').remove();_openDm('${m.user_id}','${_escHtml(m.display_name||'Kierowca')}','${m.emoji}')"
+      style="display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:.9rem .5rem;
+      border:none;border-radius:16px;background:var(--blue);color:#fff;cursor:pointer;font-family:var(--font);flex:1">
+      <span style="font-size:1.4rem">💬</span>
+      <span style="font-size:.75rem;font-weight:700">Napisz</span>
+    </button>` : '';
+  const modal = document.createElement('div');
+  modal.id = mid;
+  modal.style.cssText = 'position:fixed;inset:0;z-index:3200;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:1.5rem';
+  modal.innerHTML = `
+    <div onclick="event.stopPropagation()" style="
+      width:100%;max-width:320px;background:var(--panel);border-radius:22px;
+      padding:1.3rem;box-shadow:0 8px 48px rgba(0,0,0,.6);
+      transform:scale(.85);opacity:0;transition:transform .25s cubic-bezier(.34,1.56,.64,1),opacity .2s" id="${mid}-inner">
+      <!-- Autor + kategoria -->
+      <div style="display:flex;align-items:center;gap:.7rem;margin-bottom:.9rem">
+        <div style="width:40px;height:40px;border-radius:50%;background:${m.color};
+          display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0">${m.emoji}</div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:.88rem">${_escHtml(m.display_name||'Kierowca')}</div>
+          <div style="font-size:.7rem;color:${cat.color};font-weight:700">${cat.icon} ${cat.label} · ${msgTimeSince(m.ts)}</div>
+        </div>
+      </div>
+      <!-- Treść -->
+      <div style="font-size:.95rem;line-height:1.55;margin-bottom:1.1rem;color:var(--text)">${_escHtml(m.text)}</div>
+      <!-- Akcje -->
+      <div style="display:flex;gap:.6rem;margin-bottom:.8rem">
+        <button id="react-like-${m.id}" onclick="reactMsg('${m.id}','like',this)"
+          style="display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:.9rem .5rem;
+          border:1px solid var(--border);border-radius:16px;background:var(--panel2);color:var(--text);cursor:pointer;font-family:var(--font);flex:1">
+          <span style="font-size:1.4rem">👍</span>
+          <span style="font-size:.75rem;font-weight:700">${m.likes||0}</span>
+        </button>
+        <button id="react-dis-${m.id}" onclick="reactMsg('${m.id}','dislike',this)"
+          style="display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:.9rem .5rem;
+          border:1px solid var(--border);border-radius:16px;background:var(--panel2);color:var(--text);cursor:pointer;font-family:var(--font);flex:1">
+          <span style="font-size:1.4rem">👎</span>
+          <span style="font-size:.75rem;font-weight:700">${m.dislikes||0}</span>
+        </button>
+        ${dmBtn}
+      </div>
+      <button onclick="document.getElementById('${mid}').remove()"
+        style="width:100%;padding:.65rem;border:none;border-radius:12px;
+        background:transparent;color:var(--muted);font-size:.85rem;cursor:pointer;font-family:var(--font)">
+        Zamknij
+      </button>
     </div>`;
-  document.getElementById('detail-panel').classList.add('open');
+  modal.onclick = ()=>modal.remove();
+  document.body.appendChild(modal);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    const inner = document.getElementById(mid+'-inner');
+    if(inner){ inner.style.transform='scale(1)'; inner.style.opacity='1'; }
+  }));
 }
 
 async function reactMsg(id, reaction, btn){
