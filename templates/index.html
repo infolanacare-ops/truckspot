@@ -5911,6 +5911,34 @@ let _snapEmaLat = null, _snapEmaLng = null;   // EMA wygładzenie snap pozycji (
 let _strBuf = [];           // bufor GPS dla Snap to Road (max 3 punkty)
 let _strPending = false;    // request Map Matching w toku
 let _strLat = null, _strLng = null; // ostatnia dobra pozycja Map Matched
+
+// Kalman filter GPS — wygładza szum i eliminuje skoki pozycji
+// Model: stała prędkość, szum procesu Q=3m/s, szum pomiaru = GPS accuracy
+const _kalman = {
+  lat: null, lng: null,
+  variance: -1,          // <0 = niezainicjowany
+  lastTs: 0,
+  Q: 3,                  // szum procesu [m/s] — jak szybko pozycja może się zmieniać
+  process(lat, lng, accuracy, ts){
+    if(this.variance < 0){
+      this.lat = lat; this.lng = lng;
+      this.variance = accuracy * accuracy;
+      this.lastTs = ts; return {lat, lng};
+    }
+    const dt = Math.max((ts - this.lastTs) / 1000, 0.1); // sekundy między tickami
+    this.lastTs = ts;
+    // Predict: wariancja rośnie z czasem (auto przemieszczamy się)
+    this.variance += dt * this.Q * this.Q;
+    // Update: waga Kalmana — im lepsza dokładność GPS, tym więcej ufamy GPS
+    const R = accuracy * accuracy;
+    const K = this.variance / (this.variance + R);
+    this.lat += K * (lat - this.lat);
+    this.lng += K * (lng - this.lng);
+    this.variance = (1 - K) * this.variance;
+    return {lat: this.lat, lng: this.lng};
+  },
+  reset(){ this.variance = -1; }
+};
 let _navLockedZoom = null; // Zoom lock: zamrożony zoom gdy < 5 km/h (TomTom standard)
 let navCurrentSpeedLimit = 0;
 let navVoiceQueue = [];      // look-ahead announcements
@@ -7221,6 +7249,7 @@ function startNavigation(){
   navActive=true; navStepIdx=0; navCIdx=0; navLastLat=null; navLastLng=null;
   _smoothBearing=null; _navLockedZoom=null; _zuptSnapLat=null; _zuptSnapLng=null;
   _snapEmaLat=null; _snapEmaLng=null;
+  _kalman.reset(); _strBuf=[]; _strLat=null; _strLng=null;
   // Inicjuj heading z pierwszego segmentu trasy — nie startuj z 0 (północ)
   if(routeCoords.length >= 2){
     const dx = routeCoords[1][0] - routeCoords[0][0];
@@ -7606,7 +7635,10 @@ async function _runSnapToRoad(lat, lng){
 
 function onNavPosition(pos){
   if(!navActive) return;
-  const lat=pos.coords.latitude, lng=pos.coords.longitude;
+  // Kalman filter — wygładza szum GPS przed dalszym przetwarzaniem
+  const accuracy = pos.coords.accuracy || 20;
+  const kf = _kalman.process(pos.coords.latitude, pos.coords.longitude, accuracy, Date.now());
+  const lat = kf.lat, lng = kf.lng;
   const rawSpeed = pos.coords.speed; // m/s or null
   if(rawSpeed != null){
     navSpeedKmh = Math.round(rawSpeed * 3.6);
@@ -7959,6 +7991,7 @@ async function rerouteNavigation(fromLat, fromLng){
     navRerouteWarned   = false;
     _snapEmaLat = null; _snapEmaLng = null;
     _strBuf = []; _strLat = null; _strLng = null; // reset snap-to-road po reroute
+    _kalman.reset(); // reset Kalmana — nowa trasa, nowy punkt startowy
     navWarnedHeightIds = new Set();
 
     buildRouteDistances();
