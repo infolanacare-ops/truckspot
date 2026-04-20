@@ -1,32 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import os, json, re, secrets, time, math, requests as _requests, smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+import os, json, re, secrets, time, math, requests as _requests
 from flask import Flask, render_template, request, jsonify, send_from_directory, send_file
 import hashlib
 
-SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.gmail.com")
-SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
-SMTP_USER = os.environ.get("SMTP_USER", "")
-SMTP_PASS = os.environ.get("SMTP_PASS", "")
-MAIL_FROM = os.environ.get("MAIL_FROM", "TruckSpot <noreply@truckspot.pl>")
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+MAIL_FROM      = os.environ.get("MAIL_FROM", "TruckSpot <info@truckspot.pl>")
 
 def send_email(to_email, subject, html_body):
-    if not SMTP_USER or not SMTP_PASS:
+    if not RESEND_API_KEY:
         return False
     try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"]    = MAIL_FROM
-        msg["To"]      = to_email
-        msg.attach(MIMEText(html_body, "html", "utf-8"))
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10) as s:
-            s.ehlo()
-            s.starttls()
-            s.login(SMTP_USER, SMTP_PASS)
-            s.sendmail(SMTP_USER, to_email, msg.as_string())
-        return True
+        resp = _requests.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+            json={"from": MAIL_FROM, "to": [to_email], "subject": subject, "html": html_body},
+            timeout=10
+        )
+        return resp.status_code in (200, 201)
     except Exception as e:
         print(f"[MAIL ERROR] {e}")
         return False
