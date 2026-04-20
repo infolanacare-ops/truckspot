@@ -6376,44 +6376,52 @@ function stripForTts(txt){
 const VOICE_STORAGE_KEY = 'ts_nav_voice';
 let _selectedVoiceName = localStorage.getItem(VOICE_STORAGE_KEY) || null;
 let _navVoiceCache = {};
-function getBestVoice(lang){
-  if(_selectedVoiceName){
-    const found = speechSynthesis.getVoices().find(v => v.name === _selectedVoiceName);
-    if(found) return found;
-  }
-  if(_navVoiceCache[lang]) return _navVoiceCache[lang];
+// Nav voice: kobieta — jak Google Maps / Waze (pewna, czytelna)
+// AI voice:  inny głos jeśli dostępny — bardziej konwersacyjny
+const VOICE_PREFS = {
+  nav: {
+    'pl-PL': ['Google polski','Microsoft Paulina - Polish (Poland)','Paulina','Polish Female','pl-PL'],
+    'de-DE': ['Google Deutsch','Microsoft Hedda - German (Germany)','Hedda','German Female','de-DE'],
+    'en-US': ['Google US English','Microsoft Zira - English (United States)','Zira','Samantha','en-US'],
+    'en-GB': ['Google UK English Female','Microsoft Hazel','Hazel','en-GB'],
+  },
+  ai: {
+    'pl-PL': ['Microsoft Adam - Polish (Poland)','Adam','Google polski','Microsoft Paulina - Polish (Poland)','pl-PL'],
+    'de-DE': ['Microsoft Stefan - German (Germany)','Stefan','Google Deutsch','de-DE'],
+    'en-US': ['Google US English Male','Microsoft David - English (United States)','David','Alex','Google US English','en-US'],
+  },
+};
+
+function _pickVoice(lang, role='nav'){
+  const cacheKey = lang+'_'+role;
+  if(_navVoiceCache[cacheKey]) return _navVoiceCache[cacheKey];
   const voices = speechSynthesis.getVoices();
   if(!voices.length) return null;
-  const preferred = {
-    'pl-PL': ['Google polski','Microsoft Paulina','Polish','pl'],
-    'de-DE': ['Google Deutsch','Microsoft Hedda','German','de'],
-    'en-US': ['Google US English','Microsoft Zira','Microsoft David','en-US'],
-  };
-  for(const p of (preferred[lang]||[])){
-    const v = voices.find(v => v.name.toLowerCase().includes(p.toLowerCase()) && v.lang.startsWith(lang.split('-')[0]));
-    if(v){ _navVoiceCache[lang]=v; return v; }
+  const prefs = (VOICE_PREFS[role]||VOICE_PREFS.nav)[lang] || [];
+  for(const p of prefs){
+    const v = voices.find(v => v.name.toLowerCase().includes(p.toLowerCase()));
+    if(v){ _navVoiceCache[cacheKey]=v; return v; }
   }
-  const v = voices.find(v => v.lang === lang) || voices.find(v => v.lang.startsWith(lang.split('-')[0]));
-  if(v){ _navVoiceCache[lang]=v; return v; }
+  // fallback: any matching language
+  const v = voices.find(v => v.lang===lang) || voices.find(v => v.lang.startsWith(lang.split('-')[0]));
+  if(v){ _navVoiceCache[cacheKey]=v; return v; }
   return null;
 }
+
+function getBestVoice(lang){ return _pickVoice(lang, 'nav'); }
+
 if(typeof speechSynthesis !== 'undefined'){
   speechSynthesis.onvoiceschanged = () => { _navVoiceCache = {}; };
   // Android WebView bug: speechSynthesis pauses silently after ~14s
-  // Keep-alive: resume every 5s while navigating
-  setInterval(()=>{
-    if(navActive && !navMuted && speechSynthesis.paused) speechSynthesis.resume();
-  }, 5000);
+  setInterval(()=>{ if(navActive && !navMuted && speechSynthesis.paused) speechSynthesis.resume(); }, 5000);
 }
 
-// Android: TTS wymaga user-gesture — wrap speak() w setTimeout gdy nie ma aktywnej wypowiedzi
 function _safespeak(utt){
   if(speechSynthesis.speaking || speechSynthesis.pending){
     speechSynthesis.speak(utt);
   } else {
     setTimeout(()=> speechSynthesis.speak(utt), 80);
-  }
-}
+  }}
 function openVoicePicker(){}
 function closeVoicePicker(){}
 function updateVoiceBadge(){}
@@ -6921,8 +6929,11 @@ function speakNav(txt, priority=false){
   if(priority) speechSynthesis.cancel();
   const lang = currentLang==='pl'?'pl-PL':currentLang==='de'?'de-DE':currentLang==='es'?'es-ES':'en-US';
   const utt = new SpeechSynthesisUtterance(clean);
-  utt.lang = lang; utt.rate = 0.92; utt.pitch = 1.0; utt.volume = 1.0;
-  const voice = getBestVoice(lang);
+  utt.lang = lang;
+  utt.rate   = 1.0;   // naturalne tempo (nie za wolno jak robot)
+  utt.pitch  = 1.1;   // kobiecy głos — pewny, czytelny jak Waze/Google Maps
+  utt.volume = 1.0;
+  const voice = _pickVoice(lang, 'nav');
   if(voice) utt.voice = voice;
   utt.onstart = () => { _navSpeaking = true; };
   utt.onend   = () => { _navSpeaking = false; _navLastEndTs = Date.now(); };
@@ -6939,8 +6950,11 @@ function speakAi(txt){
   const lang = currentLang==='pl'?'pl-PL':currentLang==='de'?'de-DE':currentLang==='es'?'es-ES':'en-US';
   const _do = () => {
     const utt = new SpeechSynthesisUtterance(clean);
-    utt.lang = lang; utt.rate = 0.92; utt.pitch = 1.0; utt.volume = 1.0;
-    const voice = getBestVoice(lang);
+    utt.lang   = lang;
+    utt.rate   = 0.95;  // AI mówi nieco spokojniej — konwersacyjny ton
+    utt.pitch  = 0.95;  // lekko niższy niż nav — inny charakter głosu
+    utt.volume = 1.0;
+    const voice = _pickVoice(lang, 'ai');
     if(voice) utt.voice = voice;
     utt.onend = () => {
       if(_bgAssistantActive && !window._bgRecognition){
@@ -9288,8 +9302,8 @@ function openAiAssistant(){
   const name = profile.name || localStorage.getItem('ts_driver_name') || '';
   const greeting = name ? `Hej ${name}, słucham!` : `Słucham, mów!`;
   const utt = new SpeechSynthesisUtterance(greeting);
-  utt.lang = 'pl-PL'; utt.rate = 0.92;
-  const voice = getBestVoice('pl-PL');
+  utt.lang = 'pl-PL'; utt.rate = 0.95; utt.pitch = 0.95;
+  const voice = _pickVoice('pl-PL', 'ai');
   if(voice) utt.voice = voice;
   utt.onend = () => { if(_bgAssistantActive) startBgListening(); };
   _safespeak(utt);
