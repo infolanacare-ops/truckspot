@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import os, json, secrets, time, math, requests as _requests
+import os, json, re, secrets, time, math, requests as _requests
 from flask import Flask, render_template, request, jsonify, send_from_directory
 
 try:
@@ -1321,10 +1321,8 @@ def api_ai_chat():
 
         action = None
         text = raw.strip()
-        import re as _re
-
         # Wyciągnij JSON — szukaj { ... } nawet z białymi znakami
-        json_match = _re.search(r'\{[\s\S]*?\}', raw)
+        json_match = re.search(r'\{[\s\S]*?\}', raw)
         if json_match:
             try:
                 obj = json.loads(json_match.group())
