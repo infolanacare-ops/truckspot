@@ -10896,6 +10896,18 @@ function _onAuthUser(user) {
     if (menuLbl)  menuLbl.textContent  = 'Wyloguj się';
     if (hintEl)   hintEl.textContent   = '✏️ Edytuj profil';
     document.getElementById('auth-modal').style.display = 'none';
+    // jeśli onboarding nadal widoczny, wejdź od razu do apki
+    const ob = document.getElementById('onboarding');
+    if (ob && ob.style.display !== 'none') {
+      const savedMode = localStorage.getItem('ts_mode') || 'tir';
+      const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Trucker';
+      if (!localStorage.getItem('ts_profile')) {
+        localStorage.setItem('ts_profile', JSON.stringify({ name, mode: savedMode }));
+      }
+      if (!localStorage.getItem('ts_mode')) localStorage.setItem('ts_mode', savedMode);
+      ob.style.display = 'none';
+      enterMode(savedMode);
+    }
     _loadUserProfile();
   } else {
     if (nameEl)   nameEl.textContent   = 'TRUCKER';
