@@ -7180,38 +7180,42 @@ async function speakNav(txt, priority=false){
 }
 
 const AI_NAV_SILENCE_MS = 7000;
-function speakAi(txt){
+async function speakAi(txt){
   if(navMuted) return;
-  if(!('speechSynthesis' in window)) return;
   const clean = stripForTts(txt);
   if(!clean) return;
-  const lang = currentLang==='pl'?'pl-PL':currentLang==='de'?'de-DE':currentLang==='es'?'es-ES':'en-US';
-  const _do = () => {
-    const utt = new SpeechSynthesisUtterance(clean);
-    utt.lang   = lang;
-    utt.rate   = 0.95;  // AI mówi nieco spokojniej — konwersacyjny ton
-    utt.pitch  = 0.95;  // lekko niższy niż nav — inny charakter głosu
-    utt.volume = 1.0;
-    const voice = _pickVoice(lang, 'ai');
-    if(voice) utt.voice = voice;
-    utt.onend = () => {
-      if(_bgAssistantActive && !window._bgRecognition){
-        setTimeout(() => { if(_bgAssistantActive) startBgListening(); }, 400);
-      }
-    };
-    _safespeak(utt);
+
+  const onEnd = () => {
+    _navSpeaking = false;
+    _navLastEndTs = Date.now();
+    if(_bgAssistantActive && !window._bgRecognition){
+      setTimeout(() => { if(_bgAssistantActive) startBgListening(); }, 400);
+    }
   };
-  const navRecentlySilent = () =>
-    !_navSpeaking && !speechSynthesis.speaking &&
-    (Date.now() - _navLastEndTs) >= AI_NAV_SILENCE_MS;
-  if(_navLastEndTs === 0 && !_navSpeaking && !speechSynthesis.speaking){ return _do(); }
-  let tries = 0;
-  const wait = () => {
-    if(tries++ > 60) return;
-    if(!navRecentlySilent()) return setTimeout(wait, 700);
-    _do();
-  };
-  setTimeout(wait, 700);
+
+  // OpenAI TTS (nova) — ten sam głos co nawigacja
+  try {
+    const r = await fetch('/api/tts', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({text: clean})
+    });
+    const d = await r.json();
+    if(d.url){
+      _navSpeaking = true;
+      if(_elAudio){ _elAudio.pause(); _elAudio = null; }
+      const audio = new Audio(d.url);
+      _elAudio = audio;
+      audio.onended  = () => { _elAudio = null; onEnd(); };
+      audio.onerror  = () => { _elAudio = null; onEnd(); };
+      audio.play().catch(() => { _elAudio = null; onEnd(); });
+      return;
+    }
+  } catch(e){}
+
+  // Fallback: Web Speech
+  const lang = currentLang==='pl'?'pl-PL':currentLang==='de'?'de-DE':'en-US';
+  _navSpeaking = true;
+  _speakWebFallback(clean, lang, onEnd);
 }
 
 // ── Lane guidance — SVG arrows ────────────────────────────────────────────────
@@ -9855,13 +9859,18 @@ function openAiAssistant(){
   }
   speechSynthesis.cancel();
   const name = profile.name || localStorage.getItem('ts_driver_name') || '';
-  const greeting = name ? `Hej ${name}, słucham!` : `Słucham, mów!`;
-  const utt = new SpeechSynthesisUtterance(greeting);
-  utt.lang = 'pl-PL'; utt.rate = 0.95; utt.pitch = 0.95;
-  const voice = _pickVoice('pl-PL', 'ai');
-  if(voice) utt.voice = voice;
-  utt.onend = () => { if(_bgAssistantActive) startBgListening(); };
-  _safespeak(utt);
+  const greetings = name ? [
+    `Hej ${name}! Słucham, co tam?`,
+    `Siema ${name}, co mogę zrobić?`,
+    `${name}, do usług! Gadaj.`,
+    `Hej ${name}! Wszystko OK na trasie?`,
+  ] : [
+    `Hej! Słucham, co potrzebujesz?`,
+    `Cześć! Jestem tu, gadaj śmiało.`,
+    `Do usług! Co mogę zrobić?`,
+  ];
+  const greeting = greetings[Math.floor(Math.random() * greetings.length)];
+  speakAi(greeting);
 }
 
 function startBgListening(){
