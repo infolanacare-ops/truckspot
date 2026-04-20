@@ -9869,8 +9869,8 @@ function startBgListening(){
   };
 
   rec.onresult = e => {
-    // Ignoruj gdy AI mówi lub przetwarza
-    if(speechSynthesis.speaking || _aiProcessing) return;
+    // Ignoruj gdy AI/navi mówi (używamy HTML Audio, nie speechSynthesis) lub przetwarza
+    if(_navSpeaking || !!_elAudio || _aiProcessing) return;
     const last = e.results[e.results.length - 1];
     if(!last.isFinal) return;
     const transcript = last[0].transcript.trim();
@@ -9878,26 +9878,26 @@ function startBgListening(){
   };
 
   rec.onerror = e => {
+    document.getElementById('fab-ai')?.classList.remove('listening');
+    window._bgRecognition = null;
     if(e.error === 'not-allowed' || e.error === 'service-not-allowed'){
       _bgAssistantActive = false;
       _setAssistantBtn(false);
-      document.getElementById('fab-ai')?.classList.remove('listening');
-      window._bgRecognition = null;
+      showAlert('🎤','Brak dostępu do mikrofonu','Zezwól na mikrofon w ustawieniach przeglądarki lub sprawdź czy strona jest otwarta przez HTTPS.');
     }
-    // no-speech, audio-capture itp. — continuous sam się odnowi
+    // no-speech, audio-capture itp. — continuous sam się odnowi przez onend
   };
 
   rec.onend = () => {
-    // continuous kończy się tylko przy błędzie lub abort() — restartuj
     document.getElementById('fab-ai')?.classList.remove('listening');
     window._bgRecognition = null;
     if(!_bgAssistantActive) return;
-    // Poczekaj aż AI skończy mówić, potem wznów
+    // Poczekaj aż AI/navi skończy mówić (HTML Audio), potem wznów
     const resume = () => {
-      if(speechSynthesis.speaking) return setTimeout(resume, 600);
+      if(_navSpeaking || !!_elAudio) return setTimeout(resume, 400);
       if(_bgAssistantActive) startBgListening();
     };
-    setTimeout(resume, 600);
+    setTimeout(resume, 400);
   };
 
   try{ rec.start(); }
