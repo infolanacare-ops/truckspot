@@ -3064,10 +3064,11 @@ body.navigating .convoy-btn{display:none}
   <!-- Layer switcher -->
   <button class="fab-layers" id="fab-layers" onclick="toggleLayersMenu()" title="Zmień styl mapy"><span class="ts-icon"><svg><use href="#ts-map"/></svg></span></button>
   <div class="layers-menu" id="layers-menu">
-    <button class="layers-menu-item" id="lm-25d" onclick="toggle25d()"><span class="lm-icon">🎯</span>2.5D</button>
-    <button class="layers-menu-item active" id="lm-streets" onclick="setMapLayer('streets')"><span class="lm-icon"><span class="ts-icon"><svg><use href="#ts-map"/></svg></span></span>2D</button>
-    <button class="layers-menu-item" id="lm-satellite" onclick="setMapLayer('satellite')"><span class="lm-icon"><span class="ts-icon"><svg><use href="#ts-antenna"/></svg></span></span>Satelita</button>
-    <button class="layers-menu-item" id="lm-dark" onclick="setMapLayer('dark')"><span class="lm-icon"><span class="ts-icon"><svg><use href="#ts-moon"/></svg></span></span>Ciemna</button>
+    <button class="layers-menu-item" id="lm-25d" onclick="setLayerMode('25d')"><span class="lm-icon">🎯</span>2.5D</button>
+    <button class="layers-menu-item active" id="lm-2d" onclick="setLayerMode('2d')"><span class="lm-icon"><span class="ts-icon"><svg><use href="#ts-map"/></svg></span></span>2D</button>
+    <button class="layers-menu-item" id="lm-sat25d" onclick="setLayerMode('sat25d')"><span class="lm-icon">🛰️</span>Satelita 2.5D</button>
+    <button class="layers-menu-item" id="lm-dark25d" onclick="setLayerMode('dark25d')"><span class="lm-icon"><span class="ts-icon"><svg><use href="#ts-moon"/></svg></span></span>Ciemna 2.5D</button>
+    <button class="layers-menu-item" id="lm-top" onclick="setLayerMode('top')"><span class="lm-icon">⬆️</span>Widok z góry</button>
   </div>
 
   <div class="bottom-nav">
@@ -8872,10 +8873,8 @@ function stopNavigation(){
   ['ts-cluster-circles','ts-cluster-count','ts-uncluster-circles','ts-uncluster-labels']
     .forEach(id=>{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility','visible'); });
   // Przywróć styl mapy (respektuj wybrany layer)
-  const baseStyle = (typeof LAYER_STYLES !== 'undefined' && _currentLayer)
-    ? LAYER_STYLES[_currentLayer]()
-    : 'mapbox://styles/mapbox/streets-v12';
-  map.setStyle(baseStyle);
+  const _restoreCfg = _LAYER_MODES[_currentLayer] || _LAYER_MODES['2d'];
+  map.setStyle(_restoreCfg.style);
   map.once('style.load', ()=>{ if(activeFilters.size>0) applyFilterToMarkers(); else renderMarkers([]); });
   showAlert('🏁','','Navigation stopped');
 }
@@ -8895,16 +8894,19 @@ const REPORT_CFG = {
 };
 
 // ── MAP LAYER SWITCHER ─────────────────────────────────────────────────────
-let _currentLayer = 'streets';
-const LAYER_STYLES = {
-  streets:   () => document.body.classList.contains('light') ? 'mapbox://styles/mapbox/streets-v12' : 'mapbox://styles/mapbox/streets-v12',
-  satellite: () => 'mapbox://styles/mapbox/satellite-streets-v12',
-  dark:      () => 'mapbox://styles/mapbox/dark-v11',
+let _currentLayer = '2d';
+const _LAYER_MODES = {
+  '25d':    { style:'mapbox://styles/mapbox/streets-v12',          pitch:60,  bearing:-17 },
+  '2d':     { style:'mapbox://styles/mapbox/streets-v12',          pitch:0,   bearing:0   },
+  'sat25d': { style:'mapbox://styles/mapbox/satellite-streets-v12',pitch:60,  bearing:-17 },
+  'dark25d':{ style:'mapbox://styles/mapbox/dark-v11',             pitch:60,  bearing:-17 },
+  'top':    { style:'mapbox://styles/mapbox/satellite-streets-v12',pitch:0,   bearing:0   },
 };
-const LAYER_ICONS = {
-  streets:   '<span class="ts-icon"><svg><use href="#ts-map"/></svg></span>',
-  satellite: '<span class="ts-icon"><svg><use href="#ts-antenna"/></svg></span>',
-  dark:      '<span class="ts-icon"><svg><use href="#ts-moon"/></svg></span>',
+// Zachowane dla kompatybilności z innymi miejscami kodu
+const LAYER_STYLES = {
+  streets:   ()=>'mapbox://styles/mapbox/streets-v12',
+  satellite: ()=>'mapbox://styles/mapbox/satellite-streets-v12',
+  dark:      ()=>'mapbox://styles/mapbox/dark-v11',
 };
 
 function toggleLayersMenu(){
@@ -8916,37 +8918,25 @@ function _closeLayersOutside(e){
     document.getElementById('layers-menu').classList.remove('open');
   }
 }
-let _25dActive = false;
 
-function toggle25d(){
-  _25dActive = !_25dActive;
+function setLayerMode(mode){
+  _currentLayer = mode;
   document.getElementById('layers-menu').classList.remove('open');
-  document.getElementById('lm-25d')?.classList.toggle('active', _25dActive);
-  ['streets','satellite','dark'].forEach(k=>document.getElementById('lm-'+k)?.classList.remove('active'));
-  if(_25dActive){
-    map.easeTo({pitch:60, bearing:-17, duration:1000});
-    showAlert('🎯','2.5D ON','Widok perspektywiczny');
-  } else {
-    map.easeTo({pitch:0, bearing:0, duration:800});
-    document.getElementById('lm-'+_currentLayer)?.classList.add('active');
-    showAlert('🗺️','2D','Widok płaski');
-  }
-}
-
-function setMapLayer(layer){
-  _currentLayer = layer;
-  _25dActive = false;
-  document.getElementById('lm-25d')?.classList.remove('active');
-  document.getElementById('layers-menu').classList.remove('open');
-  document.getElementById('fab-layers').innerHTML = LAYER_ICONS[layer];
-  ['streets','satellite','dark'].forEach(k=>{
-    document.getElementById('lm-'+k)?.classList.toggle('active', k===layer);
+  ['25d','2d','sat25d','dark25d','top'].forEach(k=>{
+    document.getElementById('lm-'+k)?.classList.toggle('active', k===mode);
   });
-  if(!navActive) map.easeTo({pitch:0, bearing:0, duration:600});
-  const style = LAYER_STYLES[layer]();
-  map.setStyle(style);
+  const cfg = _LAYER_MODES[mode];
+  if(!navActive) map.easeTo({pitch:cfg.pitch, bearing:cfg.bearing, duration:900});
+  map.setStyle(cfg.style);
   map.once('style.load', ()=>{ if(activeFilters.size>0) applyFilterToMarkers(); else renderMarkers([]); });
 }
+
+// Zachowane dla kompatybilności
+function setMapLayer(layer){
+  const map2mode = {streets:'2d', satellite:'sat25d', dark:'dark25d'};
+  setLayerMode(map2mode[layer]||'2d');
+}
+function toggle25d(){ setLayerMode(_currentLayer==='25d'?'2d':'25d'); }
 
 function toggleReportDial(){
   const items = document.getElementById('report-dial-items');
