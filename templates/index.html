@@ -5908,6 +5908,9 @@ let navSpeedKmh = 0;
 let _lastNavTickTs = 0; // timestamp poprzedniego GPS ticka — do obliczania prędkości z delty
 let _zuptSnapLat = null, _zuptSnapLng = null; // ZUPT: pozycja zamrożona gdy < 1 km/h
 let _snapEmaLat = null, _snapEmaLng = null;   // EMA wygładzenie snap pozycji (lewo/prawo)
+let _strBuf = [];           // bufor GPS dla Snap to Road (max 3 punkty)
+let _strPending = false;    // request Map Matching w toku
+let _strLat = null, _strLng = null; // ostatnia dobra pozycja Map Matched
 let _navLockedZoom = null; // Zoom lock: zamrożony zoom gdy < 5 km/h (TomTom standard)
 let navCurrentSpeedLimit = 0;
 let navVoiceQueue = [];      // look-ahead announcements
@@ -7576,6 +7579,31 @@ function setNavSpeed(kmh, limitKmh){
   if(limitKmh > 0) updateSpeedSign(limitKmh);
 }
 
+// Mapbox Map Matching — snap GPS do rzeczywistej drogi (nie tylko do trasy)
+// Buforuje 3 ostatnie punkty GPS, wysyła do API, dostaje pozycję na drodze
+async function _runSnapToRoad(lat, lng){
+  if(_strPending) return;
+  _strBuf.push([lng, lat]);
+  if(_strBuf.length > 3) _strBuf.shift();
+  if(_strBuf.length < 2) return;
+  _strPending = true;
+  try {
+    const coords   = _strBuf.map(p => p.join(',')).join(';');
+    const radiuses = _strBuf.map(() => '25').join(';');
+    const url = `https://api.mapbox.com/matching/v5/mapbox/driving/${coords}?geometries=geojson&radiuses=${radiuses}&steps=false&overview=false&access_token=${MAPBOX_TOKEN}`;
+    const r = await fetch(url);
+    const d = await r.json();
+    // Ostatni non-null tracepoint = aktualna pozycja na drodze
+    if(d.tracepoints){
+      for(let i = d.tracepoints.length - 1; i >= 0; i--){
+        const tp = d.tracepoints[i];
+        if(tp?.location){ _strLat = tp.location[1]; _strLng = tp.location[0]; break; }
+      }
+    }
+  } catch(e){}
+  _strPending = false;
+}
+
 function onNavPosition(pos){
   if(!navActive) return;
   const lat=pos.coords.latitude, lng=pos.coords.longitude;
@@ -7613,9 +7641,12 @@ function onNavPosition(pos){
   } else {
     snapLat = lat; snapLng = lng;
   }
-  // Pozycja strzałki = dokładnie punkt rzutu na odcinek trasy (zawsze ON route)
-  // Brak EMA — rzut na segment jest już gładki, EMA ciągnęłoby strzałkę poza trasę
-  setGpsArrow(snapLat, snapLng);
+  // Snap to Road: wyślij GPS do Mapbox Map Matching (async, nie blokuje)
+  // Używa ostatniego dobrego wyniku — fallback na route snap gdy API nie odpowiedziało
+  _runSnapToRoad(lat, lng);
+  const arrowLat = _strLat ?? snapLat;
+  const arrowLng = _strLng ?? snapLng;
+  setGpsArrow(arrowLat, arrowLng);
 
   // Heading: GPS velocity (stabilny podczas jazdy) → delta pozycji → giroskop tylko gdy stoi
   // Google Maps / TomTom standard: kompas NIE jest używany podczas jazdy — zbyt szumny
@@ -7702,7 +7733,8 @@ function onNavPosition(pos){
   }
 
   // Centrum na samochodzie + padding żeby strzałka była w dolnej części widocznej mapy
-  const camLat = snapLat, camLng = snapLng;
+  const camLat = _strLat ?? snapLat;
+  const camLng = _strLng ?? snapLng;
   if(!navOverviewMode && !navUserInteracting){
     const navBarH  = document.getElementById('nav-bottom')?.offsetHeight || 100;
     const navCardH = (document.getElementById('nav-maneuver-card')?.offsetHeight || 0)
@@ -7926,6 +7958,7 @@ async function rerouteNavigation(fromLat, fromLng){
     navOffRouteTicks   = 0;
     navRerouteWarned   = false;
     _snapEmaLat = null; _snapEmaLng = null;
+    _strBuf = []; _strLat = null; _strLng = null; // reset snap-to-road po reroute
     navWarnedHeightIds = new Set();
 
     buildRouteDistances();
