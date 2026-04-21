@@ -6094,36 +6094,55 @@ let _tirWarnMarkers  = [];
 
 async function scanRouteRestrictions(coords){
   if(currentMode !== 'tir' || !coords.length) return;
-  // Bbox całej trasy
-  const lats = coords.map(c=>c[1]), lngs = coords.map(c=>c[0]);
-  const south = Math.min(...lats), north = Math.max(...lats);
-  const west  = Math.min(...lngs), east  = Math.max(...lngs);
-  try {
-    const r = await fetch(`/api/route-restrictions?south=${south}&west=${west}&north=${north}&east=${east}`);
-    const list = await r.json();
-    _tirRestrictions = list;
-    _tirWarnedSet.clear();
-    // Rysuj markery ostrzeżeń na mapie
-    _tirWarnMarkers.forEach(m=>m.remove());
-    _tirWarnMarkers = [];
-    list.forEach(p=>{
-      const label = [
-        p.maxweight ? `⚖️${p.maxweight}t` : '',
-        p.maxheight ? `📏${p.maxheight}m` : '',
-        p.maxwidth  ? `↔️${p.maxwidth}m`  : '',
-      ].filter(Boolean).join(' ');
-      if(!label) return;
-      const el = document.createElement('div');
-      el.style.cssText = 'background:#ef4444;color:#fff;border-radius:8px;padding:2px 6px;font-size:.65rem;font-weight:800;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.4);cursor:pointer;border:2px solid #fff';
-      el.textContent = label;
-      el.title = p.name || 'Ograniczenie TIR';
-      const mk = new mapboxgl.Marker({element:el}).setLngLat([p.lng,p.lat]).addTo(map);
-      _tirWarnMarkers.push(mk);
-    });
-    if(list.length){
-      showAlert('⚠️','Ograniczenia TIR na trasie',`Znaleziono ${list.length} ograniczeń (waga/wysokość/szerokość)`);
+  const ROUTE_CORRIDOR_KM = 0.3; // tylko 300m od linii trasy
+  const SEG_KM = 80;
+  const segments = [];
+  let segStart = 0, segDist = 0;
+  for(let i=1; i<coords.length; i++){
+    segDist += haversineKm(coords[i][1],coords[i][0],coords[i-1][1],coords[i-1][0]);
+    if(segDist >= SEG_KM || i === coords.length-1){
+      const slice = coords.slice(segStart, i+1);
+      const lats = slice.map(c=>c[1]), lngs = slice.map(c=>c[0]);
+      segments.push({
+        south:(Math.min(...lats)-0.003).toFixed(5), north:(Math.max(...lats)+0.003).toFixed(5),
+        west: (Math.min(...lngs)-0.003).toFixed(5), east: (Math.max(...lngs)+0.003).toFixed(5),
+      });
+      segStart = i; segDist = 0;
     }
-  } catch(e){ console.warn('Restrictions scan error:', e); }
+  }
+  const allRestrictions = [];
+  for(const seg of segments){
+    try {
+      const r = await fetch(`/api/route-restrictions?south=${seg.south}&west=${seg.west}&north=${seg.north}&east=${seg.east}`);
+      const list = await r.json();
+      if(Array.isArray(list)) allRestrictions.push(...list);
+    } catch(e){ /* skip segment */ }
+  }
+  // Filtruj tylko te w korytarzu 300m od trasy
+  const onRoute = allRestrictions.filter(p =>
+    pointToRouteDistKm(p.lat, p.lng, coords) <= ROUTE_CORRIDOR_KM
+  );
+  _tirRestrictions = onRoute;
+  _tirWarnedSet.clear();
+  _tirWarnMarkers.forEach(m=>m.remove());
+  _tirWarnMarkers = [];
+  onRoute.forEach(p=>{
+    const label = [
+      p.maxweight ? `⚖️${p.maxweight}t` : '',
+      p.maxheight ? `📏${p.maxheight}m` : '',
+      p.maxwidth  ? `↔️${p.maxwidth}m`  : '',
+    ].filter(Boolean).join(' ');
+    if(!label) return;
+    const el = document.createElement('div');
+    el.style.cssText = 'background:#ef4444;color:#fff;border-radius:8px;padding:2px 6px;font-size:.65rem;font-weight:800;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.4);cursor:pointer;border:2px solid #fff';
+    el.textContent = label;
+    el.title = p.name || 'Ograniczenie TIR';
+    const mk = new mapboxgl.Marker({element:el}).setLngLat([p.lng,p.lat]).addTo(map);
+    _tirWarnMarkers.push(mk);
+  });
+  if(onRoute.length){
+    showAlert('⚠️','Ograniczenia TIR na trasie',`Znaleziono ${onRoute.length} ograniczeń na Twojej drodze`);
+  }
 }
 
 function checkTirRestrictionsNearby(lat, lng){
@@ -6131,10 +6150,22 @@ function checkTirRestrictionsNearby(lat, lng){
   const h = parseFloat(document.getElementById('tir-height')?.value) || 4.0;
   const w = parseFloat(document.getElementById('tir-weight')?.value) || 40000;
   const wd= parseFloat(document.getElementById('tir-width')?.value)  || 2.55;
+  // Indeks trasy dla aktualnej pozycji
+  const myRouteIdx = navCIdx || 0;
   _tirRestrictions.forEach((p,i)=>{
     if(_tirWarnedSet.has(i)) return;
-    const dist = haversineKm(lat, lng, p.lat, p.lng) * 1000; // metry
+    const dist = haversineKm(lat, lng, p.lat, p.lng) * 1000;
     if(dist > 900) return;
+    // Sprawdź czy ograniczenie jest PRZED kierowcą na trasie (nie za nim)
+    if(routeCoords.length > 1){
+      let restrIdx = 0, minD = Infinity;
+      for(let j = myRouteIdx; j < routeCoords.length; j++){
+        const d = haversineKm(p.lat, p.lng, routeCoords[j][1], routeCoords[j][0]);
+        if(d < minD){ minD = d; restrIdx = j; }
+      }
+      // Jeśli najbliższy punkt trasy do ograniczenia jest ZA nami — ignoruj
+      if(restrIdx <= myRouteIdx) return;
+    }
     // Sprawdź czy ograniczenie dotyczy tego TIR-a
     const mw = parseFloat(p.maxweight);
     const mh = parseFloat(p.maxheight);
@@ -6147,14 +6178,12 @@ function checkTirRestrictionsNearby(lat, lng){
       mh && h>mh      ? `📏 Wysokość ${mh}m (Twój TIR: ${h}m)` : '',
       mx && wd>mx     ? `↔️ Szerokość ${mx}m (Twój TIR: ${wd}m)` : '',
     ].filter(Boolean).join('\n');
-    // Alert głosowy
     const msg = `Uwaga! Za ${Math.round(dist)} metrów ograniczenie dla ciężarówek!`;
     if(window.speechSynthesis){
       const utt = new SpeechSynthesisUtterance(msg);
       utt.lang = 'pl-PL'; utt.rate = 1.1;
       window.speechSynthesis.speak(utt);
     }
-    // Modal z opcją objazdu
     _showTirWarningModal(label, p.lat, p.lng, Math.round(dist));
   });
 }
