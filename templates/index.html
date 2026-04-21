@@ -4332,8 +4332,8 @@ let markers=[], osmMarkers=[], userSpotMarkers=[];
 let allParkings=[], userSpots=[];
 let osmLoading=false;
 let fuelStationMarkers=[], allFuelStations=[], _fuelLoading=false;
-const FUEL_FILTER_IDS = new Set(['fuel','adblue','fs_hgv','fs_dkv','fs_uta','fs_as24','fs_e100','fs_shell','fs_adblue']);
-const FUEL_CARD_MAP = {fuel:'hgv',adblue:'adblue',fs_hgv:'hgv',fs_dkv:'dkv',fs_uta:'uta',fs_as24:'as24',fs_e100:'e100',fs_shell:'shell',fs_adblue:'adblue'};
+const FUEL_FILTER_IDS = new Set(['fs_hgv','fs_dkv','fs_uta','fs_as24','fs_e100','fs_shell','fs_adblue']);
+const FUEL_CARD_MAP = {fs_hgv:'hgv',fs_dkv:'dkv',fs_uta:'uta',fs_as24:'as24',fs_e100:'e100',fs_shell:'shell',fs_adblue:'adblue'};
 const TS_TRUCK_BTN = '<span class="ts-icon"><svg><use href="#ts-truck"/></svg></span> JEDŹ';
 let pickingMode=false, spotLat=null, spotLng=null;
 let spotStars=1, spotCat='parking', spotTempMarker=null;
@@ -5835,12 +5835,11 @@ const FILTER_DEFS = [
   { section: { pl:'Parkingi TIR', en:'TIR Parkings', de:'LKW-Parkplätze', es:'Aparcamientos TIR' }, chips: [
     { id:'all_parkings', pl:'🅿️ Wszystkie parkingi', en:'🅿️ All parkings', icon:'🅿️' },
   ]},
-  { section: { pl:'Paliwo i Pojazd', en:'Fuel & Vehicle', de:'Kraftstoff & Fahrzeug', es:'Combustible y Vehículo' }, chips: [
-    { id:'fuel',       pl:'Stacja paliw',          en:'Fuel station',        icon:'⛽' },
-    { id:'adblue',     pl:'AdBlue',                en:'AdBlue',              icon:'🟦' },
+  { section: { pl:'Pojazd i serwis', en:'Vehicle & Service', de:'Fahrzeug & Service', es:'Vehículo y Servicio' }, chips: [
     { id:'electricity',pl:'Ładowanie EV / Prąd',  en:'EV / Electricity',    icon:'🔋' },
     { id:'repair',     pl:'Warsztat',              en:'Repair shop',         icon:'🔧' },
-    { id:'truck_wash', pl:'Myjnia dla ciężarówek', en:'Truck wash',          icon:'🚿' },
+    { id:'truck_wash', pl:'Myjnia TIR',            en:'Truck wash',          icon:'🚿' },
+    { id:'adblue',     pl:'AdBlue na parkingu',    en:'AdBlue on-site',      icon:'🟦' },
   ]},
   { section: { pl:'Jedzenie', en:'Food', de:'Essen', es:'Comida' }, chips: [
     { id:'restaurant', pl:'Restauracja',     en:'Restaurant',    icon:'🍴' },
