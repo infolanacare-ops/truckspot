@@ -5180,6 +5180,7 @@ function toggleGps(){ if(gpsActive) stopGps(); else startGps(); }
 function startGps(){
   if(!navigator.geolocation){ showAlert('❌','GPS','Not available'); return; }
   gpsActive=true; setEl('gps-badge','ON'); document.getElementById('gps-badge').style.display='';
+  let _gpsCentered = false;
   gpsWatchId=navigator.geolocation.watchPosition(pos=>{
     const {latitude:lat,longitude:lng}=pos.coords;
     userLat=lat; userLng=lng;
@@ -5187,6 +5188,7 @@ function startGps(){
     if(!navActive){
       if(!gpsMarker) gpsMarker=mkGpsDotMarker(lat,lng);
       else gpsMarker.setLngLat([lng,lat]);
+      if(!_gpsCentered){ _gpsCentered=true; map.flyTo({center:[lng,lat],zoom:13,duration:1200}); }
     }
     allParkings.forEach(p=>{
       const d=haversineKm(lat,lng,p.lat,p.lng);
