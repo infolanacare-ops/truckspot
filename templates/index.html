@@ -200,6 +200,15 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--t
 #app{display:none;flex-direction:column;height:100%;position:relative}
 #app.visible{display:flex}
 
+.offline-bar{
+  position:fixed;top:0;left:0;right:0;z-index:9999;
+  background:#dc2626;color:#fff;font-size:.78rem;font-weight:700;
+  text-align:center;padding:.35rem 1rem;letter-spacing:.03em;
+  transform:translateY(-100%);transition:transform .3s ease;
+  display:flex;align-items:center;justify-content:center;gap:.5rem;
+}
+.offline-bar.show{transform:translateY(0)}
+body.offline .topbar{margin-top:28px}
 .topbar{
   flex-shrink:0;z-index:200;background:var(--panel);
   border-bottom:1px solid var(--border);padding:.55rem 1rem;
@@ -3049,6 +3058,7 @@ body.navigating .convoy-btn{display:none}
 <!-- ══════════════════════════════════════
      APP
 ══════════════════════════════════════ -->
+<div class="offline-bar" id="offline-bar">📡 Brak połączenia — mapa działa z cache</div>
 <div id="app">
   <div class="topbar">
     <div class="burger" onclick="openDrawer()"><span class="si"><svg viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></span></div>
@@ -4759,13 +4769,25 @@ function loadParkings(mode){
   checkParkingDeeplink();
   startMsgRefresh();
   startReportRefresh();
+  if(!navigator.onLine){
+    const cached = _loadParkingsCache();
+    if(cached){ allParkings=cached; if(activeFilters.size>0) applyFilterToMarkers(); else renderMarkers([]); checkParkingDeeplink(); }
+    else showAlert('📡','Brak połączenia','Brak danych offline. Połącz się z internetem.');
+    return;
+  }
   fetch(`/api/parkings?mode=${MODE_CONFIG[mode].apiMode}`)
     .then(r=>r.json()).then(data=>{
       allParkings=data;
+      _saveParkingsCache(data);
       if(activeFilters.size > 0) applyFilterToMarkers();
       else renderMarkers([]);
       checkParkingDeeplink();
-    }).catch(e=>{ console.error('parkings fetch error',e); showAlert('⚠️','','Błąd ładowania parkingów'); });
+    }).catch(e=>{
+      console.error('parkings fetch error',e);
+      const cached = _loadParkingsCache();
+      if(cached){ allParkings=cached; renderMarkers(cached); showAlert('📡','Tryb offline','Parkingi z ostatniego połączenia'); }
+      else showAlert('⚠️','','Błąd ładowania parkingów');
+    });
 }
 
 // ── GL Cluster rendering ────────────────────────────────────────────────────
@@ -5467,6 +5489,7 @@ function closeAlert(){document.getElementById('alert-toast').classList.remove('s
 // UTILS
 // ══════════════════════════════════════
 async function navigateTo(lat, lng, name){
+  if(!_requireOnline('Wyznaczanie trasy')) return;
   closePanel();
   showAlert('🧭', 'Wyznaczam trasę...', name);
   try {
@@ -5504,6 +5527,7 @@ async function navigateTo(lat, lng, name){
     routeCircleMarkers.push(mkCircleMk(lat,lng,'#10b981',20));
     fitRouteCoords(routeCoords, 60);
     scanRouteRestrictions(routeCoords);
+    _saveRouteCache();
 
     closeAlert();
     startNavigation();
@@ -7110,6 +7134,75 @@ function releaseWakeLock(){
 document.addEventListener('visibilitychange', ()=>{
   if(navActive && document.visibilityState === 'visible') acquireWakeLock();
 });
+
+// ══════════════════════════════════════
+// OFFLINE / SŁABY ZASIĘG
+// ══════════════════════════════════════
+const TS_PARK_CACHE_KEY = 'ts_parkings_v1';
+const TS_ROUTE_CACHE_KEY = 'ts_last_route';
+
+function _setOffline(offline){
+  const bar = document.getElementById('offline-bar');
+  if(!bar) return;
+  bar.classList.toggle('show', offline);
+  document.body.classList.toggle('offline', offline);
+}
+
+function _saveParkingsCache(data){
+  try{ localStorage.setItem(TS_PARK_CACHE_KEY, JSON.stringify(data)); }catch(e){}
+}
+function _loadParkingsCache(){
+  try{ return JSON.parse(localStorage.getItem(TS_PARK_CACHE_KEY)||'null'); }catch(e){ return null; }
+}
+function _saveRouteCache(){
+  if(!routeCoords.length) return;
+  try{
+    sessionStorage.setItem(TS_ROUTE_CACHE_KEY, JSON.stringify({
+      coords: routeCoords, steps: routeSteps,
+      dist: routeTotalDist, dur: routeTotalDur,
+      destLat: navDestLat, destLng: navDestLng, destName: navDestName,
+    }));
+  }catch(e){}
+}
+function _loadRouteCache(){
+  try{ return JSON.parse(sessionStorage.getItem(TS_ROUTE_CACHE_KEY)||'null'); }catch(e){ return null; }
+}
+
+window.addEventListener('offline', ()=>{
+  _setOffline(true);
+  if(!allParkings.length){
+    const cached = _loadParkingsCache();
+    if(cached){ allParkings = cached; renderMarkers(cached); }
+  }
+  // Jeśli nawigacja aktywna — kontynuuj z cache trasy (GPS działa offline)
+  if(!routeCoords.length){
+    const cr = _loadRouteCache();
+    if(cr){
+      routeCoords = cr.coords; routeSteps = cr.steps;
+      routeTotalDist = cr.dist; routeTotalDur = cr.dur;
+      navDestLat = cr.destLat; navDestLng = cr.destLng; navDestName = cr.destName;
+      if(!navActive) drawRoute(routeCoords);
+      showAlert('📡','Brak sieci','Nawigacja działa z zapisanej trasy. GPS aktywny.');
+    }
+  }
+});
+window.addEventListener('online', ()=>{
+  _setOffline(false);
+  if(currentMode && allParkings.length === 0) loadParkings(currentMode);
+  else if(currentMode) loadOsmParkings();
+  if(activeFuelCards().length > 0) loadFuelStations();
+  showAlert('✅','Połączenie przywrócone','Dane odświeżone');
+  setTimeout(closeAlert, 2000);
+});
+
+// Sprawdź stan na starcie
+if(!navigator.onLine) _setOffline(true);
+
+function _requireOnline(featureName){
+  if(navigator.onLine) return true;
+  showAlert('📡', 'Brak połączenia', `${featureName} wymaga internetu. Sprawdź zasięg.`);
+  return false;
+}
 
 // ── Nav sheet (hamburger slide-up) ───────────────────────────────────────────
 function toggleNavSheet(){
