@@ -4332,8 +4332,8 @@ let markers=[], osmMarkers=[], userSpotMarkers=[];
 let allParkings=[], userSpots=[];
 let osmLoading=false;
 let fuelStationMarkers=[], allFuelStations=[], _fuelLoading=false;
-const FUEL_FILTER_IDS = new Set(['fs_hgv','fs_dkv','fs_uta','fs_as24','fs_e100','fs_shell','fs_adblue']);
-const FUEL_CARD_MAP = {fs_hgv:'hgv',fs_dkv:'dkv',fs_uta:'uta',fs_as24:'as24',fs_e100:'e100',fs_shell:'shell',fs_adblue:'adblue'};
+const FUEL_FILTER_IDS = new Set(['fuel','adblue','fs_hgv','fs_dkv','fs_uta','fs_as24','fs_e100','fs_shell','fs_adblue']);
+const FUEL_CARD_MAP = {fuel:'hgv',adblue:'adblue',fs_hgv:'hgv',fs_dkv:'dkv',fs_uta:'uta',fs_as24:'as24',fs_e100:'e100',fs_shell:'shell',fs_adblue:'adblue'};
 const TS_TRUCK_BTN = '<span class="ts-icon"><svg><use href="#ts-truck"/></svg></span> JEDŹ';
 let pickingMode=false, spotLat=null, spotLng=null;
 let spotStars=1, spotCat='parking', spotTempMarker=null;
@@ -4892,7 +4892,8 @@ function loadOsmParkings(){
 // STACJE TIR — fuel stations from Overpass
 // ══════════════════════════════════════
 function activeFuelCards(){
-  return [...activeFilters].filter(id=>FUEL_FILTER_IDS.has(id)).map(id=>FUEL_CARD_MAP[id]);
+  const cards = [...activeFilters].filter(id=>FUEL_FILTER_IDS.has(id)).map(id=>FUEL_CARD_MAP[id]);
+  return [...new Set(cards)];
 }
 
 function loadFuelStations(){
