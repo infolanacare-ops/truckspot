@@ -1897,6 +1897,8 @@ def api_fuel_stations():
             parts.append(f'node[amenity=fuel]["fuel:HGV_diesel"=yes]{bbox};')
         elif card == 'adblue':
             parts.append(f'node[amenity=fuel]["fuel:adblue"=yes]{bbox};')
+        elif card == 'regular':
+            parts.append(f'node[amenity=fuel]{bbox};')
         else:
             parts.append(f'node[amenity=fuel]["payment:{card}"=yes]{bbox};')
 

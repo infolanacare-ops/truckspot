@@ -4332,8 +4332,8 @@ let markers=[], osmMarkers=[], userSpotMarkers=[];
 let allParkings=[], userSpots=[];
 let osmLoading=false;
 let fuelStationMarkers=[], allFuelStations=[], _fuelLoading=false;
-const FUEL_FILTER_IDS = new Set(['fs_hgv','fs_dkv','fs_uta','fs_as24','fs_e100','fs_shell','fs_adblue']);
-const FUEL_CARD_MAP = {fs_hgv:'hgv',fs_dkv:'dkv',fs_uta:'uta',fs_as24:'as24',fs_e100:'e100',fs_shell:'shell',fs_adblue:'adblue'};
+const FUEL_FILTER_IDS = new Set(['fs_regular','fs_hgv','fs_dkv','fs_uta','fs_as24','fs_e100','fs_shell','fs_adblue']);
+const FUEL_CARD_MAP = {fs_regular:'regular',fs_hgv:'hgv',fs_dkv:'dkv',fs_uta:'uta',fs_as24:'as24',fs_e100:'e100',fs_shell:'shell',fs_adblue:'adblue'};
 const TS_TRUCK_BTN = '<span class="ts-icon"><svg><use href="#ts-truck"/></svg></span> JEDŹ';
 let pickingMode=false, spotLat=null, spotLng=null;
 let spotStars=1, spotCat='parking', spotTempMarker=null;
@@ -5886,6 +5886,9 @@ const FILTER_DEFS = {
       { id:'hotel',      pl:'Hotel',      en:'Hotel',      icon:'🏨' },
       { id:'pool',       pl:'Basen',      en:'Pool',       icon:'🏊' },
     ]},
+    { section: { pl:'⛽ Stacje paliw', en:'⛽ Fuel stations', de:'⛽ Tankstellen', es:'⛽ Gasolineras' }, chips: [
+      { id:'fs_regular', pl:'Wszystkie stacje', en:'All stations', icon:'⛽' },
+    ]},
   ],
   tourist: [
     { section: { pl:'Miejsca', en:'Places', de:'Orte', es:'Lugares' }, chips: [
@@ -5901,6 +5904,9 @@ const FILTER_DEFS = {
       { id:'water',      pl:'Woda',        en:'Water',       icon:'🚰' },
       { id:'hotel',      pl:'Hotel',       en:'Hotel',       icon:'🏨' },
       { id:'pool',       pl:'Basen',       en:'Pool',        icon:'🏊' },
+    ]},
+    { section: { pl:'⛽ Stacje paliw', en:'⛽ Fuel stations', de:'⛽ Tankstellen', es:'⛽ Gasolineras' }, chips: [
+      { id:'fs_regular', pl:'Wszystkie stacje', en:'All stations', icon:'⛽' },
     ]},
   ],
 };
