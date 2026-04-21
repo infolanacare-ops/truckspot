@@ -10509,6 +10509,8 @@ function renderCameraMarkers(elements){
     const isUser   = source === 'user';
     const isStatic = ['lufop','opengatso','osm'].includes(source); // import statyczny
     const confirms = el.tags?.confirms ?? el.confirms ?? 0;
+    const isVerified = isUser ? confirms >= 1 : (source === 'lufop' || source === 'opengatso');
+    el._verified = isVerified;
     const camType  = el.type || el.tags?.camera_type || 'fixed';
     const cfg      = CAM_TYPE_CFG[camType] || CAM_TYPE_CFG.fixed;
     // Kolor: statyczne=pełny, niezweryfikowany user=półprzezroczysty
@@ -10525,7 +10527,9 @@ function renderCameraMarkers(elements){
       : '';
     const confirmBadge = (isUser && confirms > 0)
       ? `<text x="32" y="18" text-anchor="middle" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="6.5" fill="#22c55e">✓${confirms}</text>`
-      : '';
+      : (!isVerified && !isUser)
+        ? `<text x="32" y="18" text-anchor="middle" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="8" fill="#94a3b8">?</text>`
+        : '';
     const html = mkPin(color,
       `<g transform="translate(8,7)" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <svg width="24" height="24" viewBox="0 0 24 24">${CAMERA_SVG}</svg></g>${label}${typeBadge}${confirmBadge}${srcBadge}`);
@@ -10534,8 +10538,10 @@ function renderCameraMarkers(elements){
         openCamConfirm(el);
       } else {
         const sp = maxspeed ? ` · ${maxspeed} km/h` : '';
-        const srcLabel = source === 'lufop' ? ' · Lufop' : source === 'opengatso' ? ' · OpenGATSO' : '';
-        showAlert(cfg.icon, cfg.label + sp, (el.tags?.direction ? '→ '+el.tags.direction : 'Zwolnij!') + srcLabel);
+        const srcLabel = source === 'lufop' ? ' · Lufop' : source === 'opengatso' ? ' · OpenGATSO' : ' · OSM';
+        const unverNote = !isVerified ? ' · ⚠️ Niezweryfikowany' : '';
+        showAlert(cfg.icon, cfg.label + sp, (el.tags?.direction ? '→ '+el.tags.direction : 'Zwolnij!') + srcLabel + unverNote, null,
+          !isVerified ? [{label:'❌ Już go nie ma', action:()=>{ mk.remove(); cameraMarkers.splice(cameraMarkers.indexOf(mk),1); showAlert('✅','Dzięki!','Zgłoszenie zapisane'); setTimeout(closeAlert,2000); }}] : null);
       }
     });
     mk._camData = el;
@@ -10628,7 +10634,7 @@ function _getBeepCtx(){
   if(_beepCtx.state === 'suspended') _beepCtx.resume();
   return _beepCtx;
 }
-function playBeep(freq=900, dur=0.18, vol=0.6){
+function playBeep(freq=900, dur=0.18, vol=1.0){
   try{
     const ctx = _getBeepCtx();
     const osc = ctx.createOscillator();
@@ -10679,35 +10685,41 @@ function checkNavCameras(lat, lng){
     const camType = camData.type || camData.tags?.camera_type || 'fixed';
     const cfg = CAM_TYPE_CFG[camType] || CAM_TYPE_CFG.fixed;
     const typeLabel = currentLang==='pl' ? cfg.label+' fotoradar' : cfg.label+' speed camera';
+    const verified = camData._verified !== false; // domyślnie true dla user kamer
 
-    // 500m — pierwszy alert
-    const key500 = `${base}_0`;
-    if(d < 500 && !navAnnouncedCameras.has(key500)){
+    // 1000m — pierwszy alert (tylko zweryfikowane)
+    const key1000 = `${base}_0`;
+    if(d < 1000 && !navAnnouncedCameras.has(key1000) && verified){
+      navAnnouncedCameras.add(key1000);
+      const txt = currentLang==='pl' ? `${typeLabel} za 1 kilometr` : `${typeLabel} in 1 kilometre`;
+      speakNav(txt, true);
+      playBeep(880, 0.3, 1.0);
+      setTimeout(()=>playBeep(880, 0.3, 1.0), 300);
+      showAlert(cfg.icon, `⚠️ ${typeLabel.toUpperCase()}`, 'Za 1 km · Zwolnij!');
+      setTimeout(closeAlert, 4000);
+    }
+    // 500m — drugi alert (tylko zweryfikowane)
+    const key500 = `${base}_1`;
+    if(d < 500 && !navAnnouncedCameras.has(key500) && verified){
       navAnnouncedCameras.add(key500);
       const txt = currentLang==='pl' ? `${typeLabel} za 500 metrów` : `${typeLabel} in 500 metres`;
       speakNav(txt, true);
-      playBeep(880, 0.25);
-      showAlert(cfg.icon, `⚠️ ${typeLabel.toUpperCase()}`, 'Za 500 m · Zwolnij!');
-      setTimeout(closeAlert, 4000);
+      playBeep(1000, 0.25, 1.0);
+      setTimeout(()=>playBeep(1000, 0.25, 1.0), 250);
+      setTimeout(()=>playBeep(1000, 0.25, 1.0), 500);
+      showAlert(cfg.icon, `🚨 ${typeLabel.toUpperCase()}`, 'Za 500 m · Zwolnij!');
+      setTimeout(closeAlert, 3000);
     }
-    // 200m — drugi alert
-    const key200 = `${base}_1`;
-    if(d < 200 && !navAnnouncedCameras.has(key200)){
+    // 200m — ostry alarm końcowy (tylko zweryfikowane)
+    const key200 = `${base}_2`;
+    if(d < 200 && !navAnnouncedCameras.has(key200) && verified){
       navAnnouncedCameras.add(key200);
-      const txt = currentLang==='pl' ? `${typeLabel} za 200 metrów` : `${typeLabel} in 200 metres`;
-      speakNav(txt, true);
-      playBeep(1000, 0.2);
-      setTimeout(()=>playBeep(1000, 0.2), 250);
-    }
-    // 50m — ostry alarm końcowy
-    const key50 = `${base}_2`;
-    if(d < 50 && !navAnnouncedCameras.has(key50)){
-      navAnnouncedCameras.add(key50);
       const txt = currentLang==='pl' ? 'Fotoradar!' : 'Speed camera!';
       speakNav(txt, true);
-      playBeep(1200, 0.15);
-      setTimeout(()=>playBeep(1200, 0.15), 180);
-      setTimeout(()=>playBeep(1200, 0.15), 360);
+      playBeep(1200, 0.2, 1.0);
+      setTimeout(()=>playBeep(1200, 0.2, 1.0), 180);
+      setTimeout(()=>playBeep(1200, 0.2, 1.0), 360);
+      setTimeout(()=>playBeep(1200, 0.2, 1.0), 540);
     }
   }
 
