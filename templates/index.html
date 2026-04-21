@@ -9431,13 +9431,9 @@ function renderMsgMarker(m, isNew){
 function showMsgDetail(m){
   const cat = MSG_CATS[m.cat] || MSG_CATS.info;
   const mid = 'msg-modal-'+Date.now();
-  const dmBtn = m.user_id ? `
-    <button onclick="document.getElementById('${mid}').remove();_openDm('${m.user_id}','${_escHtml(m.display_name||'Kierowca')}','${m.emoji}')"
-      style="display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:.9rem .5rem;
-      border:none;border-radius:16px;background:var(--blue);color:#fff;cursor:pointer;font-family:var(--font);flex:1">
-      <span style="font-size:1.4rem">💬</span>
-      <span style="font-size:.75rem;font-weight:700">Napisz</span>
-    </button>` : '';
+  const dmAction = m.user_id
+    ? `document.getElementById('${mid}').remove();_openDm('${m.user_id}','${_escHtml(m.display_name||'Kierowca')}','${m.emoji}')`
+    : `document.getElementById('${mid}').remove();openMsgsPanel()`;
   const modal = document.createElement('div');
   modal.id = mid;
   modal.style.cssText = 'position:fixed;inset:0;z-index:3200;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:1.5rem';
@@ -9471,7 +9467,12 @@ function showMsgDetail(m){
           <span style="font-size:1.4rem">👎</span>
           <span style="font-size:.75rem;font-weight:700">${m.dislikes||0}</span>
         </button>
-        ${dmBtn}
+        <button onclick="${dmAction}"
+          style="display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:.9rem .5rem;
+          border:none;border-radius:16px;background:#2563eb;color:#fff;cursor:pointer;font-family:var(--font);flex:1">
+          <span style="font-size:1.4rem">💬</span>
+          <span style="font-size:.75rem;font-weight:700">Chat</span>
+        </button>
       </div>
       <button onclick="document.getElementById('${mid}').remove()"
         style="width:100%;padding:.65rem;border:none;border-radius:12px;
