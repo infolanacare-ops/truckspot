@@ -1218,6 +1218,33 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
   transition:transform .15s,box-shadow .15s;
 }
 .route-fab:active{transform:translateX(-50%) scale(.96);box-shadow:0 2px 14px rgba(212,175,55,.4)}
+/* Auto-dymek potwierdzenia fotoradaru */
+.cam-confirm-bubble{
+  position:fixed;
+  bottom:calc(140px + env(safe-area-inset-bottom,0px));
+  left:50%;transform:translateX(-50%) translateY(20px);
+  z-index:1600;
+  background:var(--panel);border:1.5px solid #f97316;
+  border-radius:18px;padding:.75rem 1rem;
+  width:calc(100% - 2rem);max-width:320px;
+  box-shadow:0 8px 32px rgba(249,115,22,.35),0 2px 8px rgba(0,0,0,.4);
+  opacity:0;pointer-events:none;
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .25s;
+  display:flex;flex-direction:column;gap:.6rem;
+}
+.cam-confirm-bubble.show{
+  opacity:1;pointer-events:auto;
+  transform:translateX(-50%) translateY(0);
+}
+.cam-bubble-header{display:flex;align-items:center;gap:.5rem;font-size:.85rem;font-weight:700;color:var(--text)}
+.cam-bubble-sub{font-size:.72rem;color:var(--muted);margin-top:-.3rem}
+.cam-bubble-progress{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.cam-bubble-progress-bar{height:100%;background:#f97316;border-radius:2px;transition:width 12s linear}
+.cam-bubble-btns{display:flex;gap:.5rem}
+.cam-bubble-btn{flex:1;padding:.6rem;border:none;border-radius:12px;font-family:var(--font);font-size:.88rem;font-weight:700;cursor:pointer;transition:.15s}
+.cam-bubble-btn.yes{background:rgba(34,197,94,.15);color:#22c55e;border:1.5px solid rgba(34,197,94,.3)}
+.cam-bubble-btn.no{background:rgba(239,68,68,.12);color:#ef4444;border:1.5px solid rgba(239,68,68,.25)}
+.cam-bubble-btn:active{transform:scale(.95)}
 .route-fab-diamond{
   width:22px;height:28px;flex-shrink:0;
   background:linear-gradient(160deg,#fff9c4,#d4af37,#7a5c00);
@@ -3483,6 +3510,17 @@ body.navigating .convoy-btn{display:none}
 
 <!-- ROUTE PANEL -->
 <!-- ROUTE FAB — pill button at bottom center -->
+<!-- Auto-dymek potwierdzenia fotoradaru -->
+<div class="cam-confirm-bubble" id="cam-bubble">
+  <div class="cam-bubble-header" id="cam-bubble-hdr">📸 Fotoradar</div>
+  <div class="cam-bubble-sub" id="cam-bubble-sub">Czy fotoradar nadal tu jest?</div>
+  <div class="cam-bubble-progress"><div class="cam-bubble-progress-bar" id="cam-bubble-bar" style="width:100%"></div></div>
+  <div class="cam-bubble-btns">
+    <button class="cam-bubble-btn yes" id="cam-bubble-yes">✅ Jest!</button>
+    <button class="cam-bubble-btn no"  id="cam-bubble-no">❌ Nie ma</button>
+  </div>
+</div>
+
 <button class="route-fab" id="route-fab" onclick="openRoute()">
   <div class="route-fab-diamond"></div>
   NAVI
@@ -10625,6 +10663,90 @@ async function voteCam(id, vote){
   } catch(e){}
 }
 
+// ══════════════════════════════════════
+// AUTO-DYMEK POTWIERDZENIA FOTORADARU
+// ══════════════════════════════════════
+let _camBubbleTimer = null;
+let _camBubbleDismissed = new Set(); // klucze kamer już pokazanych
+
+function _showCamBubble(cam, key){
+  if(_camBubbleDismissed.has(key)) return;
+  _camBubbleDismissed.add(key);
+
+  const cfg = CAM_TYPE_CFG[cam.type || cam.tags?.camera_type || 'fixed'] || CAM_TYPE_CFG.fixed;
+  const sp = cam.maxspeed || cam.tags?.maxspeed || '';
+  const spLabel = sp ? ` · ${sp} km/h` : '';
+  const isUser = (cam.source === 'user') && cam.id;
+
+  const bubble = document.getElementById('cam-bubble');
+  document.getElementById('cam-bubble-hdr').textContent = `${cfg.icon} ${cfg.label}${spLabel}`;
+  document.getElementById('cam-bubble-sub').textContent = 'Czy fotoradar nadal tu jest?';
+
+  // Progress bar — auto-dismiss 12s
+  const bar = document.getElementById('cam-bubble-bar');
+  bar.style.transition = 'none'; bar.style.width = '100%';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    bar.style.transition = 'width 12s linear'; bar.style.width = '0%';
+  }));
+
+  bubble.classList.add('show');
+  if(_camBubbleTimer) clearTimeout(_camBubbleTimer);
+  _camBubbleTimer = setTimeout(()=>_hideCamBubble(), 12000);
+
+  document.getElementById('cam-bubble-yes').onclick = ()=>{
+    _hideCamBubble();
+    if(isUser) _voteCamNav(cam.id, 1);
+    else showAlert('✅','Dzięki!','Potwierdzono fotoradar'); setTimeout(closeAlert,2000);
+  };
+  document.getElementById('cam-bubble-no').onclick = ()=>{
+    _hideCamBubble();
+    if(isUser) _voteCamNav(cam.id, -1);
+    else _reportStaticGone(cam);
+  };
+}
+
+function _hideCamBubble(){
+  document.getElementById('cam-bubble')?.classList.remove('show');
+  if(_camBubbleTimer){ clearTimeout(_camBubbleTimer); _camBubbleTimer=null; }
+}
+
+async function _voteCamNav(id, vote){
+  try{
+    const resp = await fetch(`/api/cameras/${id}/vote`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({voter_id: getVoterId(), vote})
+    });
+    const data = await resp.json();
+    if(data.ok){
+      if(vote === 1){ addPts(3); showAlert('✅','+3 pkt!',`Potwierdzono! (${data.confirms}×)`); }
+      else { showAlert('❌','Zgłoszono','Dziękujemy! Po 3 głosach zniknie z mapy.'); }
+      setTimeout(closeAlert,3000);
+      loadUserCameras();
+    }
+  }catch(e){}
+}
+
+async function _reportStaticGone(cam){
+  // Dla kamer OSM/statycznych — zgłoś jako gone report w bazie user kamer
+  try{
+    const resp = await fetch('/api/cameras',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        lat: cam.lat, lng: cam.lng || cam.lon,
+        voter_id: getVoterId(),
+        type: cam.type || 'fixed',
+        gone_report: true,
+        confirms: -1,
+      })
+    });
+    const data = await resp.json();
+    if(data.ok) showAlert('❌','Zgłoszono','Dziękujemy! Po kilku zgłoszeniach zniknie z mapy.');
+  }catch(e){
+    showAlert('❌','Zgłoszono','Zapisano lokalnie');
+  }
+  setTimeout(closeAlert,3000);
+}
+
 // Krótki dźwięk ostrzegawczy (Web Audio)
 let _beepCtx = null;
 function _getBeepCtx(){
@@ -10698,17 +10820,19 @@ function checkNavCameras(lat, lng){
       showAlert(cfg.icon, `⚠️ ${typeLabel.toUpperCase()}`, 'Za 1 km · Zwolnij!');
       setTimeout(closeAlert, 4000);
     }
-    // 500m — drugi alert (tylko zweryfikowane)
+    // 500m — drugi alert + dymek potwierdzenia
     const key500 = `${base}_1`;
-    if(d < 500 && !navAnnouncedCameras.has(key500) && verified){
+    if(d < 500 && !navAnnouncedCameras.has(key500)){
       navAnnouncedCameras.add(key500);
-      const txt = currentLang==='pl' ? `${typeLabel} za 500 metrów` : `${typeLabel} in 500 metres`;
-      speakNav(txt, true);
-      playBeep(1000, 0.25, 1.0);
-      setTimeout(()=>playBeep(1000, 0.25, 1.0), 250);
-      setTimeout(()=>playBeep(1000, 0.25, 1.0), 500);
-      showAlert(cfg.icon, `🚨 ${typeLabel.toUpperCase()}`, 'Za 500 m · Zwolnij!');
-      setTimeout(closeAlert, 3000);
+      if(verified){
+        const txt = currentLang==='pl' ? `${typeLabel} za 500 metrów` : `${typeLabel} in 500 metres`;
+        speakNav(txt, true);
+        playBeep(1000, 0.25, 1.0);
+        setTimeout(()=>playBeep(1000, 0.25, 1.0), 250);
+        setTimeout(()=>playBeep(1000, 0.25, 1.0), 500);
+      }
+      // Dymek potwierdzenia — dla wszystkich kamer (zweryfikowanych i nie)
+      _showCamBubble(camData, `${base}_bubble`);
     }
     // 200m — ostry alarm końcowy (tylko zweryfikowane)
     const key200 = `${base}_2`;

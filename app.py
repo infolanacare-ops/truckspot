@@ -1197,6 +1197,24 @@ def api_cameras_post():
             if haversine_km(lat, lng, c["lat"], c["lng"]) < 0.2:
                 return jsonify({"ok": True, "id": c["id"], "duplicate": True})
 
+    # Gone report — ktoś mówi że kamery już nie ma (dla kamer statycznych OSM/Lufop)
+    if data.get("gone_report"):
+        for c in cameras:
+            if haversine_km(lat, lng, c["lat"], c["lng"]) < 0.1:
+                votes = c.setdefault("votes_by", {})
+                if voter_id not in votes:
+                    votes[voter_id] = -1
+                    c["confirms"] = sum(votes.values()) + len(c.get("confirmed_by", []))
+                    save_cameras(cameras)
+                return jsonify({"ok": True, "id": c.get("id"), "confirms": c.get("confirms", 0)})
+        # Brak istniejącego gone report — utwórz nowy z confirms=-1
+        new_id = max((c.get("id", 0) for c in cameras), default=0) + 1
+        cameras.append({"id": new_id, "lat": lat, "lng": lng, "type": str(data.get("type","fixed"))[:20],
+            "voter_id": voter_id, "ts": time.time(), "confirms": -1,
+            "votes_by": {voter_id: -1}, "confirmed_by": [], "source": "user", "gone_report": True})
+        save_cameras(cameras)
+        return jsonify({"ok": True, "id": new_id}), 201
+
     # Scalaj z istniejącym z innego usera w promieniu 100m — dodaj potwierdzenie
     for c in cameras:
         if haversine_km(lat, lng, c["lat"], c["lng"]) < 0.1:
