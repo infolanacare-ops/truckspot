@@ -1207,18 +1207,23 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
   bottom:calc(68px + env(safe-area-inset-bottom, 0px));
   left:50%;transform:translateX(-50%);
   z-index:899;
-  background:linear-gradient(135deg,#1d4ed8 0%,#4f46e5 50%,#7c3aed 100%);
+  background:linear-gradient(160deg,#ffe066 0%,#d4af37 40%,#b8860b 100%);
   border:none;border-radius:32px;
-  padding:.85rem 2rem;
-  display:flex;align-items:center;gap:.65rem;
-  color:#fff;font-family:var(--font-head);font-size:1rem;font-weight:900;
-  letter-spacing:.04em;text-transform:uppercase;
+  padding:.75rem 1.8rem .75rem 1.4rem;
+  display:flex;align-items:center;gap:.55rem;
+  color:#1a1000;font-family:var(--font-head);font-size:1.05rem;font-weight:900;
+  letter-spacing:.08em;text-transform:uppercase;
   cursor:pointer;white-space:nowrap;
-  box-shadow:0 6px 32px rgba(79,70,229,.6),0 2px 8px rgba(0,0,0,.4),0 1px 0 rgba(255,255,255,.15) inset;
+  box-shadow:0 6px 28px rgba(212,175,55,.55),0 2px 8px rgba(0,0,0,.45),0 1px 0 rgba(255,255,255,.35) inset;
   transition:transform .15s,box-shadow .15s;
 }
-.route-fab:active{transform:translateX(-50%) scale(.96);box-shadow:0 2px 14px rgba(79,70,229,.4)}
-.route-fab svg{flex-shrink:0;opacity:.85}
+.route-fab:active{transform:translateX(-50%) scale(.96);box-shadow:0 2px 14px rgba(212,175,55,.4)}
+.route-fab-diamond{
+  width:22px;height:28px;flex-shrink:0;
+  background:linear-gradient(160deg,#fff9c4,#d4af37,#7a5c00);
+  clip-path:polygon(50% 0%,100% 40%,50% 100%,0% 40%);
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.4));
+}
 body.navigating .route-fab{display:none!important}
 /* ── END ROUTE FAB ── */
 .fab-layers{
@@ -3479,13 +3484,8 @@ body.navigating .convoy-btn{display:none}
 <!-- ROUTE PANEL -->
 <!-- ROUTE FAB — pill button at bottom center -->
 <button class="route-fab" id="route-fab" onclick="openRoute()">
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-  </svg>
-  Dokąd jedziemy?
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-    <polyline points="18 15 12 9 6 15"/>
-  </svg>
+  <div class="route-fab-diamond"></div>
+  NAVI
 </button>
 
 <div class="route-panel" id="route-panel">
