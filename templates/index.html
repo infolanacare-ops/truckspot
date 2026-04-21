@@ -4639,6 +4639,8 @@ function saveProfileEdit(){
 // ══════════════════════════════════════
 function enterMode(mode){
   currentMode = mode;
+  activeFilters.clear();
+  updateFilterBadge();
   const cfg = MODE_CONFIG[mode];
   document.documentElement.style.setProperty('--accent',  cfg.color);
   document.documentElement.style.setProperty('--accent2', cfg.color2);
@@ -5831,43 +5833,77 @@ function fitRouteCoords(coords, pad=60){
 // ══════════════════════════════════════
 // FILTERS
 // ══════════════════════════════════════
-const FILTER_DEFS = [
-  { section: { pl:'Parkingi TIR', en:'TIR Parkings', de:'LKW-Parkplätze', es:'Aparcamientos TIR' }, chips: [
-    { id:'all_parkings', pl:'🅿️ Wszystkie parkingi', en:'🅿️ All parkings', icon:'🅿️' },
-  ]},
-  { section: { pl:'Pojazd i serwis', en:'Vehicle & Service', de:'Fahrzeug & Service', es:'Vehículo y Servicio' }, chips: [
-    { id:'electricity',pl:'Ładowanie EV / Prąd',  en:'EV / Electricity',    icon:'🔋' },
-    { id:'repair',     pl:'Warsztat',              en:'Repair shop',         icon:'🔧' },
-    { id:'truck_wash', pl:'Myjnia TIR',            en:'Truck wash',          icon:'🚿' },
-    { id:'adblue',     pl:'AdBlue na parkingu',    en:'AdBlue on-site',      icon:'🟦' },
-  ]},
-  { section: { pl:'Jedzenie', en:'Food', de:'Essen', es:'Comida' }, chips: [
-    { id:'restaurant', pl:'Restauracja',     en:'Restaurant',    icon:'🍴' },
-    { id:'shop',       pl:'Sklep / Market',  en:'Shop / Market', icon:'🛒' },
-  ]},
-  { section: { pl:'Bezpieczeństwo', en:'Security', de:'Sicherheit', es:'Seguridad' }, chips: [
-    { id:'secured',   pl:'Parking bezpieczeństwa', en:'Secured parking',  icon:'🔒' },
-    { id:'monitored', pl:'Obiekt monitorowany',    en:'CCTV monitored',   icon:'📹' },
-    { id:'lighting',  pl:'Oświetlenie',            en:'Lighting',         icon:'💡' },
-  ]},
-  { section: { pl:'Higiena i wygoda', en:'Hygiene & Comfort', de:'Hygiene & Komfort', es:'Higiene y Comodidad' }, chips: [
-    { id:'toilet',     pl:'Toaleta',         en:'Toilet',      icon:'🚽' },
-    { id:'shower',     pl:'Prysznic',        en:'Shower',      icon:'🚿' },
-    { id:'wifi',       pl:'Wi-Fi',           en:'Wi-Fi',       icon:'📶' },
-    { id:'water',      pl:'Woda',            en:'Water',       icon:'🚰' },
-    { id:'hotel',      pl:'Hotel',           en:'Hotel',       icon:'🏨' },
-    { id:'pool',       pl:'Basen',           en:'Pool',        icon:'🏊' },
-  ]},
-  { section: { pl:'⛽ Stacje TIR', en:'⛽ TIR Fuel Stations', de:'⛽ TIR-Tankstellen', es:'⛽ Gasolineras TIR' }, chips: [
-    { id:'fs_hgv',    pl:'Wszystkie TIR',  en:'All TIR',      icon:'🚛' },
-    { id:'fs_dkv',    pl:'DKV',            en:'DKV',          icon:'💳' },
-    { id:'fs_uta',    pl:'UTA',            en:'UTA',          icon:'💳' },
-    { id:'fs_as24',   pl:'AS24',           en:'AS24',         icon:'💳' },
-    { id:'fs_e100',   pl:'E100',           en:'E100',         icon:'💳' },
-    { id:'fs_shell',  pl:'Shell Card',     en:'Shell Card',   icon:'🐚' },
-    { id:'fs_adblue', pl:'AdBlue TIR',     en:'AdBlue TIR',   icon:'🟦' },
-  ]},
-];
+const FILTER_DEFS = {
+  tir: [
+    { section: { pl:'Parkingi TIR', en:'TIR Parkings', de:'LKW-Parkplätze', es:'Aparcamientos TIR' }, chips: [
+      { id:'all_parkings', pl:'🅿️ Wszystkie parkingi', en:'🅿️ All parkings', icon:'🅿️' },
+      { id:'secured',   pl:'Parking strzeżony',       en:'Secured parking',  icon:'🔒' },
+      { id:'monitored', pl:'Monitoring',              en:'CCTV monitored',   icon:'📹' },
+      { id:'lighting',  pl:'Oświetlenie',             en:'Lighting',         icon:'💡' },
+    ]},
+    { section: { pl:'Pojazd i serwis', en:'Vehicle & Service', de:'Fahrzeug & Service', es:'Vehículo y Servicio' }, chips: [
+      { id:'truck_wash', pl:'Myjnia TIR',         en:'Truck wash',      icon:'🚿' },
+      { id:'repair',     pl:'Warsztat',           en:'Repair shop',     icon:'🔧' },
+      { id:'electricity',pl:'Ładowanie EV / Prąd',en:'EV / Electricity',icon:'🔋' },
+      { id:'adblue',     pl:'AdBlue na parkingu', en:'AdBlue on-site',  icon:'🟦' },
+    ]},
+    { section: { pl:'Wygoda', en:'Comfort', de:'Komfort', es:'Comodidad' }, chips: [
+      { id:'shower',     pl:'Prysznic',       en:'Shower',      icon:'🚿' },
+      { id:'toilet',     pl:'Toaleta',        en:'Toilet',      icon:'🚽' },
+      { id:'restaurant', pl:'Restauracja',    en:'Restaurant',  icon:'🍴' },
+      { id:'shop',       pl:'Sklep',          en:'Shop',        icon:'🛒' },
+      { id:'wifi',       pl:'Wi-Fi',          en:'Wi-Fi',       icon:'📶' },
+      { id:'water',      pl:'Woda',           en:'Water',       icon:'🚰' },
+      { id:'hotel',      pl:'Hotel',          en:'Hotel',       icon:'🏨' },
+    ]},
+    { section: { pl:'⛽ Stacje TIR', en:'⛽ TIR Fuel Stations', de:'⛽ TIR-Tankstellen', es:'⛽ Gasolineras TIR' }, chips: [
+      { id:'fs_hgv',    pl:'Wszystkie TIR',  en:'All TIR',      icon:'🚛' },
+      { id:'fs_dkv',    pl:'DKV',            en:'DKV',          icon:'💳' },
+      { id:'fs_uta',    pl:'UTA',            en:'UTA',          icon:'💳' },
+      { id:'fs_as24',   pl:'AS24',           en:'AS24',         icon:'💳' },
+      { id:'fs_e100',   pl:'E100',           en:'E100',         icon:'💳' },
+      { id:'fs_shell',  pl:'Shell Card',     en:'Shell Card',   icon:'🐚' },
+      { id:'fs_adblue', pl:'AdBlue TIR',     en:'AdBlue TIR',   icon:'🟦' },
+    ]},
+  ],
+  bus: [
+    { section: { pl:'Miejsca noclegowe', en:'Overnight spots', de:'Übernachtungsplätze', es:'Lugares pernocta' }, chips: [
+      { id:'all_parkings', pl:'🚐 Wszystkie miejsca', en:'🚐 All spots', icon:'🚐' },
+      { id:'secured',      pl:'Strzeżony',           en:'Secured',       icon:'🔒' },
+      { id:'lighting',     pl:'Oświetlenie',         en:'Lighting',      icon:'💡' },
+    ]},
+    { section: { pl:'Pojazd', en:'Vehicle', de:'Fahrzeug', es:'Vehículo' }, chips: [
+      { id:'electricity', pl:'Ładowanie EV / Prąd', en:'EV / Electricity', icon:'🔋' },
+      { id:'water',       pl:'Punkt wodny',         en:'Water point',      icon:'🚰' },
+      { id:'repair',      pl:'Warsztat',            en:'Repair shop',      icon:'🔧' },
+    ]},
+    { section: { pl:'Wygoda', en:'Comfort', de:'Komfort', es:'Comodidad' }, chips: [
+      { id:'shower',     pl:'Prysznic',    en:'Shower',     icon:'🚿' },
+      { id:'toilet',     pl:'Toaleta',    en:'Toilet',     icon:'🚽' },
+      { id:'wifi',       pl:'Wi-Fi',      en:'Wi-Fi',      icon:'📶' },
+      { id:'restaurant', pl:'Restauracja',en:'Restaurant', icon:'🍴' },
+      { id:'shop',       pl:'Sklep',      en:'Shop',       icon:'🛒' },
+      { id:'hotel',      pl:'Hotel',      en:'Hotel',      icon:'🏨' },
+      { id:'pool',       pl:'Basen',      en:'Pool',       icon:'🏊' },
+    ]},
+  ],
+  tourist: [
+    { section: { pl:'Miejsca', en:'Places', de:'Orte', es:'Lugares' }, chips: [
+      { id:'all_parkings', pl:'🧳 Wszystkie miejsca', en:'🧳 All places', icon:'🧳' },
+    ]},
+    { section: { pl:'Wygoda', en:'Comfort', de:'Komfort', es:'Comodidad' }, chips: [
+      { id:'wifi',       pl:'Wi-Fi',       en:'Wi-Fi',       icon:'📶' },
+      { id:'toilet',     pl:'Toaleta',     en:'Toilet',      icon:'🚽' },
+      { id:'shower',     pl:'Prysznic',    en:'Shower',      icon:'🚿' },
+      { id:'restaurant', pl:'Restauracja', en:'Restaurant',  icon:'🍴' },
+      { id:'shop',       pl:'Sklep',       en:'Shop',        icon:'🛒' },
+      { id:'electricity',pl:'Prąd / EV',  en:'Power / EV',  icon:'🔋' },
+      { id:'water',      pl:'Woda',        en:'Water',       icon:'🚰' },
+      { id:'hotel',      pl:'Hotel',       en:'Hotel',       icon:'🏨' },
+      { id:'pool',       pl:'Basen',       en:'Pool',        icon:'🏊' },
+    ]},
+  ],
+};
 
 let activeFilters = new Set();
 let tempFilters = new Set();
@@ -5902,7 +5938,8 @@ function renderFilterPanel(){
     <div class="filter-chips">${radiusChips}</div>
   </div><hr style="border:none;border-top:1px solid var(--border);margin:.4rem 0 1rem">`;
 
-  const amenityHtml = FILTER_DEFS.map(group => {
+  const defs = FILTER_DEFS[currentMode] || FILTER_DEFS.tir;
+  const amenityHtml = defs.map(group => {
     const title = group.section[lang] || group.section.en;
     const isFuelSection = group.chips.some(c=>FUEL_FILTER_IDS.has(c.id));
     const chips = group.chips.map(c => {
