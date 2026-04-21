@@ -283,6 +283,133 @@ def api_spots_post():
         json.dump(spots, f, ensure_ascii=False, indent=2)
     return jsonify({"ok": True, "id": new_id}), 201
 
+ORS_API_KEY = os.environ.get("ORS_API_KEY", "")
+
+# Mapowanie typów manewrów ORS → Mapbox modifier
+_ORS_TURN = {0:'left',1:'right',2:'sharp left',3:'sharp right',4:'slight left',5:'slight right',6:'straight',7:'roundabout',8:'roundabout',9:'uturn',10:'arrive',11:'depart'}
+
+@app.route("/api/ors-route", methods=["POST"])
+def api_ors_route():
+    """Proxy ORS driving-hgv — prawdziwy routing TIR z ograniczeniami."""
+    if not ORS_API_KEY:
+        return jsonify({"error": "ORS key not configured"}), 503
+    body = request.get_json(silent=True) or {}
+    coords   = body.get("coordinates", [])
+    height   = float(body.get("height",  4.0))
+    weight   = float(body.get("weight", 40.0))
+    width    = float(body.get("width",  2.55))
+    length   = float(body.get("length", 18.75))
+    axleload = float(body.get("axleload", 11.5))
+
+    ors_body = {
+        "coordinates": coords,
+        "instructions": True,
+        "instructions_format": "text",
+        "language": "pl",
+        "units": "m",
+        "options": {
+            "vehicle_type": "hgv",
+            "profile_params": {
+                "restrictions": {
+                    "height": height,
+                    "weight": weight,
+                    "width": width,
+                    "length": length,
+                    "axleload": axleload
+                }
+            }
+        }
+    }
+    try:
+        r = _requests.post(
+            "https://api.openrouteservice.org/v2/directions/driving-hgv/geojson",
+            json=ors_body,
+            headers={"Authorization": ORS_API_KEY, "Content-Type": "application/json"},
+            timeout=20
+        )
+        if r.status_code != 200:
+            return jsonify({"error": r.text}), r.status_code
+        data = r.json()
+        feat = data["features"][0]
+        coords_out = feat["geometry"]["coordinates"]  # [[lng,lat],...]
+        props  = feat["properties"]
+        segs   = props.get("segments", [{}])
+        summ   = props.get("summary", {})
+
+        # Konwertuj kroki ORS → format zgodny z Mapbox
+        steps = []
+        for seg in segs:
+            for s in seg.get("steps", []):
+                t = s.get("type", 6)
+                steps.append({
+                    "distance": s.get("distance", 0),
+                    "duration": s.get("duration", 0),
+                    "name": s.get("name", ""),
+                    "maneuver": {
+                        "instruction": s.get("instruction", ""),
+                        "type": "arrive" if t == 10 else ("depart" if t == 11 else "turn"),
+                        "modifier": _ORS_TURN.get(t, "straight"),
+                        "location": coords_out[s["way_points"][0]] if s.get("way_points") else [0,0]
+                    }
+                })
+
+        result = {
+            "routes": [{
+                "distance": summ.get("distance", 0),
+                "duration": summ.get("duration", 0),
+                "geometry": {"coordinates": coords_out, "type": "LineString"},
+                "legs": [{"steps": steps}],
+                "weight_name": "ors-hgv"
+            }]
+        }
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/route-restrictions")
+def api_route_restrictions():
+    """Ograniczenia TIR wzdłuż trasy z OSM Overpass: maxweight, maxheight, maxwidth."""
+    try:
+        south = float(request.args.get("south", 0))
+        west  = float(request.args.get("west",  0))
+        north = float(request.args.get("north", 0))
+        east  = float(request.args.get("east",  0))
+        bbox  = f"{south},{west},{north},{east}"
+        query = f"""
+[out:json][timeout:15];
+(
+  way["maxweight"]({bbox});
+  way["maxheight"]({bbox});
+  way["maxwidth"]({bbox});
+  node["maxweight"]({bbox});
+  node["maxheight"]({bbox});
+  node["maxwidth"]({bbox});
+);
+out center tags;
+"""
+        r = _requests.post("https://overpass-api.de/api/interpreter",
+                           data={"data": query}, timeout=18)
+        elements = r.json().get("elements", [])
+        result = []
+        for el in elements:
+            tags = el.get("tags", {})
+            lat = el.get("lat") or el.get("center", {}).get("lat")
+            lng = el.get("lon") or el.get("center", {}).get("lon")
+            if not lat or not lng:
+                continue
+            mw = tags.get("maxweight")
+            mh = tags.get("maxheight")
+            mx = tags.get("maxwidth")
+            if mw or mh or mx:
+                result.append({"lat": lat, "lng": lng,
+                                "maxweight": mw, "maxheight": mh, "maxwidth": mx,
+                                "name": tags.get("name","")})
+        return jsonify(result)
+    except Exception as e:
+        return jsonify([])
+
+
 @app.route("/api/route-pois")
 def api_route_pois():
     """POI wzdłuż trasy: stacje, MOP, restauracje, autohof — Overpass API."""

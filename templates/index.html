@@ -5473,11 +5473,18 @@ async function navigateTo(lat, lng, name){
     );
     const fromLat = pos.coords.latitude, fromLng = pos.coords.longitude;
 
-    // Mapbox Directions API
     saveRouteOptsTirProfile();
-    const mbUrl = buildRouteUrl(`${fromLng},${fromLat};${lng},${lat}`);
-    const r = await fetch(mbUrl);
-    const data = await r.json();
+    let data = null;
+    if(currentMode === 'tir'){
+      // ORS driving-hgv — prawdziwy routing TIR
+      data = await _fetchOrsRoute(fromLat, fromLng, lat, lng);
+    }
+    if(!data?.routes?.length){
+      // Fallback: Mapbox
+      const mbUrl = buildRouteUrl(`${fromLng},${fromLat};${lng},${lat}`);
+      const r = await fetch(mbUrl);
+      data = await r.json();
+    }
     if(!data.routes?.length){ showAlert('⚠️','','Trasa nie znaleziona'); return; }
 
     const route = data.routes[0];
@@ -5493,6 +5500,7 @@ async function navigateTo(lat, lng, name){
     drawRoute(routeCoords); // [[lng,lat],...] GeoJSON order
     routeCircleMarkers.push(mkCircleMk(lat,lng,'#10b981',20));
     fitRouteCoords(routeCoords, 60);
+    scanRouteRestrictions(routeCoords);
 
     closeAlert();
     startNavigation();
@@ -5999,6 +6007,171 @@ let waypointCount = 0;
 let routeType = localStorage.getItem('ts_route_type') || 'fast';
 
 // Fallback routing dla TIR gdy pełne ograniczenia nie dają trasy
+// ══════════════════════════════════════════════════════
+// ORS HGV ROUTING — prawdziwy routing dla TIR
+// ══════════════════════════════════════════════════════
+async function _fetchOrsRoute(fromLat, fromLng, toLat, toLng, waypoints=[]){
+  try {
+    const h  = parseFloat(document.getElementById('tir-height')?.value)  || 4.0;
+    const wd = parseFloat(document.getElementById('tir-width')?.value)   || 2.55;
+    const w  = parseFloat(document.getElementById('tir-weight')?.value)  || 40000;
+    const l  = parseFloat(document.getElementById('tir-length')?.value)  || 18.75;
+    const coords = [
+      [fromLng, fromLat],
+      ...waypoints.map(p=>[p.lng, p.lat]),
+      [toLng, toLat]
+    ];
+    const r = await fetch('/api/ors-route', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        coordinates: coords,
+        height: h,
+        weight: (w/1000),
+        width: wd,
+        length: l,
+        axleload: 11.5
+      })
+    });
+    const data = await r.json();
+    if(data.routes?.length) return data;
+    return null;
+  } catch(e){
+    console.warn('ORS route error:', e);
+    return null;
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// OSTRZEŻENIA O OGRANICZENIACH TIR (OSM)
+// ══════════════════════════════════════════════════════
+let _tirRestrictions = [];   // [{lat,lng,maxweight,maxheight,maxwidth,name}]
+let _tirWarnedSet    = new Set();
+let _tirWarnMarkers  = [];
+
+async function scanRouteRestrictions(coords){
+  if(currentMode !== 'tir' || !coords.length) return;
+  // Bbox całej trasy
+  const lats = coords.map(c=>c[1]), lngs = coords.map(c=>c[0]);
+  const south = Math.min(...lats), north = Math.max(...lats);
+  const west  = Math.min(...lngs), east  = Math.max(...lngs);
+  try {
+    const r = await fetch(`/api/route-restrictions?south=${south}&west=${west}&north=${north}&east=${east}`);
+    const list = await r.json();
+    _tirRestrictions = list;
+    _tirWarnedSet.clear();
+    // Rysuj markery ostrzeżeń na mapie
+    _tirWarnMarkers.forEach(m=>m.remove());
+    _tirWarnMarkers = [];
+    list.forEach(p=>{
+      const label = [
+        p.maxweight ? `⚖️${p.maxweight}t` : '',
+        p.maxheight ? `📏${p.maxheight}m` : '',
+        p.maxwidth  ? `↔️${p.maxwidth}m`  : '',
+      ].filter(Boolean).join(' ');
+      if(!label) return;
+      const el = document.createElement('div');
+      el.style.cssText = 'background:#ef4444;color:#fff;border-radius:8px;padding:2px 6px;font-size:.65rem;font-weight:800;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.4);cursor:pointer;border:2px solid #fff';
+      el.textContent = label;
+      el.title = p.name || 'Ograniczenie TIR';
+      const mk = new mapboxgl.Marker({element:el}).setLngLat([p.lng,p.lat]).addTo(map);
+      _tirWarnMarkers.push(mk);
+    });
+    if(list.length){
+      showAlert('⚠️','Ograniczenia TIR na trasie',`Znaleziono ${list.length} ograniczeń (waga/wysokość/szerokość)`);
+    }
+  } catch(e){ console.warn('Restrictions scan error:', e); }
+}
+
+function checkTirRestrictionsNearby(lat, lng){
+  if(currentMode !== 'tir' || !_tirRestrictions.length) return;
+  const h = parseFloat(document.getElementById('tir-height')?.value) || 4.0;
+  const w = parseFloat(document.getElementById('tir-weight')?.value) || 40000;
+  const wd= parseFloat(document.getElementById('tir-width')?.value)  || 2.55;
+  _tirRestrictions.forEach((p,i)=>{
+    if(_tirWarnedSet.has(i)) return;
+    const dist = haversineKm(lat, lng, p.lat, p.lng) * 1000; // metry
+    if(dist > 900) return;
+    // Sprawdź czy ograniczenie dotyczy tego TIR-a
+    const mw = parseFloat(p.maxweight);
+    const mh = parseFloat(p.maxheight);
+    const mx = parseFloat(p.maxwidth);
+    const dotyczy = (mw && w/1000 > mw) || (mh && h > mh) || (mx && wd > mx);
+    if(!dotyczy) return;
+    _tirWarnedSet.add(i);
+    const label = [
+      mw && w/1000>mw ? `⚖️ Ograniczenie ${mw}t (Twój TIR: ${(w/1000).toFixed(0)}t)` : '',
+      mh && h>mh      ? `📏 Wysokość ${mh}m (Twój TIR: ${h}m)` : '',
+      mx && wd>mx     ? `↔️ Szerokość ${mx}m (Twój TIR: ${wd}m)` : '',
+    ].filter(Boolean).join('\n');
+    // Alert głosowy
+    const msg = `Uwaga! Za ${Math.round(dist)} metrów ograniczenie dla ciężarówek!`;
+    if(window.speechSynthesis){
+      const utt = new SpeechSynthesisUtterance(msg);
+      utt.lang = 'pl-PL'; utt.rate = 1.1;
+      window.speechSynthesis.speak(utt);
+    }
+    // Modal z opcją objazdu
+    _showTirWarningModal(label, p.lat, p.lng, Math.round(dist));
+  });
+}
+
+function _showTirWarningModal(label, lat, lng, distM){
+  const mid = 'tir-warn-'+Date.now();
+  const modal = document.createElement('div');
+  modal.id = mid;
+  modal.style.cssText = 'position:fixed;inset:0;z-index:3500;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:1.5rem';
+  modal.innerHTML = `
+    <div style="width:100%;max-width:320px;background:var(--panel);border-radius:22px;padding:1.4rem;
+      border:2px solid #ef4444;box-shadow:0 8px 48px rgba(239,68,68,.5);
+      transform:scale(.85);opacity:0;transition:transform .25s cubic-bezier(.34,1.56,.64,1),opacity .2s" id="${mid}-inner">
+      <div style="text-align:center;font-size:2.5rem;margin-bottom:.5rem">🚨</div>
+      <div style="font-family:var(--font-head);font-weight:900;font-size:1.1rem;text-align:center;color:#ef4444;margin-bottom:.8rem">
+        OGRANICZENIE ZA ${distM}m!
+      </div>
+      <div style="font-size:.85rem;line-height:1.6;margin-bottom:1.2rem;color:var(--text);white-space:pre-line">${label}</div>
+      <div style="display:flex;gap:.6rem">
+        <button onclick="document.getElementById('${mid}').remove();_rerouteAvoidPoint(${lat},${lng})"
+          style="flex:1;padding:.8rem;border:none;border-radius:14px;background:#ef4444;color:#fff;font-weight:700;cursor:pointer;font-family:var(--font);font-size:.88rem">
+          🔄 Wyznacz objazd
+        </button>
+        <button onclick="document.getElementById('${mid}').remove()"
+          style="flex:1;padding:.8rem;border:1px solid var(--border);border-radius:14px;background:transparent;color:var(--muted);cursor:pointer;font-family:var(--font);font-size:.88rem">
+          Jedź dalej
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    const inner = document.getElementById(mid+'-inner');
+    if(inner){ inner.style.transform='scale(1)'; inner.style.opacity='1'; }
+  }));
+  // Auto-zamknij po 15s
+  setTimeout(()=>document.getElementById(mid)?.remove(), 15000);
+}
+
+async function _rerouteAvoidPoint(avoidLat, avoidLng){
+  if(!navDestLat || !navDestLng) return;
+  showAlert('🔄','Wyznaczam objazd...','');
+  const data = await _fetchOrsRoute(navLastLat, navLastLng, navDestLat, navDestLng);
+  if(data?.routes?.length){
+    const route = data.routes[0];
+    routeCoords    = route.geometry.coordinates;
+    routeTotalDist = route.distance;
+    routeTotalDur  = route.duration;
+    routeSteps     = route.legs.flatMap(l=>l.steps||[]);
+    navCIdx = 0;
+    clearRouteLayer();
+    drawRoute(routeCoords);
+    scanRouteRestrictions(routeCoords);
+    closeAlert();
+    showAlert('✅','Objazd wyznaczony','Nowa trasa omija ograniczenie');
+  } else {
+    closeAlert();
+    showAlert('⚠️','','Nie można wyznaczyć objazdu');
+  }
+}
+
 function buildRouteUrlTirFallback(coordStr, mode){
   const excl = ['unpaved'];
   if(document.getElementById('av-toll')?.checked)    excl.push('toll');
@@ -6216,38 +6389,31 @@ async function searchRoute(navMode){
     const toGeo = await geocodePlace(toVal);
     if(!toGeo){ showAlert('⚠️','','Destination not found'); return; }
 
-    // Mapbox Directions API — dla TIR próbuj z fallbackiem
     saveRouteOptsTirProfile();
     const pts = [[fromLng,fromLat], ...waypoints.map(w=>[w.lng,w.lat]), [toGeo.lng,toGeo.lat]];
     const coordStr = pts.map(c=>c[0]+','+c[1]).join(';');
 
     let routeData = null;
-    let tirWarning = null; // ostrzeżenie jeśli użyto złagodzonego routingu
+    let tirWarning = null;
 
     if(currentMode === 'tir'){
-      // Próba 1: pełne ograniczenia TIR
-      const r1 = await fetch(buildRouteUrl(coordStr));
-      const d1 = await r1.json();
-      if(d1.routes?.length){
-        routeData = d1;
+      // ORS HGV — prawdziwy routing TIR
+      routeData = await _fetchOrsRoute(fromLat, fromLng, toGeo.lat, toGeo.lng, waypoints);
+      if(routeData?.routes?.length){
+        tirWarning = null; // ORS respektuje ograniczenia — brak ostrzeżenia
       } else {
-        // Próba 2: tylko max_height (wiadukty — najkrytyczniejsze)
-        const r2 = await fetch(buildRouteUrlTirFallback(coordStr, 'height_only'));
-        const d2 = await r2.json();
-        if(d2.routes?.length){
-          routeData = d2;
-          tirWarning = currentLang==='pl'
-            ? '⚠️ Trasa obliczona tylko z ograniczeniem wysokości. Sprawdź samodzielnie ograniczenia tonażu i szerokości!'
-            : '⚠️ Route calculated with height restriction only. Check weight and width limits manually!';
+        // Fallback Mapbox
+        const r1 = await fetch(buildRouteUrl(coordStr));
+        const d1 = await r1.json();
+        if(d1.routes?.length){
+          routeData = d1;
+          tirWarning = '⚠️ Trasa z Mapbox — może nie respektować ograniczeń TIR. Sprawdzaj znaki!';
         } else {
-          // Próba 3: bez ograniczeń TIR — pokaż krytyczne ostrzeżenie
-          const r3 = await fetch(buildRouteUrlTirFallback(coordStr, 'none'));
+          const r3 = await fetch(buildRouteUrlTirFallback(coordStr,'none'));
           const d3 = await r3.json();
           if(d3.routes?.length){
             routeData = d3;
-            tirWarning = currentLang==='pl'
-              ? '🚨 UWAGA! Trasa obliczona BEZ ograniczeń TIR — brak danych w tym regionie. Jedź ostrożnie i sprawdzaj znaki!'
-              : '🚨 WARNING! Route calculated WITHOUT TIR restrictions — no data in this region. Watch for signs!';
+            tirWarning = '🚨 UWAGA! Trasa obliczona BEZ ograniczeń TIR. Jedź ostrożnie!';
           }
         }
       }
@@ -6284,7 +6450,8 @@ async function searchRoute(navMode){
     navDestLat = toGeo.lat; navDestLng = toGeo.lng; // zapamiętaj cel do reroutingu
     navDestName = toVal; // zapamiętaj nazwę celu
     fitRouteCoords(routeCoords, 50);
-    loadRoutePois(); // oś czasu POI — widoczna od razu po obliczeniu trasy
+    loadRoutePois();
+    scanRouteRestrictions(routeCoords); // oś czasu POI — widoczna od razu po obliczeniu trasy
 
     // Filter parkings on route
     const onRoute = allParkings
@@ -8649,6 +8816,8 @@ function onNavPosition(pos){
 
   // ── Detekcja zatrzymania → atrakcje w pobliżu ───────────────────────────────
   checkNearbyAttractions(lat, lng);
+
+  checkTirRestrictionsNearby(lat, lng);
 
   navLastLat=lat; navLastLng=lng;
 }
