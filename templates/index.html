@@ -5809,12 +5809,19 @@ function chaikinSmooth(pts, iterations=3){
 // Rysuje linię trasy (zastępuje L.polyline)
 let routeCircleMarkers = [];
 function drawRoute(coords, splitIdx){
-  // splitIdx — indeks punktu do którego trasa jest "przejechana" (szara)
-  const ahead   = splitIdx > 0 ? coords.slice(splitIdx) : coords;
-  const passed  = splitIdx > 0 ? coords.slice(0, splitIdx + 1) : [];
+  // Pre-compute raz — reused by updateTraveledRoute every GPS tick
+  routeCoordsSmooth = chaikinSmooth(coords);
+  const smoothTotal = routeCoordsSmooth.length;
+  const rawTotal    = coords.length;
 
-  const geoAhead  = {type:'Feature',geometry:{type:'LineString',coordinates:chaikinSmooth(ahead)}};
-  const geoPassed = {type:'Feature',geometry:{type:'LineString',coordinates:passed.length > 1 ? chaikinSmooth(passed) : [[0,0],[0,0]]}};
+  const toSmoothIdx = rawIdx => Math.round(rawIdx * (smoothTotal - 1) / Math.max(rawTotal - 1, 1));
+  const si = splitIdx > 0 ? toSmoothIdx(splitIdx) : 0;
+
+  const ahead  = si > 0 ? routeCoordsSmooth.slice(si)     : routeCoordsSmooth;
+  const passed = si > 0 ? routeCoordsSmooth.slice(0, si+1) : [];
+
+  const geoAhead  = {type:'Feature',geometry:{type:'LineString',coordinates:ahead}};
+  const geoPassed = {type:'Feature',geometry:{type:'LineString',coordinates:passed.length > 1 ? passed : [[0,0],[0,0]]}};
 
   const waitForStyle = (fn) => map.isStyleLoaded() ? fn() : map.once('style.load', fn);
   waitForStyle(()=>{
@@ -5882,14 +5889,16 @@ function drawRoute(coords, splitIdx){
 }
 
 function updateTraveledRoute(){
-  if(!navActive || !routeCoords.length || !map.getSource('ts-route')) return;
-  const ahead  = routeCoords.slice(navCIdx);
-  const passed = routeCoords.slice(0, navCIdx + 1);
+  if(!navActive || !routeCoords.length || !routeCoordsSmooth.length || !map.getSource('ts-route')) return;
+  // Mapuj navCIdx (raw) → indeks w pre-computed smooth array
+  const si = Math.round(navCIdx * (routeCoordsSmooth.length - 1) / Math.max(routeCoords.length - 1, 1));
+  const ahead  = routeCoordsSmooth.slice(si);
+  const passed = routeCoordsSmooth.slice(0, si + 1);
   map.getSource('ts-route').setData(
-    {type:'Feature',geometry:{type:'LineString',coordinates:ahead.length>1?chaikinSmooth(ahead):[[0,0],[0,0]]}}
+    {type:'Feature',geometry:{type:'LineString',coordinates:ahead.length>1?ahead:[[0,0],[0,0]]}}
   );
   map.getSource('ts-route-passed')?.setData(
-    {type:'Feature',geometry:{type:'LineString',coordinates:passed.length>1?chaikinSmooth(passed):[[0,0],[0,0]]}}
+    {type:'Feature',geometry:{type:'LineString',coordinates:passed.length>1?passed:[[0,0],[0,0]]}}
   );
 }
 
@@ -6120,6 +6129,7 @@ let routeLayer = null;
 let routeFromLat = null, routeFromLng = null;
 let routeSteps = [], routeTotalDist = 0, routeTotalDur = 0;
 let routeCoords = [];
+let routeCoordsSmooth = []; // pre-computed Chaikin, używane w updateTraveledRoute
 let waypointCount = 0;
 
 // ── Opcje trasy ──
@@ -6649,7 +6659,7 @@ async function searchRoute(navMode){
 function clearRoute(){
   clearRouteLayer();
   document.getElementById('route-results').innerHTML='';
-  routeSteps=[]; routeCoords=[];
+  routeSteps=[]; routeCoords=[]; routeCoordsSmooth=[];
   hideRouteTimeline();
 }
 
