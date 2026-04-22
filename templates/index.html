@@ -8894,7 +8894,8 @@ function onNavPosition(pos){
   // Ograniczenie prędkości z annotations Mapbox
   if(navMaxspeeds.length > 0){
     const limit = navMaxspeeds[Math.min(cIdx, navMaxspeeds.length - 1)] || 0;
-    if(limit !== navCurrentSpeedLimit){
+    // Gdy limit=0 (brak danych na segmencie) — zostaw ostatni znany limit, nie chowaj znaku
+    if(limit > 0 && limit !== navCurrentSpeedLimit){
       navCurrentSpeedLimit = limit;
       updateSpeedSign(limit);
     } else {
