@@ -9342,7 +9342,7 @@ function setLayerMode(mode){
     document.getElementById('lm-'+k)?.classList.toggle('active', k===mode);
   });
   const cfg = _LAYER_MODES[mode];
-  const zoomTarget = mode==='35d' ? Math.max(map.getZoom(), 17) : undefined;
+  const zoomTarget = mode==='35d' ? Math.max(map.getZoom(), 16) : undefined;
   if(!navActive) map.easeTo({pitch:cfg.pitch, bearing:cfg.bearing, ...(zoomTarget?{zoom:zoomTarget}:{}), duration:1400});
   map.setStyle(cfg.style);
   map.once('style.load', ()=>{
@@ -9385,7 +9385,7 @@ function _apply3d(){
       'source-layer':'building',
       filter:['==','extrude','true'],
       type:'fill-extrusion',
-      minzoom:14,
+      minzoom:11,
       paint:{
         'fill-extrusion-color':[
           'case',
@@ -9393,9 +9393,9 @@ function _apply3d(){
           ['interpolate',['linear'],['get','height'],
             0,'#d4cfc9', 20,'#c8c2bb', 50,'#bfb8b0', 100,'#b0a89e']
         ],
-        'fill-extrusion-height':['interpolate',['linear'],['zoom'],14,0,15,['get','height']],
-        'fill-extrusion-base':['interpolate',['linear'],['zoom'],14,0,15,['get','min_height']],
-        'fill-extrusion-opacity':0.85
+        'fill-extrusion-height':['interpolate',['linear'],['zoom'],12,0,13,['get','height']],
+        'fill-extrusion-base':['interpolate',['linear'],['zoom'],12,0,13,['get','min_height']],
+        'fill-extrusion-opacity':['interpolate',['linear'],['zoom'],12,0.4,15,0.9]
       }
     }, firstLabel?.id);
   }
