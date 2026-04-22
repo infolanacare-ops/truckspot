@@ -9362,13 +9362,20 @@ function _apply3d(){
       tileSize:512, maxzoom:14
     });
   }
-  map.setTerrain({source:'mapbox-dem', exaggeration:1.2});
+  map.setTerrain({source:'mapbox-dem', exaggeration:1.1});
   map.setFog({
-    color:'rgb(186,210,235)',
-    'high-color':'rgb(36,92,223)',
-    'horizon-blend':0.04,
+    color:'rgb(220,228,238)',
+    'high-color':'rgb(100,140,200)',
+    'horizon-blend':0.03,
     'space-color':'rgb(11,11,25)',
-    'star-intensity':0.5
+    'star-intensity':0.4
+  });
+  // Oświetlenie kierunkowe — jak w Mapbox demo
+  map.setLight({
+    anchor:'viewport',
+    color:'#fff',
+    intensity:0.5,
+    position:[1.5, 210, 30]
   });
   if(!map.getLayer('ts-3d-buildings')){
     const firstLabel = map.getStyle().layers.find(l=>l.type==='symbol'&&l.layout?.['text-field']);
@@ -9378,12 +9385,17 @@ function _apply3d(){
       'source-layer':'building',
       filter:['==','extrude','true'],
       type:'fill-extrusion',
-      minzoom:13,
+      minzoom:14,
       paint:{
-        'fill-extrusion-color':['interpolate',['linear'],['get','height'],0,'#1a2744',15,'#1e3a6e',40,'#2563eb',80,'#60a5fa'],
-        'fill-extrusion-height':['interpolate',['linear'],['zoom'],13,0,14,['get','height']],
-        'fill-extrusion-base':['interpolate',['linear'],['zoom'],13,0,14,['get','min_height']],
-        'fill-extrusion-opacity':0.78
+        'fill-extrusion-color':[
+          'case',
+          ['has','color'],['get','color'],
+          ['interpolate',['linear'],['get','height'],
+            0,'#d4cfc9', 20,'#c8c2bb', 50,'#bfb8b0', 100,'#b0a89e']
+        ],
+        'fill-extrusion-height':['interpolate',['linear'],['zoom'],14,0,15,['get','height']],
+        'fill-extrusion-base':['interpolate',['linear'],['zoom'],14,0,15,['get','min_height']],
+        'fill-extrusion-opacity':0.85
       }
     }, firstLabel?.id);
   }
