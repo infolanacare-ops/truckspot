@@ -5852,8 +5852,7 @@ function drawRoute(coords, splitIdx){
 
     // Kolory z palety trybu — takie same jak karta manewru u góry
     const pal = getNavPalette();
-    // Offset w prawo — TIR jedzie prawym pasem, lewy (z przeciwka) zostaje widoczny
-    const laneOffset = ['interpolate',['linear'],['zoom'],8,2,12,5,16,9];
+    const laneOffset = 0;
     // Ciemna obwódka
     map.addLayer({id:'ts-route-casing',type:'line',source:'ts-route',
       layout:{'line-join':'round','line-cap':'round'},
