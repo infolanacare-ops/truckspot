@@ -6256,10 +6256,13 @@ function checkTirRestrictionsNearby(lat, lng){
     const mw = parseFloat(p.maxweight);
     const mh = parseFloat(p.maxheight);
     const mx = parseFloat(p.maxwidth);
-    const dotyczy = (mw && w/1000 > mw) || (mh && h > mh) || (mx && wd > mx);
+    const dotyczy = (mw && w/1000 > mw) || (mh && h > mh) || (mx && wd > mx)
+                 || p.hgv_no || p.hgv_conditional;
     if(!dotyczy) return;
     _tirWarnedSet.add(i);
     const label = [
+      p.hgv_no                ? `🚫 Zakaz wjazdu ciężarówek!` : '',
+      p.hgv_conditional       ? `⏰ Zakaz warunkowy: ${p.hgv_conditional}` : '',
       mw && w/1000>mw ? `⚖️ Ograniczenie ${mw}t (Twój TIR: ${(w/1000).toFixed(0)}t)` : '',
       mh && h>mh      ? `📏 Wysokość ${mh}m (Twój TIR: ${h}m)` : '',
       mx && wd>mx     ? `↔️ Szerokość ${mx}m (Twój TIR: ${wd}m)` : '',

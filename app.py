@@ -385,6 +385,10 @@ def api_route_restrictions():
   node["maxweight"]({bbox});
   node["maxheight"]({bbox});
   node["maxwidth"]({bbox});
+  way["hgv"="no"]({bbox});
+  node["hgv"="no"]({bbox});
+  way["hgv:conditional"]({bbox});
+  node["hgv:conditional"]({bbox});
 );
 out center tags;
 """
@@ -398,13 +402,19 @@ out center tags;
             lng = el.get("lon") or el.get("center", {}).get("lon")
             if not lat or not lng:
                 continue
-            mw = tags.get("maxweight")
-            mh = tags.get("maxheight")
-            mx = tags.get("maxwidth")
-            if mw or mh or mx:
-                result.append({"lat": lat, "lng": lng,
-                                "maxweight": mw, "maxheight": mh, "maxwidth": mx,
-                                "name": tags.get("name","")})
+            mw  = tags.get("maxweight")
+            mh  = tags.get("maxheight")
+            mx  = tags.get("maxwidth")
+            hgv = tags.get("hgv")
+            hgv_cond = tags.get("hgv:conditional")
+            if mw or mh or mx or hgv == "no" or hgv_cond:
+                result.append({
+                    "lat": lat, "lng": lng,
+                    "maxweight": mw, "maxheight": mh, "maxwidth": mx,
+                    "hgv_no": hgv == "no",
+                    "hgv_conditional": hgv_cond or None,
+                    "name": tags.get("name", "")
+                })
         return jsonify(result)
     except Exception as e:
         return jsonify([])
