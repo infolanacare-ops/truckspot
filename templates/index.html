@@ -1034,17 +1034,28 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
   to{transform:scale(1) translateY(0);opacity:1}
 }
 .peer-dot{
-  width:38px;height:38px;border-radius:50%;
+  width:40px;height:40px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
-  font-size:1.2rem;
+  font-size:1.25rem;
   border:2.5px solid rgba(255,255,255,.7);
-  box-shadow:0 2px 12px rgba(0,0,0,.4);
+  box-shadow:0 2px 14px rgba(0,0,0,.45);
   position:relative;
-  animation:peer-pulse 3s ease-in-out infinite;
+  overflow:visible;
 }
-@keyframes peer-pulse{
-  0%,100%{box-shadow:0 2px 12px rgba(0,0,0,.4),0 0 0 0 rgba(255,255,255,.0)}
-  50%{box-shadow:0 2px 16px rgba(0,0,0,.5),0 0 0 5px rgba(255,255,255,.08)}
+.peer-emoji{
+  display:block;font-size:1.25rem;line-height:1;
+  transition:transform .9s cubic-bezier(.4,0,.2,1);
+  will-change:transform;
+}
+.peer-ping-ring{
+  position:absolute;inset:-2px;border-radius:50%;
+  border:2px solid var(--peer-color,#8b5cf6);
+  animation:peer-ring .9s ease-out forwards;
+  pointer-events:none;
+}
+@keyframes peer-ring{
+  from{transform:scale(1);opacity:.9}
+  to{transform:scale(2.8);opacity:0}
 }
 .peer-dot::after{
   content:'';position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);
@@ -12110,6 +12121,50 @@ let _peerMarkers  = {};     // { userId: mapboxgl.Marker }
 let _peerBubbleTimers = {}; // { userId: timeoutId } — auto-ukrycie dymki CB
 let _presenceGpsTimer = null;
 
+// Lerp & bearing system
+let _peerData   = {}; // {key: {lat,lng,targetLat,targetLng,bearing}}
+let _lerpActive = false;
+
+function _calcBearing(lat1, lng1, lat2, lng2){
+  const r = Math.PI/180;
+  const dLng = (lng2-lng1)*r;
+  const y = Math.sin(dLng)*Math.cos(lat2*r);
+  const x = Math.cos(lat1*r)*Math.sin(lat2*r) - Math.sin(lat1*r)*Math.cos(lat2*r)*Math.cos(dLng);
+  return (Math.atan2(y,x)*180/Math.PI+360)%360;
+}
+
+function _triggerPeerPing(key){
+  const dot = _peerMarkers[key]?.getElement().querySelector('.peer-dot');
+  if(!dot) return;
+  const ring = document.createElement('div');
+  ring.className = 'peer-ping-ring';
+  ring.style.setProperty('--peer-color', dot.style.background || '#8b5cf6');
+  dot.appendChild(ring);
+  setTimeout(()=>ring.remove(), 950);
+}
+
+function _setPeerBearing(key, bearing){
+  const emoji = _peerMarkers[key]?.getElement().querySelector('.peer-emoji');
+  if(!emoji) return;
+  // emoji 🚛 naturalnie → (wschód = 90°), więc offset -90
+  emoji.style.transform = `rotate(${bearing-90}deg)`;
+}
+
+function _lerpLoop(){
+  if(!_lerpActive) return;
+  Object.entries(_peerData).forEach(([key, d]) => {
+    if(!_peerMarkers[key]) return;
+    const α = 0.09;
+    const dlat = d.targetLat - d.lat;
+    const dlng = d.targetLng - d.lng;
+    if(Math.abs(dlat) < 1e-7 && Math.abs(dlng) < 1e-7) return;
+    d.lat += dlat * α;
+    d.lng += dlng * α;
+    _peerMarkers[key].setLngLat([d.lng, d.lat]);
+  });
+  requestAnimationFrame(_lerpLoop);
+}
+
 function _startPresence(){
   if(_presenceCh) return; // już działa
 
@@ -12132,10 +12187,18 @@ function _startPresence(){
       if(key === (_sbUser?.id)) return; // nie pokazuj siebie
       seen.add(key);
       if(_peerMarkers[key]){
-        // aktualizuj pozycję istniejącego markera
-        _peerMarkers[key].setLngLat([p.lng, p.lat]);
+        const d = _peerData[key];
+        if(d){
+          const dist = haversineKm(d.targetLat, d.targetLng, p.lat, p.lng) * 1000;
+          if(dist > 5){
+            const bearing = _calcBearing(d.targetLat, d.targetLng, p.lat, p.lng);
+            d.targetLat = p.lat; d.targetLng = p.lng;
+            _setPeerBearing(key, bearing);
+            _triggerPeerPing(key);
+          }
+        }
       } else {
-        // nowy user — stwórz marker
+        _peerData[key] = { lat:p.lat, lng:p.lng, targetLat:p.lat, targetLng:p.lng };
         _peerMarkers[key] = _mkPeerMarker(key, p);
       }
     });
@@ -12161,10 +12224,10 @@ function _startPresence(){
 
   _presenceCh.subscribe(async status => {
     if(status !== 'SUBSCRIBED') return;
-    // Wyślij własną pozycję jeśli już mamy GPS
     if(userLat && userLng){
       await _presenceCh.track({ lat: userLat, lng: userLng, emoji, color, name });
     }
+    if(!_lerpActive){ _lerpActive=true; requestAnimationFrame(_lerpLoop); }
   });
 
   // Broadcast pozycji co 5s gdy GPS aktywny
@@ -12182,10 +12245,11 @@ function _startPresence(){
 }
 
 function _stopPresence(){
+  _lerpActive = false;
   if(_presenceGpsTimer){ clearInterval(_presenceGpsTimer); _presenceGpsTimer=null; }
   if(_presenceCh){ _SB.removeChannel(_presenceCh); _presenceCh=null; }
   Object.values(_peerMarkers).forEach(m=>m.remove());
-  _peerMarkers = {};
+  _peerMarkers = {}; _peerData = {};
 }
 
 function _mkPeerMarker(key, p){
@@ -12196,7 +12260,7 @@ function _mkPeerMarker(key, p){
   el.innerHTML = `
     <div class="peer-avatar" id="peer-${key}" onclick="_peerTap('${key}')">
       <div class="peer-dot" style="background:${color};--peer-color:${color}">
-        ${emoji}
+        <span class="peer-emoji">${emoji}</span>
       </div>
       <div class="peer-name">${name}</div>
     </div>`;
@@ -12608,17 +12672,26 @@ function _startDemo(){
     const mk = _mkPeerMarker(p.id, { ...p, lat, lng });
     _demoMarkers.push({ mk, lat, lng, peerId: p.id });
     _peerMarkers[p.id] = mk;
+    _peerData[p.id] = { lat, lng, targetLat:lat, targetLng:lng };
   });
+
+  // Start lerp jeśli nie działa
+  if(!_lerpActive){ _lerpActive=true; requestAnimationFrame(_lerpLoop); }
 
   // Dymki natychmiast
   _demoShowBubbles();
 
-  // Ruch co 4s
+  // Ruch co 3s — płynny lerp
   _demoMoveTimer = setInterval(() => {
     _demoMarkers.forEach(d => {
-      d.lat += (Math.random() - 0.5) * 0.006;
-      d.lng += (Math.random() - 0.5) * 0.006;
-      d.mk.setLngLat([d.lng, d.lat]);
+      const newLat = d.lat + (Math.random()-0.5)*0.005;
+      const newLng = d.lng + (Math.random()-0.5)*0.005;
+      const bearing = _calcBearing(d.lat, d.lng, newLat, newLng);
+      d.lat = newLat; d.lng = newLng;
+      const pd = _peerData[d.peerId];
+      if(pd){ pd.targetLat=newLat; pd.targetLng=newLng; }
+      _setPeerBearing(d.peerId, bearing);
+      _triggerPeerPing(d.peerId);
       _peerMarkers[d.peerId] = d.mk;
     });
     const snap = {};
@@ -12627,7 +12700,7 @@ function _startDemo(){
       snap[d.peerId] = { ...peer, lat: d.lat, lng: d.lng };
     });
     _updateZones(snap);
-  }, 4000);
+  }, 3000);
 
   // Nowe dymki co 7s
   _demoBubbleTimer = setInterval(_demoShowBubbles, 7000);
@@ -12652,8 +12725,10 @@ function _stopDemo(){
   _demoMarkers.forEach(d => {
     d.mk.remove();
     delete _peerMarkers[d.peerId];
+    delete _peerData[d.peerId];
   });
   _demoMarkers = [];
+  if(!Object.keys(_peerMarkers).length){ _lerpActive=false; }
   _updateZones({});
   _updateDemoBtn();
   showAlert('🌐','Demo Mode OFF','');
