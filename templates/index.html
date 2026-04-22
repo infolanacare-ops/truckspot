@@ -1242,11 +1242,11 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
 .cam-bubble-sub{font-size:.75rem;color:rgba(255,255,255,.75);text-align:center;font-weight:600;letter-spacing:.02em}
 .cam-bubble-progress{height:2px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden}
 .cam-bubble-progress-bar{height:100%;background:rgba(249,115,22,.7);border-radius:2px;transition:width 20s linear}
-.cam-bubble-btns{display:flex;gap:.4rem}
-.cam-bubble-btn{flex:1;padding:.45rem .6rem;border:none;border-radius:10px;font-family:var(--font);font-size:.8rem;font-weight:700;cursor:pointer;transition:.15s}
-.cam-bubble-btn.yes{background:rgba(34,197,94,.2);color:#4ade80;border:1px solid rgba(34,197,94,.25)}
-.cam-bubble-btn.no{background:rgba(239,68,68,.18);color:#f87171;border:1px solid rgba(239,68,68,.22)}
-.cam-bubble-btn:active{transform:scale(.94)}
+.cam-bubble-btns{display:flex;gap:.5rem}
+.cam-bubble-btn{flex:1;padding:.7rem .5rem;border:none;border-radius:14px;font-family:var(--font);font-size:.78rem;font-weight:600;cursor:pointer;transition:.15s;display:flex;flex-direction:column;align-items:center;gap:.25rem;background:rgba(255,255,255,.08);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.13);backdrop-filter:blur(6px)}
+.cam-bubble-btn .btn-icon{font-size:1.4rem;line-height:1}
+.cam-bubble-btn .btn-lbl{font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;opacity:.8}
+.cam-bubble-btn:active{transform:scale(.93);background:rgba(255,255,255,.15)}
 .route-fab-diamond{
   width:22px;height:28px;flex-shrink:0;
   background:linear-gradient(160deg,#fff9c4,#d4af37,#7a5c00);
@@ -3518,8 +3518,8 @@ body.navigating .convoy-btn{display:none}
   <div class="cam-bubble-sub" id="cam-bubble-sub">Czy fotoradar tu jest?</div>
   <div class="cam-bubble-progress"><div class="cam-bubble-progress-bar" id="cam-bubble-bar" style="width:100%"></div></div>
   <div class="cam-bubble-btns">
-    <button class="cam-bubble-btn yes" id="cam-bubble-yes">✅ Jest</button>
-    <button class="cam-bubble-btn no"  id="cam-bubble-no">❌ Nie ma</button>
+    <button class="cam-bubble-btn yes" id="cam-bubble-yes"><span class="btn-icon">👁</span><span class="btn-lbl">Jest</span></button>
+    <button class="cam-bubble-btn no"  id="cam-bubble-no"><span class="btn-icon">✕</span><span class="btn-lbl">Nie ma</span></button>
   </div>
 </div>
 
