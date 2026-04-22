@@ -1221,30 +1221,32 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
 /* Auto-dymek potwierdzenia fotoradaru */
 .cam-confirm-bubble{
   position:fixed;
-  bottom:calc(140px + env(safe-area-inset-bottom,0px));
-  left:50%;transform:translateX(-50%) translateY(20px);
+  bottom:calc(180px + env(safe-area-inset-bottom,0px));
+  left:50%;transform:translateX(-50%) translateY(12px);
   z-index:1600;
-  background:var(--panel);border:1.5px solid #f97316;
-  border-radius:18px;padding:.75rem 1rem;
-  width:calc(100% - 2rem);max-width:320px;
-  box-shadow:0 8px 32px rgba(249,115,22,.35),0 2px 8px rgba(0,0,0,.4);
+  background:rgba(20,20,28,.72);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:16px;padding:.55rem .8rem;
+  width:auto;max-width:260px;
+  box-shadow:0 4px 20px rgba(0,0,0,.45);
   opacity:0;pointer-events:none;
-  transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .25s;
-  display:flex;flex-direction:column;gap:.6rem;
+  transition:transform .25s cubic-bezier(.34,1.56,.64,1),opacity .2s;
+  display:flex;flex-direction:column;gap:.45rem;
 }
 .cam-confirm-bubble.show{
   opacity:1;pointer-events:auto;
   transform:translateX(-50%) translateY(0);
 }
-.cam-bubble-header{display:flex;align-items:center;gap:.5rem;font-size:.85rem;font-weight:700;color:var(--text)}
-.cam-bubble-sub{font-size:.72rem;color:var(--muted);margin-top:-.3rem}
-.cam-bubble-progress{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
-.cam-bubble-progress-bar{height:100%;background:#f97316;border-radius:2px;transition:width 12s linear}
-.cam-bubble-btns{display:flex;gap:.5rem}
-.cam-bubble-btn{flex:1;padding:.6rem;border:none;border-radius:12px;font-family:var(--font);font-size:.88rem;font-weight:700;cursor:pointer;transition:.15s}
-.cam-bubble-btn.yes{background:rgba(34,197,94,.15);color:#22c55e;border:1.5px solid rgba(34,197,94,.3)}
-.cam-bubble-btn.no{background:rgba(239,68,68,.12);color:#ef4444;border:1.5px solid rgba(239,68,68,.25)}
-.cam-bubble-btn:active{transform:scale(.95)}
+.cam-bubble-header{display:none}
+.cam-bubble-sub{font-size:.75rem;color:rgba(255,255,255,.75);text-align:center;font-weight:600;letter-spacing:.02em}
+.cam-bubble-progress{height:2px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden}
+.cam-bubble-progress-bar{height:100%;background:rgba(249,115,22,.7);border-radius:2px;transition:width 20s linear}
+.cam-bubble-btns{display:flex;gap:.4rem}
+.cam-bubble-btn{flex:1;padding:.45rem .6rem;border:none;border-radius:10px;font-family:var(--font);font-size:.8rem;font-weight:700;cursor:pointer;transition:.15s}
+.cam-bubble-btn.yes{background:rgba(34,197,94,.2);color:#4ade80;border:1px solid rgba(34,197,94,.25)}
+.cam-bubble-btn.no{background:rgba(239,68,68,.18);color:#f87171;border:1px solid rgba(239,68,68,.22)}
+.cam-bubble-btn:active{transform:scale(.94)}
 .route-fab-diamond{
   width:22px;height:28px;flex-shrink:0;
   background:linear-gradient(160deg,#fff9c4,#d4af37,#7a5c00);
@@ -3512,11 +3514,11 @@ body.navigating .convoy-btn{display:none}
 <!-- ROUTE FAB — pill button at bottom center -->
 <!-- Auto-dymek potwierdzenia fotoradaru -->
 <div class="cam-confirm-bubble" id="cam-bubble">
-  <div class="cam-bubble-header" id="cam-bubble-hdr">📸 Fotoradar</div>
-  <div class="cam-bubble-sub" id="cam-bubble-sub">Czy fotoradar nadal tu jest?</div>
+  <div class="cam-bubble-header" id="cam-bubble-hdr" style="display:none"></div>
+  <div class="cam-bubble-sub" id="cam-bubble-sub">Czy fotoradar tu jest?</div>
   <div class="cam-bubble-progress"><div class="cam-bubble-progress-bar" id="cam-bubble-bar" style="width:100%"></div></div>
   <div class="cam-bubble-btns">
-    <button class="cam-bubble-btn yes" id="cam-bubble-yes">✅ Jest!</button>
+    <button class="cam-bubble-btn yes" id="cam-bubble-yes">✅ Jest</button>
     <button class="cam-bubble-btn no"  id="cam-bubble-no">❌ Nie ma</button>
   </div>
 </div>
