@@ -10671,12 +10671,14 @@ async function voteCam(id, vote){
 // ══════════════════════════════════════
 // AUTO-DYMEK POTWIERDZENIA FOTORADARU
 // ══════════════════════════════════════
-let _camBubbleTimer = null;
 let _camBubbleDismissed = new Set(); // klucze kamer już pokazanych
+let _activeBubbleCamPos = null;      // {lat,lng} aktywnej kamery — do auto-hide po minięciu
 
-function _showCamBubble(cam, key){
+function _showCamBubble(cam, key, camLat, camLng){
   if(_camBubbleDismissed.has(key)) return;
   _camBubbleDismissed.add(key);
+
+  _activeBubbleCamPos = {lat: camLat, lng: camLng};
 
   const cfg = CAM_TYPE_CFG[cam.type || cam.tags?.camera_type || 'fixed'] || CAM_TYPE_CFG.fixed;
   const sp = cam.maxspeed || cam.tags?.maxspeed || '';
@@ -10687,21 +10689,19 @@ function _showCamBubble(cam, key){
   document.getElementById('cam-bubble-hdr').textContent = `${cfg.icon} ${cfg.label}${spLabel}`;
   document.getElementById('cam-bubble-sub').textContent = 'Czy fotoradar nadal tu jest?';
 
-  // Progress bar — auto-dismiss 12s
+  // Progress bar — czysto wizualna animacja (bez auto-dismiss timera)
   const bar = document.getElementById('cam-bubble-bar');
   bar.style.transition = 'none'; bar.style.width = '100%';
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    bar.style.transition = 'width 12s linear'; bar.style.width = '0%';
+    bar.style.transition = 'width 20s linear'; bar.style.width = '0%';
   }));
 
   bubble.classList.add('show');
-  if(_camBubbleTimer) clearTimeout(_camBubbleTimer);
-  _camBubbleTimer = setTimeout(()=>_hideCamBubble(), 12000);
 
   document.getElementById('cam-bubble-yes').onclick = ()=>{
     _hideCamBubble();
     if(isUser) _voteCamNav(cam.id, 1);
-    else showAlert('✅','Dzięki!','Potwierdzono fotoradar'); setTimeout(closeAlert,2000);
+    else { showAlert('✅','Dzięki!','Potwierdzono fotoradar'); setTimeout(closeAlert,2000); }
   };
   document.getElementById('cam-bubble-no').onclick = ()=>{
     _hideCamBubble();
@@ -10712,7 +10712,7 @@ function _showCamBubble(cam, key){
 
 function _hideCamBubble(){
   document.getElementById('cam-bubble')?.classList.remove('show');
-  if(_camBubbleTimer){ clearTimeout(_camBubbleTimer); _camBubbleTimer=null; }
+  _activeBubbleCamPos = null;
 }
 
 async function _voteCamNav(id, vote){
@@ -10825,7 +10825,7 @@ function checkNavCameras(lat, lng){
       showAlert(cfg.icon, `⚠️ ${typeLabel.toUpperCase()}`, 'Za 1 km · Zwolnij!');
       setTimeout(closeAlert, 4000);
     }
-    // 500m — drugi alert + dymek potwierdzenia
+    // 500m — drugi alert głosowy
     const key500 = `${base}_1`;
     if(d < 500 && !navAnnouncedCameras.has(key500)){
       navAnnouncedCameras.add(key500);
@@ -10836,20 +10836,29 @@ function checkNavCameras(lat, lng){
         setTimeout(()=>playBeep(1000, 0.25, 1.0), 250);
         setTimeout(()=>playBeep(1000, 0.25, 1.0), 500);
       }
-      // Dymek potwierdzenia — dla wszystkich kamer (zweryfikowanych i nie)
-      _showCamBubble(camData, `${base}_bubble`);
     }
-    // 200m — ostry alarm końcowy (tylko zweryfikowane)
+    // 200m — dymek potwierdzenia + ostry alarm końcowy
     const key200 = `${base}_2`;
-    if(d < 200 && !navAnnouncedCameras.has(key200) && verified){
+    if(d < 200 && !navAnnouncedCameras.has(key200)){
       navAnnouncedCameras.add(key200);
-      const txt = currentLang==='pl' ? 'Fotoradar!' : 'Speed camera!';
-      speakNav(txt, true);
-      playBeep(1200, 0.2, 1.0);
-      setTimeout(()=>playBeep(1200, 0.2, 1.0), 180);
-      setTimeout(()=>playBeep(1200, 0.2, 1.0), 360);
-      setTimeout(()=>playBeep(1200, 0.2, 1.0), 540);
+      // Dymek potwierdzenia — dla wszystkich kamer (zweryfikowanych i nie)
+      _showCamBubble(camData, `${base}_bubble`, pos.lat, pos.lng);
+      if(verified){
+        const txt = currentLang==='pl' ? 'Fotoradar!' : 'Speed camera!';
+        speakNav(txt, true);
+        playBeep(1200, 0.2, 1.0);
+        setTimeout(()=>playBeep(1200, 0.2, 1.0), 180);
+        setTimeout(()=>playBeep(1200, 0.2, 1.0), 360);
+        setTimeout(()=>playBeep(1200, 0.2, 1.0), 540);
+      }
     }
+  }
+
+  // Auto-hide dymku gdy minęliśmy kamerę o 500m
+  if(_activeBubbleCamPos){
+    const dBubble = haversineKm(lat, lng, _activeBubbleCamPos.lat, _activeBubbleCamPos.lng) * 1000;
+    // Jeśli kamera jest z tyłu (minęliśmy ją) i dalej niż 500m — chowamy dymek
+    if(dBubble > 500) _hideCamBubble();
   }
 
   // Aktualizuj ikonę wizualną
