@@ -7448,13 +7448,17 @@ function showRouteTimeline(){ /* nav-route-tl nieużywany — zastąpiony przez 
 function hideRouteTimeline(){ }
 function toggleRouteTimeline(){ togglePoisStrip(); }
 
+let _poisStripHidden = false; // użytkownik ręcznie schował
+
 function togglePoisStrip(){
   const strip = document.getElementById('nav-pois-strip');
   if(!strip) return;
   if(strip.classList.contains('route-ready')){
     strip.classList.remove('route-ready');
+    _poisStripHidden = true;
   } else {
     strip.classList.add('route-ready');
+    _poisStripHidden = false;
   }
 }
 
@@ -8445,7 +8449,7 @@ function renderNavPois(){
   const strip = document.getElementById('nav-pois-strip');
   if(!strip || !routeCoords.length) return;
 
-  strip.classList.add('route-ready');
+  if(!_poisStripHidden) strip.classList.add('route-ready');
   updatePoiStripTop();
 
   const myDistKm = (navActive && navRouteDistances.length > 0)
