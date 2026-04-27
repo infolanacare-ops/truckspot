@@ -2206,8 +2206,8 @@ body.navigating .fab-ai{display:none}
   border-radius:1px;
 }
 .nav-poi-tick-lbl{
-  position:absolute;left:11px;top:-7px;
-  font-size:.46rem;color:#0f172a;font-weight:800;white-space:nowrap;
+  position:absolute;right:14px;top:-7px;
+  font-size:.5rem;color:#0f172a;font-weight:800;white-space:nowrap;
   text-shadow:0 0 3px rgba(255,255,255,.95),0 0 2px rgba(255,255,255,.95);
 }
 .nav-poi-current-abs{
@@ -8725,10 +8725,13 @@ function renderNavPois(){
   }
 
   // ── POI absolute (wychodzą w bok od linii) ──
-  const timedPois = navRoutePois.filter(p =>
-    TIR_TIMELINE_TYPES.has(p.type) ||
-    (activeFilters.size > 0 && [...activeFilters].some(f => (p.amenities||[]).includes(f)))
-  );
+  // Pokaż wszystkie POI z trasy które mają distFromStart i są w pobliżu trasy
+  const timedPois = navRoutePois.filter(p => {
+    if(p.distFromStart == null) return false;
+    if(p.distKm != null && p.distKm > 0.6) return false; // tylko blisko trasy (600m)
+    return true;
+  });
+  console.log('[strip] navRoutePois:', navRoutePois.length, 'visible:', timedPois.length, 'totalKm:', totalKm);
   let poisHtml = '';
   for(const p of timedPois){
     const pct = pctFromDist(p.distFromStart||0);
