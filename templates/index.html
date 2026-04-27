@@ -2067,16 +2067,13 @@ body.navigating .fab-ai{display:none}
 /* ── POI timeline — lewa strona, od obliczenia trasy ── */
 .nav-pois-strip{
   position:fixed;left:10px;top:120px;
-  width:100px;
+  width:60px;
   background:linear-gradient(to right,
     rgba(14,18,32,.92) 0%,
-    rgba(22,28,48,.55) 55%,
+    rgba(22,28,48,.55) 70%,
     rgba(22,28,48,0) 100%);
   backdrop-filter:blur(18px) saturate(140%);
   -webkit-backdrop-filter:blur(18px) saturate(140%);
-  /* Mask: blur i tło zanikają płynnie w prawą stronę do całkowitej przezroczystości */
-  mask-image:linear-gradient(to right, #000 0%, #000 55%, transparent 100%);
-  -webkit-mask-image:linear-gradient(to right, #000 0%, #000 55%, transparent 100%);
   border:none;
   border-radius:18px 0 0 18px;
   padding:.5rem 0;
@@ -2085,7 +2082,7 @@ body.navigating .fab-ai{display:none}
   height:min(55vh, calc(100vh - 320px));
   touch-action:none;
   user-select:none;
-  overflow:hidden;
+  overflow:visible;
 }
 /* Drag handle na górze widgetu */
 .nav-pois-drag{
