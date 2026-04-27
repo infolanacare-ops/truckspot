@@ -2067,20 +2067,19 @@ body.navigating .fab-ai{display:none}
 /* ── POI timeline — lewa strona, od obliczenia trasy ── */
 .nav-pois-strip{
   position:fixed;left:8px;top:120px;
-  width:60px;
+  width:18px;
   background:transparent;
   backdrop-filter:none;-webkit-backdrop-filter:none;
   border:none;
   border-radius:0;
-  padding:.3rem 0 .5rem;
-  display:none;flex-direction:column;align-items:center;
-  gap:0;overflow-y:auto;scrollbar-width:none;
+  padding:0;
+  display:none;
   pointer-events:auto;z-index:500;
   height:65vh;
-  max-height:65vh;
   box-shadow:none;
   touch-action:none;
   user-select:none;
+  overflow:visible;
 }
 /* Drag handle na górze widgetu */
 .nav-pois-drag{
@@ -2099,11 +2098,11 @@ body.navigating .fab-ai{display:none}
 .nav-pois-strip{position:relative}
 .nav-pois-strip::before{
   content:'';position:absolute;top:0;bottom:0;left:50%;
-  width:4px;border-radius:3px;
+  width:6px;border-radius:4px;
   background:linear-gradient(160deg,rgba(22,28,48,.99) 0%,rgba(14,18,32,.99) 100%);
   border:1px solid rgba(255,255,255,.18);
   transform:translateX(-50%);z-index:0;pointer-events:none;
-  box-shadow:0 0 4px rgba(0,0,0,.4);
+  box-shadow:0 0 6px rgba(0,0,0,.5);
 }
 
 /* META (góra) */
@@ -2184,6 +2183,51 @@ body.navigating .fab-ai{display:none}
 .nav-poi-chip-dist{
   font-size:.55rem;color:#1e3a8a;font-weight:900;position:relative;z-index:1;
   text-shadow:0 0 3px rgba(255,255,255,.95),0 0 2px rgba(255,255,255,.95);
+}
+
+/* ── Miarka osi trasy — tick marks + POI absolute ── */
+.nav-poi-end-fix{
+  position:absolute;top:0;left:50%;transform:translate(-50%,-50%);
+  display:flex;flex-direction:column;align-items:center;gap:.18rem;z-index:5;
+}
+.nav-poi-start-fix{
+  position:absolute;bottom:0;left:50%;transform:translate(-50%,50%);
+  display:flex;flex-direction:column;align-items:center;gap:.18rem;z-index:5;
+}
+.nav-poi-tick{
+  position:absolute;left:50%;height:0;z-index:1;pointer-events:none;
+  transform:translateX(-50%);
+}
+.nav-poi-tick-line{
+  position:absolute;left:50%;transform:translate(-50%,-50%);
+  width:14px;height:2px;background:rgba(15,23,42,.85);
+  border-radius:1px;
+}
+.nav-poi-tick-lbl{
+  position:absolute;left:11px;top:-7px;
+  font-size:.46rem;color:#0f172a;font-weight:800;white-space:nowrap;
+  text-shadow:0 0 3px rgba(255,255,255,.95),0 0 2px rgba(255,255,255,.95);
+}
+.nav-poi-current-abs{
+  position:absolute;left:50%;transform:translate(-50%,-50%);
+  z-index:6;pointer-events:none;
+}
+.nav-poi-chip-abs{
+  position:absolute;left:50%;transform:translateY(-50%);
+  display:flex;align-items:center;gap:.3rem;z-index:3;cursor:pointer;
+  white-space:nowrap;
+}
+.nav-poi-chip-abs.passed{opacity:.32}
+.nav-poi-chip-conn{
+  width:14px;height:2px;background:rgba(15,23,42,.7);
+  flex-shrink:0;
+}
+.nav-poi-chip-abs .nav-poi-chip-icon{flex-shrink:0;margin:0}
+.nav-poi-chip-info{
+  display:flex;flex-direction:column;align-items:flex-start;line-height:1.15;gap:1px;
+}
+.nav-poi-chip-info .nav-poi-chip-name{
+  max-width:90px;text-align:left;padding:0;
 }
 
 /* — Dół: ETA + głos + stop + hamburger — */
@@ -8626,73 +8670,76 @@ function renderNavPois(){
   if(!_poisStripHidden) strip.classList.add('route-ready');
   updatePoiStripTop();
 
+  const totalKm  = routeTotalDist ? routeTotalDist / 1000 : 0;
+  if(totalKm <= 0){ strip.innerHTML = ''; return; }
+
   const myDistKm = (navActive && navRouteDistances.length > 0)
-    ? (navRouteDistances[navCIdx] || 0) / 1000
-    : null;
-  const totalKm  = routeTotalDist ? routeTotalDist / 1000 : null;
-  const distToEnd = totalKm !== null && myDistKm !== null
-    ? Math.max(0, totalKm - myDistKm) : totalKm;
+    ? (navRouteDistances[navCIdx] || 0) / 1000 : 0;
   const fmtD = d => d == null ? '' : d < 1 ? Math.round(d*1000)+'m' : d.toFixed(1)+'km';
 
-  // Wybierz POI: zawsze TIR + aktywne filtry — WSZYSTKIE zostają na osi
-  const timedPois = navRoutePois.filter(p =>
-    TIR_TIMELINE_TYPES.has(p.type) ||
-    (activeFilters.size > 0 && [...activeFilters].some(f => (p.amenities||[]).includes(f)))
-  ).slice(0, 14);
+  // Pozycja (%) na osi: META góra (0%), START dół (100%)
+  // distFromStart=totalKm → 0% (góra), distFromStart=0 → 100% (dół)
+  const pctFromDist = distFromStart => Math.max(0, Math.min(100, (1 - distFromStart/totalKm) * 100));
 
-  // Sortuj: najdalszy na górze (index 0), najbliższy na dole
-  const sortedDesc = [...timedPois].sort((a,b) => (b.distFromStart||0) - (a.distFromStart||0));
-
-  // META
-  const metaHtml = `<div class="nav-poi-end">
+  // ── META (góra) ──
+  const metaHtml = `<div class="nav-poi-end-fix">
     <div class="nav-poi-end-dot">🏁</div>
-    <div class="nav-poi-end-lbl">Meta</div>
-    ${distToEnd != null ? `<div class="nav-poi-chip-dist">${fmtD(distToEnd)}</div>` : ''}
+    <div class="nav-poi-end-lbl">Meta · ${fmtD(totalKm)}</div>
   </div>`;
 
-  // Wszystkie POI — przejechane (.passed) i nadchodzące, z markerem pozycji wstawionym między nimi
-  let poisHtml = '';
-  let currentInserted = false;
-  for(const p of sortedDesc){
-    const isPassed = myDistKm !== null && (p.distFromStart||0) <= myDistKm;
-    const distAhead = myDistKm !== null ? (p.distFromStart||0) - myDistKm : (p.distFromStart||0);
-    const near = !isPassed && distAhead > 0 && distAhead < 2;
-    const distTxt = isPassed ? fmtD(p.distFromStart) : fmtD(distAhead > 0 ? distAhead : null);
-
-    // Wstaw marker pozycji tuż przed pierwszym nadchodzącym (przejście passed→ahead)
-    if(!currentInserted && navActive && !isPassed){
-      poisHtml += `<div class="nav-poi-current" id="nav-poi-current">
-        <div class="nav-poi-current-dot"></div>
-      </div>`;
-      currentInserted = true;
-    }
-
-    poisHtml += `<div class="nav-poi-chip${isPassed?' passed':''}${near?' near':''}"
-      onclick="map.flyTo({center:[${p.lng},${p.lat}],zoom:15})" title="${p.name}">
-      <div class="nav-poi-chip-icon">${p.icon}</div>
-      <div class="nav-poi-chip-name">${p.name.substring(0,12)}</div>
-      ${distTxt ? `<div class="nav-poi-chip-dist">${distTxt}</div>` : ''}
-    </div>`;
-  }
-  // Jeśli wszystkie przejechane (blisko mety) — marker na górze listy
-  if(!currentInserted && navActive){
-    metaHtml; // marker tuż pod META — obsłużone przez kolejność
-    poisHtml = `<div class="nav-poi-current" id="nav-poi-current">
-      <div class="nav-poi-current-dot"></div>
-    </div>` + poisHtml;
-  }
-
-  // START
-  const startHtml = `<div class="nav-poi-start">
+  // ── START (dół) ──
+  const startHtml = `<div class="nav-poi-start-fix">
     <div class="nav-poi-start-dot"><svg style="width:14px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5"><use href="#ts-pin"/></svg></div>
     <div class="nav-poi-start-lbl">Start</div>
   </div>`;
 
-  strip.innerHTML = metaHtml + poisHtml + startHtml;
+  // ── Tick marks (auto-skala) ──
+  const tickInterval = totalKm > 400 ? 100 : totalKm > 200 ? 50 : totalKm > 80 ? 20 : totalKm > 30 ? 10 : 5;
+  let tickHtml = '';
+  for(let km = tickInterval; km < totalKm - tickInterval/2; km += tickInterval){
+    const pct = pctFromDist(km);
+    if(pct < 5 || pct > 95) continue;
+    tickHtml += `<div class="nav-poi-tick" style="top:${pct}%">
+      <div class="nav-poi-tick-line"></div>
+      <div class="nav-poi-tick-lbl">${km}km</div>
+    </div>`;
+  }
 
-  // Auto-scroll: marker aktualnej pozycji zawsze widoczny
-  const curEl = document.getElementById('nav-poi-current');
-  if(curEl) curEl.scrollIntoView({block:'nearest',behavior:'smooth'});
+  // ── Marker aktualnej pozycji ──
+  let currentHtml = '';
+  if(navActive){
+    const myPct = pctFromDist(myDistKm);
+    currentHtml = `<div class="nav-poi-current-abs" id="nav-poi-current" style="top:${myPct}%">
+      <div class="nav-poi-current-dot"></div>
+    </div>`;
+  }
+
+  // ── POI absolute (wychodzą w bok od linii) ──
+  const timedPois = navRoutePois.filter(p =>
+    TIR_TIMELINE_TYPES.has(p.type) ||
+    (activeFilters.size > 0 && [...activeFilters].some(f => (p.amenities||[]).includes(f)))
+  );
+  let poisHtml = '';
+  for(const p of timedPois){
+    const pct = pctFromDist(p.distFromStart||0);
+    if(pct < 4 || pct > 96) continue;
+    const isPassed = (p.distFromStart||0) <= myDistKm;
+    const distAhead = (p.distFromStart||0) - myDistKm;
+    const near = !isPassed && distAhead > 0 && distAhead < 2;
+    const distTxt = isPassed ? '' : fmtD(distAhead);
+    poisHtml += `<div class="nav-poi-chip-abs${isPassed?' passed':''}${near?' near':''}"
+      style="top:${pct}%"
+      onclick="map.flyTo({center:[${p.lng},${p.lat}],zoom:15})" title="${p.name}">
+      <div class="nav-poi-chip-conn"></div>
+      <div class="nav-poi-chip-icon">${p.icon}</div>
+      <div class="nav-poi-chip-info">
+        <div class="nav-poi-chip-name">${p.name.substring(0,14)}</div>
+        ${distTxt ? `<div class="nav-poi-chip-dist">${distTxt}</div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  strip.innerHTML = metaHtml + tickHtml + currentHtml + poisHtml + startHtml;
 }
 
 function hideRouteTimeline(){
