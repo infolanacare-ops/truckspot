@@ -8,6 +8,28 @@ import hashlib
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
 MAIL_FROM      = os.environ.get("MAIL_FROM", "TruckSpot <info@truckspot.pl>")
 
+# Lista publicznych instancji Overpass — fallback gdy główna padnie
+_OVERPASS_MIRRORS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+]
+
+def overpass_query(query, timeout=25):
+    """Wykonaj zapytanie Overpass z fallback na inne mirrory jeśli główny padnie."""
+    last_error = None
+    for url in _OVERPASS_MIRRORS:
+        try:
+            r = _requests.post(url, data=query.strip(), timeout=timeout)
+            if r.status_code == 200:
+                return r.json(), None
+            last_error = f"{url}: HTTP {r.status_code}"
+        except Exception as e:
+            last_error = f"{url}: {e}"
+            continue
+    return None, last_error
+
 def send_email(to_email, subject, html_body):
     if not RESEND_API_KEY:
         return False
@@ -392,9 +414,11 @@ def api_route_restrictions():
 );
 out center tags;
 """
-        r = _requests.post("https://overpass-api.de/api/interpreter",
-                           data={"data": query}, timeout=18)
-        elements = r.json().get("elements", [])
+        data, err = overpass_query(query, timeout=18)
+        if data is None:
+            print(f"[overpass route-restrictions] ALL mirrors failed: {err}")
+            return jsonify([])
+        elements = data.get("elements", [])
         result = []
         for el in elements:
             tags = el.get("tags", {})
@@ -455,12 +479,11 @@ def api_route_pois():
     );
     out 120;
     """
-    try:
-        resp = _requests.post("https://overpass-api.de/api/interpreter",
-                              data=query.strip(), timeout=22)
-        elements = resp.json().get("elements", [])
-    except Exception as e:
-        return jsonify({"error": str(e)}), 502
+    data, err = overpass_query(query, timeout=22)
+    if data is None:
+        print(f"[overpass route-pois] ALL mirrors failed: {err}")
+        return jsonify([])  # zamiast 502 zwróć pustą listę żeby front nie crashował
+    elements = data.get("elements", [])
 
     POI_ICON = {
         "fuel":        "⛽", "rest_area":   "🅿️", "services": "🛣️",
@@ -616,14 +639,10 @@ def api_osm_parkings():
         out center 60;
         """
 
-    try:
-        resp = _requests.post(
-            "https://overpass-api.de/api/interpreter",
-            data=query.strip(), timeout=25
-        )
-        data = resp.json()
-    except Exception as e:
-        return jsonify({"error": str(e)}), 502
+    data, err = overpass_query(query, timeout=25)
+    if data is None:
+        print(f"[overpass osm-parkings] ALL mirrors failed: {err}")
+        return jsonify([])
 
     results = []
     for el in data.get("elements", []):
