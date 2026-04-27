@@ -8622,7 +8622,7 @@ async function loadRoutePois(){
     name:p.name, type:'parking', icon:'🅿️', hgv:true,
   }));
   // Licz od razu distFromStart i distKm dla widoku osi
-  navRoutePois = parkingPois
+  const initialPois = parkingPois
     .filter(p => pointToRouteDistKm(p.lat, p.lng, routeCoords) <= radius)
     .map(p => {
       let minIdx = 0, minD = Infinity;
@@ -8636,6 +8636,8 @@ async function loadRoutePois(){
       }
       return {...p, distFromStart, distKm: minD};
     });
+  // Anti-flicker: tylko ustaw jeśli nie ma jeszcze nic — w przeciwnym razie zachowaj poprzednie
+  if(!navRoutePois.length) navRoutePois = initialPois;
   renderNavPois();
 
   // Fetch each segment sequentially
@@ -8796,7 +8798,19 @@ function renderNavPois(){
     </div>`;
   }
 
-  strip.innerHTML = metaHtml + tickHtml + currentHtml + poisHtml + startHtml;
+  // Anti-flicker: rebuilduj DOM tylko gdy lista POI naprawdę się zmieniła
+  // Hash z ID POI + ich liczba (zmiany pozycji/dystansu robione przez CSS calc)
+  const poiHash = timedPois.map(p => p.id).join(',') + '|' + tickInterval + '|' + (navActive?'a':'i');
+  if(strip._lastHash !== poiHash || !strip.innerHTML){
+    strip.innerHTML = metaHtml + tickHtml + currentHtml + poisHtml + startHtml;
+    strip._lastHash = poiHash;
+  } else if(navActive){
+    // Tylko aktualizuj pozycję markera "Tutaj" i META/footer
+    const cur = document.getElementById('nav-poi-current');
+    if(cur) cur.style.top = cssFromDist(myDistKm);
+    const startVal = strip.querySelector('.nav-poi-start-val');
+    if(startVal) startVal.textContent = fmtD(Math.max(0, myDistKm));
+  }
 }
 
 function hideRouteTimeline(){
