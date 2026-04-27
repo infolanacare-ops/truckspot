@@ -2075,7 +2075,7 @@ body.navigating .fab-ai{display:none}
   padding:0;
   display:none;
   pointer-events:auto;z-index:500;
-  height:min(60vh, calc(100vh - 280px));
+  height:min(55vh, calc(100vh - 320px));
   box-shadow:none;
   touch-action:none;
   user-select:none;
@@ -8737,12 +8737,10 @@ function renderNavPois(){
   }
 
   // ── POI absolute (wychodzą w bok od linii) ──
-  // Pokaż wszystkie POI z trasy które mają distFromStart i są w pobliżu trasy
-  const timedPois = navRoutePois.filter(p => {
-    if(p.distFromStart == null) return false;
-    if(p.distKm != null && p.distKm > 0.6) return false; // tylko blisko trasy (600m)
-    return true;
-  });
+  // Pokaż POI w pobliżu trasy (do 2 km od linii), max 25 żeby nie zaśmiecić
+  const timedPois = navRoutePois
+    .filter(p => p.distFromStart != null && (p.distKm == null || p.distKm <= 2.0))
+    .slice(0, 25);
   let poisHtml = '';
   for(const p of timedPois){
     const pct = pctFromDist(p.distFromStart||0);
