@@ -2067,10 +2067,10 @@ body.navigating .fab-ai{display:none}
 /* ── POI timeline — lewa strona, od obliczenia trasy ── */
 .nav-pois-strip{
   position:fixed;left:10px;top:120px;
-  width:140px;
+  width:90px;
   background:linear-gradient(to right,
     rgba(14,18,32,.92) 0%,
-    rgba(14,18,32,.92) 68%,
+    rgba(14,18,32,.92) 65%,
     rgba(22,28,48,0) 78%,
     rgba(22,28,48,0) 100%);
   backdrop-filter:blur(18px) saturate(140%);
@@ -2101,7 +2101,7 @@ body.navigating .fab-ai{display:none}
 /* Ciągła linia osi biegnąca przez cały strip */
 .nav-pois-strip{position:relative}
 .nav-pois-strip::before{
-  content:'';position:absolute;top:60px;bottom:60px;left:100px;
+  content:'';position:absolute;top:60px;bottom:60px;left:62px;
   width:2px;border-radius:2px;
   background:linear-gradient(to bottom,
     rgba(96,165,250,.7) 0%,
@@ -2117,10 +2117,10 @@ body.navigating .fab-ai{display:none}
   width:100%;padding:.55rem 0 .3rem;position:relative;z-index:1;
 }
 .nav-poi-end-dot{
-  width:38px;height:38px;border-radius:10px;
+  width:30px;height:30px;border-radius:8px;
   background:rgba(239,68,68,.2);border:1.5px solid rgba(239,68,68,.7);
   display:flex;align-items:center;justify-content:center;
-  font-size:1.1rem;position:relative;z-index:1;flex-shrink:0;
+  font-size:.9rem;position:relative;z-index:1;flex-shrink:0;
 }
 
 /* START (dół) */
@@ -2129,10 +2129,10 @@ body.navigating .fab-ai{display:none}
   width:100%;padding:.3rem 0 .55rem;position:relative;z-index:1;
 }
 .nav-poi-start-dot{
-  width:38px;height:38px;border-radius:10px;
+  width:30px;height:30px;border-radius:8px;
   background:rgba(34,197,94,.2);border:1.5px solid rgba(34,197,94,.7);
   display:flex;align-items:center;justify-content:center;
-  font-size:1.1rem;position:relative;z-index:1;flex-shrink:0;
+  font-size:.9rem;position:relative;z-index:1;flex-shrink:0;
 }
 .nav-poi-start-lbl,.nav-poi-end-lbl{
   font-size:.42rem;font-weight:800;text-transform:uppercase;
@@ -2192,14 +2192,14 @@ body.navigating .fab-ai{display:none}
 /* ── Miarka osi trasy — tick marks + POI absolute ── */
 .nav-poi-end-fix{
   position:absolute;top:0;left:0;right:0;height:50px;
-  display:flex;flex-direction:row-reverse;align-items:center;justify-content:flex-start;gap:.5rem;
-  padding:0 .65rem;z-index:5;
+  display:flex;flex-direction:row-reverse;align-items:center;justify-content:flex-start;gap:.35rem;
+  padding:0 .35rem 0 .25rem;z-index:5;
   border-bottom:1px solid rgba(255,255,255,.08);
 }
 .nav-poi-start-fix{
   position:absolute;bottom:0;left:0;right:0;height:50px;
-  display:flex;flex-direction:row-reverse;align-items:center;justify-content:flex-start;gap:.5rem;
-  padding:0 .65rem;z-index:5;
+  display:flex;flex-direction:row-reverse;align-items:center;justify-content:flex-start;gap:.35rem;
+  padding:0 .35rem 0 .25rem;z-index:5;
   border-top:1px solid rgba(255,255,255,.08);
 }
 .nav-poi-end-info,.nav-poi-start-info{align-items:flex-end!important;text-align:right}
@@ -2207,34 +2207,34 @@ body.navigating .fab-ai{display:none}
   display:flex;flex-direction:column;align-items:flex-start;line-height:1.1;gap:2px;
 }
 .nav-poi-end-lbl,.nav-poi-start-lbl{
-  font-size:.55rem;font-weight:700;text-transform:uppercase;
-  letter-spacing:.04em;color:rgba(255,255,255,.55);
+  font-size:.46rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.03em;color:rgba(255,255,255,.55);
   text-shadow:none;
 }
 .nav-poi-end-val,.nav-poi-start-val{
-  font-family:var(--font-head);font-size:.85rem;font-weight:900;color:#fff;line-height:1;
+  font-family:var(--font-head);font-size:.75rem;font-weight:900;color:#fff;line-height:1;
 }
 .nav-poi-tick{
   position:absolute;left:0;right:0;height:0;z-index:1;pointer-events:none;
 }
 .nav-poi-tick-line{
-  position:absolute;left:96px;top:-1px;
+  position:absolute;left:58px;top:-1px;
   width:8px;height:2px;background:rgba(255,255,255,.35);
   border-radius:1px;
 }
 .nav-poi-tick-lbl{
-  position:absolute;left:108px;top:-8px;
+  position:absolute;left:70px;top:-8px;
   font-size:.7rem;color:#1e3a8a;font-weight:900;white-space:nowrap;
   letter-spacing:-.01em;
   text-shadow:0 0 3px rgba(255,255,255,.8),0 0 2px rgba(255,255,255,.7);
 }
 .nav-poi-current-abs{
-  position:absolute;left:100px;transform:translate(-50%,-50%);
+  position:absolute;left:62px;transform:translate(-50%,-50%);
   z-index:6;pointer-events:none;
 }
 .nav-poi-chip-abs{
-  position:absolute;right:40px;transform:translateY(-50%);
-  display:flex;flex-direction:row-reverse;align-items:center;gap:.3rem;z-index:3;cursor:pointer;
+  position:absolute;right:28px;transform:translateY(-50%);
+  display:flex;flex-direction:row-reverse;align-items:center;gap:.25rem;z-index:3;cursor:pointer;
   white-space:nowrap;
 }
 .nav-poi-chip-abs.passed{opacity:.4}
@@ -2244,21 +2244,21 @@ body.navigating .fab-ai{display:none}
 }
 .nav-poi-chip-abs .nav-poi-chip-icon{
   flex-shrink:0;margin:0;
-  width:30px;height:30px;border-radius:9px;
+  width:24px;height:24px;border-radius:7px;
   background:rgba(255,255,255,.10);
   border:1.5px solid rgba(255,255,255,.18);
-  font-size:.85rem;
+  font-size:.7rem;
   box-shadow:none;
 }
 .nav-poi-chip-info{
   display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px;
 }
 .nav-poi-chip-info .nav-poi-chip-name{
-  max-width:50px;text-align:right;padding:0;
-  color:#fff;font-size:.46rem;font-weight:700;text-shadow:none;
+  max-width:34px;text-align:right;padding:0;
+  color:#fff;font-size:.4rem;font-weight:700;text-shadow:none;
 }
 .nav-poi-chip-info .nav-poi-chip-dist{
-  color:#60a5fa;font-size:.5rem;font-weight:800;text-shadow:none;
+  color:#60a5fa;font-size:.44rem;font-weight:800;text-shadow:none;
 }
 
 /* — Dół: ETA + głos + stop + hamburger — */
