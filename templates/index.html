@@ -2069,7 +2069,8 @@ body.navigating .fab-ai{display:none}
   position:fixed;left:10px;top:120px;
   width:90px;
   background:linear-gradient(to right,
-    rgba(14,18,32,.92) 0%,
+    rgba(22,28,48,0) 0%,
+    rgba(14,18,32,.92) 18%,
     rgba(14,18,32,.92) 65%,
     rgba(22,28,48,0) 78%,
     rgba(22,28,48,0) 100%);
@@ -8741,17 +8742,14 @@ function renderNavPois(){
     <div class="nav-poi-end-dot">🏁</div>
     <div class="nav-poi-end-info">
       <div class="nav-poi-end-lbl">Meta</div>
-      <div class="nav-poi-end-val">${fmtD(totalKm)}</div>
     </div>
   </div>`;
 
   // ── START (dół) ──
-  const startKm = navActive ? Math.max(0, myDistKm) : 0;
   const startHtml = `<div class="nav-poi-start-fix">
     <div class="nav-poi-start-dot"><svg style="width:14px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5"><use href="#ts-pin"/></svg></div>
     <div class="nav-poi-start-info">
-      <div class="nav-poi-start-lbl">Przejechane</div>
-      <div class="nav-poi-start-val">${fmtD(startKm)}</div>
+      <div class="nav-poi-start-lbl">Start</div>
     </div>
   </div>`;
 
@@ -8807,11 +8805,9 @@ function renderNavPois(){
     strip.innerHTML = metaHtml + tickHtml + currentHtml + poisHtml + startHtml;
     strip._lastHash = poiHash;
   } else if(navActive){
-    // Tylko aktualizuj pozycję markera "Tutaj" i META/footer
+    // Tylko aktualizuj pozycję markera "Tutaj"
     const cur = document.getElementById('nav-poi-current');
     if(cur) cur.style.top = cssFromDist(myDistKm);
-    const startVal = strip.querySelector('.nav-poi-start-val');
-    if(startVal) startVal.textContent = fmtD(Math.max(0, myDistKm));
   }
 }
 
