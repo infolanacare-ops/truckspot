@@ -8595,7 +8595,21 @@ async function loadRoutePois(){
     id:'park_'+p.id, lat:p.lat, lng:p.lng,
     name:p.name, type:'parking', icon:'🅿️', hgv:true,
   }));
-  navRoutePois = parkingPois.filter(p => pointToRouteDistKm(p.lat, p.lng, routeCoords) <= radius);
+  // Licz od razu distFromStart i distKm dla widoku osi
+  navRoutePois = parkingPois
+    .filter(p => pointToRouteDistKm(p.lat, p.lng, routeCoords) <= radius)
+    .map(p => {
+      let minIdx = 0, minD = Infinity;
+      for(let i=0; i<routeCoords.length; i++){
+        const d = haversineKm(p.lat, p.lng, routeCoords[i][1], routeCoords[i][0]);
+        if(d < minD){ minD=d; minIdx=i; }
+      }
+      let distFromStart = 0;
+      for(let i=1; i<=minIdx; i++){
+        distFromStart += haversineKm(routeCoords[i][1],routeCoords[i][0],routeCoords[i-1][1],routeCoords[i-1][0]);
+      }
+      return {...p, distFromStart, distKm: minD};
+    });
   renderNavPois();
 
   // Fetch each segment sequentially
@@ -8729,7 +8743,6 @@ function renderNavPois(){
     if(p.distKm != null && p.distKm > 0.6) return false; // tylko blisko trasy (600m)
     return true;
   });
-  console.log('[strip] navRoutePois:', navRoutePois.length, 'visible:', timedPois.length, 'totalKm:', totalKm);
   let poisHtml = '';
   for(const p of timedPois){
     const pct = pctFromDist(p.distFromStart||0);
