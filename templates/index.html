@@ -2067,20 +2067,23 @@ body.navigating .fab-ai{display:none}
 /* ── POI timeline — lewa strona, od obliczenia trasy ── */
 .nav-pois-strip{
   position:fixed;left:10px;top:120px;
-  width:140px;
+  width:124px;
   background:linear-gradient(to right,
-    rgba(22,28,48,.10) 0%,
-    rgba(22,28,48,.45) 40%,
-    rgba(14,18,32,.85) 100%);
+    rgba(14,18,32,.85) 0%,
+    rgba(22,28,48,.45) 60%,
+    rgba(22,28,48,.10) 100%);
   backdrop-filter:blur(20px) saturate(140%);
   -webkit-backdrop-filter:blur(20px) saturate(140%);
-  border:1px solid rgba(255,255,255,.15);
-  border-radius:18px;
+  border-left:1px solid rgba(255,255,255,.15);
+  border-top:1px solid rgba(255,255,255,.12);
+  border-bottom:1px solid rgba(255,255,255,.12);
+  border-right:none;
+  border-radius:18px 0 0 18px;
   padding:.5rem 0;
   display:none;
   pointer-events:auto;z-index:500;
   height:min(55vh, calc(100vh - 320px));
-  box-shadow:0 4px 24px rgba(0,0,0,.4);
+  box-shadow:-2px 4px 18px rgba(0,0,0,.35);
   touch-action:none;
   user-select:none;
   overflow:hidden;
