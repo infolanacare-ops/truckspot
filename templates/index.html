@@ -2067,7 +2067,7 @@ body.navigating .fab-ai{display:none}
 /* ── POI timeline — lewa strona, od obliczenia trasy ── */
 .nav-pois-strip{
   position:fixed;left:8px;top:120px;
-  width:18px;
+  width:60px;
   background:transparent;
   backdrop-filter:none;-webkit-backdrop-filter:none;
   border:none;
@@ -2111,8 +2111,8 @@ body.navigating .fab-ai{display:none}
   width:100%;padding:.55rem 0 .3rem;position:relative;z-index:1;
 }
 .nav-poi-end-dot{
-  width:42px;height:42px;border-radius:50%;
-  background:rgba(239,68,68,.3);border:3px solid #ef4444;
+  width:44px;height:44px;border-radius:14px;
+  background:rgba(239,68,68,.3);border:2px solid #ef4444;
   display:flex;align-items:center;justify-content:center;
   font-size:1.2rem;position:relative;z-index:1;
   box-shadow:0 0 12px rgba(239,68,68,.45);
@@ -2124,8 +2124,8 @@ body.navigating .fab-ai{display:none}
   width:100%;padding:.3rem 0 .55rem;position:relative;z-index:1;
 }
 .nav-poi-start-dot{
-  width:42px;height:42px;border-radius:50%;
-  background:rgba(34,197,94,.3);border:3px solid #22c55e;
+  width:44px;height:44px;border-radius:14px;
+  background:rgba(34,197,94,.3);border:2px solid #22c55e;
   display:flex;align-items:center;justify-content:center;
   font-size:1.2rem;position:relative;z-index:1;
   box-shadow:0 0 12px rgba(34,197,94,.45);
@@ -2161,13 +2161,13 @@ body.navigating .fab-ai{display:none}
 }
 .nav-poi-chip-icon{
   position:relative;z-index:1;
-  width:38px;height:38px;border-radius:50%;
-  background:rgba(12,16,28,.98);
-  border:2px solid rgba(255,255,255,.35);
+  width:40px;height:40px;border-radius:12px;
+  background:rgba(22,28,48,.95);
+  border:1.5px solid rgba(255,255,255,.22);
   display:flex;align-items:center;justify-content:center;
-  font-size:1rem;line-height:1;
+  font-size:1.05rem;line-height:1;
   transition:border-color .2s,background .2s,transform .2s;
-  box-shadow:0 0 6px rgba(0,0,0,.3);
+  box-shadow:0 2px 8px rgba(0,0,0,.4);
 }
 .nav-poi-chip.near .nav-poi-chip-icon{
   background:rgba(34,197,94,.2);border-color:#22c55e;
@@ -2219,8 +2219,8 @@ body.navigating .fab-ai{display:none}
 }
 .nav-poi-chip-abs.passed{opacity:.32}
 .nav-poi-chip-conn{
-  width:14px;height:2px;background:rgba(15,23,42,.7);
-  flex-shrink:0;
+  width:18px;height:2px;background:rgba(15,23,42,.85);
+  flex-shrink:0;margin-left:3px;
 }
 .nav-poi-chip-abs .nav-poi-chip-icon{flex-shrink:0;margin:0}
 .nav-poi-chip-info{
