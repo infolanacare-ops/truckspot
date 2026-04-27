@@ -1258,6 +1258,48 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
 .cam-bubble-btn .btn-icon{font-size:1.4rem;line-height:1}
 .cam-bubble-btn .btn-lbl{font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;opacity:.8}
 .cam-bubble-btn:active{transform:scale(.93);background:rgba(255,255,255,.15)}
+
+/* ── Reroute banner (szybsza trasa) — styl glassmorphism jak cam-bubble ── */
+.reroute-banner{
+  position:fixed;
+  bottom:calc(260px + env(safe-area-inset-bottom,0px));
+  left:50%;transform:translateX(-50%) translateY(12px);
+  z-index:1700;
+  background:rgba(20,24,36,.72);
+  backdrop-filter:blur(18px) saturate(140%);
+  -webkit-backdrop-filter:blur(18px) saturate(140%);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:16px;padding:.65rem .9rem;
+  width:auto;max-width:280px;min-width:220px;
+  box-shadow:0 4px 20px rgba(0,0,0,.45);
+  opacity:0;pointer-events:none;
+  transition:transform .25s cubic-bezier(.34,1.56,.64,1),opacity .2s;
+  display:flex;flex-direction:column;gap:.5rem;
+}
+.reroute-banner.show{
+  opacity:1;pointer-events:auto;
+  transform:translateX(-50%) translateY(0);
+}
+.reroute-banner-hdr{
+  display:flex;align-items:center;justify-content:center;gap:.4rem;
+  font-size:.78rem;color:rgba(255,255,255,.85);font-weight:600;letter-spacing:.01em;
+}
+.reroute-banner-save{color:#34d399;font-weight:800}
+.reroute-banner-btns{display:flex;gap:.5rem}
+.reroute-banner-btn{
+  flex:1;padding:.55rem .5rem;border:none;border-radius:12px;
+  font-family:var(--font);font-size:.78rem;font-weight:600;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:.25rem;
+  background:rgba(255,255,255,.08);color:rgba(255,255,255,.85);
+  border:1px solid rgba(255,255,255,.13);
+  transition:.15s;
+}
+.reroute-banner-btn.accept{
+  background:rgba(52,211,153,.15);border-color:rgba(52,211,153,.3);color:#34d399;
+}
+.reroute-banner-btn:active{transform:scale(.93)}
+.reroute-banner-btn svg{width:18px;height:18px}
+.reroute-banner-btn .btn-lbl{font-size:.62rem;letter-spacing:.05em;text-transform:uppercase;opacity:.85}
 .route-fab-diamond{
   width:22px;height:28px;flex-shrink:0;
   background:linear-gradient(160deg,#fff9c4,#d4af37,#7a5c00);
@@ -3526,6 +3568,23 @@ body.navigating .convoy-btn{display:none}
 <!-- ROUTE PANEL -->
 <!-- ROUTE FAB — pill button at bottom center -->
 <!-- Auto-dymek potwierdzenia fotoradaru -->
+<div class="reroute-banner" id="reroute-banner">
+  <div class="reroute-banner-hdr">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;opacity:.7"><path d="M16 3h5v5"/><path d="M21 3l-7 7"/><path d="M8 21H3v-5"/><path d="M3 21l7-7"/></svg>
+    <span>Szybsza trasa <span class="reroute-banner-save" id="reroute-banner-save">−8 min</span></span>
+  </div>
+  <div class="reroute-banner-btns">
+    <button class="reroute-banner-btn accept" onclick="_acceptReroute()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      <span class="btn-lbl">Przełącz</span>
+    </button>
+    <button class="reroute-banner-btn" onclick="_dismissReroute()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      <span class="btn-lbl">Zostaw</span>
+    </button>
+  </div>
+</div>
+
 <div class="cam-confirm-bubble" id="cam-bubble">
   <div class="cam-bubble-header" id="cam-bubble-hdr" style="display:none"></div>
   <div class="cam-bubble-sub" id="cam-bubble-sub">Czy fotoradar tu jest?</div>
@@ -7023,6 +7082,88 @@ function _updateTrafficBadge(){
 function resetTrafficEta(){
   _trafficEtaSecs = null; _trafficDelaySecs = 0; _trafficEtaTs = 0;
   _updateTrafficBadge();
+  _altRouteSuggested = null; _altRouteCheckTs = 0;
+  document.getElementById('reroute-banner')?.classList.remove('show');
+}
+
+// ── Alternatywna trasa (omijanie korków) ──────────────────────────────────
+let _altRouteSuggested = null;     // {coords,dur,dist,steps,savedSecs}
+let _altRouteCheckTs   = 0;
+let _altRouteFetching  = false;
+const ALT_ROUTE_INTERVAL  = 4 * 60 * 1000; // co 4 min
+const ALT_ROUTE_MIN_SAVE  = 5 * 60;        // min. 5 min oszczędności
+
+async function _checkAlternativeRoute(){
+  if(_altRouteFetching || !navActive || navDestLat === null || !navLastLat) return;
+  if(_altRouteSuggested) return; // już sugerujemy — czekamy na decyzję
+  if(currentMode === 'tir' || routeType === 'short') return; // tylko driving-traffic
+  if(Date.now() - _altRouteCheckTs < ALT_ROUTE_INTERVAL) return;
+  _altRouteCheckTs = Date.now();
+  _altRouteFetching = true;
+  try {
+    const from = `${navLastLng},${navLastLat}`;
+    const to   = `${navDestLng},${navDestLat}`;
+    const params = new URLSearchParams({
+      geometries:'geojson', steps:'true', overview:'full',
+      annotations:'maxspeed', alternatives:'true',
+      voice_instructions:'true', banner_instructions:'true',
+      access_token:MAPBOX_TOKEN
+    });
+    const r = await fetch(`https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${from};${to}?${params}`);
+    const data = await r.json();
+    if(!data.routes || data.routes.length < 2) return;
+    const sorted = [...data.routes].sort((a,b)=>a.duration-b.duration);
+    const fastest = sorted[0];
+    const currentEta = _trafficEtaSecs ?? routeTotalDur;
+    const saveSecs = currentEta - fastest.duration;
+    if(saveSecs >= ALT_ROUTE_MIN_SAVE){
+      _altRouteSuggested = {
+        coords: fastest.geometry.coordinates,
+        dur:    fastest.duration,
+        dist:   fastest.distance,
+        steps:  fastest.legs.flatMap(l=>l.steps||[]),
+        savedSecs: saveSecs
+      };
+      _showRerouteSuggestion();
+    }
+  } catch(e){} finally { _altRouteFetching = false; }
+}
+
+function _showRerouteSuggestion(){
+  if(!_altRouteSuggested) return;
+  const min = Math.round(_altRouteSuggested.savedSecs / 60);
+  const txt = document.getElementById('reroute-banner-save');
+  if(txt) txt.textContent = `−${min} min`;
+  document.getElementById('reroute-banner')?.classList.add('show');
+  // Krótka informacja głosowa
+  if(window.speechSynthesis){
+    const u = new SpeechSynthesisUtterance(`Szybsza trasa o ${min} minut`);
+    u.lang = 'pl-PL'; u.rate = 1.05;
+    window.speechSynthesis.speak(u);
+  }
+}
+
+function _acceptReroute(){
+  if(!_altRouteSuggested) return;
+  routeCoords    = _altRouteSuggested.coords;
+  routeTotalDist = _altRouteSuggested.dist;
+  routeTotalDur  = _altRouteSuggested.dur;
+  routeSteps     = _altRouteSuggested.steps;
+  navCIdx = 0;
+  clearRouteLayer();
+  drawRoute(routeCoords);
+  scanRouteRestrictions(routeCoords);
+  _altRouteSuggested = null;
+  _trafficEtaSecs = null; _trafficDelaySecs = 0; _trafficEtaTs = 0;
+  _updateTrafficBadge();
+  document.getElementById('reroute-banner')?.classList.remove('show');
+}
+
+function _dismissReroute(){
+  _altRouteSuggested = null;
+  document.getElementById('reroute-banner')?.classList.remove('show');
+  // dodatkowy throttle — nie pytaj ponownie przez 5 min
+  _altRouteCheckTs = Date.now() + (60 * 1000);
 }
 
 let navRoutePois = [];     // WSZYSTKIE POI wzdłuż trasy (niefiltrowane)
@@ -8938,6 +9079,7 @@ function onNavPosition(pos){
   const trafficFresh = _trafficEtaSecs !== null && (Date.now() - _trafficEtaTs) < 6 * 60 * 1000;
   setNavEta(trafficFresh ? _trafficEtaSecs : speedEta);
   _refreshTrafficEta(); // odpala co najwyżej co 4 min, reszta to no-op
+  _checkAlternativeRoute(); // sprawdza alternatywę co 4 min
 
   // ── Step management ─────────────────────────────────────────────────
   // Advance past steps whose maneuver point we've already passed
