@@ -2068,16 +2068,19 @@ body.navigating .fab-ai{display:none}
 .nav-pois-strip{
   position:fixed;left:10px;top:120px;
   width:140px;
-  background:linear-gradient(160deg,rgba(22,28,48,.95) 0%,rgba(14,18,32,.95) 100%);
-  backdrop-filter:blur(16px) saturate(140%);
-  -webkit-backdrop-filter:blur(16px) saturate(140%);
-  border:1.5px solid rgba(255,255,255,.18);
+  background:linear-gradient(to right,
+    rgba(22,28,48,.10) 0%,
+    rgba(22,28,48,.45) 40%,
+    rgba(14,18,32,.85) 100%);
+  backdrop-filter:blur(20px) saturate(140%);
+  -webkit-backdrop-filter:blur(20px) saturate(140%);
+  border:1px solid rgba(255,255,255,.15);
   border-radius:18px;
   padding:.5rem 0;
   display:none;
   pointer-events:auto;z-index:500;
   height:min(55vh, calc(100vh - 320px));
-  box-shadow:0 4px 24px rgba(0,0,0,.45);
+  box-shadow:0 4px 24px rgba(0,0,0,.4);
   touch-action:none;
   user-select:none;
   overflow:hidden;
@@ -8723,14 +8726,11 @@ function renderNavPois(){
     ? (navRouteDistances[navCIdx] || 0) / 1000 : 0;
   const fmtD = d => d == null ? '' : d < 1 ? Math.round(d*1000)+'m' : d.toFixed(1)+'km';
 
-  // Pozycja (px) na osi: ograniczona do strefy między META (top:60px) a START (bottom:60px)
-  // distFromStart=totalKm → top, distFromStart=0 → bottom
-  const stripPx = strip.clientHeight || 400;
-  const HEADER_H = 60, FOOTER_H = 60;
-  const usableH = stripPx - HEADER_H - FOOTER_H;
-  const pxFromDist = distFromStart => {
+  // Pozycja CSS calc — niezależna od wysokości strip
+  // ratio 0 = META (góra), ratio 1 = START (dół), strefa header/footer = 50px każda
+  const cssFromDist = distFromStart => {
     const ratio = Math.max(0, Math.min(1, 1 - distFromStart/totalKm));
-    return HEADER_H + ratio * usableH;
+    return `calc(50px + (100% - 100px) * ${ratio.toFixed(4)})`;
   };
 
   // ── META (góra) ──
@@ -8756,8 +8756,8 @@ function renderNavPois(){
   const tickInterval = totalKm > 400 ? 100 : totalKm > 200 ? 50 : totalKm > 80 ? 20 : totalKm > 30 ? 10 : 5;
   let tickHtml = '';
   for(let km = tickInterval; km < totalKm - tickInterval/2; km += tickInterval){
-    const px = pxFromDist(km);
-    tickHtml += `<div class="nav-poi-tick" style="top:${px}px">
+    const top = cssFromDist(km);
+    tickHtml += `<div class="nav-poi-tick" style="top:${top}">
       <div class="nav-poi-tick-line"></div>
       <div class="nav-poi-tick-lbl">${km}</div>
     </div>`;
@@ -8766,8 +8766,8 @@ function renderNavPois(){
   // ── Marker aktualnej pozycji ──
   let currentHtml = '';
   if(navActive){
-    const myPx = pxFromDist(myDistKm);
-    currentHtml = `<div class="nav-poi-current-abs" id="nav-poi-current" style="top:${myPx}px">
+    const top = cssFromDist(myDistKm);
+    currentHtml = `<div class="nav-poi-current-abs" id="nav-poi-current" style="top:${top}">
       <div class="nav-poi-current-dot"></div>
     </div>`;
   }
@@ -8780,13 +8780,13 @@ function renderNavPois(){
     .slice(0, 25);
   let poisHtml = '';
   for(const p of timedPois){
-    const px = pxFromDist(p.distFromStart||0);
+    const top = cssFromDist(p.distFromStart||0);
     const isPassed = (p.distFromStart||0) <= myDistKm;
     const distAhead = (p.distFromStart||0) - myDistKm;
     const near = !isPassed && distAhead > 0 && distAhead < 2;
     const distTxt = isPassed ? '' : fmtD(distAhead);
     poisHtml += `<div class="nav-poi-chip-abs${isPassed?' passed':''}${near?' near':''}"
-      style="top:${px}px"
+      style="top:${top}"
       onclick="map.flyTo({center:[${p.lng},${p.lat}],zoom:15})" title="${p.name}">
       <div class="nav-poi-chip-conn"></div>
       <div class="nav-poi-chip-icon">${p.icon}</div>
