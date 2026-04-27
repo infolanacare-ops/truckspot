@@ -2075,7 +2075,7 @@ body.navigating .fab-ai{display:none}
   padding:0;
   display:none;
   pointer-events:auto;z-index:500;
-  height:65vh;
+  height:min(60vh, calc(100vh - 280px));
   box-shadow:none;
   touch-action:none;
   user-select:none;
@@ -8380,8 +8380,13 @@ function _makeDraggableModule(el, storageKey){
       } else return;
     }
     e.preventDefault();
-    const x=Math.max(0,Math.min(e.clientX-ox, window.innerWidth-el.offsetWidth));
-    const y=Math.max(0,Math.min(e.clientY-oy, window.innerHeight-el.offsetHeight));
+    // Pozwalaj na wystawanie poza ekran ale zachowaj min. 60px widoczne
+    const minX = 60 - el.offsetWidth;
+    const maxX = window.innerWidth - 60;
+    const minY = 60 - el.offsetHeight;
+    const maxY = window.innerHeight - 60;
+    const x = Math.max(minX, Math.min(e.clientX-ox, maxX));
+    const y = Math.max(minY, Math.min(e.clientY-oy, maxY));
     el.style.left=x+'px'; el.style.top=y+'px';
   });
 
