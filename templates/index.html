@@ -8740,12 +8740,11 @@ function renderNavPois(){
   }
 
   // ── POI absolute (wychodzą w bok od linii) ──
-  // Pokaż POI w pobliżu trasy (do 2 km od linii), max 25 żeby nie zaśmiecić
+  // Sortuj po odległości od trasy, weź 25 najbliższych (max 5km od linii)
   const timedPois = navRoutePois
-    .filter(p => p.distFromStart != null && (p.distKm == null || p.distKm <= 2.0))
+    .filter(p => p.distFromStart != null && (p.distKm == null || p.distKm <= 5.0))
+    .sort((a,b) => (a.distKm||0) - (b.distKm||0))
     .slice(0, 25);
-  console.log('[strip-debug] navRoutePois:', navRoutePois.length, 'visible:', timedPois.length, 'allParkings:', allParkings?.length||0, 'totalKm:', totalKm.toFixed(1), 'activeFilters:', [...activeFilters]);
-  if(navRoutePois.length > 0) console.log('[strip-debug] sample POI:', navRoutePois[0]);
   let poisHtml = '';
   for(const p of timedPois){
     const pct = pctFromDist(p.distFromStart||0);
