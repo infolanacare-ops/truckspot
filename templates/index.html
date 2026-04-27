@@ -2066,25 +2066,15 @@ body.navigating .fab-ai{display:none}
 /* ── POI timeline — pionowa oś po prawej stronie mapy (TomTom style) ── */
 /* ── POI timeline — lewa strona, od obliczenia trasy ── */
 .nav-pois-strip{
-  position:fixed;left:10px;top:120px;
-  width:90px;
-  background:linear-gradient(to right,
-    rgba(22,28,48,0) 0%,
-    rgba(14,18,32,.92) 18%,
-    rgba(14,18,32,.92) 65%,
-    rgba(22,28,48,0) 78%,
-    rgba(22,28,48,0) 100%);
-  backdrop-filter:blur(18px) saturate(140%);
-  -webkit-backdrop-filter:blur(18px) saturate(140%);
-  border:none;
-  border-radius:18px 0 0 18px;
-  padding:.5rem 0;
+  position:fixed;right:14px;top:120px;left:auto;
+  width:48px;
+  background:transparent;
+  backdrop-filter:none;-webkit-backdrop-filter:none;
+  border:none;border-radius:0;padding:0;
   display:none;
   pointer-events:auto;z-index:500;
-  height:min(55vh, calc(100vh - 320px));
-  touch-action:none;
-  user-select:none;
-  overflow:visible;
+  height:min(60vh, calc(100vh - 280px));
+  touch-action:none;user-select:none;overflow:visible;
 }
 /* Drag handle na górze widgetu */
 .nav-pois-drag{
@@ -2102,14 +2092,11 @@ body.navigating .fab-ai{display:none}
 /* Ciągła linia osi biegnąca przez cały strip */
 .nav-pois-strip{position:relative}
 .nav-pois-strip::before{
-  content:'';position:absolute;top:60px;bottom:60px;left:62px;
+  content:'';position:absolute;top:8px;bottom:48px;left:24px;
   width:2px;border-radius:2px;
-  background:linear-gradient(to bottom,
-    rgba(96,165,250,.7) 0%,
-    rgba(255,255,255,.25) 50%,
-    rgba(96,165,250,.7) 100%);
+  background:#94a3b8;
   z-index:0;pointer-events:none;
-  box-shadow:0 0 6px rgba(96,165,250,.35);
+  box-shadow:0 0 4px rgba(255,255,255,.7);
 }
 
 /* META (góra) */
@@ -2190,20 +2177,8 @@ body.navigating .fab-ai{display:none}
   text-shadow:0 0 3px rgba(255,255,255,.95),0 0 2px rgba(255,255,255,.95);
 }
 
-/* ── Miarka osi trasy — tick marks + POI absolute ── */
-.nav-poi-end-fix{
-  position:absolute;top:0;left:0;right:0;height:50px;
-  display:flex;flex-direction:row-reverse;align-items:center;justify-content:flex-start;gap:.35rem;
-  padding:0 .35rem 0 .25rem;z-index:5;
-  border-bottom:1px solid rgba(255,255,255,.08);
-}
-.nav-poi-start-fix{
-  position:absolute;bottom:0;left:0;right:0;height:50px;
-  display:flex;flex-direction:row-reverse;align-items:center;justify-content:flex-start;gap:.35rem;
-  padding:0 .35rem 0 .25rem;z-index:5;
-  border-top:1px solid rgba(255,255,255,.08);
-}
-.nav-poi-end-info,.nav-poi-start-info{align-items:flex-end!important;text-align:right}
+/* ── Oś TomTom-style: tylko linia + kropki POI + strzałka samochodu ── */
+.nav-poi-end-fix,.nav-poi-start-fix{display:none!important}
 .nav-poi-end-info,.nav-poi-start-info{
   display:flex;flex-direction:column;align-items:flex-start;line-height:1.1;gap:2px;
 }
@@ -2215,51 +2190,55 @@ body.navigating .fab-ai{display:none}
 .nav-poi-end-val,.nav-poi-start-val{
   font-family:var(--font-head);font-size:.75rem;font-weight:900;color:#fff;line-height:1;
 }
-.nav-poi-tick{
-  position:absolute;left:0;right:0;height:0;z-index:1;pointer-events:none;
-}
-.nav-poi-tick-line{
-  position:absolute;left:58px;top:-1px;
-  width:8px;height:2px;background:rgba(255,255,255,.35);
-  border-radius:1px;
-}
-.nav-poi-tick-lbl{
-  position:absolute;left:70px;top:-8px;
-  font-size:.7rem;color:#1e3a8a;font-weight:900;white-space:nowrap;
-  letter-spacing:-.01em;
-  text-shadow:0 0 3px rgba(255,255,255,.8),0 0 2px rgba(255,255,255,.7);
-}
+.nav-poi-tick,.nav-poi-tick-line,.nav-poi-tick-lbl{display:none!important}
+
+/* Strzałka samochodu — czarna, na linii, na pozycji aktualnej */
 .nav-poi-current-abs{
-  position:absolute;left:62px;transform:translate(-50%,-50%);
+  position:absolute;left:25px;transform:translate(-50%,-50%);
   z-index:6;pointer-events:none;
 }
+.nav-poi-current-dot{
+  width:0;height:0;border-radius:0;background:transparent;border:none;
+  border-left:11px solid transparent;
+  border-right:11px solid transparent;
+  border-top:16px solid #1e293b;
+  animation:none;
+  filter:drop-shadow(0 0 3px rgba(255,255,255,.95)) drop-shadow(0 1px 2px rgba(0,0,0,.4));
+}
+
+/* POI = białe kółko z ikoną na linii */
 .nav-poi-chip-abs{
-  position:absolute;right:28px;transform:translateY(-50%);
-  display:flex;flex-direction:row-reverse;align-items:center;gap:.25rem;z-index:3;cursor:pointer;
-  white-space:nowrap;
+  position:absolute;left:25px;transform:translate(-50%,-50%);
+  z-index:3;cursor:pointer;
+  display:flex;flex-direction:row;align-items:center;gap:0;
 }
 .nav-poi-chip-abs.passed{opacity:.4}
-.nav-poi-chip-conn{
-  width:10px;height:2px;background:rgba(255,255,255,.45);
-  flex-shrink:0;margin-left:0;box-shadow:none;
-}
+.nav-poi-chip-conn{display:none}
 .nav-poi-chip-abs .nav-poi-chip-icon{
   flex-shrink:0;margin:0;
-  width:24px;height:24px;border-radius:7px;
-  background:rgba(255,255,255,.10);
-  border:1.5px solid rgba(255,255,255,.18);
-  font-size:.7rem;
-  box-shadow:none;
+  width:30px;height:30px;border-radius:50%;
+  background:#fff;
+  border:2px solid #94a3b8;
+  font-size:.85rem;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 6px rgba(0,0,0,.3);
+  color:#1e293b;
 }
-.nav-poi-chip-info{
-  display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px;
+.nav-poi-chip-abs.near .nav-poi-chip-icon{
+  border-color:#22c55e;
+  box-shadow:0 0 10px rgba(34,197,94,.5),0 2px 6px rgba(0,0,0,.3);
 }
-.nav-poi-chip-info .nav-poi-chip-name{
-  max-width:34px;text-align:right;padding:0;
-  color:#fff;font-size:.4rem;font-weight:700;text-shadow:none;
+/* Etykieta nazwy/dystansu — tylko przy najbliższym POI */
+.nav-poi-chip-info{display:none}
+.nav-poi-chip-abs.near .nav-poi-chip-info{
+  display:flex;flex-direction:column;align-items:center;line-height:1.1;gap:1px;
+  position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);
+  white-space:nowrap;pointer-events:none;
 }
+.nav-poi-chip-info .nav-poi-chip-name{display:none}
 .nav-poi-chip-info .nav-poi-chip-dist{
-  color:#60a5fa;font-size:.44rem;font-weight:800;text-shadow:none;
+  color:#1e293b;font-size:.7rem;font-weight:900;
+  text-shadow:0 0 4px #fff,0 0 3px #fff,0 0 2px #fff;
 }
 
 /* — Dół: ETA + głos + stop + hamburger — */
@@ -8730,41 +8709,19 @@ function renderNavPois(){
     ? (navRouteDistances[navCIdx] || 0) / 1000 : 0;
   const fmtD = d => d == null ? '' : d < 1 ? Math.round(d*1000)+'m' : d.toFixed(1)+'km';
 
-  // Pozycja CSS calc — niezależna od wysokości strip
-  // ratio 0 = META (góra), ratio 1 = START (dół), strefa header/footer = 50px każda
+  // Pozycja CSS calc — usable area: top:8px do bottom:48px (linia)
+  // ratio 0 = góra (META), ratio 1 = dół (gdzie strzałka samochodu)
   const cssFromDist = distFromStart => {
     const ratio = Math.max(0, Math.min(1, 1 - distFromStart/totalKm));
-    return `calc(50px + (100% - 100px) * ${ratio.toFixed(4)})`;
+    return `calc(8px + (100% - 56px) * ${ratio.toFixed(4)})`;
   };
 
-  // ── META (góra) ──
-  const metaHtml = `<div class="nav-poi-end-fix">
-    <div class="nav-poi-end-dot">🏁</div>
-    <div class="nav-poi-end-info">
-      <div class="nav-poi-end-lbl">Meta</div>
-    </div>
-  </div>`;
+  const metaHtml = '';
+  const startHtml = '';
+  const tickHtml = '';
+  const tickInterval = 0;
 
-  // ── START (dół) ──
-  const startHtml = `<div class="nav-poi-start-fix">
-    <div class="nav-poi-start-dot"><svg style="width:14px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5"><use href="#ts-pin"/></svg></div>
-    <div class="nav-poi-start-info">
-      <div class="nav-poi-start-lbl">Start</div>
-    </div>
-  </div>`;
-
-  // ── Tick marks (auto-skala) ──
-  const tickInterval = totalKm > 400 ? 100 : totalKm > 200 ? 50 : totalKm > 80 ? 20 : totalKm > 30 ? 10 : 5;
-  let tickHtml = '';
-  for(let km = tickInterval; km < totalKm - tickInterval/2; km += tickInterval){
-    const top = cssFromDist(km);
-    tickHtml += `<div class="nav-poi-tick" style="top:${top}">
-      <div class="nav-poi-tick-line"></div>
-      <div class="nav-poi-tick-lbl">${km}</div>
-    </div>`;
-  }
-
-  // ── Marker aktualnej pozycji ──
+  // ── Strzałka samochodu (czarna, zawsze u dołu osi — pozycja kierowcy) ──
   let currentHtml = '';
   if(navActive){
     const top = cssFromDist(myDistKm);
@@ -8779,21 +8736,24 @@ function renderNavPois(){
     .filter(p => p.distFromStart != null && (p.distKm == null || p.distKm <= 5.0))
     .sort((a,b) => (a.distKm||0) - (b.distKm||0))
     .slice(0, 25);
+  // Wybierz najbliższy nieminiony POI — pod nim pokażemy etykietę dystansu
+  const aheadSorted = timedPois
+    .filter(p => (p.distFromStart||0) > myDistKm)
+    .sort((a,b) => (a.distFromStart||0) - (b.distFromStart||0));
+  const nearestId = aheadSorted[0]?.id;
+
   let poisHtml = '';
   for(const p of timedPois){
     const top = cssFromDist(p.distFromStart||0);
     const isPassed = (p.distFromStart||0) <= myDistKm;
     const distAhead = (p.distFromStart||0) - myDistKm;
-    const near = !isPassed && distAhead > 0 && distAhead < 2;
-    const distTxt = isPassed ? '' : fmtD(distAhead);
-    poisHtml += `<div class="nav-poi-chip-abs${isPassed?' passed':''}${near?' near':''}"
+    const isNearest = !isPassed && p.id === nearestId;
+    poisHtml += `<div class="nav-poi-chip-abs${isPassed?' passed':''}${isNearest?' near':''}"
       style="top:${top}"
       onclick="map.flyTo({center:[${p.lng},${p.lat}],zoom:15})" title="${p.name}">
-      <div class="nav-poi-chip-conn"></div>
       <div class="nav-poi-chip-icon">${p.icon}</div>
       <div class="nav-poi-chip-info">
-        <div class="nav-poi-chip-name">${p.name.substring(0,10)}</div>
-        ${distTxt ? `<div class="nav-poi-chip-dist">${distTxt}</div>` : ''}
+        <div class="nav-poi-chip-dist">${fmtD(distAhead)}</div>
       </div>
     </div>`;
   }
