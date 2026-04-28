@@ -2073,7 +2073,7 @@ body.navigating .fab-ai{display:none}
   border:none;border-radius:0;padding:0;
   display:none;
   pointer-events:auto;z-index:500;
-  height:min(60vh, calc(100vh - 280px));
+  height:min(50vh, calc(100vh - 360px));
   touch-action:none;user-select:none;overflow:visible;
 }
 /* Drag handle na górze widgetu */
@@ -2092,7 +2092,7 @@ body.navigating .fab-ai{display:none}
 /* Ciągła linia osi biegnąca przez cały strip */
 .nav-pois-strip{position:relative}
 .nav-pois-strip::before{
-  content:'';position:absolute;top:8px;bottom:48px;left:24px;
+  content:'';position:absolute;top:30px;bottom:60px;left:24px;
   width:3px;border-radius:2px;
   background:linear-gradient(to bottom,
     rgba(212,175,55,.85) 0%,
@@ -9110,11 +9110,11 @@ function renderNavPois(){
     ? (navRouteDistances[navCIdx] || 0) / 1000 : 0;
   const fmtD = d => d == null ? '' : d < 1 ? Math.round(d*1000)+'m' : d.toFixed(1)+'km';
 
-  // Pozycja CSS calc — usable area: top:8px do bottom:48px (linia)
-  // ratio 0 = góra (META), ratio 1 = dół (gdzie strzałka samochodu)
+  // Pozycja CSS calc — usable area pomiędzy META (top) a TY (bottom)
+  // Większy margines dla endpointów + badge dystansu (40px góra / 70px dół)
   const cssFromDist = distFromStart => {
     const ratio = Math.max(0, Math.min(1, 1 - distFromStart/totalKm));
-    return `calc(8px + (100% - 56px) * ${ratio.toFixed(4)})`;
+    return `calc(40px + (100% - 110px) * ${ratio.toFixed(4)})`;
   };
 
   // META góra
