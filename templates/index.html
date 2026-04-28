@@ -9027,7 +9027,11 @@ function updateLaneGuidance(dToManeuver){
   const el = document.getElementById('nav-lanes');
   if(!el) return;
   const step = routeSteps[navStepIdx];
-  const laneShowDist = navSpeedKmh > 70 ? 800 : 600;
+  // Zsynchronizowane z pierwszym voice announcement (TomTom standard):
+  // motorway 900m, city 500m, slow 300m — pasy pojawiają się DOKŁADNIE z lektorem
+  const laneShowDist = navSpeedKmh > 80 ? 900
+                     : navSpeedKmh > 50 ? 500
+                     :                    300;
   if(!step || dToManeuver > laneShowDist || dToManeuver < 20){
     el.style.display='none'; return;
   }
