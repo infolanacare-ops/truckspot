@@ -10429,7 +10429,28 @@ function onNavPosition(pos){
       const lanesEl = document.getElementById('nav-lanes');
       if(lanesEl) lanesEl.style.display = 'none';
       updateNavStep(navStepIdx, true);
-      if(!navAnnouncedSteps.has(navStepIdx)){
+
+      // Po manewrze: natychmiast policz dystans do KOLEJNEGO manewru
+      // i pokaż pasy + zapowiedz głosem z odległością (Kowalski wie co go czeka)
+      const nextStep = routeSteps[navStepIdx];
+      const nextLoc  = nextStep?.maneuver?.location;
+      if(nextStep && nextLoc){
+        const dToNext = haversineKm(lat, lng, nextLoc[1], nextLoc[0]) * 1000;
+        // Pokaż pasy dla NOWEGO manewru od razu (jeśli w zasięgu)
+        updateLaneGuidance(dToNext);
+        if(!navAnnouncedSteps.has(navStepIdx)){
+          navAnnouncedSteps.add(navStepIdx);
+          // Jeśli następny manewr jest blisko (<500m) — zapowiedz z odległością
+          // Inaczej tylko podstawowa instrukcja (jest jeszcze czas)
+          if(dToNext < 500){
+            speakNav(buildTtsSentence(nextStep, dToNext), true);
+            // Zaznacz że to ogłoszenie ZASTĘPUJE pierwszy próg announceAt
+            navAnnouncedSteps.add(`${navStepIdx}_${dToNext < 200 ? 200 : 500}`);
+          } else {
+            speakNav(stepInstruction(nextStep, true), true);
+          }
+        }
+      } else if(!navAnnouncedSteps.has(navStepIdx)){
         navAnnouncedSteps.add(navStepIdx);
         speakNav(stepInstruction(routeSteps[navStepIdx], true), true);
       }
