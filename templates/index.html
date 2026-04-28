@@ -7544,6 +7544,9 @@ let _navLockedZoom = null; // Zoom lock: zamrożony zoom gdy < 5 km/h (TomTom st
 let navCurrentSpeedLimit = 0;
 let navVoiceQueue = [];      // look-ahead announcements
 let navAnnouncedSteps = new Set(); // step indices already announced
+// Maneuver completion detection (distance increasing = passed)
+let _minDtoManeuver = null;
+let _minDtoManeuverStepIdx = -1;
 let navDistRemaining = 0;    // metres remaining along route
 let navRouteDistances = [];  // cumulative distances along routeCoords
 let navDestLat = null, navDestLng = null; // cel nawigacji (do reroutingu)
@@ -9252,6 +9255,7 @@ function startNavigation(){
   // Zastosuj paletę kolorów dla aktywnego trybu
   setTimeout(applyNavPalette, 100);
   navAnnouncedPois=new Set(); navAnnouncedSteps=new Set(); navSpeedKmh=0;
+  _minDtoManeuver=null; _minDtoManeuverStepIdx=-1;
   window._lastPoiAnnounceTs = 0;
   navAnnouncedReports=new Set(); navRerouteWarned=false; navRerouteTs=0; navOffRouteTicks=0;
   // Usuń kropkę GPS i od razu pokaż strzałkę nawigacyjną
@@ -10438,11 +10442,22 @@ function onNavPosition(pos){
     if(!loc) break;
     const dToManeuver = haversineKm(lat, lng, loc[1], loc[0]) * 1000; // metres
 
-    // Threshold: 40m in city, 80m on motorway (GPS lag compensation)
-    const threshold = navSpeedKmh > 80 ? 80 : 40;
-    if(dToManeuver < threshold){
+    // Maneuver completed detection: distance malała → znowu rośnie = PRZEJECHALIŚMY
+    // Zamiast naiwnego threshold "<40m" (który odpalał głos PRZED faktycznym skrętem)
+    if(_minDtoManeuver === null || _minDtoManeuverStepIdx !== navStepIdx){
+      _minDtoManeuver = dToManeuver;
+      _minDtoManeuverStepIdx = navStepIdx;
+    } else if(dToManeuver < _minDtoManeuver){
+      _minDtoManeuver = dToManeuver;
+    }
+    // Completion: distance wzrosła >8m vs minimum (przeszliśmy manewr)
+    // LUB safety net: bardzo blisko (<8m) — w razie GPS dropout
+    const safetyClose = navSpeedKmh > 80 ? 15 : 8;
+    const completed = (dToManeuver > _minDtoManeuver + 8 && _minDtoManeuver < 30) || dToManeuver < safetyClose;
+    if(completed){
       navStepIdx++;
-      // Ukryj pasy przy zmianie kroku
+      _minDtoManeuver = null; // reset dla nowego kroku
+      // Ukryj pasy NATYCHMIAST po faktycznym ukończeniu manewru (event-based)
       const lanesEl = document.getElementById('nav-lanes');
       if(lanesEl) lanesEl.style.display = 'none';
       updateNavStep(navStepIdx, true);
