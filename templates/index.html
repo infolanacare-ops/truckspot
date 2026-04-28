@@ -9657,22 +9657,42 @@ function setNavSpeed(kmh, limitKmh){
     } else {
       _hardSpeedingSince = 0;
       _lastSlowDownVoice = 0;
+      _slowDownCount = 0; // reset eskalacji gdy kierowca zwolni
     }
   }
   // aktualizuj też pulsowanie znaku
   if(limitKmh > 0) updateSpeedSign(limitKmh);
 }
 
+// Liczy ile razy z rzędu odpaliło się ostrzeżenie (1=tylko Zwolnij, 2+=z konsekwencjami)
+let _slowDownCount = 0;
 function _speakSlowDown(kmh, limitKmh){
   const over = kmh - limitKmh;
-  const txt = currentLang==='pl'
-    ? `Zwolnij! Przekraczasz prędkość o ${over} kilometrów`
-    : `Slow down! You are ${over} kilometres over the limit`;
+  _slowDownCount++;
+  const isFirst = _slowDownCount === 1;
+
+  let txt;
+  if(currentLang==='pl'){
+    if(isFirst){
+      // Pierwsza minuta — krótko, tylko "Zwolnij"
+      txt = `Zwolnij! Przekraczasz prędkość o ${over} kilometrów`;
+    } else {
+      // Po 2 minutach utrzymywanej szaleńczej prędkości — komunikat o konsekwencjach
+      txt = `Uwaga! Tracisz prawo jazdy na trzy miesiące. Mandat dwa tysiące złotych. Zwolnij natychmiast!`;
+    }
+  } else {
+    if(isFirst){
+      txt = `Slow down! You are ${over} kilometres over the limit`;
+    } else {
+      txt = `Warning! You will lose your license for three months. 500 euro fine. Slow down immediately!`;
+    }
+  }
   speakNav(txt, true);
-  // Bipy alarmowe — 3 krótkie wysokie
-  playBeep(1500, 0.18, 1.0);
-  setTimeout(()=>playBeep(1500, 0.18, 1.0), 220);
-  setTimeout(()=>playBeep(1500, 0.18, 1.0), 440);
+  // Bipy: 3 dla pierwszego, 5 dla eskalacji
+  const beepCount = isFirst ? 3 : 5;
+  for(let i=0; i<beepCount; i++){
+    setTimeout(()=>playBeep(1500, 0.18, 1.0), i*220);
+  }
 }
 
 // Toggle GPS debug overlay (tap na prędkościomierz)
