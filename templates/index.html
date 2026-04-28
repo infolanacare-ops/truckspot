@@ -6032,19 +6032,35 @@ function _renderAltPreviewBanner(){
   };
   const fmtDist = m => Math.round(m/1000)+' km';
 
-  // Najszybsza trasa = referencja do porównania różnicy czasu
-  const fastestDur = Math.min(..._routeAlternatives.map(a => a.dur));
+  // Referencje do porównań
+  const fastestDur  = Math.min(..._routeAlternatives.map(a => a.dur));
+  const shortestDist= Math.min(..._routeAlternatives.map(a => a.dist));
+  const highwayRe   = /\b([AS]\d+|Autobahn|M\d+|I-\d+|E\d+)\b/i;
 
   const altButtons = _routeAlternatives.map((alt, i) => {
     const active = i === _selectedAltIdx;
-    const deltaSec = Math.round(alt.dur - fastestDur);
-    const deltaTxt = deltaSec >= 60
-      ? `+${Math.round(deltaSec/60)} min`
-      : (deltaSec <= -60 ? `${Math.round(deltaSec/60)} min` : 'najszybsza');
-    const deltaColor = deltaSec >= 60 ? '#fbbf24' : '#22c55e';
-    // Podsumowanie dróg — bierzemy 2 pierwsze nazwy żeby zmieściły się w przycisku
+    const deltaSec  = Math.round(alt.dur - fastestDur);
+    const deltaKm   = Math.round((alt.dist - shortestDist)/1000);
+    const isFastest = deltaSec < 60;
+    const isShortest= alt.dist === shortestDist;
+    const hasHighway= highwayRe.test(alt.summary || '');
+
+    // Określ główny "powód" wyboru tej trasy
+    const badges = [];
+    if(isFastest)                                  badges.push({txt:'⚡ najszybsza',   col:'#22c55e'});
+    if(isShortest && !isFastest)                   badges.push({txt:'📏 najkrótsza',   col:'#22c55e'});
+    if(!isFastest && !isShortest && deltaKm < 0)   badges.push({txt:`📏 ${deltaKm} km`, col:'#60a5fa'});
+    if(!hasHighway)                                badges.push({txt:'🌳 bez autostrad', col:'#a3e635'});
+    if(hasHighway && !isFastest && badges.length<2) badges.push({txt:'🛣 autostradą',   col:'#60a5fa'});
+    if(!isFastest && deltaSec >= 60)               badges.unshift({txt:`+${Math.round(deltaSec/60)} min`, col:'#fbbf24'});
+
+    const badgesHtml = badges.slice(0,2).map(b =>
+      `<span style="font-size:.55rem;color:${b.col};font-weight:700;letter-spacing:.01em;line-height:1.1">${b.txt}</span>`
+    ).join('');
+
     const roadsRaw = (alt.summary || '').split(/[·,]/).map(s=>s.trim()).filter(Boolean);
     const roads = roadsRaw.slice(0,2).join(', ') || '—';
+
     return `<button onclick="switchToAlternative(${i})" style="
       flex:1;padding:.5rem .55rem;border:none;border-radius:12px;cursor:pointer;
       background:${active ? 'rgba(96,165,250,.25)' : 'rgba(255,255,255,.08)'};
@@ -6053,9 +6069,9 @@ function _renderAltPreviewBanner(){
       display:flex;flex-direction:column;align-items:center;gap:2px;
       transition:.15s;min-width:0;overflow:hidden">
       <span style="font-size:.92rem;font-weight:800">${fmtTime(alt.dur)}</span>
-      <span style="font-size:.58rem;color:${deltaColor};font-weight:700;letter-spacing:.02em">${deltaTxt}</span>
       <span style="font-size:.55rem;color:rgba(255,255,255,.7);font-weight:600">${fmtDist(alt.dist)}</span>
-      <span style="font-size:.55rem;color:rgba(255,255,255,.55);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%" title="${roadsRaw.join(' · ')}">via ${roads}</span>
+      ${badgesHtml}
+      <span style="font-size:.5rem;color:rgba(255,255,255,.45);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%" title="${roadsRaw.join(' · ')}">via ${roads}</span>
     </button>`;
   }).join('');
 
