@@ -5752,8 +5752,16 @@ function startGps(){
   if(!navigator.geolocation){ showAlert('❌','GPS','Not available'); return; }
   gpsActive=true; setEl('gps-badge','ON'); document.getElementById('gps-badge').style.display='';
   let _gpsCentered = false;
+  // Hub mode: aktywuj gyroscope (kompas) — używany do bearing kamery jako fallback
+  if(!_gyroActive) _startGyro();
+
   gpsWatchId=navigator.geolocation.watchPosition(pos=>{
-    const {latitude:lat,longitude:lng}=pos.coords;
+    const {latitude:rawLat, longitude:rawLng, accuracy} = pos.coords;
+    // Kalman filter — wycina szum GPS, używa accuracy jako wagę
+    const filtered = !navActive
+      ? _kalman.process(rawLat, rawLng, accuracy || 10, Date.now())
+      : {lat: rawLat, lng: rawLng};
+    const lat = filtered.lat, lng = filtered.lng;
     userLat=lat; userLng=lng;
     updatePushPosition(lat, lng);
     if(!navActive){
@@ -5768,11 +5776,15 @@ function startGps(){
         setTimeout(()=>{ try{ if(typeof _startPresence==='function' && !_presenceCh) _startPresence(); }catch(e){} }, 1200);
       } else {
         // Hub mode: kamera podąża za graczem ZACHOWUJĄC pitch 72 + rotacja w kierunku ruchu
-        const bear = _hubLastLat != null ? _bearingDeg(_hubLastLat, _hubLastLng, lat, lng) : null;
+        // Bearing: 1) z ruchu GPS (gdy się porusza), 2) z gyroscope (gdy stoi — kompas telefonu)
+        const bearFromGps = _hubLastLat != null ? _bearingDeg(_hubLastLat, _hubLastLng, lat, lng) : null;
         const moved = _hubLastLat != null && haversineKm(_hubLastLat,_hubLastLng,lat,lng)*1000 > 3;
+        const targetBear = moved && bearFromGps !== null
+          ? bearFromGps
+          : (_gyroHeading !== null ? _gyroHeading : null);
         const opts = {center:[lng,lat], pitch:72, zoom:Math.max(map.getZoom(), 17.5), duration:700, easing:t=>t*(2-t)};
-        if(moved && bear !== null){
-          _hubBearing = _hubBearing == null ? bear : _hubBearing + ((((bear - _hubBearing + 540) % 360) - 180) * 0.25);
+        if(targetBear !== null){
+          _hubBearing = _hubBearing == null ? targetBear : _hubBearing + ((((targetBear - _hubBearing + 540) % 360) - 180) * (moved?0.25:0.12));
           opts.bearing = _hubBearing;
         }
         map.easeTo(opts);
@@ -10610,6 +10622,7 @@ function stopNavigation(){
     setTimeout(_showTripSummary, 600);
   }
   navActive=false; navOverviewMode=false;
+  _kalman.reset(); // reset filtra po nav — hub zacznie świeżo
   _stopAudioKeepAlive(); // zatrzymaj cichą pętlę audio
   // Zatrzymaj giroskop
   if(_gyroActive){
