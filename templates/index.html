@@ -2608,8 +2608,8 @@ body[data-mode="tourist"] .nav-poi-current-dot{
 /* ── LANE GUIDANCE — chmurka TomTom style ── */
 .nav-lanes{
   display:none;flex-direction:row;align-items:stretch;justify-content:center;
-  width:auto;
-  margin:.25rem .6rem 0;
+  width:fit-content;max-width:75%;
+  margin:.25rem auto 0;
   border-radius:16px;
   min-height:68px;
   padding:.5rem .55rem;
@@ -2623,6 +2623,8 @@ body[data-mode="tourist"] .nav-poi-current-dot{
   pointer-events:none;
   flex-shrink:0;
   animation:lanesIn .22s cubic-bezier(.22,.9,.36,1)}
+/* Gdy dużo pasów (5+) pozwól się rozszerzyć */
+.nav-lanes[data-many="1"]{max-width:92%}
 @keyframes lanesIn{from{opacity:0;transform:translateY(-8px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 .nav-lane{
   flex:0 0 62px;
@@ -2641,12 +2643,32 @@ body[data-mode="tourist"] .nav-poi-current-dot{
 .nav-lane svg path{fill:rgba(255,255,255,.28)!important}
 /* dopuszczalny */
 .nav-lane.valid svg path{fill:rgba(255,255,255,.7)!important}
-/* aktywny — gold (TruckSpot DNA) */
+/* aktywny — gold (TruckSpot DNA) z subtelnym pulsowaniem */
 .nav-lane.active{
-  background:linear-gradient(140deg,rgba(251,191,36,.95) 0%,rgba(212,175,55,.85) 100%);
-  box-shadow:0 0 14px rgba(212,175,55,.5) inset;
+  background:linear-gradient(140deg,rgba(251,191,36,.98) 0%,rgba(212,175,55,.92) 100%);
+  box-shadow:
+    0 0 14px rgba(212,175,55,.55) inset,
+    0 0 0 0 rgba(251,191,36,.5);
+  animation:laneActivePulse 1.8s ease-in-out infinite;
+}
+.nav-lane.active svg{
+  animation:laneArrowGlow 1.8s ease-in-out infinite;
 }
 .nav-lane.active svg path{fill:rgba(20,14,0,.95)!important}
+@keyframes laneActivePulse{
+  0%,100%{
+    box-shadow:0 0 14px rgba(212,175,55,.55) inset, 0 0 0 0 rgba(251,191,36,.55), 0 0 8px rgba(251,191,36,.3);
+    transform:scale(1);
+  }
+  50%{
+    box-shadow:0 0 22px rgba(251,191,36,.75) inset, 0 0 14px 3px rgba(251,191,36,.4), 0 0 18px rgba(251,191,36,.5);
+    transform:scale(1.04);
+  }
+}
+@keyframes laneArrowGlow{
+  0%,100%{filter:drop-shadow(0 0 0 transparent)}
+  50%{filter:drop-shadow(0 0 3px rgba(255,220,90,.7))}
+}
 
 /* Ukryj zoom podczas nawigacji */
 body.navigating .mapboxgl-ctrl-top-left{display:none}
@@ -8754,6 +8776,8 @@ function updateLaneGuidance(dToManeuver){
     const label = l.active ? (isRoundabout && exitNum ? `ZJAZD ${exitNum}` : 'TWÓJ PAS') : '';
     return `<div class="nav-lane ${cls}">${laneSvg(l.dir||'straight')}<div class="nav-lane-label">${label}</div></div>`;
   }).join('');
+  // Pozwól się rozszerzyć gdy 5+ pasów
+  el.dataset.many = lanes.length >= 5 ? '1' : '0';
 }
 
 // ── MODUŁY HUD — system przeciągania ─────────────────────────────────────────
