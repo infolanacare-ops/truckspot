@@ -2812,6 +2812,21 @@ body[data-mode="tourist"] .nav-poi-current-dot{
     0 0 0 0 rgba(251,191,36,.5);
   animation:laneActivePulse 1.8s ease-in-out infinite;
 }
+/* aktywny + final emphasis (na 50m przed manewrem — szybszy puls + mocniejszy glow) */
+.nav-lane.active.final{
+  animation:laneActiveFinal .7s ease-in-out infinite;
+  background:linear-gradient(140deg,rgba(255,200,40,1) 0%,rgba(251,191,36,1) 100%);
+}
+@keyframes laneActiveFinal{
+  0%,100%{
+    box-shadow:0 0 18px rgba(255,200,40,.85) inset, 0 0 0 0 rgba(255,200,40,.7), 0 0 12px rgba(255,200,40,.6);
+    transform:scale(1);
+  }
+  50%{
+    box-shadow:0 0 28px rgba(255,220,90,1) inset, 0 0 18px 6px rgba(255,200,40,.5), 0 0 26px rgba(255,200,40,.85);
+    transform:scale(1.08);
+  }
+}
 .nav-lane.active svg{
   animation:laneArrowGlow 1.8s ease-in-out infinite;
 }
@@ -9059,8 +9074,10 @@ function updateLaneGuidance(dToManeuver){
   const isRoundabout = maneuver.includes('roundabout') || maneuver.includes('rotary');
   const exitNum = step.maneuver?.exit;
 
+  // Final emphasis: gdy <80m do manewru, aktywny pas pulsuje mocniej
+  const isFinal = dToManeuver < 80;
   el.innerHTML = lanes.map(l=>{
-    const cls = l.active ? 'active' : (l.valid ? 'valid' : '');
+    const cls = l.active ? ('active' + (isFinal ? ' final' : '')) : (l.valid ? 'valid' : '');
     const label = l.active ? (isRoundabout && exitNum ? `ZJAZD ${exitNum}` : 'TWÓJ PAS') : '';
     return `<div class="nav-lane ${cls}">${laneSvg(l.dir||'straight')}<div class="nav-lane-label">${label}</div></div>`;
   }).join('');
