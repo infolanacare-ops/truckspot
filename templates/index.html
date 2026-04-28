@@ -7498,6 +7498,7 @@ function clearRoute(){
   document.getElementById('route-results').innerHTML='';
   document.getElementById('alt-preview-banner')?.remove();
   routeSteps=[]; routeCoords=[]; routeCoordsSmooth=[];
+  navRoutePois = []; _poiStore.clear(); // reset POI store przy nowej trasie
   hideRouteTimeline();
 }
 
@@ -9314,6 +9315,68 @@ function startNavigation(){
     {enableHighAccuracy:true, maximumAge:0, timeout:10000});
 }
 
+// ══════════════════════════════════════════════════════════════════
+// POI STORE — niezależny stan POI z merge/TTL/bbox cleanup
+// (kolega: brak danych ≠ usuń dane; refresh = merge nie overwrite)
+// ══════════════════════════════════════════════════════════════════
+const _poiStore = {
+  pois: new Map(), // id → {poi, addedAt, lastSeenAt}
+  TTL_MS: 30 * 60 * 1000, // 30 min — POI starsze niż to są usuwane
+
+  // Merge nowych POI: aktualizuj istniejące, dodaj nowe, NIE kasuj brakujących
+  merge(newPois){
+    const now = Date.now();
+    let added = 0, updated = 0;
+    for(const p of newPois){
+      if(!p?.id) continue;
+      const existing = this.pois.get(p.id);
+      if(existing){
+        existing.poi = {...existing.poi, ...p}; // update z nowymi wartościami
+        existing.lastSeenAt = now;
+        updated++;
+      } else {
+        this.pois.set(p.id, {poi: p, addedAt: now, lastSeenAt: now});
+        added++;
+      }
+    }
+    if(added || updated) console.log(`[poiStore] merge: +${added} new, ~${updated} updated, total ${this.pois.size}`);
+    return {added, updated, total: this.pois.size};
+  },
+
+  // Zwróć wszystkie POI jako tablicę (zgodne z navRoutePois)
+  getAll(){
+    return Array.from(this.pois.values()).map(e => e.poi);
+  },
+
+  // Usuń POI starsze niż TTL (auto-cleanup)
+  pruneExpired(){
+    const now = Date.now();
+    let removed = 0;
+    for(const [id, e] of this.pois){
+      if(now - e.addedAt > this.TTL_MS){
+        this.pois.delete(id);
+        removed++;
+      }
+    }
+    if(removed) console.log(`[poiStore] pruneExpired: -${removed} (TTL ${this.TTL_MS/60000}min)`);
+    return removed;
+  },
+
+  // Usuń POI daleko od trasy (z buforem 5km)
+  pruneByRoute(coords, bufferKm = 8){
+    if(!coords?.length) return 0;
+    let removed = 0;
+    for(const [id, e] of this.pois){
+      const d = pointToRouteDistKm(e.poi.lat, e.poi.lng, coords);
+      if(d > bufferKm){ this.pois.delete(id); removed++; }
+    }
+    if(removed) console.log(`[poiStore] pruneByRoute: -${removed} (>${bufferKm}km)`);
+    return removed;
+  },
+
+  clear(){ this.pois.clear(); }
+};
+
 async function loadRoutePois(){
   if(!routeCoords.length) return;
   const radius = 12; // km corridor (rozszerzony — łapie więcej parkingów/stacji)
@@ -9358,8 +9421,11 @@ async function loadRoutePois(){
       }
       return {...p, distFromStart, distKm: minD};
     });
-  // Anti-flicker: tylko ustaw jeśli nie ma jeszcze nic — w przeciwnym razie zachowaj poprzednie
-  if(!navRoutePois.length) navRoutePois = initialPois;
+  // POI Store: merge initial parkings (NIGDY nie nadpisuje — tylko dodaje/aktualizuje)
+  if(initialPois.length > 0){
+    _poiStore.merge(initialPois);
+    navRoutePois = _poiStore.getAll();
+  }
   renderNavPois();
 
   // Fetch each segment sequentially — 3 źródła równolegle dla każdego segmentu
@@ -9426,15 +9492,22 @@ async function loadRoutePois(){
     })
     .sort((a,b) => a.distFromStart - b.distFromStart);
 
-  // SAFEGUARD (kolega): brak danych ≠ usuń dane
-  // Jeśli nowa lista jest dramatycznie krótsza (>50% mniej niż obecna i obecna miała >5)
-  // = prawdopodobny fail Overpass — NIE NADPISUJ, zostaw poprzednie POI widoczne
-  if(navRoutePois.length > 5 && newPois.length < navRoutePois.length * 0.5){
-    console.warn('[loadRoutePois] new POI count', newPois.length, 'vs current', navRoutePois.length, '— keeping existing (probable Overpass fail)');
-    renderNavPois(); // tylko re-render bez zmian
-    return;
+  // POI Store: MERGE zamiast OVERWRITE (kolega: brak danych ≠ usuń dane)
+  // - empty response = no-op (nic nie kasuje)
+  // - overlap = update istniejących (świeższe distFromStart, dystans od trasy)
+  // - new = added do store
+  if(newPois.length > 0){
+    _poiStore.merge(newPois);
+  } else {
+    console.warn('[loadRoutePois] empty fetch — POI store nieruszony');
   }
-  navRoutePois = newPois;
+
+  // Auto-cleanup: usuń POI poza korytarzem nowej trasy (oraz expired TTL)
+  _poiStore.pruneByRoute(routeCoords, 12);
+  _poiStore.pruneExpired();
+
+  // Sync navRoutePois z aktualnym store (zgodność z renderNavPois i resztą)
+  navRoutePois = _poiStore.getAll();
   renderNavPois();
 }
 
