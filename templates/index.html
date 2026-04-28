@@ -5758,7 +5758,7 @@ function startGps(){
     updatePushPosition(lat, lng);
     if(!navActive){
       if(!gpsMarker) gpsMarker=mkGpsDotMarker(lat,lng);
-      else gpsMarker.setLngLat([lng,lat]);
+      else _hubMarkerLerpTo(lat, lng); // smooth lerp zamiast skoku
       if(!_gpsCentered){
         _gpsCentered=true;
         // Pokemon Go 5D Ultra — pitch 72 (prawie pierwsza osoba), zoom 18
@@ -5787,7 +5787,7 @@ function startGps(){
         showAlert(MODE_CONFIG[currentMode].markerEmoji, p.name, ds+' · '+p.city, p);
       }
     });
-  },()=>{},{enableHighAccuracy:true,maximumAge:10000,timeout:15000});
+  },()=>{},{enableHighAccuracy:true,maximumAge:1000,timeout:15000});
   showAlert('📡','GPS','Alerts active');
 }
 function stopGps(){
@@ -6145,6 +6145,26 @@ function mkMbMarker(lat, lng, html, onClick){
 }
 
 // GPS dot marker (niebieski pulsujący punkt)
+// Smooth lerp markera w hub mode — zamiast skoku co GPS tick (1s) płynnie w 60fps
+let _hubLerpFrom = null, _hubLerpTo = null, _hubLerpStart = 0, _hubLerpDur = 900, _hubLerpRaf = null;
+function _hubMarkerLerpTo(lat, lng){
+  if(!gpsMarker) return;
+  const cur = gpsMarker.getLngLat();
+  _hubLerpFrom = {lat: cur.lat, lng: cur.lng};
+  _hubLerpTo   = {lat, lng};
+  _hubLerpStart = performance.now();
+  if(_hubLerpRaf) cancelAnimationFrame(_hubLerpRaf);
+  const tick = () => {
+    const t = Math.min(1, (performance.now() - _hubLerpStart) / _hubLerpDur);
+    const e = t<.5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2; // easeInOutQuad
+    const la = _hubLerpFrom.lat + (_hubLerpTo.lat - _hubLerpFrom.lat) * e;
+    const ln = _hubLerpFrom.lng + (_hubLerpTo.lng - _hubLerpFrom.lng) * e;
+    gpsMarker.setLngLat([ln, la]);
+    if(t < 1) _hubLerpRaf = requestAnimationFrame(tick);
+  };
+  _hubLerpRaf = requestAnimationFrame(tick);
+}
+
 function mkGpsDotMarker(lat, lng){
   // Pokemon Go style — TY jako CZŁOWIEK na mapie (pieszy w metaverse hub)
   // Profile może mieć custom pedestrianEmoji, inaczej domyślnie 🚶
