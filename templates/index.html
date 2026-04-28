@@ -10415,7 +10415,7 @@ function openMetaverseHub(){
       <!-- Sekcja: Społeczność -->
       <div style="font-size:.62rem;font-weight:800;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.08em;margin:0 .3rem .5rem">👥 Społeczność</div>
       <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem">
-        ${_hubItem({icon:'👥', label:'Znajomi i Konwój', desc:'Jeździj ze znajomymi, widzisz ich na mapie', color:'rgba(59,130,246,.15)', colorB:'rgba(59,130,246,.45)', soon:true})}
+        ${_hubItem({icon:'👥', label:'Znajomi', desc:'Wyszukaj, dodaj, zobacz na mapie', color:'rgba(59,130,246,.15)', colorB:'rgba(59,130,246,.45)', onClick:`openFriendsPanel()`})}
         ${_hubItem({icon:'📡', label:'CB Radio', desc:'Mapa wiadomości, czat z okolicą', color:'rgba(59,130,246,.15)', colorB:'rgba(59,130,246,.45)', onClick:`drawerAction('cbradio')`})}
         ${_hubItem({icon:'📍', label:'Live eventy w okolicy', desc:'Spotkania kierowców, raidy', color:'rgba(168,85,247,.15)', colorB:'rgba(168,85,247,.45)', soon:true})}
       </div>
@@ -10450,6 +10450,248 @@ function openMetaverseHub(){
     </div>`;
   modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
   document.body.appendChild(modal);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// FRIENDS — system znajomych (search + add + accept + lista)
+// ══════════════════════════════════════════════════════════════════
+let _friendsTab = 'search'; // 'search' / 'pending' / 'list'
+
+async function _searchFriends(query){
+  if(!_sbUser || !query || query.length < 2) return [];
+  // Search po display_name (ILIKE) — pomijam siebie
+  const { data, error } = await _SB
+    .from('profiles')
+    .select('id, display_name, avatar_url, country')
+    .ilike('display_name', `%${query}%`)
+    .neq('id', _sbUser.id)
+    .limit(20);
+  if(error){ console.warn('searchFriends error:', error); return []; }
+  return data || [];
+}
+
+async function _loadFriendships(){
+  if(!_sbUser) return [];
+  const { data } = await _SB
+    .from('friendships')
+    .select('id, from_user, to_user, status, created_at')
+    .or(`from_user.eq.${_sbUser.id},to_user.eq.${_sbUser.id}`);
+  return data || [];
+}
+
+async function _sendFriendRequest(toUserId){
+  if(!_sbUser) return {error: 'Nie zalogowany'};
+  const { data, error } = await _SB
+    .from('friendships')
+    .insert({from_user: _sbUser.id, to_user: toUserId, status: 'pending'})
+    .select().single();
+  return {data, error};
+}
+
+async function _respondFriendRequest(friendshipId, accept){
+  const { error } = await _SB
+    .from('friendships')
+    .update({status: accept ? 'accepted' : 'rejected', responded_at: new Date().toISOString()})
+    .eq('id', friendshipId);
+  return {error};
+}
+
+function _friendStatusFor(userId, friendships){
+  // Zwraca status mojej relacji z userId
+  const f = friendships.find(x =>
+    (x.from_user === _sbUser.id && x.to_user === userId) ||
+    (x.from_user === userId && x.to_user === _sbUser.id)
+  );
+  if(!f) return null;
+  if(f.status === 'accepted') return 'friend';
+  if(f.status === 'pending'){
+    return f.from_user === _sbUser.id ? 'sent' : 'received';
+  }
+  return f.status; // rejected/blocked
+}
+
+async function openFriendsPanel(){
+  if(!_sbUser){
+    showAlert('🔒','Logowanie wymagane','Zaloguj się aby dodawać znajomych');
+    setTimeout(closeAlert, 2500); return;
+  }
+  // Zamknij hub menu jeśli otwarte
+  document.getElementById('metaverse-hub')?.remove();
+  // Toggle istniejący
+  const existing = document.getElementById('friends-panel');
+  if(existing){ existing.remove(); return; }
+
+  const friendships = await _loadFriendships();
+
+  const id = 'friends-panel';
+  const modal = document.createElement('div');
+  modal.id = id;
+  modal.style.cssText = 'position:fixed;inset:0;z-index:3500;background:rgba(0,0,0,.72);display:flex;align-items:flex-end;justify-content:center';
+  modal.innerHTML = `
+    <div onclick="event.stopPropagation()" style="width:100%;max-width:480px;background:linear-gradient(160deg,rgba(22,28,48,.98) 0%,rgba(14,18,32,.99) 100%);backdrop-filter:blur(20px);border:1.5px solid rgba(212,175,55,.45);border-bottom:none;border-radius:24px 24px 0 0;padding:1.4rem 1.1rem 1.6rem;box-shadow:0 -4px 32px rgba(0,0,0,.6);color:#fff;max-height:88vh;overflow-y:auto;animation:slideup .3s">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:1rem">
+        <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(140deg,rgba(59,130,246,.28),rgba(96,165,250,.18));border:1px solid rgba(59,130,246,.5);display:flex;align-items:center;justify-content:center;font-size:1.5rem">👥</div>
+        <div style="flex:1">
+          <div style="font-family:var(--font-head);font-size:1.25rem;font-weight:900">Znajomi</div>
+          <div style="font-size:.7rem;color:rgba(255,255,255,.65)">Wyszukaj, dodaj, zobacz online</div>
+        </div>
+        <button onclick="document.getElementById('${id}').remove()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);width:36px;height:36px;border-radius:11px;color:#fff;font-size:1.1rem;cursor:pointer">✕</button>
+      </div>
+
+      <!-- Tabs -->
+      <div style="display:flex;gap:.4rem;margin-bottom:1rem;background:rgba(0,0,0,.3);padding:4px;border-radius:12px">
+        <button data-tab="search"  onclick="_setFriendsTab('search')"  style="${_friendsTabBtnStyle('search')}">🔍 Szukaj</button>
+        <button data-tab="pending" onclick="_setFriendsTab('pending')" style="${_friendsTabBtnStyle('pending')}">📥 Zaproszenia ${_pendingCount(friendships)}</button>
+        <button data-tab="list"    onclick="_setFriendsTab('list')"    style="${_friendsTabBtnStyle('list')}">👥 Moi (${_friendsCount(friendships)})</button>
+      </div>
+
+      <!-- Tab content -->
+      <div id="friends-tab-content"></div>
+    </div>`;
+  modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
+  document.body.appendChild(modal);
+  _renderFriendsTab(friendships);
+}
+
+function _friendsTabBtnStyle(tab){
+  const active = _friendsTab === tab;
+  return `flex:1;padding:.55rem;border:none;border-radius:9px;cursor:pointer;font-family:var(--font);font-size:.7rem;font-weight:800;letter-spacing:.02em;transition:.15s;
+    background:${active?'rgba(96,165,250,.25)':'transparent'};
+    color:${active?'#fff':'rgba(255,255,255,.6)'};`;
+}
+function _pendingCount(fs){
+  const n = fs.filter(f => f.status==='pending' && f.to_user===_sbUser?.id).length;
+  return n ? `<span style="background:#ef4444;color:#fff;font-size:.5rem;font-weight:900;padding:1px 5px;border-radius:5px;margin-left:3px">${n}</span>` : '';
+}
+function _friendsCount(fs){
+  return fs.filter(f => f.status==='accepted').length;
+}
+
+async function _setFriendsTab(tab){
+  _friendsTab = tab;
+  // Re-render styles na buttonach
+  document.querySelectorAll('#friends-panel button[data-tab]').forEach(b=>{
+    b.setAttribute('style', _friendsTabBtnStyle(b.dataset.tab));
+  });
+  const friendships = await _loadFriendships();
+  _renderFriendsTab(friendships);
+}
+
+async function _renderFriendsTab(friendships){
+  const el = document.getElementById('friends-tab-content');
+  if(!el) return;
+  if(_friendsTab === 'search'){
+    el.innerHTML = `
+      <input id="friend-search-input" type="text" placeholder="Wpisz nick lub email..."
+        oninput="_doFriendSearch(this.value)"
+        style="width:100%;padding:.7rem .9rem;border:1.5px solid rgba(255,255,255,.18);border-radius:12px;background:rgba(0,0,0,.3);color:#fff;font-size:.85rem;font-family:var(--font);outline:none;margin-bottom:.7rem"/>
+      <div id="friend-search-results" style="display:flex;flex-direction:column;gap:.4rem">
+        <div style="font-size:.7rem;color:rgba(255,255,255,.5);text-align:center;padding:.5rem">Wpisz min. 2 znaki...</div>
+      </div>`;
+  } else if(_friendsTab === 'pending'){
+    const pending = friendships.filter(f => f.status==='pending' && f.to_user===_sbUser?.id);
+    if(!pending.length){
+      el.innerHTML = `<div style="font-size:.8rem;color:rgba(255,255,255,.55);text-align:center;padding:2rem">Brak zaproszeń</div>`;
+      return;
+    }
+    // Pobierz profile użytkowników którzy wysłali zaproszenia
+    const ids = pending.map(p => p.from_user);
+    const {data: profs} = await _SB.from('profiles').select('id, display_name, avatar_url, country').in('id', ids);
+    const profMap = new Map((profs||[]).map(p=>[p.id, p]));
+    el.innerHTML = pending.map(f => {
+      const p = profMap.get(f.from_user) || {};
+      return `<div style="display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px">
+        <div style="width:38px;height:38px;border-radius:50%;background:rgba(96,165,250,.2);border:1.5px solid rgba(96,165,250,.5);display:flex;align-items:center;justify-content:center;font-size:1.1rem">${p.avatar_url||'👤'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:.85rem;font-weight:800">${p.display_name||'?'}</div>
+          <div style="font-size:.62rem;color:rgba(255,255,255,.55)">${p.country||''}</div>
+        </div>
+        <button onclick="_respondFr(${f.id},true)"  style="background:rgba(34,197,94,.2);border:1px solid rgba(34,197,94,.45);color:#22c55e;border-radius:9px;padding:.45rem .65rem;font-weight:800;font-size:.72rem;cursor:pointer">✓ Akceptuj</button>
+        <button onclick="_respondFr(${f.id},false)" style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);color:#fca5a5;border-radius:9px;padding:.45rem .55rem;font-weight:800;font-size:.72rem;cursor:pointer">✕</button>
+      </div>`;
+    }).join('');
+  } else if(_friendsTab === 'list'){
+    const accepted = friendships.filter(f => f.status==='accepted');
+    if(!accepted.length){
+      el.innerHTML = `<div style="font-size:.8rem;color:rgba(255,255,255,.55);text-align:center;padding:2rem">Brak znajomych jeszcze 🤝<br><span style="font-size:.65rem;opacity:.7;display:block;margin-top:.5rem">Wyszukaj kogoś w zakładce "Szukaj"</span></div>`;
+      return;
+    }
+    const ids = accepted.map(f => f.from_user === _sbUser.id ? f.to_user : f.from_user);
+    const {data: profs} = await _SB.from('profiles').select('id, display_name, avatar_url, country').in('id', ids);
+    el.innerHTML = (profs||[]).map(p => `
+      <div style="display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin-bottom:.4rem">
+        <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(140deg,rgba(212,175,55,.3),rgba(212,175,55,.1));border:1.5px solid rgba(212,175,55,.6);display:flex;align-items:center;justify-content:center;font-size:1.1rem">${p.avatar_url||'👤'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:.85rem;font-weight:800">${p.display_name||'?'}</div>
+          <div style="font-size:.62rem;color:rgba(255,255,255,.55)">${p.country||''} · znajomy</div>
+        </div>
+      </div>`).join('');
+  }
+}
+
+let _searchDebounce = null;
+async function _doFriendSearch(query){
+  clearTimeout(_searchDebounce);
+  const resultsEl = document.getElementById('friend-search-results');
+  if(!query || query.length < 2){
+    if(resultsEl) resultsEl.innerHTML = `<div style="font-size:.7rem;color:rgba(255,255,255,.5);text-align:center;padding:.5rem">Wpisz min. 2 znaki...</div>`;
+    return;
+  }
+  _searchDebounce = setTimeout(async () => {
+    if(resultsEl) resultsEl.innerHTML = `<div style="font-size:.7rem;color:rgba(255,255,255,.5);text-align:center;padding:.5rem">Szukam...</div>`;
+    const [users, friendships] = await Promise.all([_searchFriends(query), _loadFriendships()]);
+    if(!users.length){
+      if(resultsEl) resultsEl.innerHTML = `<div style="font-size:.7rem;color:rgba(255,255,255,.5);text-align:center;padding:.5rem">Brak wyników dla "${query}"</div>`;
+      return;
+    }
+    if(resultsEl) resultsEl.innerHTML = users.map(u => {
+      const status = _friendStatusFor(u.id, friendships);
+      let btn;
+      if(status === 'friend'){
+        btn = `<span style="background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.45);color:#22c55e;border-radius:9px;padding:.4rem .65rem;font-weight:800;font-size:.65rem">✓ ZNAJOMY</span>`;
+      } else if(status === 'sent'){
+        btn = `<span style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.5);border-radius:9px;padding:.4rem .65rem;font-weight:700;font-size:.62rem">CZEKA NA ODP.</span>`;
+      } else if(status === 'received'){
+        btn = `<button onclick="_setFriendsTab('pending')" style="background:rgba(96,165,250,.2);border:1px solid rgba(96,165,250,.5);color:#60a5fa;border-radius:9px;padding:.4rem .65rem;font-weight:800;font-size:.65rem;cursor:pointer">Odpowiedz</button>`;
+      } else {
+        btn = `<button onclick="_addFr('${u.id}')" style="background:rgba(96,165,250,.2);border:1px solid rgba(96,165,250,.5);color:#60a5fa;border-radius:9px;padding:.4rem .7rem;font-weight:800;font-size:.7rem;cursor:pointer">+ Dodaj</button>`;
+      }
+      return `<div style="display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px">
+        <div style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:1.1rem">${u.avatar_url||'👤'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:.85rem;font-weight:800">${u.display_name||'?'}</div>
+          <div style="font-size:.62rem;color:rgba(255,255,255,.55)">${u.country||''}</div>
+        </div>
+        ${btn}
+      </div>`;
+    }).join('');
+  }, 350);
+}
+
+async function _addFr(userId){
+  const {error} = await _sendFriendRequest(userId);
+  if(error){
+    showAlert('⚠️','Nie udało się', error.message || 'Spróbuj ponownie');
+  } else {
+    showAlert('✓','Zaproszenie wysłane','Czekaj na akceptację');
+  }
+  setTimeout(closeAlert, 2200);
+  // Re-render search
+  const inp = document.getElementById('friend-search-input');
+  if(inp) _doFriendSearch(inp.value);
+}
+
+async function _respondFr(friendshipId, accept){
+  const {error} = await _respondFriendRequest(friendshipId, accept);
+  if(error){
+    showAlert('⚠️','Błąd', error.message);
+  } else {
+    showAlert(accept?'✓':'✕', accept?'Zaakceptowane':'Odrzucone','');
+  }
+  setTimeout(closeAlert, 1800);
+  const friendships = await _loadFriendships();
+  _renderFriendsTab(friendships);
 }
 
 // Tracking dla głosowego ostrzeżenia "ZWOLNIJ" przy +50 km/h

@@ -189,3 +189,11 @@ CREATE POLICY "users update own friendships" ON public.friendships FOR UPDATE
   USING (auth.uid() = from_user OR auth.uid() = to_user);
 CREATE POLICY "users delete own friendships" ON public.friendships FOR DELETE
   USING (auth.uid() = from_user OR auth.uid() = to_user);
+
+
+-- ══════════════════════════════════════════════════════════════════
+-- Friends search — pozwól zalogowanym wyszukiwać innych userów
+-- ══════════════════════════════════════════════════════════════════
+DROP POLICY IF EXISTS "profile_select_own" ON public.profiles;
+CREATE POLICY "profile_select_authenticated" ON public.profiles FOR SELECT
+  USING (auth.role() = 'authenticated');
