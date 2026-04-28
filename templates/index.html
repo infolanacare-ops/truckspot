@@ -6966,11 +6966,29 @@ function useGpsForRoute(){
 }
 
 async function geocodePlace(query){
-  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
+  // addressdetails=1 → Nominatim zwraca strukturyzowany adres (miasto/ulica/kraj)
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&addressdetails=1`;
   const r = await fetch(url, {headers:{'Accept-Language':currentLang}});
   const data = await r.json();
   if(!data.length) return null;
-  return {lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), name: data[0].display_name};
+  const a = data[0].address || {};
+  const city = a.city || a.town || a.village || a.municipality || a.county || '';
+  const street = a.road || a.pedestrian || a.path || '';
+  const country = a.country || '';
+  const houseNum = a.house_number || '';
+  const streetFull = street + (houseNum ? ' '+houseNum : '');
+  return {
+    lat: parseFloat(data[0].lat),
+    lng: parseFloat(data[0].lon),
+    name: data[0].display_name,
+    city, street: streetFull, country,
+    short: formatAddrShort(city, streetFull, country)
+  };
+}
+
+function formatAddrShort(city, street, country){
+  // Format: "Miasto, Ulica, Kraj" — pomija puste segmenty
+  return [city, street, country].filter(Boolean).join(', ') || '';
 }
 
 function pointToRouteDistKm(pLat, pLng, coords){
@@ -7000,10 +7018,11 @@ async function searchRoute(navMode){
   try {
     // Resolve FROM
     let fromLat = routeFromLat, fromLng = routeFromLng;
+    let fromGeo = null; // zachowaj wynik geocodera dla historii
     if(!fromLat && fromVal && !fromVal.startsWith('📡')){
-      const g = await geocodePlace(fromVal);
-      if(!g){ showAlert('⚠️','','Start not found'); return; }
-      fromLat=g.lat; fromLng=g.lng;
+      fromGeo = await geocodePlace(fromVal);
+      if(!fromGeo){ showAlert('⚠️','','Start not found'); return; }
+      fromLat=fromGeo.lat; fromLng=fromGeo.lng;
     }
     if(!fromLat){
       await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(
@@ -7129,7 +7148,11 @@ async function searchRoute(navMode){
 
     // Zapisz do historii
     const wpVals = [...document.querySelectorAll('#waypoints-list input')].map(i=>i.value.trim()).filter(Boolean);
-    routeHistorySave(fromVal || '📡 Moja lokalizacja', toVal, wpVals);
+    // Format adresu dla historii: "Miasto, Ulica, Kraj" z geocodera (bez dodatkowych zapytań)
+    const fromHist = fromGeo?.short || (fromVal && !fromVal.startsWith('📡') ? fromVal : '📡 Moja lokalizacja');
+    const toHist   = toGeo.short || toVal;
+    const wpHist   = waypoints.map(w => w.short || w.name || '');
+    routeHistorySave(fromHist, toHist, wpHist);
 
     if(navMode){
       // JEDŹ — jeśli są alternatywy, pokaż preview z wyborem; inaczej od razu start
