@@ -6146,9 +6146,10 @@ function mkMbMarker(lat, lng, html, onClick){
 
 // GPS dot marker (niebieski pulsujący punkt)
 function mkGpsDotMarker(lat, lng){
-  // Pokemon Go style — player avatar (twoja twarz/emoji z profilu)
+  // Pokemon Go style — TY jako CZŁOWIEK na mapie (pieszy w metaverse hub)
+  // Profile może mieć custom pedestrianEmoji, inaczej domyślnie 🚶
   const profile = (()=>{ try{ return JSON.parse(localStorage.getItem('ts_profile')||'{}'); }catch(e){ return {}; } })();
-  const emoji = profile.emoji || '🚗';
+  const emoji = profile.pedestrianEmoji || '🚶';
   const el = document.createElement('div');
   el.className = 'player-avatar';
   el.innerHTML = `
