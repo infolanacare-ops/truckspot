@@ -9193,12 +9193,10 @@ function renderNavPois(){
     </div>
   </div>`;
 
-  // START dół (TY = aktualna pozycja, prędkość)
-  const speedTxt = navActive && navSpeedKmh > 0 ? `${navSpeedKmh} km/h` : '';
+  // START dół — początek trasy (kierowca = ruchoma strzałka turkusowa)
   const startHtml = `<div class="nav-poi-start-fix">
     <div class="nav-poi-start-info">
-      <div class="nav-poi-start-lbl">📍 Ty</div>
-      ${speedTxt ? `<div class="nav-poi-start-val">${speedTxt}</div>` : ''}
+      <div class="nav-poi-start-lbl">🟢 Start</div>
     </div>
   </div>`;
 
