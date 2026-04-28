@@ -7782,6 +7782,13 @@ function buildRouteDistances(){
     const d = haversineKm(routeCoords[i][1],routeCoords[i][0],routeCoords[i-1][1],routeCoords[i-1][0]) * 1000;
     navRouteDistances.push(navRouteDistances[i-1] + d);
   }
+  // Skaluj proporcjonalnie żeby ostatni element = routeTotalDist (z API).
+  // Bez tego: haversine sum (linia prosta) ≠ road distance (krzywe), różnica do 5-15%.
+  const computedTotal = navRouteDistances[navRouteDistances.length-1];
+  if(computedTotal > 0 && routeTotalDist > 0 && Math.abs(computedTotal - routeTotalDist) > 50){
+    const scale = routeTotalDist / computedTotal;
+    for(let i=0; i<navRouteDistances.length; i++) navRouteDistances[i] *= scale;
+  }
   navDistRemaining = navRouteDistances[navRouteDistances.length-1];
 }
 
