@@ -9,9 +9,9 @@
 <!-- PWA / App Store metas -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="TruckSpot">
+<meta name="apple-mobile-web-app-title" content="TS PRO">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="application-name" content="TruckSpot">
+<meta name="application-name" content="TS PRO">
 <meta name="msapplication-TileColor" content="#1a1f2e">
 <meta name="msapplication-TileImage" content="/static/icon-144.png">
 
@@ -34,7 +34,7 @@
 <meta property="og:image" content="/static/icon-512.png">
 <meta property="og:type" content="website">
 
-<title>TruckSpot</title>
+<title>TS PRO — Cyber Metaverse Navigation</title>
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -3289,8 +3289,8 @@ body.navigating .convoy-btn{display:none}
   <!-- STEP 1 — Language -->
   <div class="ob-step active" id="step-lang">
     <div style="margin-bottom:.5rem;display:flex;justify-content:center"><span class="ts-icon ts-icon-lg" style="color:var(--accent,#d4af37)"><svg style="width:52px;height:52px"><use href="#ts-truck"/></svg></span></div>
-    <div class="ob-logo">TruckSpot</div>
-    <div class="ob-sub" id="ob-sub-lang">Choose your language</div>
+    <div class="ob-logo"><span style="font-size:1.05em;letter-spacing:.04em">TS</span><span style="font-size:.55em;font-style:italic;letter-spacing:.14em;vertical-align:super;color:var(--accent,#d4af37);font-weight:800;margin-left:.15em">PRO</span></div>
+    <div class="ob-sub" id="ob-sub-lang">Cyber metaverse navigation</div>
     <div class="ob-dots">
       <div class="ob-dot active"></div><div class="ob-dot"></div><div class="ob-dot"></div>
     </div>
@@ -3368,8 +3368,8 @@ body.navigating .convoy-btn{display:none}
 
   <!-- STEP 3 — Mode -->
   <div class="ob-step" id="step-mode">
-    <div class="ob-logo">TruckSpot</div>
-    <div class="ob-sub" id="ob-sub-mode">Choose your travel mode</div>
+    <div class="ob-logo"><span style="font-size:1.05em;letter-spacing:.04em">TS</span><span style="font-size:.55em;font-style:italic;letter-spacing:.14em;vertical-align:super;color:var(--accent,#d4af37);font-weight:800;margin-left:.15em">PRO</span></div>
+    <div class="ob-sub" id="ob-sub-mode">Wybierz swój tryb</div>
     <div class="ob-dots">
       <div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot active"></div>
     </div>
@@ -3398,6 +3398,17 @@ body.navigating .convoy-btn{display:none}
         <div class="ob-card-body">
           <div class="ob-card-title" id="lbl-tourist-title">Turysta / Camping</div>
           <div class="ob-card-desc" id="lbl-tourist-desc">Campingi · pola namiotowe · atrakcje · zabytki</div>
+        </div>
+        <div class="mode-chevron">›</div>
+      </div>
+      <div class="ob-card mode-card car" onclick="enterMode('car')" style="border-color:rgba(168,85,247,.5)">
+        <div class="mode-icon-wrap" style="background:linear-gradient(140deg,rgba(168,85,247,.2),rgba(192,132,252,.1));border-color:rgba(168,85,247,.5)"><span style="font-size:1.6rem">🚗</span></div>
+        <div class="ob-card-body">
+          <div class="mode-card-title-row">
+            <div class="ob-card-title" id="lbl-car-title">Auto osobowe</div>
+            <span class="mode-card-badge" style="background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff">METAVERSE</span>
+          </div>
+          <div class="ob-card-desc" id="lbl-car-desc">Cyber życie na żywo · CB Radio · znajomi · skórki</div>
         </div>
         <div class="mode-chevron">›</div>
       </div>
@@ -4756,6 +4767,9 @@ const MODE_CONFIG = {
   tourist: {icon:'🧳',label:t('tou_title'),color:'#3b82f6',color2:'#60a5fa',apiMode:'tourist',markerEmoji:'🧳',
              amenityFilter:['toilet','wifi','restaurant','shop','electricity','water','pool','shower'],
              poiFilter:['attraction','city','nature','restaurant','shop']},
+  car:     {icon:'🚗',label:'Auto',   color:'#a855f7',color2:'#c084fc',apiMode:'tourist',markerEmoji:'🚗',
+             amenityFilter:['fuel','restaurant','wifi','shop','toilet','parking'],
+             poiFilter:['fuel','restaurant','shop','attraction','parking']},
 };
 function amenityHtml(key){
   const cfg = {
