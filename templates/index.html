@@ -6032,17 +6032,30 @@ function _renderAltPreviewBanner(){
   };
   const fmtDist = m => Math.round(m/1000)+' km';
 
+  // Najszybsza trasa = referencja do porównania różnicy czasu
+  const fastestDur = Math.min(..._routeAlternatives.map(a => a.dur));
+
   const altButtons = _routeAlternatives.map((alt, i) => {
     const active = i === _selectedAltIdx;
+    const deltaSec = Math.round(alt.dur - fastestDur);
+    const deltaTxt = deltaSec >= 60
+      ? `+${Math.round(deltaSec/60)} min`
+      : (deltaSec <= -60 ? `${Math.round(deltaSec/60)} min` : 'najszybsza');
+    const deltaColor = deltaSec >= 60 ? '#fbbf24' : '#22c55e';
+    // Podsumowanie dróg — bierzemy 2 pierwsze nazwy żeby zmieściły się w przycisku
+    const roadsRaw = (alt.summary || '').split(/[·,]/).map(s=>s.trim()).filter(Boolean);
+    const roads = roadsRaw.slice(0,2).join(', ') || '—';
     return `<button onclick="switchToAlternative(${i})" style="
-      flex:1;padding:.5rem .6rem;border:none;border-radius:12px;cursor:pointer;
+      flex:1;padding:.5rem .55rem;border:none;border-radius:12px;cursor:pointer;
       background:${active ? 'rgba(96,165,250,.25)' : 'rgba(255,255,255,.08)'};
       border:1.5px solid ${active ? '#60a5fa' : 'rgba(255,255,255,.15)'};
       color:#fff;font-family:var(--font);font-weight:700;
-      display:flex;flex-direction:column;align-items:center;gap:1px;
-      transition:.15s;">
-      <span style="font-size:.85rem;font-weight:800">${fmtTime(alt.dur)}</span>
-      <span style="font-size:.6rem;color:rgba(255,255,255,.7);font-weight:600">${fmtDist(alt.dist)}</span>
+      display:flex;flex-direction:column;align-items:center;gap:2px;
+      transition:.15s;min-width:0;overflow:hidden">
+      <span style="font-size:.92rem;font-weight:800">${fmtTime(alt.dur)}</span>
+      <span style="font-size:.58rem;color:${deltaColor};font-weight:700;letter-spacing:.02em">${deltaTxt}</span>
+      <span style="font-size:.55rem;color:rgba(255,255,255,.7);font-weight:600">${fmtDist(alt.dist)}</span>
+      <span style="font-size:.55rem;color:rgba(255,255,255,.55);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%" title="${roadsRaw.join(' · ')}">via ${roads}</span>
     </button>`;
   }).join('');
 
