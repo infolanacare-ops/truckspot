@@ -9380,6 +9380,24 @@ const _poiStore = {
 
   clear(){ this.pois.clear(); this.persistDebounced(); },
 
+  // Przelicz distFromStart i distKm dla WSZYSTKICH POI w store (po zmianie trasy)
+  recomputePositions(routeCoords){
+    if(!routeCoords?.length) return;
+    for(const [id, e] of this.pois){
+      const p = e.poi;
+      let minIdx = 0, minD = Infinity;
+      for(let i=0; i<routeCoords.length; i++){
+        const d = haversineKm(p.lat, p.lng, routeCoords[i][1], routeCoords[i][0]);
+        if(d < minD){ minD=d; minIdx=i; }
+      }
+      let distFromStart = 0;
+      for(let i=1; i<=minIdx; i++){
+        distFromStart += haversineKm(routeCoords[i][1],routeCoords[i][0],routeCoords[i-1][1],routeCoords[i-1][0]);
+      }
+      e.poi = {...e.poi, distFromStart, distKm: minD};
+    }
+  },
+
   // Persist do localStorage (z debounce żeby nie pisać co tick)
   _persistTimer: null,
   persistDebounced(){
@@ -9480,11 +9498,14 @@ async function loadRoutePois(){
       }
       return {...p, distFromStart, distKm: minD};
     });
-  // POI Store: merge initial parkings (NIGDY nie nadpisuje — tylko dodaje/aktualizuje)
+  // POI Store: recompute pozycji dla bieżącej trasy (cached POI mogą mieć stałe distFromStart z poprzedniej)
+  _poiStore.recomputePositions(routeCoords);
+  // Merge initial parkings (NIGDY nie nadpisuje — tylko dodaje/aktualizuje)
   if(initialPois.length > 0){
     _poiStore.merge(initialPois);
-    navRoutePois = _poiStore.getAll();
   }
+  // ZAWSZE sync navRoutePois (nawet jeśli initialPois pusty — store może mieć cached POI)
+  navRoutePois = _poiStore.getAll();
   renderNavPois();
 
   // Fetch each segment sequentially — 3 źródła równolegle dla każdego segmentu
