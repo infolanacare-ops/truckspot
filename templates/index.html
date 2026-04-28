@@ -6008,6 +6008,60 @@ function drawRouteAlternatives(){
   });
 }
 
+function showRouteAltPreview(){
+  // Zamknij ekran wyznaczania trasy żeby było widać mapę z alternatywami
+  closeRoute();
+  fitRouteCoords(routeCoords, 80);
+
+  // Stwórz banner na dole (jeśli nie ma)
+  let banner = document.getElementById('alt-preview-banner');
+  if(banner) banner.remove();
+  banner = document.createElement('div');
+  banner.id = 'alt-preview-banner';
+  banner.style.cssText = 'position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);z-index:1700;background:rgba(20,24,36,.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:.8rem 1rem;display:flex;align-items:center;gap:.7rem;box-shadow:0 4px 24px rgba(0,0,0,.45);max-width:92vw';
+  document.body.appendChild(banner);
+  _renderAltPreviewBanner();
+}
+
+function _renderAltPreviewBanner(){
+  const banner = document.getElementById('alt-preview-banner');
+  if(!banner) return;
+  const fmtTime = secs => {
+    const m = Math.round(secs/60);
+    return m >= 60 ? Math.floor(m/60)+'h '+(m%60)+'m' : m+' min';
+  };
+  const fmtDist = m => Math.round(m/1000)+' km';
+
+  const altButtons = _routeAlternatives.map((alt, i) => {
+    const active = i === _selectedAltIdx;
+    return `<button onclick="switchToAlternative(${i})" style="
+      flex:1;padding:.5rem .6rem;border:none;border-radius:12px;cursor:pointer;
+      background:${active ? 'rgba(96,165,250,.25)' : 'rgba(255,255,255,.08)'};
+      border:1.5px solid ${active ? '#60a5fa' : 'rgba(255,255,255,.15)'};
+      color:#fff;font-family:var(--font);font-weight:700;
+      display:flex;flex-direction:column;align-items:center;gap:1px;
+      transition:.15s;">
+      <span style="font-size:.85rem;font-weight:800">${fmtTime(alt.dur)}</span>
+      <span style="font-size:.6rem;color:rgba(255,255,255,.7);font-weight:600">${fmtDist(alt.dist)}</span>
+    </button>`;
+  }).join('');
+
+  banner.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:.5rem;width:100%">
+      <div style="display:flex;gap:.4rem">${altButtons}</div>
+      <div style="display:flex;gap:.5rem">
+        <button onclick="document.getElementById('alt-preview-banner').remove();clearRoute()"
+          style="flex:1;padding:.6rem;border:none;border-radius:12px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171;font-family:var(--font);font-weight:700;cursor:pointer">
+          ✕ Anuluj
+        </button>
+        <button onclick="document.getElementById('alt-preview-banner').remove();startNavigation()"
+          style="flex:2;padding:.6rem;border:none;border-radius:12px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-family:var(--font);font-weight:800;cursor:pointer;font-size:.95rem">
+          ▶ START
+        </button>
+      </div>
+    </div>`;
+}
+
 function switchToAlternative(idx){
   if(idx < 0 || idx >= _routeAlternatives.length) return;
   if(idx === _selectedAltIdx) return; // już wybrana
@@ -6034,6 +6088,8 @@ function switchToAlternative(idx){
   const durTxt = durMin>=60 ? Math.floor(durMin/60)+'h '+(durMin%60)+'min' : durMin+' min';
   const summaryEl = document.getElementById('route-summary-active');
   if(summaryEl) summaryEl.innerHTML = `<b>${distKm} km</b> · ⏱ <b>${durTxt}</b>`;
+  // Aktualizuj banner preview jeśli widoczny
+  if(document.getElementById('alt-preview-banner')) _renderAltPreviewBanner();
 }
 
 function drawRoute(coords, splitIdx){
@@ -6887,8 +6943,13 @@ async function searchRoute(navMode){
     routeHistorySave(fromVal || '📡 GPS', toVal, wpVals);
 
     if(navMode){
-      // JEDŹ — od razu start nawigacji
-      startNavigation();
+      // JEDŹ — jeśli są alternatywy, pokaż preview z wyborem; inaczej od razu start
+      if(_routeAlternatives.length > 1){
+        // Pokaż prosty toast z instrukcją + przycisk Start
+        showRouteAltPreview();
+      } else {
+        startNavigation();
+      }
     } else {
       resultsDiv.innerHTML = header + parkHtml +
         `<div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.6rem">
@@ -6909,6 +6970,7 @@ function clearRoute(){
   _clearAltLayers();
   _routeAlternatives = []; _selectedAltIdx = 0;
   document.getElementById('route-results').innerHTML='';
+  document.getElementById('alt-preview-banner')?.remove();
   routeSteps=[]; routeCoords=[]; routeCoordsSmooth=[];
   hideRouteTimeline();
 }
