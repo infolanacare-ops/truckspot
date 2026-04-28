@@ -174,6 +174,63 @@ TruckSpot monitors your speed 24/7 and rewards safe driving with daily points.
 ### Ocena treści
 - Wszyscy (PEGI 3 / IARC Everyone)
 
+---
+
+## 💎 MODEL MONETYZACJI — TruckSpot Premium
+
+### Subskrypcja **9.99 zł / miesiąc** (lub 99 zł / rok = 2 miesiące gratis)
+
+### Co odblokowuje Premium:
+- 🎨 **Wszystkie skórki interfejsu** (Cyber Neon, Galaxy, Patriot, F1, sezonowe...)
+- 🚛 **Wiele profili pojazdów** (różne TIRy z różnymi wymiarami)
+- 📍 **Eksport tras GPX**
+- 📊 **Historia bez limitu** (free = 5 ostatnich)
+- ☁️ **Sync między urządzeniami** (telefon ↔ tablet)
+- 🌐 **Bez reklam** (free ma 1 baner na ekranie głównym)
+- 📈 **Dashboard online** — statystyki bezpiecznej jazdy w przeglądarce na PC
+- 🎯 **Priorytet wiadomości w CB Radio**
+
+### Free vs Premium tabela:
+| Funkcja | Free | Premium |
+|---------|:----:|:-------:|
+| Nawigacja TIR | ✅ | ✅ |
+| Bezpieczna jazda + punkty | ✅ | ✅ |
+| Skórki | 1 (Premium Gold) | **Wszystkie 10+** |
+| Profile pojazdów | 1 | **Nielimit** |
+| Historia tras | 5 ostatnich | Bez limitu |
+| Eksport GPX | ❌ | ✅ |
+| Sync cloud | ❌ | ✅ |
+| Reklamy | 1 baner | ❌ |
+
+### Strategia onboarding:
+- **7 dni darmowego trial Premium** dla każdego nowego usera
+- Po trialu — natural upgrade prompt
+- Streak "🛡️ Bezpieczna jazda" zostaje aktywny w free (motywuje pozostać w apce)
+
+### Implementacja płatności:
+- **Google Play Billing** — wymagane przez Google dla apek w Play Store sprzedających subskrypcje
+- **Konfiguracja:** Play Console → Monetyzacja → Subskrypcje → "TruckSpot Premium" (9.99 PLN/miesiąc)
+- **Backend:** Supabase tabela `subscriptions` (user_id, status, expires_at, plan)
+- **Webhook Google** → aktualizuje status w bazie po płatności / odnowieniu / cancel
+
+### Roadmap monetyzacji:
+1. **MVP (Q1 2026)** — system skórek + przełącznik (wszystkie darmowe na początku, testujemy UX)
+2. **Q2 2026** — dodanie 5 płatnych skórek + Google Play Billing + premium gate
+3. **Q3 2026** — sync cloud + dashboard online
+4. **Q4 2026** — community features (top kierowcy, ranking, achievementy)
+
+### Prognoza przychodu:
+- 1 000 płatnych userów × 9.99 zł = **~10 000 zł/mies MRR**
+- 10 000 płatnych userów × 9.99 zł = **~100 000 zł/mies MRR**
+- Konwersja typowa free → paid: **3-7%** dla apek nawigacyjnych
+
+### Pricing competitors (research):
+- Sygic Truck Navigation: **199 zł/rok** (lifetime $89)
+- TomTom Go Truck: **34.99 USD/mies** (~140 zł)
+- HERE WeGo Truck: free + in-app purchases
+- **TruckSpot 9.99 zł/mies = 5-10x tańszy** od konkurencji
+
+
 ### Słowa kluczowe (Google Play SEO)
 ```
 nawigacja, TIR, ciężarówka, prawo jazdy, fotoradar, GPS,
