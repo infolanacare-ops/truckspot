@@ -9023,33 +9023,45 @@ async function loadRoutePois(){
   if(!navRoutePois.length) navRoutePois = initialPois;
   renderNavPois();
 
-  // Fetch each segment sequentially
+  // Fetch each segment sequentially — 3 źródła równolegle dla każdego segmentu
   const allPois = [];
   const fuelCards = activeFuelCards();
+  const apiMode = MODE_CONFIG[currentMode]?.apiMode || 'tir';
   for(const seg of segments){
-    try {
-      const r = await fetch(`/api/route-pois?south=${seg.south}&west=${seg.west}&north=${seg.north}&east=${seg.east}`);
-      const pois = await r.json();
-      if(Array.isArray(pois)) allPois.push(...pois);
-    } catch(e){ /* skip failed segment */ }
-    // Stacje kart paliwowych wzdłuż trasy
+    const segParams = `south=${seg.south}&west=${seg.west}&north=${seg.north}&east=${seg.east}`;
+    // 3 fetch równolegle: route-pois (Overpass), osm-parkings, fuel-stations
+    const fetches = [
+      fetch(`/api/route-pois?${segParams}`).then(r=>r.json()).catch(()=>[]),
+      fetch(`/api/osm-parkings?${segParams}&mode=${apiMode}`).then(r=>r.json()).catch(()=>[]),
+    ];
     if(fuelCards.length){
-      try {
-        const r2 = await fetch(`/api/fuel-stations?south=${seg.south}&west=${seg.west}&north=${seg.north}&east=${seg.east}&cards=${fuelCards.join(',')}`);
-        const fs = await r2.json();
-        if(Array.isArray(fs)) fs.forEach(s=>{
-          if(s.lat && s.lng) allPois.push({
-            id: `fs_${s.lat}_${s.lng}`,
-            lat: s.lat, lng: s.lng,
-            name: s.name || (s.payments||[]).slice(0,2).join('/') || 'Stacja TIR',
-            type: 'fuel', icon: '⛽',
-            hgv: true,
-            payments: s.payments || [],
-            adblue: s.adblue || false,
-          });
-        });
-      } catch(e){ /* skip */ }
+      fetches.push(fetch(`/api/fuel-stations?${segParams}&cards=${fuelCards.join(',')}`).then(r=>r.json()).catch(()=>[]));
     }
+    const [pois, osmParkings, fuelStations] = await Promise.all(fetches);
+    if(Array.isArray(pois)) allPois.push(...pois);
+    // OSM parkings (z /api/osm-parkings) — dodaj jako parkingi
+    if(Array.isArray(osmParkings)) osmParkings.forEach(p=>{
+      if(p.lat && p.lng) allPois.push({
+        id:    p.id || `osm_${p.lat}_${p.lng}`,
+        lat:   p.lat, lng: p.lng,
+        name:  p.name || 'Parking',
+        type:  'parking', icon: '🅿️',
+        hgv:   p.hgv || false,
+        amenities: p.amenities || [],
+      });
+    });
+    // Stacje kart paliwowych
+    if(Array.isArray(fuelStations)) fuelStations.forEach(s=>{
+      if(s.lat && s.lng) allPois.push({
+        id:    `fs_${s.lat}_${s.lng}`,
+        lat:   s.lat, lng: s.lng,
+        name:  s.name || (s.payments||[]).slice(0,2).join('/') || 'Stacja TIR',
+        type:  'fuel', icon: '⛽',
+        hgv:   true,
+        payments: s.payments || [],
+        adblue: s.adblue || false,
+      });
+    });
   }
 
   // Merge all POI + parkings, deduplicate by id, filter corridor
