@@ -2534,45 +2534,46 @@ body[data-mode="tourist"] .nav-poi-current-dot{
 /* ── Lane guidance — TomTom truck style ── */
 /* ── LANE GUIDANCE — chmurka TomTom style ── */
 .nav-lanes{
-  display:none;flex-direction:row;align-items:stretch;
-  align-self:center;
-  width:auto;max-width:calc(100% - 1.2rem);
-  margin:.3rem auto 0;
-  border-radius:14px;
-  height:48px;
-  background:linear-gradient(160deg,rgba(22,28,48,.82) 0%,rgba(14,18,32,.85) 100%);
-  backdrop-filter:blur(18px) saturate(140%);
-  -webkit-backdrop-filter:blur(18px) saturate(140%);
-  border:1px solid rgba(212,175,55,.28);
+  display:none;flex-direction:row;align-items:stretch;justify-content:center;
+  width:auto;
+  margin:.25rem .6rem 0;
+  border-radius:16px;
+  min-height:68px;
+  padding:.5rem .55rem;
+  background:linear-gradient(160deg,rgba(0,109,119,.95) 0%,rgba(0,77,87,.95) 100%);
+  border:1px solid rgba(212,175,55,.32);
   overflow:hidden;
   box-shadow:
-    0 4px 16px rgba(0,0,0,.35),
+    0 4px 16px rgba(0,0,0,.4),
     0 0 0 1px rgba(0,0,0,.2),
-    0 1px 0 rgba(212,175,55,.15) inset;
+    0 1px 0 rgba(212,175,55,.18) inset;
   pointer-events:none;
+  flex-shrink:0;
   animation:lanesIn .22s cubic-bezier(.22,.9,.36,1)}
 @keyframes lanesIn{from{opacity:0;transform:translateY(-8px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 .nav-lane{
-  flex:0 0 44px;
+  flex:0 0 62px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:1px;
-  border-right:1px solid rgba(255,255,255,.06);
+  gap:2px;
+  border-right:1px solid rgba(255,255,255,.10);
   background:transparent;
-  position:relative;transition:background .2s}
+  position:relative;transition:background .2s;
+  border-radius:11px;
+}
 .nav-lane:last-child{border-right:none}
 .nav-lane::before{display:none}
-.nav-lane svg{width:24px;height:24px;flex-shrink:0}
+.nav-lane svg{width:38px;height:38px;flex-shrink:0}
 .nav-lane-label{display:none}
 /* nieaktywny */
-.nav-lane svg path{fill:rgba(255,255,255,.22)!important}
+.nav-lane svg path{fill:rgba(255,255,255,.28)!important}
 /* dopuszczalny */
-.nav-lane.valid svg path{fill:rgba(255,255,255,.55)!important}
+.nav-lane.valid svg path{fill:rgba(255,255,255,.7)!important}
 /* aktywny — gold (TruckSpot DNA) */
 .nav-lane.active{
   background:linear-gradient(140deg,rgba(251,191,36,.95) 0%,rgba(212,175,55,.85) 100%);
-  box-shadow:0 0 12px rgba(212,175,55,.45) inset;
+  box-shadow:0 0 14px rgba(212,175,55,.5) inset;
 }
-.nav-lane.active svg path{fill:rgba(20,14,0,.9)!important}
+.nav-lane.active svg path{fill:rgba(20,14,0,.95)!important}
 
 /* Ukryj zoom podczas nawigacji */
 body.navigating .mapboxgl-ctrl-top-left{display:none}
