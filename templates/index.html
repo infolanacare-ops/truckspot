@@ -10442,7 +10442,7 @@ function onNavPosition(pos){
       // Look-ahead voice — TomTom standard: 3 etapy zapowiedzi
       // Blokada 5s po reroute — żeby "Trasa przeliczona" nie nakładało się na zapowiedź
       const announceAt = navSpeedKmh > 80 ? [900, 300, 100]
-                       : navSpeedKmh > 50 ? [500, 200, 60]
+                       : navSpeedKmh > 50 ? [500, 200, 50]
                        :                    [300, 100, 40];
       const rerouteSilence = Date.now() - navRerouteTs < 5000;
       for(const dist of announceAt){
