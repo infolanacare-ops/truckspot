@@ -9231,6 +9231,7 @@ function startNavigation(){
   if(!routeSteps.length){ showAlert('⚠️','','Najpierw oblicz trasę'); return; }
   // Ukryj alternatywy — od teraz widoczna tylko aktywna trasa
   _clearAltLayers();
+  _startPoiAutoRefetch(); // POI auto-refetch co 5 min podczas nawigacji
   // Safe-drive: sprawdź wczoraj (jeśli nowy dzień, przyznaj punkty + pokaż toast)
   const sdResult = _safeDriveCheckYesterday();
   if(sdResult?.awarded) setTimeout(()=>_safeDriveShowAwardToast(sdResult), 1500);
@@ -9419,6 +9420,21 @@ const _poiStore = {
 window.addEventListener('DOMContentLoaded', () => {
   setTimeout(()=>_poiStore.loadFromStorage(), 600);
 });
+
+// ── Auto-refetch POI co 5 min podczas nawigacji ──────────────────────────
+let _poiRefetchTimer = null;
+function _startPoiAutoRefetch(){
+  if(_poiRefetchTimer) return;
+  _poiRefetchTimer = setInterval(()=>{
+    if(navActive && routeCoords?.length){
+      console.log('[poiStore] auto-refetch (5 min interval)');
+      loadRoutePois();
+    }
+  }, 5 * 60 * 1000);
+}
+function _stopPoiAutoRefetch(){
+  if(_poiRefetchTimer){ clearInterval(_poiRefetchTimer); _poiRefetchTimer = null; }
+}
 
 async function loadRoutePois(){
   if(!routeCoords.length) return;
@@ -10916,6 +10932,7 @@ function stopNavigation(){
   }
   navActive=false; navOverviewMode=false;
   _kalman.reset(); // reset filtra po nav — hub zacznie świeżo
+  _stopPoiAutoRefetch(); // zatrzymaj auto-refetch POI
   _stopAudioKeepAlive(); // zatrzymaj cichą pętlę audio
   // Zatrzymaj giroskop
   if(_gyroActive){
