@@ -3488,6 +3488,7 @@ body.navigating .convoy-btn{display:none}
     <div class="menu-item" onclick="drawerAction('autobahn')"><div class="menu-icon" style="background:rgba(0,100,200,.12);border-color:#0064c8"><span style="font-size:1.1rem">🇩🇪</span></div><span class="menu-label">Autobahn DE (oficjalne MOP)</span><span class="menu-badge" id="autobahn-badge" style="display:none">ON</span></div>
     <div class="menu-sep"></div>
     <div class="menu-section" data-i="sec_community">Community</div>
+    <div class="menu-item" onclick="closeDrawer();setTimeout(openSafeDrivePanel,250)"><div class="menu-icon" style="background:rgba(212,175,55,.15);border-color:#d4af37"><span style="font-size:1.15rem">🛡️</span></div><span class="menu-label">Bezpieczna jazda</span><span class="menu-badge" id="sd-points-badge" style="background:linear-gradient(135deg,#fbbf24,#d4af37);color:#1e293b;font-weight:900">0</span></div>
     <div class="menu-item" onclick="drawerAction('cbradio')"><div class="menu-icon" style="background:rgba(59,130,246,.12);border-color:#3b82f6"><span class="si"><svg viewBox="0 0 24 24"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg></span></div><span class="menu-label">CB Radio — mapa wiadomości</span><span class="menu-badge" id="msgs-count-badge" style="display:none">0</span></div>
     <div class="menu-item" id="demo-mode-btn" onclick="closeDrawer();setTimeout(toggleDemoMode,200)"><div class="menu-icon" style="background:rgba(139,92,246,.12);border-color:#8b5cf6"><span style="font-size:1.1rem">🌐</span></div><span class="menu-label">Demo Mode — przykładowi kierowcy</span></div>
     <div class="menu-item" onclick="drawerAction('add')"><div class="menu-icon" style="background:rgba(139,92,246,.12);border-color:#8b5cf6"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></span></div><span class="menu-label" data-i="menu_add">Add a spot</span><span class="menu-badge">+10 pts</span></div>
@@ -8946,6 +8947,12 @@ function startNavigation(){
   if(!routeSteps.length){ showAlert('⚠️','','Najpierw oblicz trasę'); return; }
   // Ukryj alternatywy — od teraz widoczna tylko aktywna trasa
   _clearAltLayers();
+  // Safe-drive: sprawdź wczoraj (jeśli nowy dzień, przyznaj punkty + pokaż toast)
+  const sdResult = _safeDriveCheckYesterday();
+  if(sdResult?.awarded) setTimeout(()=>_safeDriveShowAwardToast(sdResult), 1500);
+  _sessionViolations = 0;
+  _sessionDistKm = 0;
+  _sessionStartKm = navRouteDistances?.length ? (navRouteDistances[navCIdx]||0)/1000 : 0;
   _unlockAudio();          // odblokuj HTML5 Audio — kluczowe dla Android
   _unlockSpeech();         // odblokuj speechSynthesis — Android wymaga user gesture
   _startAudioKeepAlive();  // cicha pętla = audio focus w tle i przy zablokowanym ekranie
@@ -9415,6 +9422,213 @@ function updateSpeedSign(kmh){
   }
 }
 
+// ══════════════════════════════════════════════════════════════════
+// SAFE DRIVE SYSTEM — punkty za bezpieczną jazdę (anty-przekroczenie +50)
+// ══════════════════════════════════════════════════════════════════
+// localStorage:
+//   ts_sd_points        - łączne punkty użytkownika
+//   ts_sd_streak        - dni z rzędu bez +50
+//   ts_sd_history       - [{date:'YYYY-MM-DD', violations:N, awarded:bool}]
+//   ts_sd_today_date    - 'YYYY-MM-DD' ostatnia data sesji
+//   ts_sd_today_violations - liczba przekroczeń +50 dziś
+// Sesja (in-memory):
+let _sessionViolations = 0;   // liczba +50 zdarzeń w bieżącej sesji nawigacji
+let _sessionDistKm     = 0;   // dystans przejechany w sesji
+let _sessionStartKm    = 0;   // odległość od startu trasy gdy zaczęła sesja
+
+const SD_DAILY_POINTS = 10;
+const _todayStr = () => new Date().toISOString().slice(0,10);
+
+function _safeDriveLoad(){
+  try { return {
+    points:  parseInt(localStorage.getItem('ts_sd_points')||'0',10),
+    streak:  parseInt(localStorage.getItem('ts_sd_streak')||'0',10),
+    history: JSON.parse(localStorage.getItem('ts_sd_history')||'[]'),
+    todayDate:       localStorage.getItem('ts_sd_today_date') || '',
+    todayViolations: parseInt(localStorage.getItem('ts_sd_today_violations')||'0',10),
+  }; } catch(e){ return {points:0, streak:0, history:[], todayDate:'', todayViolations:0}; }
+}
+
+function _safeDriveSave(state){
+  localStorage.setItem('ts_sd_points',   String(state.points));
+  localStorage.setItem('ts_sd_streak',   String(state.streak));
+  localStorage.setItem('ts_sd_history',  JSON.stringify((state.history||[]).slice(-30)));
+  localStorage.setItem('ts_sd_today_date',       state.todayDate || '');
+  localStorage.setItem('ts_sd_today_violations', String(state.todayViolations || 0));
+  // Odśwież badge w drawerze
+  const b = document.getElementById('sd-points-badge');
+  if(b) b.textContent = state.points;
+}
+
+// Sprawdź WCZORAJSZY dzień — jeśli bez przekroczeń, daj punkty (raz dziennie)
+function _safeDriveCheckYesterday(){
+  const s = _safeDriveLoad();
+  const today = _todayStr();
+  // Jeśli dziś już sprawdzaliśmy — nic
+  const lastCheck = localStorage.getItem('ts_sd_last_award_check');
+  if(lastCheck === today) return null;
+
+  // Sprawdź wpis z wczoraj w historii
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0,10);
+  const hYest = s.history.find(h => h.date === yesterday);
+
+  let result = null;
+  if(s.todayDate && s.todayDate !== today){
+    // Mamy dane z poprzedniego dnia — zapisz wpis
+    const wasViolation = (s.todayViolations || 0) > 0;
+    s.history = (s.history || []).filter(h => h.date !== s.todayDate);
+    s.history.push({date: s.todayDate, violations: s.todayViolations || 0, awarded: !wasViolation});
+    if(!wasViolation){
+      s.points += SD_DAILY_POINTS;
+      s.streak += 1;
+      result = {awarded: true, points: SD_DAILY_POINTS, streak: s.streak, total: s.points};
+    } else {
+      s.streak = 0;
+      result = {awarded: false, violations: s.todayViolations, streak: 0, total: s.points};
+    }
+    // Reset dzisiejszych liczników
+    s.todayDate = today;
+    s.todayViolations = 0;
+  } else if(!s.todayDate){
+    s.todayDate = today;
+    s.todayViolations = 0;
+  }
+  _safeDriveSave(s);
+  localStorage.setItem('ts_sd_last_award_check', today);
+  return result;
+}
+
+function _safeDriveMarkViolation(){
+  const s = _safeDriveLoad();
+  const today = _todayStr();
+  if(s.todayDate !== today){
+    // Nowy dzień — sprawdź wczoraj najpierw
+    _safeDriveCheckYesterday();
+    return _safeDriveMarkViolation(); // rekurencja po sprawdzeniu
+  }
+  s.todayViolations = (s.todayViolations || 0) + 1;
+  _sessionViolations++;
+  _safeDriveSave(s);
+}
+
+// Pokaż toast z punktami (jeśli przyznane przy starcie nawigacji)
+function _safeDriveShowAwardToast(result){
+  if(!result || !result.awarded) return;
+  showAlert('🛡️','+'+result.points+' pkt za bezpieczną jazdę!', `🔥 ${result.streak} dni z rzędu · łącznie ${result.total} pkt`);
+  setTimeout(closeAlert, 4500);
+}
+
+// Modal podsumowania trasy — wywoływany ze stopNavigation
+function _showTripSummary(){
+  const s = _safeDriveLoad();
+  const distKm = _sessionDistKm.toFixed(1);
+  const violations = _sessionViolations;
+  const safeBadge = violations === 0
+    ? `<div style="color:#22c55e;font-weight:800;font-size:.95rem;margin-top:.5rem">✓ Bezpieczna jazda — bez przekroczeń +50 km/h</div>`
+    : `<div style="color:#ef4444;font-weight:800;font-size:.95rem;margin-top:.5rem">⚠️ ${violations}× przekroczenie +50 km/h</div>`;
+  const todayPending = s.todayViolations === 0
+    ? `<div style="font-size:.78rem;color:rgba(255,255,255,.7);margin-top:.4rem">Jeśli reszta dnia bez przekroczeń → <b style="color:#fbbf24">+10 pkt</b> jutro</div>`
+    : `<div style="font-size:.78rem;color:rgba(255,255,255,.6);margin-top:.4rem">Dziś ${s.todayViolations}× przekroczenie — punkty stracone na dziś</div>`;
+
+  const id = 'trip-summary-' + Date.now();
+  const modal = document.createElement('div');
+  modal.id = id;
+  modal.style.cssText = 'position:fixed;inset:0;z-index:3500;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:1.2rem;animation:fadein .25s';
+  modal.innerHTML = `
+    <div style="width:100%;max-width:340px;background:linear-gradient(160deg,rgba(22,28,48,.98) 0%,rgba(14,18,32,.98) 100%);backdrop-filter:blur(18px);border:1.5px solid rgba(212,175,55,.5);border-radius:22px;padding:1.5rem;box-shadow:0 8px 32px rgba(0,0,0,.6),0 0 18px rgba(212,175,55,.18) inset;color:#fff;text-align:center">
+      <div style="font-size:2.5rem;margin-bottom:.4rem">🏁</div>
+      <div style="font-family:var(--font-head);font-size:1.4rem;font-weight:900;letter-spacing:-.01em">Trasa zakończona</div>
+      <div style="font-size:.85rem;color:rgba(255,255,255,.8);margin-top:.3rem">Przejechałeś <b style="color:#fbbf24">${distKm} km</b></div>
+      ${safeBadge}
+      <div style="margin:1rem 0 .5rem;height:1px;background:rgba(255,255,255,.12)"></div>
+      <div style="display:flex;gap:.6rem;justify-content:center;margin-top:.6rem">
+        <div style="flex:1;background:rgba(212,175,55,.12);border:1px solid rgba(212,175,55,.4);border-radius:14px;padding:.6rem">
+          <div style="font-family:var(--font-head);font-size:1.4rem;font-weight:900;color:#fbbf24">${s.points}</div>
+          <div style="font-size:.6rem;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.05em;margin-top:.15rem">punkty</div>
+        </div>
+        <div style="flex:1;background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.35);border-radius:14px;padding:.6rem">
+          <div style="font-family:var(--font-head);font-size:1.4rem;font-weight:900;color:#fca5a5">🔥 ${s.streak}</div>
+          <div style="font-size:.6rem;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.05em;margin-top:.15rem">dni z rzędu</div>
+        </div>
+      </div>
+      ${todayPending}
+      <button onclick="document.getElementById('${id}').remove()" style="margin-top:1rem;width:100%;padding:.75rem;border:none;border-radius:14px;background:linear-gradient(135deg,#fbbf24 0%,#d4af37 100%);color:#1e293b;font-family:var(--font);font-size:.9rem;font-weight:900;cursor:pointer;letter-spacing:.04em">OK</button>
+    </div>`;
+  modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
+  document.body.appendChild(modal);
+}
+
+// Aktualizuj badge w drawerze z aktualną liczbą punktów
+function _safeDriveUpdateBadge(){
+  const s = _safeDriveLoad();
+  const b = document.getElementById('sd-points-badge');
+  if(b) b.textContent = s.points;
+}
+
+// Pełen ekran "Bezpieczna jazda" — historia 30 dni + statystyki + opis
+function openSafeDrivePanel(){
+  // Najpierw sprawdź wczoraj (może przyznać punkty)
+  _safeDriveCheckYesterday();
+  const s = _safeDriveLoad();
+  // Ostatnie 14 dni jako wykres
+  const days = [];
+  for(let i=13; i>=0; i--){
+    const d = new Date(Date.now() - i*86400000).toISOString().slice(0,10);
+    const h = s.history.find(x => x.date === d);
+    days.push({date: d, awarded: h?.awarded === true, violations: h?.violations || 0, hasData: !!h});
+  }
+  const dayBars = days.map(d => {
+    const color = d.awarded ? '#22c55e' : (d.hasData ? '#ef4444' : 'rgba(255,255,255,.12)');
+    const dayShort = d.date.slice(8); // DD
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+      <div style="width:100%;height:36px;background:${color};border-radius:4px;opacity:${d.hasData?1:.4};box-shadow:${d.awarded?'0 0 8px rgba(34,197,94,.4)':'none'}"></div>
+      <div style="font-size:.5rem;color:rgba(255,255,255,.55);font-weight:700">${dayShort}</div>
+    </div>`;
+  }).join('');
+
+  const id = 'sd-panel-' + Date.now();
+  const modal = document.createElement('div');
+  modal.id = id;
+  modal.style.cssText = 'position:fixed;inset:0;z-index:3500;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center';
+  modal.innerHTML = `
+    <div onclick="event.stopPropagation()" style="width:100%;max-width:480px;background:linear-gradient(160deg,rgba(22,28,48,.98) 0%,rgba(14,18,32,.99) 100%);backdrop-filter:blur(18px);border:1.5px solid rgba(212,175,55,.45);border-bottom:none;border-radius:24px 24px 0 0;padding:1.4rem 1.2rem 1.6rem;box-shadow:0 -4px 32px rgba(0,0,0,.6),0 0 18px rgba(212,175,55,.12) inset;color:#fff;max-height:90vh;overflow-y:auto;animation:slideup .3s">
+      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:1rem">
+        <div style="font-size:2rem">🛡️</div>
+        <div style="flex:1">
+          <div style="font-family:var(--font-head);font-size:1.25rem;font-weight:900">Bezpieczna jazda</div>
+          <div style="font-size:.7rem;color:rgba(255,255,255,.65)">Twoja tarcza prawa jazdy</div>
+        </div>
+        <button onclick="document.getElementById('${id}').remove()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);width:34px;height:34px;border-radius:10px;color:#fff;font-size:1.1rem;cursor:pointer">✕</button>
+      </div>
+      <div style="display:flex;gap:.6rem;margin-bottom:1.2rem">
+        <div style="flex:1;background:linear-gradient(140deg,rgba(212,175,55,.2),rgba(212,175,55,.08));border:1.5px solid rgba(212,175,55,.5);border-radius:16px;padding:.85rem;text-align:center">
+          <div style="font-family:var(--font-head);font-size:1.85rem;font-weight:900;color:#fbbf24;text-shadow:0 0 12px rgba(212,175,55,.4)">${s.points}</div>
+          <div style="font-size:.62rem;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.06em;margin-top:.2rem;font-weight:700">Łączne punkty</div>
+        </div>
+        <div style="flex:1;background:linear-gradient(140deg,rgba(239,68,68,.15),rgba(239,68,68,.06));border:1.5px solid rgba(239,68,68,.4);border-radius:16px;padding:.85rem;text-align:center">
+          <div style="font-family:var(--font-head);font-size:1.85rem;font-weight:900;color:#fca5a5">🔥 ${s.streak}</div>
+          <div style="font-size:.62rem;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.06em;margin-top:.2rem;font-weight:700">Dni z rzędu</div>
+        </div>
+      </div>
+      <div style="font-size:.78rem;color:rgba(255,255,255,.85);font-weight:700;margin-bottom:.5rem">Ostatnie 14 dni</div>
+      <div style="display:flex;gap:3px;align-items:flex-end;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:.7rem;margin-bottom:1.1rem">
+        ${dayBars}
+      </div>
+      <div style="background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.25);border-radius:14px;padding:.8rem;font-size:.75rem;color:rgba(255,255,255,.85);line-height:1.5">
+        <div style="font-weight:800;color:#fbbf24;margin-bottom:.4rem">⚖️ Jak to działa</div>
+        TruckSpot pilnuje by nie przekroczyć prędkości o <b>50 km/h</b> — w Polsce to oznacza automatyczne zatrzymanie prawa jazdy na 3 miesiące.<br><br>
+        Każdy dzień <b>bez przekroczenia +50 = +10 pkt</b>. Streak rośnie codziennie. Jedno przekroczenie = reset. <br><br>
+        Punkty można w przyszłości wymieniać na nagrody (rabaty, premium funkcje).
+      </div>
+    </div>
+  </div>`;
+  modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
+  document.body.appendChild(modal);
+}
+
+// Aktualizuj badge przy starcie
+window.addEventListener('DOMContentLoaded', () => setTimeout(_safeDriveUpdateBadge, 800));
+
 // Tracking dla głosowego ostrzeżenia "ZWOLNIJ" przy +50 km/h
 let _hardSpeedingSince = 0;   // timestamp kiedy zaczęło się przekroczenie +50
 let _lastSlowDownVoice = 0;   // timestamp ostatniego komunikatu
@@ -9438,6 +9652,7 @@ function setNavSpeed(kmh, limitKmh){
       if((_lastSlowDownVoice === 0 && heldFor >= 5000) || (_lastSlowDownVoice > 0 && sinceLast >= 60000)){
         _speakSlowDown(kmh, limitKmh);
         _lastSlowDownVoice = now;
+        _safeDriveMarkViolation(); // zapisz przekroczenie do safe-drive trackera
       }
     } else {
       _hardSpeedingSince = 0;
@@ -10031,6 +10246,12 @@ function toggleNavOverview(){
 }
 
 function stopNavigation(){
+  // Safe-drive: oblicz dystans przejechany w sesji + pokaż summary
+  const endKm = navRouteDistances?.length ? (navRouteDistances[navCIdx]||0)/1000 : 0;
+  _sessionDistKm = Math.max(0, endKm - _sessionStartKm);
+  if(navActive && _sessionDistKm > 0.3){
+    setTimeout(_showTripSummary, 600);
+  }
   navActive=false; navOverviewMode=false;
   _stopAudioKeepAlive(); // zatrzymaj cichą pętlę audio
   // Zatrzymaj giroskop
