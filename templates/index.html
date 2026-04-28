@@ -9185,11 +9185,12 @@ function renderNavPois(){
     return `calc(30px + (100% - 60px) * ${ratio.toFixed(4)})`;
   };
 
-  // META góra
+  // META góra — pokazuje dystans POZOSTAŁY (od aktualnej pozycji do mety)
+  const distLeftKm = navActive ? Math.max(0, totalKm - myDistKm) : totalKm;
   const metaHtml = `<div class="nav-poi-end-fix">
     <div class="nav-poi-end-info">
       <div class="nav-poi-end-lbl">🏁 Meta</div>
-      <div class="nav-poi-end-val">${fmtD(totalKm)}</div>
+      <div class="nav-poi-end-val">${fmtD(distLeftKm)}</div>
     </div>
   </div>`;
 
@@ -9248,9 +9249,11 @@ function renderNavPois(){
     strip.innerHTML = metaHtml + tickHtml + currentHtml + poisHtml + startHtml;
     strip._lastHash = poiHash;
   } else if(navActive){
-    // Tylko aktualizuj pozycję markera "Tutaj"
+    // Aktualizuj pozycję markera + dystans pozostały do META
     const cur = document.getElementById('nav-poi-current');
     if(cur) cur.style.top = cssFromDist(myDistKm);
+    const metaVal = strip.querySelector('.nav-poi-end-val');
+    if(metaVal) metaVal.textContent = fmtD(distLeftKm);
   }
 }
 
