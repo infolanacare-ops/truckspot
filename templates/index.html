@@ -2245,15 +2245,63 @@ body.navigating .fab-ai{display:none}
 /* — Dół: ETA + głos + stop + hamburger — */
 .nav-bottom{
   position:fixed;bottom:0;left:0;right:0;z-index:1201;
-  background:linear-gradient(160deg,rgba(22,28,48,.99) 0%,rgba(14,18,32,.99) 100%);
-  backdrop-filter:blur(16px);
-  border-top:1px solid rgba(255,255,255,.08);
-  border-radius:20px 20px 0 0;
-  box-shadow:0 -4px 24px rgba(0,0,0,.4);
-  padding:.65rem 1rem calc(.65rem + env(safe-area-inset-bottom));
-  display:flex;align-items:center;justify-content:space-between;gap:.5rem;
+  background:
+    radial-gradient(ellipse 60% 100% at 12% 0%, rgba(212,175,55,.10) 0%, transparent 60%),
+    linear-gradient(160deg,rgba(22,28,48,.92) 0%,rgba(14,18,32,.94) 100%);
+  backdrop-filter:blur(22px) saturate(150%);
+  -webkit-backdrop-filter:blur(22px) saturate(150%);
+  border-top:1px solid rgba(255,255,255,.10);
+  border-radius:22px 22px 0 0;
+  box-shadow:0 -4px 28px rgba(0,0,0,.45),0 -1px 0 rgba(212,175,55,.15) inset;
+  padding:.75rem 1rem calc(.75rem + env(safe-area-inset-bottom));
+  display:flex;align-items:center;justify-content:space-between;gap:.55rem;
 }
-/* ETA inline w pasku */
+/* ── Hero ETA — TruckSpot Edition: gold-tinted glow + glass chips ── */
+.nav-bottom-eta{display:flex;align-items:center;gap:.75rem;min-width:0;flex:1}
+.nav-bottom-eta-icon{
+  width:38px;height:38px;border-radius:12px;flex-shrink:0;
+  background:linear-gradient(140deg,rgba(212,175,55,.22) 0%,rgba(212,175,55,.08) 100%);
+  border:1px solid rgba(212,175,55,.55);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;
+  box-shadow:
+    0 0 12px rgba(212,175,55,.18) inset,
+    0 2px 8px rgba(0,0,0,.3),
+    0 0 0 1px rgba(0,0,0,.2);
+}
+.nav-bottom-eta-stack{display:flex;flex-direction:column;min-width:0;gap:.32rem;line-height:1}
+.nav-bottom-eta-time{
+  font-family:var(--font-head);font-weight:900;
+  font-size:clamp(1.55rem,6.8vw,1.9rem);
+  color:#fff;letter-spacing:-.015em;line-height:1;
+  text-shadow:
+    0 0 12px rgba(212,175,55,.25),
+    0 0 20px rgba(212,175,55,.12),
+    0 1px 4px rgba(0,0,0,.5);
+}
+.nav-bottom-eta-stats{
+  display:flex;align-items:center;gap:.3rem;white-space:nowrap;line-height:1;
+}
+.nav-bottom-eta-stats > span{
+  font-size:.68rem;font-weight:800;letter-spacing:.03em;
+  color:rgba(255,255,255,.85);
+  padding:3px 7px;border-radius:7px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.1);
+}
+.nav-bottom-sep{
+  background:transparent!important;border:none!important;
+  color:rgba(212,175,55,.55)!important;font-size:.85rem!important;
+  padding:0!important;font-weight:900!important;
+}
+.nav-bottom-traffic{
+  background:rgba(239,68,68,.18)!important;
+  border:1px solid rgba(239,68,68,.4)!important;
+  color:#fca5a5!important;
+  display:inline-flex;align-items:center;gap:.15rem;
+}
+.nav-bottom-actions{display:flex;align-items:center;gap:.4rem;flex-shrink:0}
+/* ETA inline w pasku — backward compat */
 .nav-eta-inline{display:flex;gap:.4rem;flex:1;min-width:0}
 .nav-eta-cell{
   flex:1;min-width:0;height:60px;padding:0 .4rem;position:relative;
@@ -3845,28 +3893,26 @@ body.navigating .convoy-btn{display:none}
 
   <!-- Dół: ETA + głos + stop + hamburger -->
   <div class="nav-bottom">
-    <!-- ETA inline -->
-    <div class="nav-eta-inline">
-      <div class="nav-eta-cell">
-        <div class="nav-eta-cell-val" id="nav-total-dist">–</div>
-        <div class="nav-eta-cell-lbl">pozostało</div>
-      </div>
-      <div class="nav-eta-cell">
-        <div class="nav-eta-cell-val" id="nav-eta-remaining">–</div>
-        <div class="nav-eta-cell-lbl">czas</div>
-        <div id="nav-traffic-badge" style="display:none;position:absolute;top:-8px;right:-6px;background:#ef4444;color:#fff;font-size:.55rem;font-weight:800;border-radius:8px;padding:1px 5px;white-space:nowrap;line-height:1.4"></div>
-      </div>
-      <div class="nav-eta-cell">
-        <div class="nav-eta-cell-val" id="nav-eta-arrival">––:––</div>
-        <div class="nav-eta-cell-lbl">godz.</div>
+    <!-- LEFT: hero arrival time + stats line -->
+    <div class="nav-bottom-eta">
+      <div class="nav-bottom-eta-icon">🏁</div>
+      <div class="nav-bottom-eta-stack">
+        <div class="nav-bottom-eta-time" id="nav-eta-arrival">––:––</div>
+        <div class="nav-bottom-eta-stats">
+          <span id="nav-total-dist">– km</span>
+          <span class="nav-bottom-sep">·</span>
+          <span id="nav-eta-remaining">–</span>
+          <span class="nav-bottom-traffic" id="nav-traffic-badge" style="display:none"></span>
+        </div>
       </div>
     </div>
-    <!-- Stop -->
-    <button class="nav-btm-btn nav-btm-stop" onclick="stopNavigation()" title="Zatrzymaj nawigację">✕</button>
-    <!-- Hamburger -->
-    <button class="nav-hamburger" id="nav-hamburger" onclick="toggleNavSheet()" aria-label="Menu nawigacji">
-      <span></span><span></span><span></span>
-    </button>
+    <!-- RIGHT: stop + hamburger -->
+    <div class="nav-bottom-actions">
+      <button class="nav-btm-btn nav-btm-stop" onclick="stopNavigation()" title="Zatrzymaj nawigację">✕</button>
+      <button class="nav-hamburger" id="nav-hamburger" onclick="toggleNavSheet()" aria-label="Menu nawigacji">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
   </div>
 </div>
 
