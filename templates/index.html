@@ -2984,6 +2984,81 @@ body.navigating .convoy-btn{display:none}
 </head>
 <body>
 
+<!-- ═══ LANDING / WELCOME SCREEN — pierwsze wejście ═══ -->
+<div id="ts-landing" style="position:fixed;inset:0;z-index:5000;display:none;
+  background:
+    radial-gradient(ellipse at top right, rgba(0,212,255,.12) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom left, rgba(212,175,55,.18) 0%, transparent 60%),
+    linear-gradient(160deg, #0a0a23 0%, #000 100%);
+  overflow-y:auto;color:#fff;font-family:var(--font,'Inter',sans-serif);">
+  <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1.2rem;text-align:center">
+
+    <!-- Hero Logo -->
+    <img src="/static/icons/ts-pro-512.png" alt="TS PRO" style="width:min(220px,55vw);height:auto;filter:drop-shadow(0 0 30px rgba(212,175,55,.45)) drop-shadow(0 8px 24px rgba(0,0,0,.5));margin-bottom:.4rem;animation:landingFloat 4s ease-in-out infinite"/>
+
+    <!-- Tagline -->
+    <div style="font-family:var(--font-head,'Montserrat',sans-serif);font-size:clamp(.85rem,2.6vw,1.1rem);color:rgba(212,175,55,.9);font-weight:800;letter-spacing:.18em;text-transform:uppercase;margin-top:.4rem">
+      Cyber metaverse navigation
+    </div>
+
+    <!-- Description -->
+    <div style="max-width:520px;margin:1.4rem auto 1.8rem;font-size:clamp(.85rem,3vw,.95rem);color:rgba(255,255,255,.85);line-height:1.55">
+      🚗 <b>Spotkaj ludzi po drodze</b>, jeździj ze znajomymi i odkrywaj świat<br>
+      🛡️ <b>Chroń swoje prawko</b> — punkty za bezpieczną jazdę<br>
+      🎮 <b>Cyber życie na drodze</b> — skórki, czat CB, znajomi
+    </div>
+
+    <!-- 3 Feature pills -->
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;margin-bottom:2rem;max-width:600px">
+      <span style="background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);color:#22c55e;font-size:.7rem;font-weight:800;padding:.4rem .8rem;border-radius:20px;letter-spacing:.04em">🗺 Nawigacja TIR · Bus · Auto</span>
+      <span style="background:rgba(96,165,250,.15);border:1px solid rgba(96,165,250,.4);color:#60a5fa;font-size:.7rem;font-weight:800;padding:.4rem .8rem;border-radius:20px;letter-spacing:.04em">🌐 Metaverse social</span>
+      <span style="background:rgba(212,175,55,.15);border:1px solid rgba(212,175,55,.4);color:#fbbf24;font-size:.7rem;font-weight:800;padding:.4rem .8rem;border-radius:20px;letter-spacing:.04em">💎 Skórki PRO</span>
+    </div>
+
+    <!-- Action buttons -->
+    <div style="display:flex;flex-direction:column;gap:.7rem;width:100%;max-width:340px">
+      <button onclick="_landingEnter()" style="background:linear-gradient(135deg,#fbbf24 0%,#d4af37 100%);color:#1a1f2e;border:none;padding:1rem 1.4rem;border-radius:18px;font-size:1rem;font-weight:900;letter-spacing:.04em;cursor:pointer;box-shadow:0 8px 24px rgba(212,175,55,.45),0 0 0 0 rgba(212,175,55,.5);transition:.2s;font-family:inherit">
+        🚀 ZACZNIJ TERAZ
+      </button>
+      <button onclick="openInstallModal()" style="background:rgba(255,255,255,.06);color:#fff;border:1.5px solid rgba(255,255,255,.18);padding:.85rem 1.2rem;border-radius:16px;font-size:.85rem;font-weight:800;letter-spacing:.03em;cursor:pointer;font-family:inherit;backdrop-filter:blur(10px)">
+        📥 Zainstaluj jako apkę (Android / iPhone)
+      </button>
+    </div>
+
+    <!-- Footer -->
+    <div style="margin-top:2rem;font-size:.65rem;color:rgba(255,255,255,.4);letter-spacing:.04em">
+      <span style="color:#fbbf24;font-weight:800">TS PRO</span> · TruckSpot 2026 · Made in Poland 🇵🇱
+    </div>
+  </div>
+</div>
+<style>
+@keyframes landingFloat {
+  0%,100% { transform: translateY(0) rotate(0deg) }
+  50% { transform: translateY(-12px) rotate(2deg) }
+}
+#ts-landing button:active { transform: scale(.97) }
+</style>
+<script>
+(function(){
+  // Pokaż landing tylko jeśli user nigdy nie wszedł
+  // Pomijamy jeśli to APK Capacitor (kolega ma instalkę więc nie potrzebuje tego)
+  const skipped = localStorage.getItem('ts_landing_seen');
+  const isApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  if(!skipped && !isApp){
+    document.getElementById('ts-landing').style.display = 'block';
+  }
+})();
+function _landingEnter(){
+  localStorage.setItem('ts_landing_seen', '1');
+  const el = document.getElementById('ts-landing');
+  if(!el) return;
+  el.style.transition = 'opacity .4s, transform .4s';
+  el.style.opacity = '0';
+  el.style.transform = 'scale(.96)';
+  setTimeout(()=>{ el.style.display = 'none'; }, 400);
+}
+</script>
+
 <!-- ═══ TruckSpot SVG icon library ═══ -->
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
   <!-- TIR truck (side view) -->
