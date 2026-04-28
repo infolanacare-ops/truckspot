@@ -1,9 +1,9 @@
-// TruckSpot Service Worker — v11
+// TruckSpot Service Worker — v12
 // HTML nigdy nie cachowany → zawsze świeży kod przy każdym otwarciu
 // Aktualizacja: cichy reload wszystkich klientów, zero banerów
-const STATIC_CACHE = 'ts-static-v11';  // ikony, manifest (rzadko się zmieniają)
-const DATA_CACHE   = 'ts-data-v11';    // API responses
-const TILE_CACHE   = 'ts-tiles-v11';   // kafelki mapy
+const STATIC_CACHE = 'ts-static-v12';  // ikony, manifest (rzadko się zmieniają)
+const DATA_CACHE   = 'ts-data-v12';    // API responses
+const TILE_CACHE   = 'ts-tiles-v12';   // kafelki mapy
 
 // Tylko naprawdę statyczne assety — NIE cachujemy HTML
 const STATIC_ASSETS = [
@@ -20,7 +20,8 @@ const DATA_PATTERNS = [
   /\/api\/occupancy/,
 ];
 
-const TILE_PATTERN = /mt\d\.google\.com|tile\.openstreetmap/;
+// Mapbox vector tiles + raster tiles — kluczowe dla nawigacji bez przycięć
+const TILE_PATTERN = /mt\d\.google\.com|tile\.openstreetmap|api\.mapbox\.com\/v4\/|api\.mapbox\.com\/styles\/v1\/.*\/tiles\//;
 
 // ── INSTALL ──────────────────────────────────────────────────────────────────
 self.addEventListener('install', e => {

@@ -7436,6 +7436,7 @@ async function searchRoute(navMode){
     fitRouteCoords(routeCoords, 50);
     loadRoutePois();
     scanRouteRestrictions(routeCoords); // oś czasu POI — widoczna od razu po obliczeniu trasy
+    _precacheRouteTiles(routeCoords); // pre-cache map tiles wzdłuż trasy w tle
 
     // Filter parkings on route
     const onRoute = allParkings
@@ -9231,6 +9232,74 @@ function _updateSpeedModuleBtn(){
   const hidden = document.getElementById('speed-module')?.classList.contains('mod-hidden');
   btn.style.opacity = hidden ? '0.45' : '1';
   btn.textContent = (hidden ? '🚫 ' : '✅ ') + 'Prędkość';
+}
+
+// ── Pre-cache route tiles — Mapbox vector tiles dla całej trasy ──────────
+// Po obliczeniu trasy ściągamy w tle wszystkie tiles wzdłuż korytarza
+// żeby podczas jazdy mapa się NIE przycinała (offline-friendly)
+async function _precacheRouteTiles(coords){
+  if(!coords?.length || !MAPBOX_TOKEN) return;
+  const ZOOMS = [13, 14, 15, 16, 17];
+  const SAMPLE_KM = 0.5; // sample co 500m wzdłuż trasy
+  const MAX_PARALLEL = 6; // max równoległych requestów
+
+  // Sample punkty wzdłuż trasy
+  const samples = [coords[0]];
+  let dist = 0;
+  for(let i=1; i<coords.length; i++){
+    dist += haversineKm(coords[i-1][1], coords[i-1][0], coords[i][1], coords[i][0]);
+    if(dist >= SAMPLE_KM){
+      samples.push(coords[i]);
+      dist = 0;
+    }
+  }
+  samples.push(coords[coords.length-1]);
+
+  // Helpers: lat/lng → tile coords (XYZ scheme)
+  const lng2tile = (lng, z) => Math.floor((lng + 180) / 360 * Math.pow(2, z));
+  const lat2tile = (lat, z) => Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1/Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, z));
+
+  // Compute unique tiles + sąsiady (3x3 dla buforu)
+  const tiles = new Set();
+  for(const [lng, lat] of samples){
+    for(const z of ZOOMS){
+      const x = lng2tile(lng, z);
+      const y = lat2tile(lat, z);
+      for(let dx=-1; dx<=1; dx++){
+        for(let dy=-1; dy<=1; dy++){
+          tiles.add(`${z}/${x+dx}/${y+dy}`);
+        }
+      }
+    }
+  }
+
+  console.log(`[precache] ${tiles.size} tiles dla trasy ${samples.length} pkt × ${ZOOMS.length} zoom`);
+
+  // Throttled background fetch — Service Worker je cachuje automatycznie
+  const tileArr = [...tiles];
+  let i = 0, active = 0, done = 0, errors = 0;
+  return new Promise(resolve => {
+    const next = () => {
+      while(active < MAX_PARALLEL && i < tileArr.length){
+        const t = tileArr[i++];
+        active++;
+        const url = `https://api.mapbox.com/v4/mapbox.mapbox-streets-v8/${t}.vector.pbf?access_token=${MAPBOX_TOKEN}`;
+        fetch(url, {mode:'cors', cache:'force-cache'})
+          .then(()=>{ done++; })
+          .catch(()=>{ errors++; })
+          .finally(()=>{
+            active--;
+            if(done + errors === tileArr.length){
+              console.log(`[precache] gotowe: ${done}/${tileArr.length} (${errors} err)`);
+              resolve();
+            } else {
+              next();
+            }
+          });
+      }
+    };
+    next();
+  });
 }
 
 // ── Dead Reckoning loop — działa gdy GPS wypada (tunel/garaż) ──────────
