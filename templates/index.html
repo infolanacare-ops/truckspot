@@ -2494,32 +2494,56 @@ body[data-mode="tourist"] .nav-poi-current-dot{
 .nav-spd-lim.visible{opacity:1}
 .nav-speed-sign-val{font-family:var(--font-head);font-size:1.5rem;font-weight:900;color:#111;line-height:1;transition:color .2s}
 .nav-speed-sign-unit{font-size:.5rem;color:#666;text-transform:uppercase;font-weight:700;letter-spacing:.04em;margin-top:.1rem}
-/* Ciemny pill — aktualna prędkość, nachodzi na znak od prawej */
+/* Ciemny pill — aktualna prędkość, glassmorphism + gold border (TruckSpot DNA) */
 .nav-speedometer{
   display:flex;align-items:stretch;flex-shrink:0;
-  background:rgba(14,18,32,.95);
-  border:1.5px solid rgba(255,255,255,.18);
+  background:linear-gradient(160deg,rgba(22,28,48,.92) 0%,rgba(14,18,32,.94) 100%);
+  backdrop-filter:blur(14px) saturate(140%);
+  -webkit-backdrop-filter:blur(14px) saturate(140%);
+  border:1px solid rgba(212,175,55,.45);
   border-left:none;
   border-radius:0 16px 16px 0;
   margin-left:-16px; /* overlap na znak */
-  transition:.2s;
+  box-shadow:
+    0 4px 14px rgba(0,0,0,.4),
+    0 0 12px rgba(212,175,55,.15) inset,
+    0 0 0 1px rgba(0,0,0,.2);
+  transition:.25s;
 }
 /* Gdy znak niewidoczny — pill staje się pełnym pill */
 .nav-spd-lim:not(.visible) + .nav-speedometer{
-  border-radius:16px;border-left:1.5px solid rgba(255,255,255,.18);margin-left:0;
+  border-radius:16px;border-left:1px solid rgba(212,175,55,.45);margin-left:0;
 }
 .nav-spd-cur{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:.45rem .85rem .45rem 1rem;min-width:52px;
+  padding:.45rem .9rem .45rem 1rem;min-width:54px;
 }
-.nav-speed-val{font-family:var(--font-head);font-size:1.7rem;font-weight:900;color:#fff;line-height:1}
-.nav-speed-unit{font-size:.52rem;color:rgba(255,255,255,.45);text-transform:uppercase;font-weight:700;letter-spacing:.05em;margin-top:.1rem}
-/* Speeding */
-.nav-speedometer.speeding{background:rgba(180,20,20,.92);border-color:rgba(255,80,80,.35)}
-.nav-speedometer.speeding .nav-speed-val{color:#fff}
+.nav-speed-val{
+  font-family:var(--font-head);font-size:1.7rem;font-weight:900;color:#fff;line-height:1;
+  text-shadow:0 0 10px rgba(212,175,55,.25),0 1px 3px rgba(0,0,0,.5);
+}
+.nav-speed-unit{font-size:.52rem;color:rgba(212,175,55,.75);text-transform:uppercase;font-weight:800;letter-spacing:.06em;margin-top:.15rem}
+/* Speeding — czerwony alarm */
+.nav-speedometer.speeding{
+  background:linear-gradient(160deg,rgba(180,20,20,.95) 0%,rgba(140,10,10,.95) 100%);
+  border-color:rgba(255,80,80,.65);
+  box-shadow:0 4px 14px rgba(220,38,38,.45),0 0 16px rgba(220,38,38,.25) inset;
+}
+.nav-speedometer.speeding .nav-speed-val{color:#fff;text-shadow:0 0 8px rgba(255,255,255,.4)}
+.nav-speedometer.speeding .nav-speed-unit{color:rgba(255,255,255,.65)}
 .nav-spd-lim.speeding{background:#cc0000;border-color:#fff}
 .nav-spd-lim.speeding .nav-speed-sign-val{color:#fff}
 .nav-spd-lim.speeding .nav-speed-sign-unit{color:rgba(255,255,255,.65)}
+/* Speeding HARD (>+50 km/h) — alarmujący pulsujący efekt */
+.nav-speedometer.speeding-hard{
+  background:linear-gradient(160deg,rgba(220,38,38,.98) 0%,rgba(160,10,10,.98) 100%);
+  border-color:#fff;border-width:2px;
+  animation:speedAlarm 1s ease-in-out infinite;
+}
+@keyframes speedAlarm{
+  0%,100%{box-shadow:0 4px 16px rgba(220,38,38,.6),0 0 0 0 rgba(220,38,38,.7),0 0 18px rgba(220,38,38,.3) inset}
+  50%{box-shadow:0 4px 20px rgba(255,80,80,.85),0 0 0 8px rgba(220,38,38,.0),0 0 28px rgba(255,100,100,.6) inset;transform:scale(1.04)}
+}
 /* Camera warning — w nav-speed-row po lewej stronie pill */
 .nav-cam-warn{
   position:static;
@@ -9391,14 +9415,49 @@ function updateSpeedSign(kmh){
   }
 }
 
+// Tracking dla głosowego ostrzeżenia "ZWOLNIJ" przy +50 km/h
+let _hardSpeedingSince = 0;   // timestamp kiedy zaczęło się przekroczenie +50
+let _lastSlowDownVoice = 0;   // timestamp ostatniego komunikatu
+
 function setNavSpeed(kmh, limitKmh){
   const el = document.getElementById('nav-speedometer');
   setEl('nav-speed-val', kmh > 0 ? kmh : '–');
   if(el){
-    el.classList.toggle('speeding', limitKmh > 0 && kmh > limitKmh + 5);
+    const isSpeeding     = limitKmh > 0 && kmh > limitKmh + 5;
+    const isHardSpeeding = limitKmh > 0 && kmh > limitKmh + 50;
+    el.classList.toggle('speeding', isSpeeding && !isHardSpeeding);
+    el.classList.toggle('speeding-hard', isHardSpeeding);
+
+    // Logika "ZWOLNIJ" — utrzymywany hard speeding co minutę
+    const now = Date.now();
+    if(isHardSpeeding){
+      if(_hardSpeedingSince === 0) _hardSpeedingSince = now;
+      // Odpal komunikat: za 1. razem od razu po 5s utrzymywania, potem co 60s
+      const heldFor = now - _hardSpeedingSince;
+      const sinceLast = now - _lastSlowDownVoice;
+      if((_lastSlowDownVoice === 0 && heldFor >= 5000) || (_lastSlowDownVoice > 0 && sinceLast >= 60000)){
+        _speakSlowDown(kmh, limitKmh);
+        _lastSlowDownVoice = now;
+      }
+    } else {
+      _hardSpeedingSince = 0;
+      _lastSlowDownVoice = 0;
+    }
   }
   // aktualizuj też pulsowanie znaku
   if(limitKmh > 0) updateSpeedSign(limitKmh);
+}
+
+function _speakSlowDown(kmh, limitKmh){
+  const over = kmh - limitKmh;
+  const txt = currentLang==='pl'
+    ? `Zwolnij! Przekraczasz prędkość o ${over} kilometrów`
+    : `Slow down! You are ${over} kilometres over the limit`;
+  speakNav(txt, true);
+  // Bipy alarmowe — 3 krótkie wysokie
+  playBeep(1500, 0.18, 1.0);
+  setTimeout(()=>playBeep(1500, 0.18, 1.0), 220);
+  setTimeout(()=>playBeep(1500, 0.18, 1.0), 440);
 }
 
 // Toggle GPS debug overlay (tap na prędkościomierz)
