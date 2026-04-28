@@ -2092,7 +2092,7 @@ body.navigating .fab-ai{display:none}
 /* Ciągła linia osi biegnąca przez cały strip */
 .nav-pois-strip{position:relative}
 .nav-pois-strip::before{
-  content:'';position:absolute;top:30px;bottom:60px;left:24px;
+  content:'';position:absolute;top:30px;bottom:30px;left:24px;
   width:3px;border-radius:2px;
   background:linear-gradient(to bottom,
     rgba(212,175,55,.85) 0%,
@@ -9001,7 +9001,7 @@ function startNavigation(){
 
 async function loadRoutePois(){
   if(!routeCoords.length) return;
-  const radius = 8; // km corridor
+  const radius = 12; // km corridor (rozszerzony — łapie więcej parkingów/stacji)
 
   // Split route into ~80km segments to avoid Overpass timeouts
   const SEG_KM = 80;
@@ -9146,11 +9146,12 @@ function renderNavPois(){
     ? (navRouteDistances[navCIdx] || 0) / 1000 : 0;
   const fmtD = d => d == null ? '' : d < 1 ? Math.round(d*1000)+'m' : d.toFixed(1)+'km';
 
-  // Pozycja CSS calc — usable area pomiędzy META (top) a TY (bottom)
-  // Większy margines dla endpointów + badge dystansu (40px góra / 70px dół)
+  // Pozycja CSS calc — POI i strzałka pozycji DOKŁADNIE na linii
+  // Linia: top:30px, bottom:30px (więc strefa = top:30 do bottom:30)
+  // ratio 0 (META) → top 30px ; ratio 1 (start) → top calc(100% - 30px)
   const cssFromDist = distFromStart => {
     const ratio = Math.max(0, Math.min(1, 1 - distFromStart/totalKm));
-    return `calc(40px + (100% - 110px) * ${ratio.toFixed(4)})`;
+    return `calc(30px + (100% - 60px) * ${ratio.toFixed(4)})`;
   };
 
   // META góra
@@ -9183,11 +9184,11 @@ function renderNavPois(){
   }
 
   // ── POI absolute (wychodzą w bok od linii) ──
-  // Sortuj po odległości od trasy, weź 30 najbliższych (max 8km — pełny korytarz)
+  // Sortuj po odległości od trasy, weź 50 najbliższych (12km korytarz)
   const timedPois = navRoutePois
-    .filter(p => p.distFromStart != null && (p.distKm == null || p.distKm <= 8.0))
+    .filter(p => p.distFromStart != null && (p.distKm == null || p.distKm <= 12.0))
     .sort((a,b) => (a.distKm||0) - (b.distKm||0))
-    .slice(0, 30);
+    .slice(0, 50);
   // Wybierz najbliższy nieminiony POI — pod nim pokażemy etykietę dystansu
   const aheadSorted = timedPois
     .filter(p => (p.distFromStart||0) > myDistKm)
