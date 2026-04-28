@@ -7436,7 +7436,7 @@ async function searchRoute(navMode){
     fitRouteCoords(routeCoords, 50);
     loadRoutePois();
     scanRouteRestrictions(routeCoords); // oś czasu POI — widoczna od razu po obliczeniu trasy
-    _precacheRouteTiles(routeCoords); // pre-cache map tiles wzdłuż trasy w tle
+    // _precacheRouteTiles WYŁĄCZONE — fetch 1500 tiles spowalniał główną mapę bardziej niż pomagał
 
     // Filter parkings on route
     const onRoute = allParkings
@@ -9336,6 +9336,9 @@ function _drTick(){
     _showDrBadge();
     _drLastTickTs = Date.now();
     console.log('[DR] GPS lost — start dead reckoning');
+    // Przyspiesz tick gdy DR aktywny (250ms dla smooth ekstrapolacji)
+    if(_drCheckInterval){ clearInterval(_drCheckInterval); }
+    _drCheckInterval = setInterval(_drTick, 250);
   }
   // Ekstrapoluj pozycję wg ostatniego bearing + speed
   if(navLastLat == null || navLastLng == null) return;
@@ -9364,7 +9367,8 @@ function startNavigation(){
   _startPoiAutoRefetch(); // POI auto-refetch co 5 min podczas nawigacji
   _lastGpsFixTs = Date.now();
   if(_drCheckInterval) clearInterval(_drCheckInterval);
-  _drCheckInterval = setInterval(_drTick, 250); // sprawdź co 250ms
+  // 1s gdy GPS OK (oszczędność CPU), DR loop sam zmienia tempo gdy się aktywuje
+  _drCheckInterval = setInterval(_drTick, 1000);
   // Safe-drive: sprawdź wczoraj (jeśli nowy dzień, przyznaj punkty + pokaż toast)
   const sdResult = _safeDriveCheckYesterday();
   if(sdResult?.awarded) setTimeout(()=>_safeDriveShowAwardToast(sdResult), 1500);
@@ -10564,11 +10568,12 @@ function onNavPosition(pos){
   }
   _lastNavTickTs = Date.now();
   _lastGpsFixTs  = Date.now();
-  // Jeśli byliśmy w DR mode i GPS wrócił — wyłącz DR
+  // Jeśli byliśmy w DR mode i GPS wrócił — wyłącz DR + zwolnij tick z 250ms do 1s
   if(_drMode){
     _drMode = false;
     _hideDrBadge();
     console.log('[DR] GPS wrócił po', Math.round((Date.now()-_drLastTickTs)/1000)+'s');
+    if(_drCheckInterval){ clearInterval(_drCheckInterval); _drCheckInterval = setInterval(_drTick, 1000); }
   }
   setNavSpeed(navSpeedKmh, navCurrentSpeedLimit);
 
