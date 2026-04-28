@@ -2296,9 +2296,9 @@ body[data-mode="tourist"] .nav-poi-current-dot{
   text-shadow:none;
 }
 
-/* ── Chmurka POI — pojawia się po lewej od ikony, klik chowa ── */
+/* ── Chmurka POI — pojawia się po prawej od ikony, klik chowa ── */
 .nav-poi-bubble{
-  position:absolute;right:calc(100% + 12px);top:50%;
+  position:absolute;left:calc(100% + 12px);top:50%;
   transform:translateY(-50%);
   background:linear-gradient(160deg,rgba(22,28,48,.95) 0%,rgba(14,18,32,.95) 100%);
   backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);
@@ -2315,15 +2315,15 @@ body[data-mode="tourist"] .nav-poi-current-dot{
   animation:poiBubbleIn .2s cubic-bezier(.34,1.56,.64,1);
 }
 @keyframes poiBubbleIn{
-  from{opacity:0;transform:translateY(-50%) translateX(8px) scale(.92)}
+  from{opacity:0;transform:translateY(-50%) translateX(-8px) scale(.92)}
   to{opacity:1;transform:translateY(-50%) translateX(0) scale(1)}
 }
 .nav-poi-bubble::after{
-  content:'';position:absolute;left:100%;top:50%;
+  content:'';position:absolute;right:100%;top:50%;
   transform:translateY(-50%);
   border-top:7px solid transparent;
   border-bottom:7px solid transparent;
-  border-left:7px solid rgba(212,175,55,.55);
+  border-right:7px solid rgba(212,175,55,.55);
 }
 .nav-poi-bubble-name{
   font-size:.78rem;font-weight:800;color:#fff;
