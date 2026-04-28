@@ -3828,7 +3828,7 @@ body.navigating .convoy-btn{display:none}
   <div class="form-group">
     <label class="form-label" data-i="route_from">From</label>
     <div class="route-input-row">
-      <input class="form-input" id="route-from" placeholder="My location">
+      <input class="form-input" id="route-from" placeholder="Moja lokalizacja">
       <button class="gps-fill-btn" onclick="useGpsForRoute()" title="Use GPS"><span class="ts-icon"><svg><use href="#ts-gps"/></svg></span></button>
     </div>
   </div>
@@ -6961,7 +6961,7 @@ function useGpsForRoute(){
   navigator.geolocation.getCurrentPosition(pos=>{
     routeFromLat = pos.coords.latitude;
     routeFromLng = pos.coords.longitude;
-    document.getElementById('route-from').value = '📡 GPS ('+routeFromLat.toFixed(4)+', '+routeFromLng.toFixed(4)+')';
+    document.getElementById('route-from').value = '📡 Moja lokalizacja';
   }, ()=>showAlert('⚠️','GPS Error',''));
 }
 
@@ -7129,7 +7129,7 @@ async function searchRoute(navMode){
 
     // Zapisz do historii
     const wpVals = [...document.querySelectorAll('#waypoints-list input')].map(i=>i.value.trim()).filter(Boolean);
-    routeHistorySave(fromVal || '📡 GPS', toVal, wpVals);
+    routeHistorySave(fromVal || '📡 Moja lokalizacja', toVal, wpVals);
 
     if(navMode){
       // JEDŹ — jeśli są alternatywy, pokaż preview z wyborem; inaczej od razu start
