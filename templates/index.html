@@ -4826,9 +4826,37 @@ function loginWithEmail(){
 }
 
 function loginWithGoogle(){
+  // Detekcja Capacitor APK — w natywnej apce używamy deep link
+  const isCapacitor = !!(window.Capacitor?.isNativePlatform?.());
+  const redirectTo = isCapacitor
+    ? 'com.truckspot.app://oauth-callback'
+    : window.location.origin;
   _SB.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: window.location.origin }
+    options: { redirectTo, skipBrowserRedirect: false }
+  });
+}
+
+// Capacitor App listener — łapie deep link z Google OAuth callback
+// Po loginie Google przekierowuje na com.truckspot.app://oauth-callback#access_token=...
+// Capacitor uruchamia apkę z tym URL — parsujemy hash do Supabase session
+if(window.Capacitor?.Plugins?.App){
+  window.Capacitor.Plugins.App.addListener('appUrlOpen', async (data) => {
+    if(!data?.url || !data.url.startsWith('com.truckspot.app://oauth-callback')) return;
+    try {
+      // Wyciągnij params (access_token, refresh_token) z URL hash/search
+      const u = new URL(data.url);
+      const params = new URLSearchParams(u.hash.substring(1) || u.search);
+      const access_token  = params.get('access_token');
+      const refresh_token = params.get('refresh_token');
+      if(access_token && refresh_token){
+        await _SB.auth.setSession({access_token, refresh_token});
+        showAlert('✅','Zalogowano','Witaj w TS PRO!');
+        setTimeout(closeAlert, 2000);
+      }
+    } catch(e){
+      console.warn('OAuth deep link parse error:', e);
+    }
   });
 }
 
