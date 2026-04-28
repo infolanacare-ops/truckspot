@@ -163,3 +163,29 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+
+-- ══════════════════════════════════════════════════════════════════
+-- FRIENDSHIPS — system znajomych (TS PRO Metaverse)
+-- ══════════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS public.friendships (
+  id          BIGSERIAL PRIMARY KEY,
+  from_user   UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  to_user     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  status      TEXT NOT NULL DEFAULT 'pending', -- pending / accepted / rejected / blocked
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  responded_at TIMESTAMPTZ,
+  UNIQUE(from_user, to_user)
+);
+CREATE INDEX IF NOT EXISTS idx_friendships_from ON public.friendships(from_user, status);
+CREATE INDEX IF NOT EXISTS idx_friendships_to   ON public.friendships(to_user, status);
+
+ALTER TABLE public.friendships ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "users see own friendships"   ON public.friendships FOR SELECT
+  USING (auth.uid() = from_user OR auth.uid() = to_user);
+CREATE POLICY "users send friend requests"  ON public.friendships FOR INSERT
+  WITH CHECK (auth.uid() = from_user);
+CREATE POLICY "users update own friendships" ON public.friendships FOR UPDATE
+  USING (auth.uid() = from_user OR auth.uid() = to_user);
+CREATE POLICY "users delete own friendships" ON public.friendships FOR DELETE
+  USING (auth.uid() = from_user OR auth.uid() = to_user);

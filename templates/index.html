@@ -29,8 +29,8 @@
 <link rel="apple-touch-startup-image" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)" href="/static/splash-iphone14.png">
 
 <!-- Open Graph (linki społecznościowe) -->
-<meta property="og:title" content="TruckSpot — parkingi dla TIR">
-<meta property="og:description" content="Znajdź parking, zaplanuj trasę, CB Radio dla kierowców.">
+<meta property="og:title" content="TS PRO — Cyber życie na drodze">
+<meta property="og:description" content="Spotkaj ludzi po drodze, jeździj ze znajomymi, zbieraj punkty za bezpieczną jazdę. Pokemon Go dla kierowców.">
 <meta property="og:image" content="/static/icon-512.png">
 <meta property="og:type" content="website">
 
@@ -3358,7 +3358,7 @@ body.navigating .convoy-btn{display:none}
   <div class="ob-step active" id="step-lang">
     <div style="margin-bottom:.5rem;display:flex;justify-content:center"><span class="ts-icon ts-icon-lg" style="color:var(--accent,#d4af37)"><svg style="width:52px;height:52px"><use href="#ts-truck"/></svg></span></div>
     <div class="ob-logo"><span style="font-size:1.05em;letter-spacing:.04em">TS</span><span style="font-size:.55em;font-style:italic;letter-spacing:.14em;vertical-align:super;color:var(--accent,#d4af37);font-weight:800;margin-left:.15em">PRO</span></div>
-    <div class="ob-sub" id="ob-sub-lang">Cyber metaverse navigation</div>
+    <div class="ob-sub" id="ob-sub-lang">Cyber życie na drodze · Wybierz język</div>
     <div class="ob-dots">
       <div class="ob-dot active"></div><div class="ob-dot"></div><div class="ob-dot"></div>
     </div>
@@ -3438,21 +3438,37 @@ body.navigating .convoy-btn{display:none}
   <div class="ob-step" id="step-mode">
     <div class="ob-logo"><span style="font-size:1.05em;letter-spacing:.04em">TS</span><span style="font-size:.55em;font-style:italic;letter-spacing:.14em;vertical-align:super;color:var(--accent,#d4af37);font-weight:800;margin-left:.15em">PRO</span></div>
     <div style="display:flex;align-items:center;justify-content:center;gap:.4rem;margin:.2rem auto .4rem;font-size:.75rem;font-weight:700;color:var(--accent,#d4af37);letter-spacing:.04em">
-      <span>🌐 Metaverse</span><span style="color:rgba(255,255,255,.4);font-weight:900">+</span><span>🗺 Nawigacja</span><span style="color:rgba(255,255,255,.5);font-weight:600;font-size:.85em">w 1</span>
+      <span>🌐 Cyber życie</span><span style="color:rgba(255,255,255,.4);font-weight:900">+</span><span>🗺 Nawigacja</span><span style="color:rgba(255,255,255,.5);font-weight:600;font-size:.85em">na drodze</span>
     </div>
-    <div class="ob-sub" id="ob-sub-mode">Wybierz swój tryb pojazdu</div>
+    <div class="ob-sub" id="ob-sub-mode">Czym jeździsz na co dzień?</div>
     <div class="ob-dots">
       <div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot active"></div>
     </div>
     <div class="ob-cards">
+      <!-- Auto osobowe — DEFAULT, na górze (główny target: zwykły Kowalski) -->
+      <div class="ob-card mode-card car" onclick="enterMode('car')" style="border-color:rgba(168,85,247,.5)">
+        <div class="mode-icon-wrap" style="background:linear-gradient(140deg,rgba(168,85,247,.2),rgba(192,132,252,.1));border-color:rgba(168,85,247,.5)"><span style="font-size:1.6rem">🚗</span></div>
+        <div class="ob-card-body">
+          <div class="mode-card-title-row">
+            <div class="ob-card-title" id="lbl-car-title">Auto osobowe</div>
+            <span class="mode-card-badge" style="background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border-color:#a855f7">⭐ #1</span>
+          </div>
+          <div class="ob-card-desc" id="lbl-car-desc">Spotkaj ludzi po drodze · jeździj ze znajomymi · skórki</div>
+          <div class="mode-features">
+            <span class="mode-feature-badge cyber">🌐 Metaverse Hub</span>
+            <span class="mode-feature-badge">🗺 Nawigacja</span>
+          </div>
+        </div>
+        <div class="mode-chevron">›</div>
+      </div>
       <div class="ob-card mode-card tir" onclick="enterMode('tir')">
         <div class="mode-icon-wrap"><span class="ts-icon"><svg><use href="#ts-truck"/></svg></span></div>
         <div class="ob-card-body">
           <div class="mode-card-title-row">
             <div class="ob-card-title" id="lbl-tir-title">Kierowca TIR</div>
-            <span class="mode-card-badge">#1</span>
+            <span class="mode-card-badge">PRO</span>
           </div>
-          <div class="ob-card-desc" id="lbl-tir-desc">Parkingi TIR · myjnie · serwisy · restauracje</div>
+          <div class="ob-card-desc" id="lbl-tir-desc">Parkingi TIR · myjnie · serwisy · ograniczenia HGV</div>
           <div class="mode-features">
             <span class="mode-feature-badge cyber">🌐 Metaverse</span>
             <span class="mode-feature-badge">🗺 Nawigacja TIR</span>
@@ -3463,7 +3479,7 @@ body.navigating .convoy-btn{display:none}
       <div class="ob-card mode-card camper" onclick="enterMode('bus')">
         <div class="mode-icon-wrap"><span class="ts-icon"><svg><use href="#ts-van"/></svg></span></div>
         <div class="ob-card-body">
-          <div class="ob-card-title" id="lbl-bus-title">Busiarz / Van Life</div>
+          <div class="ob-card-title" id="lbl-bus-title">Bus / Van Life</div>
           <div class="ob-card-desc" id="lbl-bus-desc">Stellplätze · prąd · woda · prysznice</div>
           <div class="mode-features">
             <span class="mode-feature-badge cyber">🌐 Metaverse</span>
@@ -3476,25 +3492,10 @@ body.navigating .convoy-btn{display:none}
         <div class="mode-icon-wrap"><span class="ts-icon"><svg><use href="#ts-tourist"/></svg></span></div>
         <div class="ob-card-body">
           <div class="ob-card-title" id="lbl-tourist-title">Turysta / Camping</div>
-          <div class="ob-card-desc" id="lbl-tourist-desc">Campingi · pola namiotowe · atrakcje · zabytki</div>
+          <div class="ob-card-desc" id="lbl-tourist-desc">Campingi · pola namiotowe · atrakcje</div>
           <div class="mode-features">
             <span class="mode-feature-badge cyber">🌐 Metaverse</span>
             <span class="mode-feature-badge">🗺 Nawigacja</span>
-          </div>
-        </div>
-        <div class="mode-chevron">›</div>
-      </div>
-      <div class="ob-card mode-card car" onclick="enterMode('car')" style="border-color:rgba(168,85,247,.5)">
-        <div class="mode-icon-wrap" style="background:linear-gradient(140deg,rgba(168,85,247,.2),rgba(192,132,252,.1));border-color:rgba(168,85,247,.5)"><span style="font-size:1.6rem">🚗</span></div>
-        <div class="ob-card-body">
-          <div class="mode-card-title-row">
-            <div class="ob-card-title" id="lbl-car-title">Auto osobowe</div>
-            <span class="mode-card-badge" style="background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border-color:#a855f7">⭐ POPULAR</span>
-          </div>
-          <div class="ob-card-desc" id="lbl-car-desc">Cyber życie na żywo · CB Radio · znajomi · skórki</div>
-          <div class="mode-features">
-            <span class="mode-feature-badge cyber">🌐 Metaverse Hub</span>
-            <span class="mode-feature-badge">🗺 Nawigacja Auto</span>
           </div>
         </div>
         <div class="mode-chevron">›</div>
