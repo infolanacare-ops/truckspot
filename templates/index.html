@@ -9064,7 +9064,7 @@ function updateLaneGuidance(dToManeuver){
   // OSM turn:lanes — priorytet (dokładniejsze niż Mapbox banner)
   let lanes = navOsmLanes[navStepIdx] || null;
 
-  // Fallback: Mapbox banner instructions
+  // Fallback 1: Mapbox banner instructions
   if(!lanes){
     for(const bi of (step.bannerInstructions||[])){
       const comps = bi.sub?.components?.filter(c=>c.type==='lane');
@@ -9077,6 +9077,27 @@ function updateLaneGuidance(dToManeuver){
       }
     }
   }
+
+  // Fallback 2: SYNTHETIC LANE z samego manewru (gdy OSM/Mapbox bez danych)
+  // Lepiej pokazać 1 strzałkę kierunku niż NIC — kierowca wie którą stronę
+  if(!lanes?.length && step.maneuver){
+    const mod = (step.maneuver.modifier || '').toLowerCase();
+    const mtype = (step.maneuver.type || '').toLowerCase();
+    let dir = 'straight';
+    if(mod.includes('uturn'))            dir = 'uturn';
+    else if(mod === 'sharp left')        dir = 'sharp_left';
+    else if(mod === 'sharp right')       dir = 'sharp_right';
+    else if(mod === 'slight left')       dir = 'slight_left';
+    else if(mod === 'slight right')      dir = 'slight_right';
+    else if(mod.includes('left'))        dir = 'left';
+    else if(mod.includes('right'))       dir = 'right';
+    else if(mtype.includes('arrive'))    dir = 'straight'; // przyjazd = prosto
+    // Pomijamy "depart"/"continue" — bez fallbacku (nic ciekawego)
+    if(mtype !== 'depart' && mtype !== 'continue'){
+      lanes = [{dir, active: true, valid: true}];
+    }
+  }
+
   if(!lanes?.length){ el.style.display='none'; return; }
 
   el.style.display = 'flex';
