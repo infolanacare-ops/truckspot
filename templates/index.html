@@ -5225,7 +5225,15 @@ function enterMode(mode){
     map.addControl(new mapboxgl.NavigationControl({showCompass:true, visualizePitch:true}), 'top-left');
     map.on('click', (e)=>{ onMapClickForMsg(e); onMapClick(e); });
     map.on('moveend', ()=>{ if(map.getZoom()>=8) loadOsmParkings(); loadReports(); if(activeFuelCards().length>0) loadFuelStations(); });
-    map.once('load', ()=>{ if(!gpsActive) startGps(); });
+    map.once('load', ()=>{
+      if(!gpsActive) startGps();
+      // Pokemon Go hub: aplikuj 3.5D atmosferę zaraz po załadowaniu stylu
+      setTimeout(()=>{ if(!navActive) _apply3d(); }, 400);
+    });
+    // Re-apply 3D na każdej zmianie stylu (np. gdy user wybierze inny layer)
+    map.on('style.load', ()=>{
+      if(!navActive){ setTimeout(_apply3d, 300); }
+    });
     // Inicjalizuj draggable widget osi trasy
     _initPoiDrag();
     // Wykryj ręczne operacje na mapie podczas nawigacji
@@ -5728,6 +5736,17 @@ function findNearest(){
 // GPS ALERTS
 // ══════════════════════════════════════
 function toggleGps(){ if(gpsActive) stopGps(); else startGps(); }
+// Hub mode camera helpers (Pokemon Go style follow + bearing)
+let _hubBearing = null;
+let _hubLastLat = null, _hubLastLng = null;
+function _bearingDeg(lat1, lng1, lat2, lng2){
+  const r = Math.PI/180;
+  const dLng = (lng2-lng1)*r;
+  const y = Math.sin(dLng)*Math.cos(lat2*r);
+  const x = Math.cos(lat1*r)*Math.sin(lat2*r) - Math.sin(lat1*r)*Math.cos(lat2*r)*Math.cos(dLng);
+  return (Math.atan2(y,x)*180/Math.PI + 360) % 360;
+}
+
 function startGps(){
   if(!navigator.geolocation){ showAlert('❌','GPS','Not available'); return; }
   gpsActive=true; setEl('gps-badge','ON'); document.getElementById('gps-badge').style.display='';
@@ -5747,8 +5766,17 @@ function startGps(){
         // Auto-uruchom presence (peery zawsze widoczne w hub)
         setTimeout(()=>{ try{ if(typeof _startPresence==='function' && !_presenceCh) _startPresence(); }catch(e){} }, 1200);
       } else {
-        // Hub mode: kamera podąża za graczem z lerp (efekt "wagi")
-        map.easeTo({center:[lng,lat], duration:600, easing:t=>t*(2-t)});
+        // Hub mode: kamera podąża za graczem z lerp + ROTACJA do kierunku ruchu
+        const bear = _hubLastLat != null ? _bearingDeg(_hubLastLat, _hubLastLng, lat, lng) : null;
+        const moved = _hubLastLat != null && haversineKm(_hubLastLat,_hubLastLng,lat,lng)*1000 > 3; // ruszył się >3m
+        if(moved && bear !== null){
+          // Smooth bearing — interpoluj żeby nie skakał
+          _hubBearing = _hubBearing == null ? bear : _hubBearing + ((((bear - _hubBearing + 540) % 360) - 180) * 0.25);
+          map.easeTo({center:[lng,lat], bearing:_hubBearing, duration:700, easing:t=>t*(2-t)});
+        } else {
+          map.easeTo({center:[lng,lat], duration:600, easing:t=>t*(2-t)});
+        }
+        _hubLastLat = lat; _hubLastLng = lng;
       }
     }
     allParkings.forEach(p=>{
