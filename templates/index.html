@@ -2324,16 +2324,16 @@ body[data-mode="tourist"] .nav-poi-current-dot{
   color:rgba(212,175,55,.55)!important;font-size:.85rem!important;
   padding:0!important;font-weight:900!important;
 }
+.nav-bottom-eta-row{display:flex;align-items:center;gap:.45rem}
 .nav-bottom-traffic{
-  align-self:flex-start;
   font-size:.6rem;font-weight:800;letter-spacing:.05em;
   color:#fca5a5;
   background:rgba(239,68,68,.18);
   border:1px solid rgba(239,68,68,.45);
   padding:2px 7px;border-radius:7px;
-  margin-bottom:2px;
   text-transform:uppercase;white-space:nowrap;line-height:1.25;
   box-shadow:0 0 8px rgba(239,68,68,.15);
+  align-self:center;
 }
 .nav-bottom-actions{display:flex;align-items:center;gap:.4rem;flex-shrink:0}
 /* ETA inline w pasku — backward compat */
@@ -3932,8 +3932,10 @@ body.navigating .convoy-btn{display:none}
     <div class="nav-bottom-eta">
       <div class="nav-bottom-eta-icon">🏁</div>
       <div class="nav-bottom-eta-stack">
-        <div class="nav-bottom-traffic" id="nav-traffic-badge" style="display:none"></div>
-        <div class="nav-bottom-eta-time" id="nav-eta-arrival">––:––</div>
+        <div class="nav-bottom-eta-row">
+          <div class="nav-bottom-eta-time" id="nav-eta-arrival">––:––</div>
+          <div class="nav-bottom-traffic" id="nav-traffic-badge" style="display:none"></div>
+        </div>
         <div class="nav-bottom-eta-stats">
           <span id="nav-total-dist">– km</span>
           <span class="nav-bottom-sep">·</span>
