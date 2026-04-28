@@ -10447,22 +10447,27 @@ function onNavPosition(pos){
       if(lanesEl) lanesEl.style.display = 'none';
       updateNavStep(navStepIdx, true);
 
-      // Po manewrze: natychmiast policz dystans do KOLEJNEGO manewru
-      // i pokaż pasy + zapowiedz głosem z odległością (Kowalski wie co go czeka)
+      // Po manewrze — edge case <500m: pomiń wyższe progi które nie pasują
+      // Cel: krótki odcinek (50m..500m) → start od progu odpowiadającego dystansowi
       const nextStep = routeSteps[navStepIdx];
       const nextLoc  = nextStep?.maneuver?.location;
       if(nextStep && nextLoc){
         const dToNext = haversineKm(lat, lng, nextLoc[1], nextLoc[0]) * 1000;
-        // Pokaż pasy dla NOWEGO manewru od razu (jeśli w zasięgu)
+        // Pokaż pasy dla NOWEGO manewru od razu (single source of truth)
         updateLaneGuidance(dToNext);
         if(!navAnnouncedSteps.has(navStepIdx)){
           navAnnouncedSteps.add(navStepIdx);
-          // Jeśli następny manewr jest blisko (<500m) — zapowiedz z odległością
-          // Inaczej tylko podstawowa instrukcja (jest jeszcze czas)
           if(dToNext < 500){
+            // Krótki odcinek — głos z odległością + pomijamy nieaktualne progi
             speakNav(buildTtsSentence(nextStep, dToNext), true);
-            // Zaznacz że to ogłoszenie ZASTĘPUJE pierwszy próg announceAt
-            navAnnouncedSteps.add(`${navStepIdx}_${dToNext < 200 ? 200 : 500}`);
+            // Wyznacz progi które już nie są aktualne (większe niż dToNext)
+            // żeby nie powtarzać zapowiedzi które już byłyby "minione"
+            const skipThresh = navSpeedKmh > 80 ? [900, 300, 100]
+                             : navSpeedKmh > 50 ? [500, 200, 50]
+                             :                    [300, 100, 40];
+            for(const t of skipThresh){
+              if(t >= dToNext * 0.8) navAnnouncedSteps.add(`${navStepIdx}_${t}`);
+            }
           } else {
             speakNav(stepInstruction(nextStep, true), true);
           }
