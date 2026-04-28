@@ -5652,7 +5652,12 @@ function startGps(){
     if(!navActive){
       if(!gpsMarker) gpsMarker=mkGpsDotMarker(lat,lng);
       else gpsMarker.setLngLat([lng,lat]);
-      if(!_gpsCentered){ _gpsCentered=true; map.flyTo({center:[lng,lat],zoom:13,duration:1200}); }
+      if(!_gpsCentered){
+        _gpsCentered=true;
+        // Pokemon Go hub mode — wjazd w 3.5D z pitch 55 zamiast płaskiego top-down
+        map.flyTo({center:[lng,lat], zoom:16.5, pitch:55, duration:1800});
+        setTimeout(_apply3d, 600); // dodaj fog/light/buildings (skin-aware)
+      }
     }
     allParkings.forEach(p=>{
       const d=haversineKm(lat,lng,p.lat,p.lng);
@@ -9742,6 +9747,16 @@ function applySkin(skinId){
     document.body.setAttribute('data-skin', skinId);
   }
   localStorage.setItem('ts_skin', skinId);
+  // Aktualizuj atmosferę 3D mapy (fog, light, building colors)
+  if(map && map.isStyleLoaded()){
+    const atm = _currentSkinAtmosphere();
+    try { map.setFog(atm.fog); } catch(e){}
+    try { map.setLight(atm.light); } catch(e){}
+    if(map.getLayer('ts-3d-buildings')){
+      map.setPaintProperty('ts-3d-buildings','fill-extrusion-color',
+        ['case', ['has','color'], ['get','color'], atm.bldg]);
+    }
+  }
 }
 
 function _isPremiumUser(){
@@ -10565,6 +10580,35 @@ function setLayerMode(mode){
   if(prev==='35d' && mode!=='35d') _remove3d();
 }
 
+// ── Atmosfera per skórka (Pokemon Go style) ──────────────────────────────
+const SKIN_ATMOSPHERE = {
+  gold: {
+    fog:    {color:'rgb(220,228,238)', 'high-color':'rgb(100,140,200)', 'horizon-blend':0.03, 'space-color':'rgb(11,11,25)', 'star-intensity':0.4},
+    light:  {anchor:'viewport', color:'#fff', intensity:0.5, position:[1.5, 210, 30]},
+    bldg:   ['interpolate',['linear'],['get','height'], 0,'#d4cfc9', 20,'#c8c2bb', 50,'#bfb8b0', 100,'#b0a89e']
+  },
+  cyber: {
+    fog:    {color:'rgb(20,12,60)', 'high-color':'rgb(120,40,200)', 'horizon-blend':0.18, 'space-color':'rgb(0,0,15)', 'star-intensity':1.0},
+    light:  {anchor:'viewport', color:'#a855f7', intensity:0.7, position:[1.5, 90, 80]},
+    bldg:   ['interpolate',['linear'],['get','height'], 0,'#0f1429', 20,'#1a1f4d', 50,'#2a3590', 100,'#4a5cd0']
+  },
+  classic: {
+    fog:    {color:'rgb(255,180,120)', 'high-color':'rgb(255,100,40)', 'horizon-blend':0.25, 'space-color':'rgb(50,20,5)', 'star-intensity':0.2},
+    light:  {anchor:'viewport', color:'#ffaa55', intensity:0.65, position:[1.5, 240, 50]},
+    bldg:   ['interpolate',['linear'],['get','height'], 0,'#3a2818', 20,'#5c3a22', 50,'#8a5430', 100,'#b8763a']
+  },
+  galaxy: {
+    fog:    {color:'rgb(20,8,55)', 'high-color':'rgb(120,40,180)', 'horizon-blend':0.30, 'space-color':'rgb(2,0,12)', 'star-intensity':1.0},
+    light:  {anchor:'viewport', color:'#c084fc', intensity:0.6, position:[1.5, 180, 60]},
+    bldg:   ['interpolate',['linear'],['get','height'], 0,'#1a1545', 20,'#2a1f6a', 50,'#4a3aa8', 100,'#7c5fff']
+  }
+};
+
+function _currentSkinAtmosphere(){
+  const skin = localStorage.getItem('ts_skin') || 'gold';
+  return SKIN_ATMOSPHERE[skin] || SKIN_ATMOSPHERE.gold;
+}
+
 function _apply3d(){
   if(!map.isStyleLoaded()){ map.once('style.load', _apply3d); return; }
   if(!map.getSource('mapbox-dem')){
@@ -10575,20 +10619,9 @@ function _apply3d(){
     });
   }
   map.setTerrain({source:'mapbox-dem', exaggeration:1.1});
-  map.setFog({
-    color:'rgb(220,228,238)',
-    'high-color':'rgb(100,140,200)',
-    'horizon-blend':0.03,
-    'space-color':'rgb(11,11,25)',
-    'star-intensity':0.4
-  });
-  // Oświetlenie kierunkowe — jak w Mapbox demo
-  map.setLight({
-    anchor:'viewport',
-    color:'#fff',
-    intensity:0.5,
-    position:[1.5, 210, 30]
-  });
+  const atm = _currentSkinAtmosphere();
+  map.setFog(atm.fog);
+  map.setLight(atm.light);
   if(!map.getLayer('ts-3d-buildings')){
     const firstLabel = map.getStyle().layers.find(l=>l.type==='symbol'&&l.layout?.['text-field']);
     map.addLayer({
@@ -10599,17 +10632,26 @@ function _apply3d(){
       type:'fill-extrusion',
       minzoom:11,
       paint:{
-        'fill-extrusion-color':[
-          'case',
-          ['has','color'],['get','color'],
-          ['interpolate',['linear'],['get','height'],
-            0,'#d4cfc9', 20,'#c8c2bb', 50,'#bfb8b0', 100,'#b0a89e']
-        ],
+        'fill-extrusion-color':['case', ['has','color'], ['get','color'], atm.bldg],
         'fill-extrusion-height':['interpolate',['linear'],['zoom'],12,0,13,['get','height']],
         'fill-extrusion-base':['interpolate',['linear'],['zoom'],12,0,13,['get','min_height']],
         'fill-extrusion-opacity':['interpolate',['linear'],['zoom'],12,0.4,15,0.9]
       }
     }, firstLabel?.id);
+  } else {
+    // Aktualizuj kolor budynków przy zmianie skórki
+    map.setPaintProperty('ts-3d-buildings','fill-extrusion-color',
+      ['case', ['has','color'], ['get','color'], atm.bldg]);
+  }
+}
+
+// ── Pokemon Go hub mode — auto-3D od ekranu głównego ──────────────────
+function enableMetaverseHub(){
+  if(!map) return;
+  // Wjedź w 3.5D od razu (jeśli nie nawigujemy)
+  if(!navActive){
+    _apply3d();
+    map.easeTo({pitch:55, zoom:Math.max(map.getZoom(), 16.5), duration:1500});
   }
 }
 
