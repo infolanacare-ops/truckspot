@@ -9339,7 +9339,10 @@ const _poiStore = {
         added++;
       }
     }
-    if(added || updated) console.log(`[poiStore] merge: +${added} new, ~${updated} updated, total ${this.pois.size}`);
+    if(added || updated){
+      console.log(`[poiStore] merge: +${added} new, ~${updated} updated, total ${this.pois.size}`);
+      this.persistDebounced();
+    }
     return {added, updated, total: this.pois.size};
   },
 
@@ -9374,8 +9377,48 @@ const _poiStore = {
     return removed;
   },
 
-  clear(){ this.pois.clear(); }
+  clear(){ this.pois.clear(); this.persistDebounced(); },
+
+  // Persist do localStorage (z debounce żeby nie pisać co tick)
+  _persistTimer: null,
+  persistDebounced(){
+    if(this._persistTimer) clearTimeout(this._persistTimer);
+    this._persistTimer = setTimeout(()=>{
+      try{
+        const arr = Array.from(this.pois.entries()).map(([id,e])=>[id, e]);
+        localStorage.setItem('ts_poi_cache', JSON.stringify({pois: arr, savedAt: Date.now()}));
+      }catch(e){ /* quota or serialization error — ignore */ }
+    }, 1500);
+  },
+
+  // Load z localStorage przy starcie (jeśli <30 min stary)
+  loadFromStorage(){
+    try{
+      const raw = localStorage.getItem('ts_poi_cache');
+      if(!raw) return 0;
+      const {pois, savedAt} = JSON.parse(raw);
+      if(!Array.isArray(pois) || !savedAt) return 0;
+      // Pomiń jeśli cały cache starszy niż TTL
+      if(Date.now() - savedAt > this.TTL_MS) return 0;
+      const now = Date.now();
+      let loaded = 0;
+      for(const [id, e] of pois){
+        // Pomiń wpisy expired w cache
+        if(e?.addedAt && now - e.addedAt < this.TTL_MS){
+          this.pois.set(id, e);
+          loaded++;
+        }
+      }
+      console.log(`[poiStore] loaded ${loaded} POI from cache (saved ${Math.round((now-savedAt)/60000)}min ago)`);
+      return loaded;
+    }catch(e){ return 0; }
+  }
 };
+
+// Auto-load cache przy starcie
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(()=>_poiStore.loadFromStorage(), 600);
+});
 
 async function loadRoutePois(){
   if(!routeCoords.length) return;
