@@ -7548,6 +7548,12 @@ let navAnnouncedSteps = new Set(); // step indices already announced
 // Maneuver completion detection (distance increasing = passed)
 let _minDtoManeuver = null;
 let _minDtoManeuverStepIdx = -1;
+// Dead Reckoning — gdy GPS wypada (tunel, garaż, strata sygnału)
+let _lastGpsFixTs = 0;
+let _drMode      = false;     // czy aktywny tryb tunelu
+let _drCheckInterval = null;
+let _drLastTickTs = 0;
+const GPS_LOST_THRESHOLD_MS = 3000;  // brak GPS przez 3s = włącz DR
 let navDistRemaining = 0;    // metres remaining along route
 let navRouteDistances = [];  // cumulative distances along routeCoords
 let navDestLat = null, navDestLng = null; // cel nawigacji (do reroutingu)
@@ -9227,11 +9233,69 @@ function _updateSpeedModuleBtn(){
   btn.textContent = (hidden ? '🚫 ' : '✅ ') + 'Prędkość';
 }
 
+// ── Dead Reckoning loop — działa gdy GPS wypada (tunel/garaż) ──────────
+function _showDrBadge(){
+  let el = document.getElementById('dr-badge');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'dr-badge';
+    el.style.cssText = 'position:fixed;top:calc(76px + env(safe-area-inset-top,0));left:50%;transform:translateX(-50%);z-index:1700;background:linear-gradient(135deg,rgba(220,38,38,.95),rgba(180,20,20,.95));backdrop-filter:blur(10px);border:1.5px solid rgba(255,80,80,.6);border-radius:16px;padding:.55rem .9rem;color:#fff;font-size:.78rem;font-weight:800;letter-spacing:.04em;display:flex;align-items:center;gap:.5rem;box-shadow:0 4px 18px rgba(220,38,38,.5);animation:drBadgeIn .3s';
+    el.innerHTML = '<span style="font-size:1rem;animation:drBlink 1.2s ease-in-out infinite">📡</span><span>TRYB TUNELU<br><span style="font-size:.6rem;font-weight:600;opacity:.85;letter-spacing:.02em">Szacowana pozycja</span></span>';
+    document.body.appendChild(el);
+    // Animacje keyframes (jeśli nie ma)
+    if(!document.getElementById('dr-keyframes')){
+      const s = document.createElement('style');
+      s.id = 'dr-keyframes';
+      s.textContent = '@keyframes drBlink{0%,100%{opacity:1}50%{opacity:.35}}@keyframes drBadgeIn{from{opacity:0;transform:translateX(-50%) translateY(-8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}';
+      document.head.appendChild(s);
+    }
+  }
+}
+function _hideDrBadge(){
+  document.getElementById('dr-badge')?.remove();
+}
+
+function _drTick(){
+  if(!navActive) return;
+  const sinceFix = Date.now() - _lastGpsFixTs;
+  if(sinceFix < GPS_LOST_THRESHOLD_MS){
+    return; // GPS świeży, DR niepotrzebny
+  }
+  // GPS zgubiony — włącz DR jeśli jeszcze nie aktywny
+  if(!_drMode){
+    _drMode = true;
+    _showDrBadge();
+    _drLastTickTs = Date.now();
+    console.log('[DR] GPS lost — start dead reckoning');
+  }
+  // Ekstrapoluj pozycję wg ostatniego bearing + speed
+  if(navLastLat == null || navLastLng == null) return;
+  const speedMps = (navSpeedKmh || 30) / 3.6; // fallback 30 km/h
+  const bearRad  = (navCurrentHeading || 0) * Math.PI / 180;
+  const dt = Math.min(1, (Date.now() - _drLastTickTs) / 1000); // delta sekundy
+  _drLastTickTs = Date.now();
+  const distM = speedMps * dt;
+  const DEG_PER_M_LAT = 1/111000;
+  const newLat = navLastLat + Math.cos(bearRad) * distM * DEG_PER_M_LAT;
+  const newLng = navLastLng + Math.sin(bearRad) * distM * (DEG_PER_M_LAT / Math.cos(navLastLat * Math.PI / 180));
+  navLastLat = newLat; navLastLng = newLng;
+  // Update GPS marker (jeśli istnieje)
+  if(gpsMarker) gpsMarker.setLngLat([newLng, newLat]);
+  // Update navCIdx (snap-to-route forward)
+  const newIdx = closestRouteIdxForward(newLat, newLng, navCIdx);
+  if(newIdx > navCIdx) navCIdx = newIdx;
+  // Update kamery (delikatnie żeby nie skakała)
+  if(map && !navOverviewMode) map.easeTo({center:[newLng, newLat], duration:200, essential:true});
+}
+
 function startNavigation(){
   if(!routeSteps.length){ showAlert('⚠️','','Najpierw oblicz trasę'); return; }
   // Ukryj alternatywy — od teraz widoczna tylko aktywna trasa
   _clearAltLayers();
   _startPoiAutoRefetch(); // POI auto-refetch co 5 min podczas nawigacji
+  _lastGpsFixTs = Date.now();
+  if(_drCheckInterval) clearInterval(_drCheckInterval);
+  _drCheckInterval = setInterval(_drTick, 250); // sprawdź co 250ms
   // Safe-drive: sprawdź wczoraj (jeśli nowy dzień, przyznaj punkty + pokaż toast)
   const sdResult = _safeDriveCheckYesterday();
   if(sdResult?.awarded) setTimeout(()=>_safeDriveShowAwardToast(sdResult), 1500);
@@ -10430,6 +10494,13 @@ function onNavPosition(pos){
     if(dtH > 0) navSpeedKmh = Math.min(Math.round(dKm / dtH), 200);
   }
   _lastNavTickTs = Date.now();
+  _lastGpsFixTs  = Date.now();
+  // Jeśli byliśmy w DR mode i GPS wrócił — wyłącz DR
+  if(_drMode){
+    _drMode = false;
+    _hideDrBadge();
+    console.log('[DR] GPS wrócił po', Math.round((Date.now()-_drLastTickTs)/1000)+'s');
+  }
   setNavSpeed(navSpeedKmh, navCurrentSpeedLimit);
 
   // GPS arrow — snap tylko do przodu, nigdy wstecz
@@ -10954,6 +11025,8 @@ function stopNavigation(){
   navActive=false; navOverviewMode=false;
   _kalman.reset(); // reset filtra po nav — hub zacznie świeżo
   _stopPoiAutoRefetch(); // zatrzymaj auto-refetch POI
+  if(_drCheckInterval){ clearInterval(_drCheckInterval); _drCheckInterval = null; }
+  _drMode = false; _hideDrBadge();
   _stopAudioKeepAlive(); // zatrzymaj cichą pętlę audio
   // Zatrzymaj giroskop
   if(_gyroActive){
