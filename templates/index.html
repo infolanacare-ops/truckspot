@@ -9406,7 +9406,7 @@ async function loadRoutePois(){
   // Merge all POI + parkings, deduplicate by id, filter corridor
   const allCombined = [...allPois, ...parkingPois];
   const seen = new Set();
-  navRoutePois = allCombined
+  const newPois = allCombined
     .filter(p => {
       if(seen.has(p.id)) return false;
       seen.add(p.id);
@@ -9426,6 +9426,15 @@ async function loadRoutePois(){
     })
     .sort((a,b) => a.distFromStart - b.distFromStart);
 
+  // SAFEGUARD (kolega): brak danych ≠ usuń dane
+  // Jeśli nowa lista jest dramatycznie krótsza (>50% mniej niż obecna i obecna miała >5)
+  // = prawdopodobny fail Overpass — NIE NADPISUJ, zostaw poprzednie POI widoczne
+  if(navRoutePois.length > 5 && newPois.length < navRoutePois.length * 0.5){
+    console.warn('[loadRoutePois] new POI count', newPois.length, 'vs current', navRoutePois.length, '— keeping existing (probable Overpass fail)');
+    renderNavPois(); // tylko re-render bez zmian
+    return;
+  }
+  navRoutePois = newPois;
   renderNavPois();
 }
 
