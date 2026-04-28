@@ -3679,6 +3679,7 @@ body.navigating .convoy-btn{display:none}
     <div class="menu-item" onclick="drawerAction('myspots')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg></span></div><span class="menu-label" data-i="menu_myspots">My spots</span></div>
     <div class="menu-item" onclick="drawerAction('favs')"><div class="menu-icon" style="background:rgba(212,175,55,.12);border-color:#d4af37"><span class="si"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span></div><span class="menu-label">Ulubione parkingi</span><span class="menu-badge" id="favs-count" style="display:none">0</span></div>
     <div class="menu-item" onclick="drawerAction('rank')"><div class="menu-icon" style="background:rgba(212,175,55,.12);border-color:#d4af37"><span class="si"><svg viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg></span></div><span class="menu-label" data-i="menu_rank">Ranking</span></div>
+    <div class="menu-item" onclick="closeDrawer();setTimeout(openInstallModal,250)"><div class="menu-icon" style="background:rgba(212,175,55,.15);border-color:#d4af37"><span style="font-size:1.15rem">📥</span></div><span class="menu-label">Zainstaluj jako apkę</span><span class="menu-badge" style="background:linear-gradient(135deg,#fbbf24,#d4af37);color:#1e293b;font-weight:900">FREE</span></div>
     <div class="menu-item" onclick="drawerAction('share')"><div class="menu-icon" style="background:rgba(16,185,129,.12);border-color:#10b981"><span class="si"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></span></div><span class="menu-label" data-i="menu_share">Recommend TruckSpot</span><span class="menu-badge green">+50 pts</span></div>
     <div class="menu-sep"></div>
     <div class="menu-section" data-i="sec_tools">Tools</div>
@@ -10446,6 +10447,107 @@ function openMetaverseHub(){
       <!-- Premium promo -->
       <div style="background:linear-gradient(140deg,rgba(212,175,55,.1),rgba(168,85,247,.06));border:1px solid rgba(212,175,55,.35);border-radius:14px;padding:.85rem;font-size:.72rem;color:rgba(255,255,255,.85);line-height:1.45">
         <span style="color:#fbbf24;font-weight:900">💎 TS PRO Premium 9.99 zł/mies</span> — odblokowuje wszystkie skórki, customizacje, bez reklam, sync cloud
+      </div>
+    </div>`;
+  modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
+  document.body.appendChild(modal);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// INSTALL MODAL — wybór instalacji per platforma (Android APK / iOS PWA)
+// ══════════════════════════════════════════════════════════════════
+function _detectPlatform(){
+  const ua = navigator.userAgent.toLowerCase();
+  if(/iphone|ipad|ipod/.test(ua)) return 'ios';
+  if(/android/.test(ua)) return 'android';
+  return 'desktop';
+}
+
+function openInstallModal(){
+  const platform = _detectPlatform();
+  const id = 'install-modal';
+  const existing = document.getElementById(id);
+  if(existing){ existing.remove(); return; }
+
+  // Kolejność: native platform user'a większy/podświetlony
+  const androidBig = platform === 'android' || platform === 'desktop';
+  const iosBig = platform === 'ios';
+
+  const androidCard = `
+    <a href="/static/ts-pro-latest.apk" download style="display:block;text-decoration:none;
+      ${androidBig ? 'transform:scale(1.02);box-shadow:0 6px 24px rgba(34,197,94,.35),0 0 0 2px rgba(34,197,94,.4)' : 'opacity:.85'};
+      background:linear-gradient(140deg,rgba(34,197,94,.18) 0%,rgba(16,185,129,.10) 100%);
+      border:1.5px solid rgba(34,197,94,${androidBig?'.55':'.35'});
+      border-radius:18px;padding:1rem;color:#fff;transition:.2s">
+      <div style="display:flex;align-items:center;gap:.7rem;margin-bottom:.6rem">
+        <div style="font-size:2rem">🤖</div>
+        <div style="flex:1">
+          <div style="font-size:1rem;font-weight:900;letter-spacing:-.01em">Android</div>
+          <div style="font-size:.7rem;color:rgba(255,255,255,.65)">Pobierz plik APK ${androidBig?'(zalecane)':''}</div>
+        </div>
+        ${platform==='android'?'<span style="background:#22c55e;color:#fff;font-size:.55rem;font-weight:900;padding:3px 7px;border-radius:6px;letter-spacing:.05em">TWÓJ TELEFON</span>':''}
+      </div>
+      <div style="background:rgba(0,0,0,.25);border-radius:10px;padding:.6rem .8rem;font-size:.7rem;color:rgba(255,255,255,.85);line-height:1.5">
+        1. Klik tutaj → pobierze się <code style="color:#fbbf24">app-release.apk</code><br>
+        2. Otwórz plik APK na telefonie<br>
+        3. <span style="color:rgba(255,255,255,.6);font-size:.65rem">(jeśli pyta) Włącz "Z nieznanych źródeł"</span><br>
+        4. Klik "Zainstaluj" — gotowe! 🎉
+      </div>
+      <div style="margin-top:.7rem;text-align:center;background:#22c55e;color:#fff;padding:.6rem;border-radius:10px;font-weight:900;font-size:.85rem;letter-spacing:.04em">
+        ⬇ POBIERZ APK
+      </div>
+    </a>`;
+
+  const iosCard = `
+    <div style="
+      ${iosBig ? 'transform:scale(1.02);box-shadow:0 6px 24px rgba(96,165,250,.35),0 0 0 2px rgba(96,165,250,.4)' : 'opacity:.85'};
+      background:linear-gradient(140deg,rgba(96,165,250,.18) 0%,rgba(59,130,246,.10) 100%);
+      border:1.5px solid rgba(96,165,250,${iosBig?'.55':'.35'});
+      border-radius:18px;padding:1rem;color:#fff;transition:.2s">
+      <div style="display:flex;align-items:center;gap:.7rem;margin-bottom:.6rem">
+        <div style="font-size:2rem">🍎</div>
+        <div style="flex:1">
+          <div style="font-size:1rem;font-weight:900;letter-spacing:-.01em">iPhone / iPad</div>
+          <div style="font-size:.7rem;color:rgba(255,255,255,.65)">Add to Home Screen ${iosBig?'(zalecane)':''}</div>
+        </div>
+        ${platform==='ios'?'<span style="background:#60a5fa;color:#fff;font-size:.55rem;font-weight:900;padding:3px 7px;border-radius:6px;letter-spacing:.05em">TWÓJ TELEFON</span>':''}
+      </div>
+      <div style="background:rgba(0,0,0,.25);border-radius:10px;padding:.6rem .8rem;font-size:.7rem;color:rgba(255,255,255,.85);line-height:1.6">
+        1. Otwórz <b style="color:#fbbf24">truckspot.pl</b> w <b>Safari</b> (nie Chrome!)<br>
+        2. Klik <b>📤 Udostępnij</b> (kwadrat ze strzałką ↑)<br>
+        3. Przewiń w dół → klik <b>"Dodaj do ekranu głównego"</b><br>
+        4. Klik <b>"Dodaj"</b> w prawym górnym rogu<br>
+        5. 🎉 <b>TS PRO</b> pojawi się na pulpicie iPhone
+      </div>
+      <div style="margin-top:.7rem;background:rgba(96,165,250,.2);border:1px solid rgba(96,165,250,.4);color:#60a5fa;padding:.55rem;border-radius:10px;font-weight:700;font-size:.7rem;text-align:center">
+        💡 Działa offline · GPS · pełen ekran jak natywna apka
+      </div>
+    </div>`;
+
+  const modal = document.createElement('div');
+  modal.id = id;
+  modal.style.cssText = 'position:fixed;inset:0;z-index:3500;background:rgba(0,0,0,.72);display:flex;align-items:flex-end;justify-content:center';
+  modal.innerHTML = `
+    <div onclick="event.stopPropagation()" style="width:100%;max-width:480px;background:linear-gradient(160deg,rgba(22,28,48,.98) 0%,rgba(14,18,32,.99) 100%);backdrop-filter:blur(20px);border:1.5px solid rgba(212,175,55,.45);border-bottom:none;border-radius:24px 24px 0 0;padding:1.4rem 1.1rem 1.6rem;box-shadow:0 -4px 32px rgba(0,0,0,.6);color:#fff;max-height:88vh;overflow-y:auto;animation:slideup .3s">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:1rem">
+        <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(140deg,rgba(212,175,55,.28),rgba(212,175,55,.12));border:1px solid rgba(212,175,55,.5);display:flex;align-items:center;justify-content:center;font-size:1.5rem">📥</div>
+        <div style="flex:1">
+          <div style="font-family:var(--font-head);font-size:1.25rem;font-weight:900">Zainstaluj TS PRO</div>
+          <div style="font-size:.7rem;color:rgba(255,255,255,.65)">Wybierz platformę</div>
+        </div>
+        <button onclick="document.getElementById('${id}').remove()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);width:36px;height:36px;border-radius:11px;color:#fff;font-size:1.1rem;cursor:pointer">✕</button>
+      </div>
+      <!-- Detected platform info -->
+      ${platform!=='desktop'?`<div style="background:rgba(212,175,55,.1);border:1px solid rgba(212,175,55,.3);border-radius:12px;padding:.55rem .8rem;font-size:.7rem;color:rgba(255,255,255,.85);margin-bottom:1rem">
+        🎯 Wykryto: <b style="color:#fbbf24">${platform==='ios'?'iPhone/iPad':'Android'}</b> — wybrano dla Ciebie najlepszą opcję
+      </div>`:''}
+      <!-- Cards -->
+      <div style="display:flex;flex-direction:column;gap:.7rem">
+        ${platform === 'ios' ? iosCard + androidCard : androidCard + iosCard}
+      </div>
+      <div style="margin-top:1rem;text-align:center;font-size:.65rem;color:rgba(255,255,255,.5)">
+        💎 Działa też w przeglądarce — bez instalacji <a href="/" style="color:#60a5fa">truckspot.pl</a>
       </div>
     </div>`;
   modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
