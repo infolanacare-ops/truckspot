@@ -1004,27 +1004,31 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
 .spot-marker .spot-count{position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#fff;color:#0a0e1a;font-size:.65rem;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.4);border:2px solid rgba(245,158,11,.8);font-family:var(--font-head,'Space Grotesk',sans-serif)}
 @keyframes spot-pulse{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.15)}}
 
-/* ══ TRIBESPOT — Add Spot FAB (gold + turkus, lewy dolny) ══ */
-.fab-spot-add{position:fixed;left:1rem;bottom:5.5rem;z-index:400;
-  width:60px;height:60px;border-radius:50%;border:none;cursor:pointer;
-  background:linear-gradient(135deg,#fbbf24 0%,#f59e0b 40%,#06b6d4 100%);
-  box-shadow:0 6px 22px rgba(245,158,11,.55), 0 0 0 0 rgba(6,182,212,.6);
-  font-size:1.7rem;font-weight:900;color:#fff;
+/* ══ TRIBESPOT — Add Spot FAB (Apple Vision glass, jasny+subtelny) ══ */
+.fab-spot-add{position:fixed;left:14px;bottom:90px;z-index:400;
+  width:44px;height:44px;border-radius:50%;border:none;cursor:pointer;padding:0;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255,255,255,.55), rgba(255,255,255,.12) 55%, rgba(255,255,255,.04) 100%),
+    linear-gradient(135deg, rgba(251,191,36,.32), rgba(6,182,212,.28));
+  border:1px solid rgba(255,255,255,.22);
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  box-shadow:
+    0 4px 14px rgba(0,0,0,.28),
+    0 0 0 1px rgba(255,255,255,.06) inset,
+    0 -1px 0 rgba(0,0,0,.15) inset;
+  font-size:1.1rem;font-weight:300;color:rgba(255,255,255,.95);line-height:0;
   display:flex;align-items:center;justify-content:center;
-  text-shadow:0 1px 2px rgba(0,0,0,.4);
-  animation:pulse-spot-fab 2.5s ease-in-out infinite;
-  transition:.2s}
-.fab-spot-add:hover{transform:scale(1.08)}
-.fab-spot-add:active{transform:scale(.95)}
+  transition:transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .25s, background .25s}
+.fab-spot-add:hover{transform:scale(1.08);
+  box-shadow:0 6px 18px rgba(251,191,36,.35), 0 0 22px rgba(6,182,212,.18), 0 0 0 1px rgba(255,255,255,.12) inset}
+.fab-spot-add:active{transform:scale(.94)}
 .fab-spot-add::after{
-  content:'+';line-height:0;font-size:2rem;font-weight:300;
-  filter:drop-shadow(0 0 6px rgba(255,255,255,.6))}
-@keyframes pulse-spot-fab{
-  0%,100%{box-shadow:0 6px 22px rgba(245,158,11,.55), 0 0 0 0 rgba(6,182,212,.5)}
-  50%{box-shadow:0 6px 26px rgba(245,158,11,.7), 0 0 0 14px rgba(6,182,212,0)}}
-.fab-spot-add-label{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);
-  font-size:.5rem;font-weight:900;letter-spacing:.08em;color:#fbbf24;
-  text-transform:uppercase;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.6);pointer-events:none}
+  content:'+';line-height:0;font-size:1.5rem;font-weight:200;
+  text-shadow:0 0 8px rgba(255,255,255,.4)}
+.fab-spot-add-label{position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);
+  font-size:.42rem;font-weight:600;letter-spacing:.18em;color:rgba(255,255,255,.7);
+  text-transform:uppercase;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.5);pointer-events:none;
+  font-family:'JetBrains Mono','Inter',monospace}
 
 /* ════════════════════════════════════════════════════════════════════════
    QUANTUM MODAL — "Komputer kwantowy + cyberprzestrzeń + stonowane"
@@ -1308,78 +1312,90 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
    QUANTUM RAIL — pionowa oś z M w centrum, drag→snap edge, radial fanout
    ═══════════════════════════════════════════════════════════════════════ */
 #qrail{
-  position: fixed; top: 50%; right: 14px; z-index: 410;
+  position: fixed; top: 50%; right: 12px; z-index: 410;
   transform: translateY(-50%);
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-  padding: 10px 6px;
-  background: linear-gradient(180deg, rgba(10,14,26,.55), rgba(10,14,26,.7) 50%, rgba(10,14,26,.55));
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(6,182,212,.18);
-  border-radius: 32px;
-  box-shadow: 0 8px 28px rgba(0,0,0,.4),
-              0 0 0 1px rgba(255,255,255,.04),
-              inset 0 0 24px rgba(6,182,212,.06);
-  transition: right .45s cubic-bezier(.2,.85,.25,1), left .45s cubic-bezier(.2,.85,.25,1), top .35s ease;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 7px 4px;
+  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.07) 50%, rgba(255,255,255,.04));
+  backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 26px;
+  box-shadow:
+    0 4px 14px rgba(0,0,0,.22),
+    0 0 0 1px rgba(255,255,255,.04) inset,
+    0 -1px 0 rgba(0,0,0,.15) inset;
+  transition: right .45s cubic-bezier(.2,.85,.25,1), left .45s cubic-bezier(.2,.85,.25,1), top .35s ease, opacity .3s;
   user-select: none; -webkit-user-select: none; touch-action: none;
+  opacity: .85;
 }
-#qrail.snap-left{ left: 14px; right: auto }
-#qrail.snap-right{ right: 14px; left: auto }
+#qrail:hover{ opacity: 1 }
+#qrail.snap-left{ left: 12px; right: auto }
+#qrail.snap-right{ right: 12px; left: auto }
 #qrail.dragging{ transition: none; cursor: grabbing }
 #qrail::before{
-  content:''; position:absolute; top: 12px; bottom: 12px; left: 50%;
+  content:''; position:absolute; top: 10px; bottom: 10px; left: 50%;
   width: 1px; transform: translateX(-50%); pointer-events:none;
-  background: linear-gradient(180deg, transparent, rgba(6,182,212,.35), rgba(245,158,11,.35), rgba(6,182,212,.35), transparent);
+  background: linear-gradient(180deg, transparent, rgba(255,255,255,.18), transparent);
   opacity: .5;
 }
 
 /* Drobne kropki wskazujące zakładki (gdy zwinięte) */
-.qrail-tab-dot{width: 8px; height: 8px; border-radius: 50%;
-  background: linear-gradient(135deg, rgba(6,182,212,.6), rgba(245,158,11,.5));
-  opacity: .5; transition: .25s; pointer-events: none;
-  box-shadow: 0 0 6px rgba(6,182,212,.5)}
-#qrail.expanded .qrail-tab-dot{ opacity: 0; transform: scale(.4) }
+.qrail-tab-dot{width: 4px; height: 4px; border-radius: 50%;
+  background: rgba(255,255,255,.45);
+  opacity: .6; transition: .25s; pointer-events: none}
+#qrail.expanded .qrail-tab-dot{ opacity: 0; transform: scale(.3) }
 
-/* M center button — duży, holographic */
+/* M center button — Apple Vision glass, mniejszy, jaśniejszy */
 .qrail-M{
-  position: relative; width: 56px; height: 56px; border-radius: 50%;
+  position: relative; width: 42px; height: 42px; border-radius: 50%;
   border: none; cursor: pointer; padding: 0;
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 35%, #06b6d4 80%);
-  background-size: 200% 200%; background-position: 0% 0%;
-  box-shadow: 0 6px 22px rgba(245,158,11,.5),
-              0 0 0 0 rgba(6,182,212,.45),
-              inset 0 0 0 2px rgba(255,255,255,.18);
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255,255,255,.6), rgba(255,255,255,.16) 55%, rgba(255,255,255,.04) 100%),
+    linear-gradient(135deg, rgba(251,191,36,.28), rgba(6,182,212,.24));
+  border: 1px solid rgba(255,255,255,.28);
+  box-shadow:
+    0 4px 14px rgba(0,0,0,.3),
+    0 0 0 1px rgba(255,255,255,.08) inset,
+    0 -1px 0 rgba(0,0,0,.18) inset;
   display: flex; align-items: center; justify-content: center;
   font-family: 'Space Grotesk','Inter',sans-serif;
-  color: #fff; font-size: 1.5rem; font-weight: 800; letter-spacing: .02em;
-  text-shadow: 0 2px 8px rgba(0,0,0,.45);
-  animation: qrail-M-pulse 3.2s ease-in-out infinite, qrail-M-shimmer 6s ease-in-out infinite;
-  transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s;
+  color: rgba(255,255,255,.95); font-size: 1rem; font-weight: 500; letter-spacing: .03em;
+  text-shadow: 0 1px 2px rgba(0,0,0,.35), 0 0 8px rgba(255,255,255,.18);
+  transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s, background .25s;
   z-index: 2;
 }
-.qrail-M:hover{ transform: scale(1.07); box-shadow: 0 8px 28px rgba(245,158,11,.65), 0 0 0 12px rgba(6,182,212,0) }
-.qrail-M:active{ transform: scale(.95) }
-#qrail.expanded .qrail-M{ transform: rotate(45deg); background-position: 100% 100% }
-@keyframes qrail-M-pulse{
-  0%,100%{ box-shadow: 0 6px 22px rgba(245,158,11,.5), 0 0 0 0 rgba(6,182,212,.5), inset 0 0 0 2px rgba(255,255,255,.18) }
-  50%{    box-shadow: 0 6px 26px rgba(245,158,11,.65), 0 0 0 14px rgba(6,182,212,0), inset 0 0 0 2px rgba(255,255,255,.18) }
-}
-@keyframes qrail-M-shimmer{ 0%,100%{ background-position: 0% 0% } 50%{ background-position: 100% 100% } }
+.qrail-M:hover{ transform: scale(1.08);
+  box-shadow: 0 6px 18px rgba(251,191,36,.32), 0 0 22px rgba(6,182,212,.2), 0 0 0 1px rgba(255,255,255,.16) inset }
+.qrail-M:active{ transform: scale(.94) }
+#qrail.expanded .qrail-M{ transform: rotate(45deg);
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255,255,255,.7), rgba(255,255,255,.2) 55%, rgba(255,255,255,.04) 100%),
+    linear-gradient(135deg, rgba(6,182,212,.35), rgba(251,191,36,.3));
+  box-shadow: 0 6px 20px rgba(6,182,212,.28), 0 0 0 1px rgba(255,255,255,.2) inset }
 
-/* Tabs — małe Quantum capsules */
+/* Tabs — Apple Vision glass capsules, mniejsze */
 .qrail-tab{
-  position: relative; width: 42px; height: 42px; border-radius: 50%; border: none;
-  background: rgba(255,255,255,.05);
-  border: 1px solid rgba(6,182,212,.22);
-  backdrop-filter: blur(8px);
-  color: #fff; cursor: pointer; padding: 0;
+  position: relative; width: 36px; height: 36px; border-radius: 50%; border: none;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255,255,255,.4), rgba(255,255,255,.1) 60%, rgba(255,255,255,.03) 100%);
+  border: 1px solid rgba(255,255,255,.18);
+  backdrop-filter: blur(12px);
+  color: rgba(255,255,255,.95); cursor: pointer; padding: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.05rem;
-  box-shadow: 0 4px 14px rgba(0,0,0,.35);
-  transition: transform .35s cubic-bezier(.34,1.56,.64,1), opacity .25s, background .2s, border-color .2s;
+  font-size: .85rem;
+  box-shadow:
+    0 3px 10px rgba(0,0,0,.25),
+    0 0 0 1px rgba(255,255,255,.06) inset,
+    0 -1px 0 rgba(0,0,0,.12) inset;
+  transition: transform .35s cubic-bezier(.34,1.56,.64,1), opacity .25s, background .2s, border-color .2s, box-shadow .25s;
   font-family: inherit;
 }
-.qrail-tab:hover{ background: rgba(6,182,212,.12); border-color: rgba(6,182,212,.5) }
-.qrail-tab .qrail-tab-icon{ filter: drop-shadow(0 0 8px rgba(255,255,255,.15)) }
+.qrail-tab:hover{
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255,255,255,.55), rgba(255,255,255,.18) 60%, rgba(255,255,255,.04) 100%);
+  border-color: rgba(255,255,255,.35);
+  box-shadow: 0 4px 14px rgba(0,0,0,.3), 0 0 16px rgba(255,255,255,.08), 0 0 0 1px rgba(255,255,255,.12) inset }
+.qrail-tab .qrail-tab-icon{ filter: drop-shadow(0 0 4px rgba(255,255,255,.2)) }
 .qrail-tab .qrail-tab-badge{
   position: absolute; top: -3px; right: -3px;
   min-width: 16px; height: 16px; padding: 0 4px;
@@ -1396,7 +1412,7 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
   width: 0; height: 0; transform: translate(-50%,-50%);
 }
 .qrail-tabs .qrail-tab{
-  position: absolute; top: 0; left: 0; margin-left: -21px; margin-top: -21px;
+  position: absolute; top: 0; left: 0; margin-left: -18px; margin-top: -18px;
   opacity: 0; transform: translate(0,0) scale(.4);
   pointer-events: none;
 }
@@ -13797,7 +13813,7 @@ function _qrailLayoutFanout(){
   if(!rail) return;
   const tabs = rail.querySelectorAll('.qrail-tabs .qrail-tab');
   const N = tabs.length;
-  const radius = 110;  // odległość od centrum M
+  const radius = 92;  // odległość od centrum M
   // Półkole 180° w kierunku przeciwnym do edge
   // snap-right → wachlarz w lewo (kąty od 90° do 270° = -90°..+90° z 180° offset)
   // snap-left  → wachlarz w prawo (kąty od -90° do +90°)
