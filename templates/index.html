@@ -1311,6 +1311,10 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
 #fab-add{ display:none !important; }
 /* Filtry w topbarze — niepotrzebne w metaverse */
 .filter-btn{ display:none !important; }
+/* Report speed-dial (raporty TIR — fotoradar/kontrola/kolizja) — niepotrzebne w metaverse */
+.report-dial{ display:none !important; }
+/* Convoy button (MOBILKI legacy) — niepotrzebne w metaverse */
+.convoy-btn, #convoy-btn{ display:none !important; }
 /* Map style picker (fab-layers) — przeniesiony do TOP RIGHT (zamiast filtrów) */
 .fab-layers{
   top: 12px !important; right: 64px !important;
@@ -1408,6 +1412,41 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
   border-color: rgba(255,255,255,.35);
   box-shadow: 0 4px 14px rgba(0,0,0,.3), 0 0 16px rgba(255,255,255,.08), 0 0 0 1px rgba(255,255,255,.12) inset }
 .qrail-tab .qrail-tab-icon{ filter: drop-shadow(0 0 4px rgba(255,255,255,.2)) }
+
+/* Tytuł poziomy obok każdej zakładki — wysuwa się gdy expanded */
+.qrail-tab-label{
+  position: absolute; top: 50%; transform: translateY(-50%) translateX(-8px);
+  padding: 5px 12px;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,.18), rgba(255,255,255,.08) 60%, rgba(255,255,255,.03));
+  border: 1px solid rgba(255,255,255,.16);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 3px 10px rgba(0,0,0,.25), 0 0 0 1px rgba(255,255,255,.04) inset;
+  border-radius: 14px;
+  white-space: nowrap; pointer-events: none;
+  font-size: .58rem; font-weight: 600; letter-spacing: .15em;
+  color: rgba(255,255,255,.92); text-transform: uppercase;
+  font-family: 'Space Grotesk','Inter',sans-serif;
+  opacity: 0; transition: opacity .35s, transform .4s cubic-bezier(.34,1.56,.64,1);
+}
+/* Pozycja labela zależna od side rail */
+#qrail.snap-right .qrail-tabs .qrail-tab-label{ right: 46px; left: auto; transform: translateY(-50%) translateX(-8px); }
+#qrail.snap-left  .qrail-tabs .qrail-tab-label{ left: 46px; right: auto; transform: translateY(-50%) translateX(8px); }
+/* Pokaż tylko gdy rail expanded — opóźnione żeby pojawiło się PO tabach */
+#qrail.expanded .qrail-tabs .qrail-tab-label{
+  opacity: 1; transform: translateY(-50%) translateX(0);
+}
+/* Stagger delay równy z tabami */
+#qrail.expanded .qrail-tabs .qrail-tab:nth-child(1) .qrail-tab-label{ transition-delay: .14s }
+#qrail.expanded .qrail-tabs .qrail-tab:nth-child(2) .qrail-tab-label{ transition-delay: .18s }
+#qrail.expanded .qrail-tabs .qrail-tab:nth-child(3) .qrail-tab-label{ transition-delay: .22s }
+#qrail.expanded .qrail-tabs .qrail-tab:nth-child(4) .qrail-tab-label{ transition-delay: .26s }
+#qrail.expanded .qrail-tabs .qrail-tab:nth-child(5) .qrail-tab-label{ transition-delay: .30s }
+#qrail.expanded .qrail-tabs .qrail-tab:nth-child(6) .qrail-tab-label{ transition-delay: .34s }
+#qrail.expanded .qrail-tabs .qrail-tab:nth-child(7) .qrail-tab-label{ transition-delay: .38s }
+#qrail.expanded .qrail-tabs .qrail-tab:nth-child(8) .qrail-tab-label{ transition-delay: .42s }
+#qrail.expanded .qrail-tabs .qrail-tab:nth-child(9) .qrail-tab-label{ transition-delay: .46s }
+#qrail.expanded .qrail-tabs .qrail-tab:nth-child(10) .qrail-tab-label{ transition-delay: .50s }
 .qrail-tab .qrail-tab-badge{
   position: absolute; top: -3px; right: -3px;
   min-width: 16px; height: 16px; padding: 0 4px;
@@ -13698,12 +13737,13 @@ function _initQuantumRail(){
   const dotsTop = QRAIL_TABS.slice(0, 3).map(()=>'<div class="qrail-tab-dot"></div>').join('');
   const dotsBottom = QRAIL_TABS.slice(3).map(()=>'<div class="qrail-tab-dot"></div>').join('');
 
-  // Tabs (radial fanout)
+  // Tabs (radial fanout) z labelem poziomym
   const tabsHtml = QRAIL_TABS.map((t, i) => {
     const badge = t.badgeFn ? t.badgeFn() : '';
     const badgeHtml = badge ? `<span class="qrail-tab-badge">${badge}</span>` : '';
     return `<button class="qrail-tab ${t.cls||''}" data-idx="${i}" title="${t.label}" onclick="_qrailTabClick(${i})">
       <span class="qrail-tab-icon">${t.icon}</span>${badgeHtml}
+      <span class="qrail-tab-label">${t.label}</span>
     </button>`;
   }).join('');
 
