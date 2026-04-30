@@ -1251,6 +1251,77 @@ def api_notify_checkin():
         save_subscriptions([s for s in subs if s.get("id") not in dead])
     return jsonify({"ok": True, "sent": sent})
 
+@app.route("/api/notify-drop", methods=["POST"])
+def api_notify_drop():
+    """Push do userów w okolicy (≤2 km) gdy ktoś zostawia drop."""
+    if not PUSH_AVAILABLE or not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
+        return jsonify({"ok": False, "error": "push not configured"}), 503
+    data = request.get_json(force=True) or {}
+    author_id = data.get("author_id")
+    title = (data.get("title") or "Coś fajnego")[:80]
+    qty = int(data.get("qty") or 1)
+    try:
+        lat = float(data.get("lat"))
+        lng = float(data.get("lng"))
+    except (TypeError, ValueError):
+        return jsonify({"ok": False, "error": "bad coords"}), 400
+
+    payload = json.dumps({
+        "title": f"🎁 Ktoś zostawił coś obok!",
+        "body":  f"{title} · {qty} szt · kto pierwszy ten lepszy",
+        "icon":  "/static/icons/ts-pro-192.png",
+        "badge": "/static/icons/ts-pro-96.png",
+        "tag":   "drop-nearby",
+        "renotify": True,
+        "data": {
+            "kind": "drop",
+            "lat": lat, "lng": lng,
+            "url": "/",
+        },
+    })
+
+    import math
+    def hav_km(a_lat, a_lng, b_lat, b_lng):
+        R = 6371.0
+        d_lat = math.radians(b_lat - a_lat)
+        d_lng = math.radians(b_lng - a_lng)
+        a = math.sin(d_lat/2)**2 + math.cos(math.radians(a_lat))*math.cos(math.radians(b_lat))*math.sin(d_lng/2)**2
+        return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+
+    subs = load_subscriptions()
+    targets = []
+    for s in subs:
+        if s.get("user_id") == author_id:
+            continue
+        slat, slng = s.get("lat"), s.get("lng")
+        if slat is None or slng is None:
+            continue
+        try:
+            if hav_km(lat, lng, float(slat), float(slng)) <= 2.0:
+                targets.append(s)
+        except Exception:
+            continue
+
+    dead, sent = [], 0
+    for sub in targets:
+        try:
+            webpush(
+                subscription_info=sub["subscription"],
+                data=payload,
+                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_claims={"sub": VAPID_EMAIL},
+            )
+            sent += 1
+        except WebPushException as ex:
+            if ex.response and ex.response.status_code in (404, 410):
+                dead.append(sub["id"])
+        except Exception as e:
+            print(f"[PUSH drop error] {e}")
+    if dead:
+        save_subscriptions([s for s in subs if s.get("id") not in dead])
+    return jsonify({"ok": True, "sent": sent, "targets": len(targets)})
+
+
 @app.route("/api/push/update-position", methods=["POST"])
 def api_push_update_position():
     data = request.get_json(force=True)

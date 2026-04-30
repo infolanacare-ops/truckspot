@@ -1028,6 +1028,7 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
 /* Peer card animacje (Quantum) */
 @keyframes peer-ring-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 @keyframes peer-pulse-dot{0%,100%{opacity:.5;transform:scale(.85)}50%{opacity:1;transform:scale(1.2)}}
+@keyframes drop-pulse{0%,100%{transform:scale(.85);opacity:.7}50%{transform:scale(1.25);opacity:1}}
 
 /* ── RECENTER BUTTON — mirror M (po lewej), pojawia się gdy user oddalił mapę ── */
 #recenter-btn{
@@ -6671,7 +6672,7 @@ function enterMode(mode){
       // Powiadom splash że mapa gotowa — przyspiesz progress
       try { window._splashMapReady?.(); } catch(e){}
       // SPOTS: pokaż żywe spoty NAWET dla niezalogowanych (zachęta do rejestracji)
-      setTimeout(() => { try { _loadSpotsNearby(10); _startSpotsLive(); } catch(e){ console.warn('Spots map init:', e); } }, 1500);
+      setTimeout(() => { try { _loadSpotsNearby(10); _startSpotsLive(); _loadDropsNearby(15); _startDropsLive(); } catch(e){ console.warn('Spots map init:', e); } }, 1500);
       // QUANTUM RAIL: pionowa oś z M, drag→snap edge, radial fanout
       setTimeout(() => { try { _initQuantumRail(); } catch(e){ console.warn('QRail init:', e); } }, 800);
       // Map Skin restore z localStorage
@@ -11957,6 +11958,7 @@ function openMetaverseHub(){
         ${_hubItem({icon:'📡', label:'CB Radio', desc:'Mapa wiadomości, czat z okolicą', color:'rgba(59,130,246,.15)', colorB:'rgba(59,130,246,.45)', onClick:`drawerAction('cbradio')`})}
         ${_hubItem({icon:'🔥', label:'Trending teraz', desc:'Najgorętsze spoty w okolicy', badge:'LIVE', color:'rgba(236,72,153,.15)', colorB:'rgba(236,72,153,.55)', onClick:`openTrendingPanel()`})}
         ${_hubItem({icon:'📢', label:'Spotted', desc:'Tablica miasta — zaginione, znalezione, ogłoszenia', badge:'NEW', color:'rgba(251,191,36,.15)', colorB:'rgba(251,191,36,.55)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openCitySpotted,200)`})}
+        ${_hubItem({icon:'🎁', label:'Zostaw drop', desc:'Coś niepotrzebnego? Zostaw — kto pierwszy ten lepszy', badge:'NEW', color:'rgba(251,191,36,.18)', colorB:'rgba(251,191,36,.6)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openCreateDropModal,200)`})}
         ${_hubItem({icon:'🎉', label:'Live eventy / Kampanie', desc:_activeCampaign ? _activeCampaign.title : 'Aktywne kampanie w okolicy', badge: _activeCampaign?'LIVE':'', color:'rgba(251,146,60,.15)', colorB:'rgba(251,146,60,.5)', onClick:`openMyTasksPanel()`})}
       </div>
 
@@ -15055,6 +15057,398 @@ function _haversineKm(lat1, lng1, lat2, lng2){
   const dLng = (lng2-lng1) * Math.PI/180;
   const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ══════════════════════════════════════════════════════
+// LIVE DROPS — kto pierwszy ten bierze 🎁
+// ══════════════════════════════════════════════════════
+const _dropMarkers = {};
+const _dropData    = new Map();
+let _dropsRealtimeCh = null;
+let _dropsRefreshTimer = null;
+
+async function _loadDropsNearby(maxKm = 15){
+  if(!_SB || !window.map) return;
+  try {
+    const { data, error } = await _SB.from('v_drops_active').select('*').limit(200);
+    if(error){ console.warn('drops load:', error); return; }
+    const seen = new Set();
+    let cLat = userLat, cLng = userLng;
+    try { const c = window.map.getCenter(); cLat = c.lat; cLng = c.lng; } catch(e){}
+    (data||[]).forEach(d => {
+      // Filter by distance from view
+      if(cLat && cLng){
+        const km = _haversineKm(cLat, cLng, d.lat, d.lng);
+        if(km > maxKm) return;
+      }
+      seen.add(d.id);
+      _dropData.set(d.id, d);
+      if(_dropMarkers[d.id]) _refreshDropMarker(d.id);
+      else _dropMarkers[d.id] = _mkDropMarker(d);
+    });
+    Object.keys(_dropMarkers).forEach(id => {
+      if(!seen.has(id)){
+        _dropMarkers[id].remove();
+        delete _dropMarkers[id];
+        _dropData.delete(id);
+      }
+    });
+  } catch(e){ console.warn('drops load fail:', e); }
+}
+
+function _mkDropMarker(d){
+  const el = document.createElement('div');
+  el.className = 'drop-marker';
+  el.style.cssText = `position:relative;width:50px;height:50px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center`;
+  const remaining = Math.max(0, (d.quantity||1) - (d.claimed_count||0));
+  el.innerHTML = `
+    <div style="position:absolute;inset:-8px;border-radius:50%;
+      background:radial-gradient(circle, rgba(251,191,36,.6), transparent 65%);
+      animation:drop-pulse 1.6s ease-in-out infinite;pointer-events:none"></div>
+    <div style="position:relative;width:46px;height:46px;border-radius:50%;
+      background:linear-gradient(140deg, #fef3c7, #fbbf24 50%, #d4af37);
+      box-shadow:0 8px 22px rgba(251,191,36,.5),
+                 0 0 0 2px rgba(255,255,255,.45) inset,
+                 0 -2px 4px rgba(0,0,0,.18) inset,
+                 0 0 18px rgba(251,191,36,.6);
+      display:flex;align-items:center;justify-content:center;font-size:1.45rem;
+      filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))">🎁</div>
+    ${remaining>0 ? `<div style="position:absolute;top:-4px;right:-6px;background:#10b981;color:#fff;
+      font-size:.62rem;font-weight:900;padding:.1rem .35rem;border-radius:10px;
+      border:2px solid #0a0e1a;font-family:'JetBrains Mono',monospace">${remaining}</div>` : ''}
+  `;
+  el.onclick = (e) => { e.stopPropagation(); openDropModal(d.id); };
+  return new mapboxgl.Marker({ element: el, anchor:'center' })
+    .setLngLat([d.lng, d.lat])
+    .addTo(window.map);
+}
+
+function _refreshDropMarker(id){
+  const d = _dropData.get(id);
+  if(!d) return;
+  const m = _dropMarkers[id];
+  if(!m) return;
+  m.remove();
+  delete _dropMarkers[id];
+  if(window.map) _dropMarkers[id] = _mkDropMarker(d);
+}
+
+function _startDropsLive(){
+  if(!_SB) return;
+  if(_dropsRealtimeCh) return;
+  _dropsRealtimeCh = _SB.channel('drops-live')
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'live_drops' }, payload => {
+      const d = payload.new;
+      if(!d || d.hidden || d.status!=='active') return;
+      try {
+        const c = window.map?.getCenter();
+        if(c){
+          const km = _haversineKm(c.lat, c.lng, parseFloat(d.lat), parseFloat(d.lng));
+          if(km > 20) return;
+          // Push do okolicy (own client) — pokaż alert jeśli blisko (≤2km)
+          if(km <= 2 && d.author_id !== _sbUser?.id){
+            try { if(navigator.vibrate) navigator.vibrate([30, 80, 30]); } catch(e){}
+            showAlert('🎁','Ktoś coś zostawił obok!', `${d.title} · ${Math.round(km*1000)}m`);
+            setTimeout(closeAlert, 5000);
+          }
+        }
+      } catch(e){}
+      _loadDropsNearby(15);
+    })
+    .on('postgres_changes', { event:'UPDATE', schema:'public', table:'live_drops' }, payload => {
+      const d = payload.new;
+      if(!d) return;
+      if(_dropData.has(d.id)){
+        Object.assign(_dropData.get(d.id), d);
+        if(d.hidden || d.status !== 'active' || (d.expires_at && new Date(d.expires_at) < new Date())){
+          _dropMarkers[d.id]?.remove();
+          delete _dropMarkers[d.id];
+          _dropData.delete(d.id);
+        } else {
+          _refreshDropMarker(d.id);
+        }
+      }
+    })
+    .on('postgres_changes', { event:'DELETE', schema:'public', table:'live_drops' }, payload => {
+      const id = payload.old?.id;
+      if(id && _dropMarkers[id]){
+        _dropMarkers[id].remove();
+        delete _dropMarkers[id];
+        _dropData.delete(id);
+      }
+    })
+    .subscribe();
+  if(!_dropsRefreshTimer){
+    _dropsRefreshTimer = setInterval(() => _loadDropsNearby(15), 3 * 60 * 1000);
+  }
+}
+
+async function openDropModal(dropId){
+  let d = _dropData.get(dropId);
+  if(!d){
+    try { const { data } = await _SB.from('v_drops_active').select('*').eq('id', dropId).maybeSingle(); d = data; } catch(e){}
+  }
+  if(!d){ showAlert('⚠️','Drop nie istnieje','Mógł zostać zabrany'); setTimeout(closeAlert,2200); return; }
+
+  document.getElementById('drop-modal')?.remove();
+  const remaining = Math.max(0, (d.quantity||1) - (d.claimed_count||0));
+  const isMine = _sbUser && d.author_id === _sbUser.id;
+  const expSec = Math.max(0, Math.floor((new Date(d.expires_at).getTime() - Date.now())/1000));
+  const expTxt = expSec > 3600 ? Math.floor(expSec/3600)+'h ' + Math.floor((expSec%3600)/60)+'min'
+                : expSec > 60 ? Math.floor(expSec/60)+' min' : expSec+' s';
+
+  // Distance check
+  let myLat = userLat, myLng = userLng;
+  if(!myLat || !myLng){ try { const c = JSON.parse(localStorage.getItem('ts_last_gps')||'null'); if(c?.lat){ myLat=c.lat; myLng=c.lng; } } catch(e){} }
+  const distKm = (myLat && myLng) ? _haversineKm(myLat, myLng, d.lat, d.lng) : null;
+  const distM = distKm != null ? Math.round(distKm*1000) : null;
+  const tooFar = distM != null && distM > 200;
+
+  const aName = d.display_name || 'TRIBE';
+  const aAv = d.avatar_2d_url || d.avatar_url || '';
+
+  const sheet = document.createElement('div');
+  sheet.id = 'drop-modal';
+  sheet.style.cssText = `position:fixed;inset:0;z-index:3300;
+    background:radial-gradient(circle at 50% 50%, rgba(10,14,26,.55) 0%, rgba(10,14,26,.92) 80%);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    display:flex;align-items:flex-start;justify-content:center;padding:1rem;overflow-y:auto;
+    animation:fadeIn .25s ease-out`;
+
+  sheet.innerHTML = `
+    <div onclick="event.stopPropagation()" style="
+      width:100%;max-width:440px;margin-top:4vh;
+      background:linear-gradient(160deg,
+        rgba(255,255,255,.14) 0%, rgba(255,255,255,.06) 50%, rgba(255,255,255,.12) 100%),
+        linear-gradient(160deg, rgba(22,28,48,.88), rgba(10,14,26,.94));
+      backdrop-filter:blur(24px) saturate(180%); -webkit-backdrop-filter:blur(24px) saturate(180%);
+      border-radius:24px; padding:0; overflow:hidden; position:relative;
+      box-shadow:
+        0 1px 0 rgba(255,255,255,.25) inset,
+        0 -1px 0 rgba(0,0,0,.18) inset,
+        0 24px 60px rgba(0,0,0,.6),
+        0 0 60px rgba(251,191,36,.25);">
+
+      <div style="position:absolute;top:-40px;left:50%;transform:translateX(-50%);
+        width:280px;height:100px;
+        background:radial-gradient(ellipse, rgba(251,191,36,.6), transparent 70%);
+        filter:blur(28px);pointer-events:none"></div>
+
+      ${d.photo_url ? `
+        <div style="height:200px;background:url('${d.photo_url}') center/cover;position:relative">
+          <div style="position:absolute;inset:0;background:linear-gradient(180deg, transparent 30%, rgba(10,14,26,.85))"></div>
+        </div>` : ''}
+
+      <div style="position:relative;padding:1.4rem 1.4rem 1rem">
+        <button onclick="document.getElementById('drop-modal').remove()" style="position:absolute;top:.8rem;right:.8rem;width:34px;height:34px;border:none;border-radius:50%;background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;z-index:5">✕</button>
+
+        <div style="display:flex;align-items:center;gap:.8rem;margin-bottom:.9rem">
+          <div style="width:54px;height:54px;border-radius:16px;
+            background:linear-gradient(140deg, #fef3c7, #fbbf24 50%, #d4af37);
+            display:flex;align-items:center;justify-content:center;font-size:1.7rem;
+            box-shadow:0 8px 22px rgba(251,191,36,.5)">🎁</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-family:'Space Grotesk',sans-serif;font-weight:900;font-size:1.15rem;color:#fff;letter-spacing:-.01em;line-height:1.2">${_wallEsc(d.title)}</div>
+            <div style="font-size:.65rem;color:rgba(251,191,36,.85);font-family:'JetBrains Mono',monospace;letter-spacing:.04em;margin-top:.25rem">// 🎁 ${remaining}/${d.quantity} · ⏳ ${expTxt}</div>
+          </div>
+        </div>
+
+        ${d.description ? `<div style="font-size:.85rem;line-height:1.5;color:rgba(255,255,255,.85);background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:.8rem;margin-bottom:.9rem;white-space:pre-wrap">${_wallEsc(d.description)}</div>` : ''}
+
+        <!-- Autor + dystans -->
+        <div style="display:flex;align-items:center;gap:.6rem;background:rgba(255,255,255,.03);border-radius:12px;padding:.6rem .8rem;margin-bottom:.9rem">
+          <div onclick="document.getElementById('drop-modal').remove();setTimeout(()=>openPublicProfile('${d.author_id}','${_wallEsc(aName)}','#fbbf24','🎁'),250)" style="display:flex;align-items:center;gap:.5rem;cursor:pointer;flex:1;min-width:0">
+            <div style="width:32px;height:32px;border-radius:50%;${aAv?`background:url('${aAv}') center/cover`:'background:linear-gradient(135deg,#fbbf24,#ec4899)'};flex-shrink:0;border:1.5px solid rgba(255,255,255,.18)"></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:.78rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_wallEsc(aName)}</div>
+              <div style="font-size:.6rem;color:rgba(255,255,255,.5);font-family:'JetBrains Mono',monospace">// zostawił to</div>
+            </div>
+          </div>
+          ${distM != null ? `<div style="text-align:right">
+            <div style="font-size:.85rem;font-weight:900;color:${tooFar?'#f87171':'#10b981'};font-family:'JetBrains Mono',monospace">${distM<1000?distM+'m':(distM/1000).toFixed(1)+'km'}</div>
+            <div style="font-size:.55rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.05em">odległość</div>
+          </div>` : ''}
+        </div>
+
+        <!-- CLAIM / EDIT -->
+        ${remaining<=0 ? `
+          <div style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:12px;padding:.8rem;text-align:center;font-size:.82rem;color:#fca5a5;font-weight:700">😿 Już rozdane</div>
+        ` : isMine ? `
+          <div style="display:flex;gap:.5rem">
+            <button onclick="navigateTo(${d.lat},${d.lng},'${_wallEsc(d.title)}');document.getElementById('drop-modal').remove()" style="flex:1;background:rgba(59,130,246,.2);border:1px solid rgba(59,130,246,.4);color:#fff;padding:.8rem;border-radius:12px;cursor:pointer;font-weight:700;font-size:.82rem">📍 Pokaż na mapie</button>
+            <button onclick="_dropDelete('${d.id}')" style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);color:#f87171;padding:.8rem 1rem;border-radius:12px;cursor:pointer;font-weight:700;font-size:.82rem">🗑️ Usuń</button>
+          </div>
+          <div style="font-size:.6rem;color:rgba(255,255,255,.4);text-align:center;margin-top:.5rem;font-family:'JetBrains Mono',monospace">// to Twój drop</div>
+        ` : tooFar ? `
+          <button disabled style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(239,68,68,.3);color:rgba(239,68,68,.8);padding:1rem;border-radius:14px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;font-size:.85rem;cursor:not-allowed">🚫 Za daleko (max 200m)</button>
+          <button onclick="navigateTo(${d.lat},${d.lng},'${_wallEsc(d.title)}');document.getElementById('drop-modal').remove()" style="width:100%;margin-top:.5rem;background:linear-gradient(135deg,#3b82f6,#06b6d4);border:none;color:#fff;padding:.7rem;border-radius:12px;cursor:pointer;font-weight:800;font-size:.78rem;letter-spacing:.04em">🧭 Nawiguj tam</button>
+        ` : `
+          <button onclick="_dropClaim('${d.id}')" style="width:100%;background:linear-gradient(135deg, #fbbf24, #f59e0b 50%, #d4af37);border:none;color:#0a0e1a;padding:1.1rem;border-radius:14px;cursor:pointer;font-weight:900;letter-spacing:.06em;text-transform:uppercase;font-size:.95rem;
+            box-shadow:0 1px 0 rgba(255,255,255,.45) inset, 0 -1px 0 rgba(0,0,0,.15) inset, 0 12px 30px rgba(251,191,36,.5)">
+            🎁 Biorę! (kto pierwszy ten lepszy)
+          </button>
+          <div style="font-size:.6rem;color:rgba(255,255,255,.4);text-align:center;margin-top:.6rem;font-family:'JetBrains Mono',monospace">// musisz być max 200m od miejsca</div>
+        `}
+      </div>
+    </div>`;
+  sheet.onclick = () => sheet.remove();
+  document.body.appendChild(sheet);
+}
+
+async function _dropClaim(dropId){
+  if(!_sbUser){ showAlert('🔒','Zaloguj się','Aby brać dropy'); setTimeout(closeAlert,2200); return; }
+  let lat = userLat, lng = userLng;
+  if(!lat || !lng){
+    try { const c = JSON.parse(localStorage.getItem('ts_last_gps')||'null'); if(c?.lat){ lat=c.lat; lng=c.lng; } } catch(e){}
+  }
+  if(!lat || !lng){ showAlert('📍','Brak GPS','Włącz lokalizację, żeby zgarnąć drop'); setTimeout(closeAlert,2800); return; }
+  try {
+    const { data, error } = await _SB.rpc('claim_drop', { p_drop_id: dropId, p_lat: lat, p_lng: lng });
+    if(error) throw error;
+    if(!data?.ok){
+      const errCode = data?.error || 'unknown';
+      const map = {
+        'auth_required':'Zaloguj się',
+        'not_found':'Drop nie istnieje',
+        'inactive':'Drop wygasł lub został zamknięty',
+        'sold_out':'Już rozdane 😿',
+        'already_claimed':'Już to wziąłeś',
+        'too_far': data?.distance_m ? `Za daleko: ${data.distance_m}m (max 200m)` : 'Za daleko (max 200m)'
+      };
+      showAlert('🚫', 'Nie udało się', map[errCode] || errCode);
+      setTimeout(closeAlert, 3000);
+      return;
+    }
+    try { if(navigator.vibrate) navigator.vibrate([20,40,20,60,80]); } catch(e){}
+    document.getElementById('drop-modal')?.remove();
+    showAlert('🎉','MASZ!', data.remaining > 0 ? `Zostało: ${data.remaining}` : 'Wziąłeś ostatni 🔥');
+    setTimeout(closeAlert, 3500);
+    _loadDropsNearby(15);
+  } catch(e){
+    console.log('[drop] claim err', e);
+    showAlert('⚠️','Błąd', e?.message || '');
+    setTimeout(closeAlert, 3000);
+  }
+}
+
+async function _dropDelete(dropId){
+  if(!confirm('Usunąć ten drop?')) return;
+  try {
+    const { error } = await _SB.from('live_drops').delete().eq('id', dropId);
+    if(error) throw error;
+    document.getElementById('drop-modal')?.remove();
+    _loadDropsNearby(15);
+  } catch(e){
+    showAlert('⚠️','Błąd', e?.message||'');
+    setTimeout(closeAlert, 2500);
+  }
+}
+
+function openCreateDropModal(){
+  if(!_sbUser){ showAlert('🔒','Zaloguj się','Aby zostawić drop'); setTimeout(closeAlert,2200); return; }
+  let lat = userLat, lng = userLng;
+  if(!lat || !lng){
+    try { const c = JSON.parse(localStorage.getItem('ts_last_gps')||'null'); if(c?.lat){ lat=c.lat; lng=c.lng; } } catch(e){}
+  }
+  if(!lat || !lng){ showAlert('📍','Brak GPS','Włącz lokalizację, żeby zostawić drop'); setTimeout(closeAlert,2800); return; }
+
+  document.getElementById('create-drop-modal')?.remove();
+  const m = document.createElement('div');
+  m.id = 'create-drop-modal';
+  m.style.cssText = `position:fixed;inset:0;z-index:3400;background:rgba(10,14,26,.85);backdrop-filter:blur(12px);display:flex;align-items:flex-start;justify-content:center;padding:1rem;overflow-y:auto;animation:fadeIn .2s`;
+  m.innerHTML = `
+    <div onclick="event.stopPropagation()" style="
+      width:100%;max-width:440px;margin-top:4vh;
+      background:linear-gradient(160deg, rgba(22,28,48,.92), rgba(10,14,26,.96));
+      border:1px solid rgba(251,191,36,.35);border-radius:22px;padding:1.4rem;position:relative;
+      box-shadow:0 24px 60px rgba(0,0,0,.7), 0 0 50px rgba(251,191,36,.2)">
+
+      <div style="position:absolute;top:-40px;left:50%;transform:translateX(-50%);
+        width:280px;height:100px;
+        background:radial-gradient(ellipse, rgba(251,191,36,.5), transparent 70%);
+        filter:blur(28px);pointer-events:none"></div>
+
+      <div style="display:flex;align-items:center;gap:.7rem;margin-bottom:1rem;position:relative">
+        <div style="width:46px;height:46px;border-radius:14px;background:linear-gradient(140deg,#fef3c7,#fbbf24,#d4af37);display:flex;align-items:center;justify-content:center;font-size:1.4rem;box-shadow:0 8px 22px rgba(251,191,36,.4)">🎁</div>
+        <div style="flex:1">
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:900;font-size:1.05rem;color:#fff">Zostawiam coś</div>
+          <div style="font-size:.62rem;color:rgba(251,191,36,.85);font-family:'JetBrains Mono',monospace">// kto pierwszy ten lepszy</div>
+        </div>
+        <button onclick="document.getElementById('create-drop-modal').remove()" style="width:32px;height:32px;border:none;border-radius:50%;background:rgba(255,255,255,.08);color:#fff;cursor:pointer;font-size:1rem">✕</button>
+      </div>
+
+      <label style="display:block;font-size:.65rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:.3rem">Co zostawiasz?</label>
+      <input id="dr-title" maxlength="80" placeholder="np. 5 piw, książki, ubrania..." style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;padding:.7rem .8rem;border-radius:12px;font-family:inherit;margin-bottom:.8rem;font-size:.9rem">
+
+      <label style="display:block;font-size:.65rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:.3rem">Opis (opcjonalnie)</label>
+      <textarea id="dr-desc" maxlength="500" rows="3" placeholder="Gdzie dokładnie / jak rozpoznać / dla kogo..." style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;padding:.7rem .8rem;border-radius:12px;font-family:inherit;margin-bottom:.8rem;font-size:.85rem;resize:vertical"></textarea>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.9rem">
+        <div>
+          <label style="display:block;font-size:.65rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:.3rem">Ilość</label>
+          <input id="dr-qty" type="number" min="1" max="100" value="1" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;padding:.65rem .8rem;border-radius:12px;font-family:inherit;font-size:.9rem;font-weight:800;text-align:center">
+        </div>
+        <div>
+          <label style="display:block;font-size:.65rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:.3rem">Wygasa za</label>
+          <select id="dr-exp" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;padding:.65rem .8rem;border-radius:12px;font-family:inherit;font-size:.85rem">
+            <option value="1">1h</option>
+            <option value="2">2h</option>
+            <option value="4" selected>4h</option>
+            <option value="8">8h</option>
+            <option value="24">24h</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:12px;padding:.7rem;margin-bottom:1rem;font-size:.75rem;color:rgba(255,255,255,.85);display:flex;align-items:center;gap:.5rem">
+        <span style="font-size:1.1rem">📍</span>
+        <span>Drop zostaje TUTAJ — w Twojej obecnej lokalizacji.<br><span style="font-size:.65rem;color:rgba(255,255,255,.55);font-family:'JetBrains Mono',monospace">// ${lat.toFixed(5)}, ${lng.toFixed(5)}</span></span>
+      </div>
+
+      <div style="display:flex;gap:.5rem">
+        <button onclick="document.getElementById('create-drop-modal').remove()" style="flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.7);padding:.85rem;border-radius:12px;cursor:pointer;font-family:inherit;font-weight:700">Anuluj</button>
+        <button onclick="_dropSubmit(${lat},${lng})" style="flex:2;background:linear-gradient(135deg,#fbbf24,#f59e0b 50%,#d4af37);border:none;color:#0a0e1a;padding:.85rem;border-radius:12px;cursor:pointer;font-family:inherit;font-weight:900;letter-spacing:.06em;text-transform:uppercase;box-shadow:0 8px 22px rgba(251,191,36,.5), 0 1px 0 rgba(255,255,255,.45) inset">🎁 Zostawiam</button>
+      </div>
+      <div style="text-align:center;margin-top:.6rem;font-size:.6rem;color:rgba(255,255,255,.4);font-family:'JetBrains Mono',monospace">// limit 3 dropów / godzinę</div>
+    </div>`;
+  m.onclick = () => m.remove();
+  document.body.appendChild(m);
+}
+
+async function _dropSubmit(lat, lng){
+  const title = document.getElementById('dr-title').value.trim();
+  const desc  = document.getElementById('dr-desc').value.trim();
+  const qty   = Math.max(1, Math.min(100, parseInt(document.getElementById('dr-qty').value)||1));
+  const exph  = parseInt(document.getElementById('dr-exp').value)||4;
+  if(!title){ showAlert('⚠️','Brak tytułu','Co zostawiasz?'); setTimeout(closeAlert,2000); return; }
+  try {
+    const expires_at = new Date(Date.now() + exph*3600*1000).toISOString();
+    const { error } = await _SB.from('live_drops').insert({
+      author_id: _sbUser.id, lat, lng,
+      title, description: desc || null, quantity: qty, expires_at
+    });
+    if(error){
+      if(error.message?.includes('Limit 3')){ showAlert('⏳','Limit','Max 3 dropy na godzinę'); setTimeout(closeAlert,3000); return; }
+      throw error;
+    }
+    document.getElementById('create-drop-modal')?.remove();
+    try { if(navigator.vibrate) navigator.vibrate([20,40,20]); } catch(e){}
+    showAlert('🎁','Drop zostawiony!','Userzy w okolicy dostaną powiadomienie');
+    setTimeout(closeAlert, 3000);
+    _loadDropsNearby(15);
+
+    // Push do okolicy via Flask endpoint
+    try {
+      fetch('/api/notify-drop', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ author_id: _sbUser.id, lat, lng, title, qty })
+      }).catch(()=>{});
+    } catch(e){}
+  } catch(e){
+    showAlert('⚠️','Błąd', e?.message || '');
+    setTimeout(closeAlert, 3000);
+  }
 }
 
 async function openSpotModal(spotId){
@@ -21846,7 +22240,7 @@ function _onAuthUser(user) {
     // Step counter — inicjalizacja (LS + sync z Supabase)
     setTimeout(() => { try { _initStepsToday(); } catch(e){ console.warn('Steps init:', e); } }, 2500);
     // SPOTS — load + Realtime live layer
-    setTimeout(() => { try { _loadSpotsNearby(10); _startSpotsLive(); } catch(e){ console.warn('Spots init:', e); } }, 3500);
+    setTimeout(() => { try { _loadSpotsNearby(10); _startSpotsLive(); _loadDropsNearby(15); _startDropsLive(); } catch(e){ console.warn('Spots init:', e); } }, 3500);
     // EVENTS — auto check-in geo+time loop (co 30s sprawdza RSVP)
     setTimeout(() => { try { _startAutoCheckIn(); } catch(e){ console.warn('Auto check-in init:', e); } }, 4000);
     // PRESENCE — start NIEZALEŻNIE od GPS fix (żeby koledzy widzieli się od razu jak otworzą apkę)
