@@ -1320,7 +1320,7 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
 /* NAVI button (route-fab gold pill na dole) — funkcja w hamburgerze "Zaplanuj trasę" */
 .route-fab, #route-fab{ display:none !important; }
 
-/* ── TRIBESPOT TOPBAR — Quantum glass (transparent + blur) ── */
+/* ── TRIBESPOT TOPBAR — Quantum glass (poszerzony, elementy przy dolnej części) ── */
 .topbar{
   position: absolute !important; top: 0; left: 0; right: 0;
   background: linear-gradient(180deg, rgba(10,14,26,.55), rgba(10,14,26,.25) 75%, transparent) !important;
@@ -1329,7 +1329,16 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
   backdrop-filter: blur(18px) saturate(140%);
   -webkit-backdrop-filter: blur(18px) saturate(140%);
   z-index: 200;
+  /* Poszerzenie o połowę + safe-area dla status bara (zegarek/bateria iOS+Android) */
+  padding-top: calc(env(safe-area-inset-top, 0px) + 1.6rem) !important;
+  padding-bottom: .55rem !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+  align-items: flex-end !important;
+  min-height: calc(env(safe-area-inset-top, 0px) + 64px) !important;
 }
+/* Odsunięcie elementów przyklejonych pod topbarem */
+.fab-layers, .layers-menu, .energy-live-badge, #energy-live-btn{ /* nie dotyczy bo są na dole */ }
 /* Mapa pełen ekran (topbar floatuje nad nią) */
 #map{ padding-top: 0; }
 /* Hamburger + search jako mini glass capsules */
