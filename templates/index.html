@@ -17089,6 +17089,14 @@ function _applyMapSkinExtras(key){
     } else {
       try { window.map.setConfigProperty('basemap', 'lightPreset', 'day'); } catch(e){}
     }
+    // Wszystkie skiny: maksymalna szczegółowość Mapbox Standard
+    try {
+      window.map.setConfigProperty('basemap', 'showPlaceLabels', true);
+      window.map.setConfigProperty('basemap', 'showPointOfInterestLabels', true);
+      window.map.setConfigProperty('basemap', 'showRoadLabels', true);
+      window.map.setConfigProperty('basemap', 'showTransitLabels', true);
+      window.map.setConfigProperty('basemap', 'show3dObjects', true);
+    } catch(e){}
   } catch(e){ console.warn('skin extras:', e); }
 }
 
@@ -20399,11 +20407,19 @@ function _startPresence(){
   });
 
   _presenceCh.subscribe(async status => {
+    console.log('[Presence] subscribe status:', status);
     if(status !== 'SUBSCRIBED') return;
     // Zawsze track — nawet bez GPS (żeby kolega widział że jestem online)
     const payload = { emoji, color, name };
     if(!_isGhost() && userLat && userLng){ payload.lat = userLat; payload.lng = userLng; }
     await _presenceCh.track(payload);
+    console.log('[Presence] tracked:', payload);
+    // Sprawdź ile osób jest w channelu po sekundzie
+    setTimeout(() => {
+      const state = _presenceCh?.presenceState() || {};
+      const count = Object.keys(state).length;
+      console.log('[Presence] online users:', count, state);
+    }, 1500);
     if(!_lerpActive){ _lerpActive=true; requestAnimationFrame(_lerpLoop); }
   });
 
@@ -20881,6 +20897,11 @@ function _onAuthUser(user) {
     setTimeout(() => { try { _initStepsToday(); } catch(e){ console.warn('Steps init:', e); } }, 2500);
     // SPOTS — load + Realtime live layer
     setTimeout(() => { try { _loadSpotsNearby(10); _startSpotsLive(); } catch(e){ console.warn('Spots init:', e); } }, 3500);
+    // PRESENCE — start NIEZALEŻNIE od GPS fix (żeby koledzy widzieli się od razu jak otworzą apkę)
+    // GPS update i tak zaktualizuje payload gdy pozycja pojawi się
+    setTimeout(() => { try { if(typeof _startPresence === 'function' && !_presenceCh) _startPresence(); } catch(e){ console.warn('Presence early init:', e); } }, 2000);
+    // Re-try presence co 10s jeśli się nie wystartowała (np. internet wracał)
+    setInterval(() => { try { if(typeof _startPresence === 'function' && !_presenceCh && _sbUser) _startPresence(); } catch(e){} }, 10000);
     // Preload avatara
     setTimeout(() => {
       _SB.from('profiles').select('avatar_2d_url,avatar_3d_url,display_name').eq('id', _sbUser.id).maybeSingle().then(({data}) => {
