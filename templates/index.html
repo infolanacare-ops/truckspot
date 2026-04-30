@@ -1442,21 +1442,42 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
   box-shadow: 0 4px 14px rgba(0,0,0,.3), 0 0 16px rgba(255,255,255,.08), 0 0 0 1px rgba(255,255,255,.12) inset }
 .qrail-tab .qrail-tab-icon{ filter: drop-shadow(0 0 4px rgba(255,255,255,.2)) }
 
-/* Tytuł poziomy obok każdej zakładki — wysuwa się gdy expanded */
+/* Tytuł poziomy obok każdej zakładki — Cyber Premium uwypuklony */
 .qrail-tab-label{
   position: absolute; top: 50%; transform: translateY(-50%) translateX(-8px);
-  padding: 5px 12px;
+  padding: 7px 14px;
   background:
-    radial-gradient(circle at 30% 30%, rgba(255,255,255,.18), rgba(255,255,255,.08) 60%, rgba(255,255,255,.03));
-  border: 1px solid rgba(255,255,255,.16);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 3px 10px rgba(0,0,0,.25), 0 0 0 1px rgba(255,255,255,.04) inset;
-  border-radius: 14px;
+    linear-gradient(135deg, rgba(2,6,15,.78) 0%, rgba(10,14,26,.88) 50%, rgba(2,6,15,.78) 100%);
+  border: 1px solid rgba(6,182,212,.42);
+  backdrop-filter: blur(14px) saturate(160%); -webkit-backdrop-filter: blur(14px) saturate(160%);
+  box-shadow:
+    0 6px 20px rgba(0,0,0,.55),
+    0 0 14px rgba(6,182,212,.18),
+    0 0 0 1px rgba(251,191,36,.08) inset,
+    0 1px 0 rgba(255,255,255,.06) inset,
+    0 -1px 0 rgba(0,0,0,.5) inset;
+  border-radius: 9px;
   white-space: nowrap; pointer-events: none;
-  font-size: .58rem; font-weight: 600; letter-spacing: .15em;
-  color: rgba(255,255,255,.92); text-transform: uppercase;
+  font-size: .62rem; font-weight: 700; letter-spacing: .2em;
+  color: transparent;
+  background-clip: padding-box;
+  text-transform: uppercase;
   font-family: 'Space Grotesk','Inter',sans-serif;
-  opacity: 0; transition: opacity .35s, transform .4s cubic-bezier(.34,1.56,.64,1);
+  opacity: 0;
+  transition: opacity .35s, transform .4s cubic-bezier(.34,1.56,.64,1);
+}
+/* Tekst gradientowy gold→cyan — "premium chromium" */
+.qrail-tab-label::before{
+  content: attr(data-label);
+  position: relative;
+  background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 25%, #67e8f9 60%, #06b6d4 100%);
+  background-size: 200% 100%; background-position: 0% 50%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow:
+    0 0 12px rgba(6,182,212,.35),
+    0 1px 2px rgba(0,0,0,.7);
+  filter: drop-shadow(0 0 6px rgba(251,191,36,.18));
 }
 /* Pozycja labela zależna od side rail */
 #qrail.snap-right .qrail-tabs .qrail-tab-label{ right: 46px; left: auto; transform: translateY(-50%) translateX(-8px); }
@@ -13772,7 +13793,7 @@ function _initQuantumRail(){
     const badgeHtml = badge ? `<span class="qrail-tab-badge">${badge}</span>` : '';
     return `<button class="qrail-tab ${t.cls||''}" data-idx="${i}" title="${t.label}" onclick="_qrailTabClick(${i})">
       <span class="qrail-tab-icon">${t.icon}</span>${badgeHtml}
-      <span class="qrail-tab-label">${t.label}</span>
+      <span class="qrail-tab-label" data-label="${t.label}"></span>
     </button>`;
   }).join('');
 
