@@ -14973,11 +14973,158 @@ function _stopAutoCheckIn(){
   window._lastCheckInAttempt.clear();
 }
 
-// ── TRIBESPOT: SPOTS LIVE LAYER ─────────────────────────────────────────────
-const _spotMarkers = {};   // id → mapboxgl.Marker
+// ── TRIBESPOT: SPOTS LIVE LAYER (WebGL — Pokemon Go-level perf) ────────────
 const _spotData    = new Map();  // id → spot row
 let _spotsRealtimeCh = null;
 let _spotsRefreshTimer = null;
+let _spotsLayerInited = false;
+
+// Generuj sprite per vibe (raz przy init, GPU-cached)
+function _initSpotsLayer(){
+  if(_spotsLayerInited || !window.map) return;
+  if(!window.map.loaded()){
+    window.map.once('load', _initSpotsLayer);
+    return;
+  }
+  // 8 spritów dla 8 vibe'ów (gradient kolor + emoji w centrum)
+  SPOT_VIBES.forEach(v => {
+    const imgKey = `ts-spot-${v.key}`;
+    if(!window.map.hasImage(imgKey)){
+      const lighter = v.color + 'cc';
+      window.map.addImage(imgKey, _emojiToImage(v.emoji, [lighter, v.color, _darken(v.color)], 72));
+    }
+  });
+
+  // Source
+  window.map.addSource('ts-spots', { type:'geojson', data:{type:'FeatureCollection', features:[]} });
+
+  // Halo pulsujący (per vibe color — match expression)
+  window.map.addLayer({
+    id: 'ts-spots-halo',
+    type: 'circle',
+    source: 'ts-spots',
+    paint: {
+      'circle-radius':  ['interpolate',['linear'],['zoom'], 10, 14, 16, 32, 20, 60],
+      'circle-color':   ['match', ['get','vibe'],
+        'party','#ec4899','chill','#06b6d4','food','#f59e0b','sport','#10b981',
+        'view','#8b5cf6','queue','#ef4444','event','#fbbf24','#a855f7'],
+      'circle-opacity': 0.3,
+      'circle-blur':    0.7
+    }
+  });
+
+  // Icon (emoji bubble per vibe)
+  window.map.addLayer({
+    id: 'ts-spots-icons',
+    type: 'symbol',
+    source: 'ts-spots',
+    layout: {
+      'icon-image': ['concat', 'ts-spot-', ['get', 'vibe']],
+      'icon-size':  ['interpolate',['linear'],['zoom'], 10, 0.5, 16, 0.85, 20, 1.15],
+      'icon-allow-overlap': true,
+      'icon-anchor': 'center'
+    }
+  });
+
+  // Count badge (live counter — green pill)
+  window.map.addLayer({
+    id: 'ts-spots-count',
+    type: 'symbol',
+    source: 'ts-spots',
+    filter: ['>', ['get','count'], 0],
+    layout: {
+      'text-field': ['to-string', ['get','count']],
+      'text-size': ['interpolate',['linear'],['zoom'], 10, 9, 16, 12, 20, 14],
+      'text-font': ['Open Sans Bold','Arial Unicode MS Bold'],
+      'text-offset': [1.1, -1.0],
+      'text-allow-overlap': true,
+      'text-ignore-placement': true
+    },
+    paint: {
+      'text-color': '#fff',
+      'text-halo-color': '#10b981',
+      'text-halo-width': 3
+    }
+  });
+
+  // Event title bubble (gold) — pokazuje tytuł eventu nad markerem
+  window.map.addLayer({
+    id: 'ts-spots-event-title',
+    type: 'symbol',
+    source: 'ts-spots',
+    filter: ['has','title_short'],
+    layout: {
+      'text-field': ['get','title_short'],
+      'text-size': ['interpolate',['linear'],['zoom'], 10, 10, 16, 12, 20, 14],
+      'text-font': ['Open Sans Bold','Arial Unicode MS Bold'],
+      'text-offset': [0, -2.6],
+      'text-anchor': 'bottom',
+      'text-allow-overlap': false,
+      'text-max-width': 7
+    },
+    paint: {
+      'text-color': '#fef3c7',
+      'text-halo-color': '#0a0e1a',
+      'text-halo-width': 2.5
+    }
+  });
+
+  // Click — openSpotModal
+  window.map.on('click', 'ts-spots-icons', (e) => {
+    const id = e.features?.[0]?.properties?.id;
+    if(id != null) openSpotModal(parseInt(id, 10));
+  });
+  window.map.on('mouseenter', 'ts-spots-icons', () => { window.map.getCanvas().style.cursor = 'pointer'; });
+  window.map.on('mouseleave', 'ts-spots-icons', () => { window.map.getCanvas().style.cursor = ''; });
+
+  // GPU-driven halo pulse (RAF, paused gdy hidden)
+  let _spotsHaloT = 0;
+  function _spotHaloTick(){
+    if(!_tsPaused && window.map?.getLayer('ts-spots-halo')){
+      _spotsHaloT += 0.045;
+      const op = 0.18 + Math.sin(_spotsHaloT) * 0.18;
+      try { window.map.setPaintProperty('ts-spots-halo', 'circle-opacity', op); } catch(e){}
+    }
+    requestAnimationFrame(_spotHaloTick);
+  }
+  requestAnimationFrame(_spotHaloTick);
+
+  _spotsLayerInited = true;
+}
+
+// Helper: ciemniejsza wersja koloru hex (do gradientu sprite'a)
+function _darken(hex){
+  const m = /^#([a-f\d]{6})$/i.exec(hex||'');
+  if(!m) return '#666';
+  let n = parseInt(m[1],16);
+  const r = Math.max(0, ((n>>16)&255) - 60);
+  const g = Math.max(0, ((n>>8)&255) - 60);
+  const b = Math.max(0, (n&255) - 60);
+  return '#' + [r,g,b].map(x => x.toString(16).padStart(2,'0')).join('');
+}
+
+function _setSpotsData(){
+  if(!window.map?.getSource('ts-spots')) return;
+  const features = [];
+  _spotData.forEach(s => {
+    const liveCount = (s.checked_in_count != null && s.checked_in_count > 0) ? s.checked_in_count : (s.joins_count || 0);
+    const props = {
+      id: s.id,
+      vibe: s.vibe || 'other',
+      count: liveCount
+    };
+    if(s.title){
+      const t = String(s.title);
+      props.title_short = t.length > 20 ? t.slice(0,18) + '…' : t;
+    }
+    features.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [parseFloat(s.lng), parseFloat(s.lat)] },
+      properties: props
+    });
+  });
+  window.map.getSource('ts-spots').setData({ type:'FeatureCollection', features });
+}
 
 function _spotVibeEmoji(vibe){
   return (SPOT_VIBES.find(v => v.key === vibe) || SPOT_VIBES[1]).emoji;
@@ -14985,6 +15132,7 @@ function _spotVibeEmoji(vibe){
 
 async function _loadSpotsNearby(maxKm = 10){
   if(!_SB || !window.map) return;
+  _initSpotsLayer();
   let cLat = userLat, cLng = userLng;
   try {
     const c = window.map.getCenter();
@@ -14996,74 +15144,15 @@ async function _loadSpotsNearby(maxKm = 10){
       p_lat: cLat, p_lng: cLng, p_radius_km: maxKm, p_limit: 200
     });
     if(error){ console.warn('spots_nearby:', error); return; }
-    const seen = new Set();
-    (data||[]).forEach(s => {
-      seen.add(s.id);
-      _spotData.set(s.id, s);
-      if(_spotMarkers[s.id]){
-        _refreshSpotMarker(s.id);
-      } else {
-        _spotMarkers[s.id] = _mkSpotMarker(s);
-      }
-    });
-    Object.keys(_spotMarkers).forEach(id => {
-      const idNum = parseInt(id, 10);
-      if(!seen.has(idNum)){
-        _spotMarkers[id].remove();
-        delete _spotMarkers[id];
-        _spotData.delete(idNum);
-      }
-    });
+    _spotData.clear();
+    (data||[]).forEach(s => { _spotData.set(s.id, s); });
+    _setSpotsData();
   } catch(e){ console.warn('spots load fail:', e); }
 }
 
-function _mkSpotMarker(s){
-  const el = document.createElement('div');
-  el.className = `spot-marker vibe-${s.vibe || 'other'}${s.title ? ' is-event' : ''}`;
-  el.dataset.spotId = s.id;
-  const emoji = _spotVibeEmoji(s.vibe);
-  const inner = s.photo_url
-    ? `<img src="${s.photo_url}" alt="" onerror="this.outerHTML='<span>${emoji}</span>'">`
-    : `<span>${emoji}</span>`;
-  // Live count: jeśli event i ktoś już check-inął → pokaż checked_in_count, inaczej joins_count
-  const liveCount = (s.checked_in_count != null && s.checked_in_count > 0) ? s.checked_in_count : (s.joins_count || 0);
-  const count = liveCount > 0 ? `<div class="spot-count">${liveCount}</div>` : '';
-  // Łezka nad markerem dla eventów (bubble z tytułem + ikoną)
-  const eventBubble = s.title ? `
-    <div class="spot-event-bubble" onclick="event.stopPropagation();openSpotModal(${s.id},event)" title="${(s.title||'').replace(/"/g,'&quot;').slice(0,80)}">
-      <svg xmlns="http://www.w3.org/2000/svg" width="44" height="56" viewBox="0 0 40 53" style="overflow:visible">
-        <defs>
-          <linearGradient id="evtG${s.id}" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#fef3c7"/>
-            <stop offset="50%" stop-color="#fbbf24"/>
-            <stop offset="100%" stop-color="#d4af37"/>
-          </linearGradient>
-        </defs>
-        <path d="M20 2C10.6 2 3 9.6 3 19c0 9 7.4 17.4 14.8 23.8L20 44.8l2.2-2C29.6 36.4 37 28 37 19 37 9.6 29.4 2 20 2z" fill="url(#evtG${s.id})" stroke="#0a0e1a" stroke-width="1.5"/>
-        <text x="20" y="27" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-weight="900" font-size="22" fill="#0a0e1a">!</text>
-      </svg>
-      <div class="spot-event-title">${_escHtml((s.title||'').slice(0,18))}${(s.title||'').length>18?'…':''}</div>
-    </div>` : '';
-  el.innerHTML = `
-    ${eventBubble}
-    <div class="spot-glow"></div>
-    <div class="spot-bubble">${inner}</div>
-    ${count}`;
-  el.onclick = (e) => { e.stopPropagation(); openSpotModal(s.id, e); };
-  return new mapboxgl.Marker({ element: el, anchor: 'center' })
-    .setLngLat([s.lng, s.lat])
-    .addTo(window.map);
-}
-
 function _refreshSpotMarker(id){
-  const s = _spotData.get(id);
-  if(!s) return;
-  const m = _spotMarkers[id];
-  if(!m) return;
-  // Najszybciej: usuń + utwórz na nowo
-  m.remove();
-  delete _spotMarkers[id];
-  if(window.map) _spotMarkers[id] = _mkSpotMarker(s);
+  // Backwards-compat shim — wywołuje pełen rerender warstwy WebGL
+  _setSpotsData();
 }
 
 function _refreshSpotMarkers(){
@@ -15094,24 +15183,19 @@ function _startSpotsLive(){
       const s = payload.new;
       if(!s) return;
       if(_spotData.has(s.id)){
-        // Zaktualizuj joins_count i ewentualnie usuń jeśli expired/hidden
         const oldData = _spotData.get(s.id);
         Object.assign(oldData, s);
         if(s.hidden || (s.active_until && new Date(s.active_until) < new Date())){
-          _spotMarkers[s.id]?.remove();
-          delete _spotMarkers[s.id];
           _spotData.delete(s.id);
-        } else {
-          _refreshSpotMarker(s.id);
         }
+        _setSpotsData();
       }
     })
     .on('postgres_changes', { event:'DELETE', schema:'public', table:'spots' }, payload => {
       const id = payload.old?.id;
-      if(id && _spotMarkers[id]){
-        _spotMarkers[id].remove();
-        delete _spotMarkers[id];
+      if(id && _spotData.has(id)){
         _spotData.delete(id);
+        _setSpotsData();
       }
     })
     .on('postgres_changes', { event:'*', schema:'public', table:'spot_joins' }, payload => {
@@ -15129,7 +15213,7 @@ function _startSpotsLive(){
     .subscribe();
   // Auto-refresh co 5 min (cleanup expired + nowych z poza realtime range)
   if(!_spotsRefreshTimer){
-    _spotsRefreshTimer = setInterval(() => _loadSpotsNearby(10), 5 * 60 * 1000);
+    _spotsRefreshTimer = setInterval(() => { if(!_tsPaused) _loadSpotsNearby(10); }, 5 * 60 * 1000);
   }
 }
 
@@ -16091,8 +16175,8 @@ async function _endSpot(spotId){
     const { error } = await _SB.from('spots').update({ active_until: new Date().toISOString() }).eq('id', spotId);
     if(error) throw error;
     document.getElementById('spot-detail-modal')?.remove();
-    if(_spotMarkers[spotId]){ _spotMarkers[spotId].remove(); delete _spotMarkers[spotId]; }
     _spotData.delete(spotId);
+    _setSpotsData();
     showAlert('⏹️','Spot zakończony',''); setTimeout(closeAlert, 1800);
   } catch(e){ showAlert('⚠️','Błąd', e.message||''); setTimeout(closeAlert, 3000); }
 }
@@ -16102,8 +16186,8 @@ async function _deleteSpot(spotId){
   try {
     await _SB.from('spots').delete().eq('id', spotId);
     document.getElementById('spot-detail-modal')?.remove();
-    if(_spotMarkers[spotId]){ _spotMarkers[spotId].remove(); delete _spotMarkers[spotId]; }
     _spotData.delete(spotId);
+    _setSpotsData();
     showAlert('🗑️','Spot usunięty',''); setTimeout(closeAlert, 1800);
   } catch(e){ showAlert('⚠️','Błąd', e.message||''); setTimeout(closeAlert, 3000); }
 }
