@@ -13566,6 +13566,14 @@ const AVATAR_STYLES = [
   {key:'thumbs',        name:'Thumbs',      emoji:'👍'},
 ];
 
+// ── AVATAR INSTANT RESTORE (przed czymkolwiek innym, żeby GPS marker miał) ──
+try {
+  const cached2d = localStorage.getItem('ts_avatar_2d_url');
+  if(cached2d) window._myAvatarUrl = cached2d;
+  const cached3d = localStorage.getItem('ts_avatar_3d_url');
+  if(cached3d) window._myAvatar3dUrl = cached3d;
+} catch(e){}
+
 // ── ICON PACKS ENGINE ───────────────────────────────────────────────────────
 // 4 paczki ikon: NEON HOLO (default), GLASS 3D, LIQUID METAL, CLASSIC (emoji fallback)
 // User wybiera w drawerze, zapisane w localStorage, event 'iconpackchange' triggers re-render
@@ -15166,6 +15174,9 @@ async function _saveAvatar(){
     _dmProfileCache.delete(_sbUser.id);
     window._myAvatarUrl = url2d;
     if(glb) window._myAvatar3dUrl = glb;
+    // localStorage cache — instant restore przy refresh/reload SW
+    try { localStorage.setItem('ts_avatar_2d_url', url2d); } catch(e){}
+    if(glb){ try { localStorage.setItem('ts_avatar_3d_url', glb); } catch(e){} }
     // Odśwież marker GPS na mapie od razu
     if(gpsMarker){
       try {
@@ -20502,8 +20513,14 @@ function _onAuthUser(user) {
     // Preload avatara
     setTimeout(() => {
       _SB.from('profiles').select('avatar_2d_url,avatar_3d_url,display_name').eq('id', _sbUser.id).maybeSingle().then(({data}) => {
-        if(data?.avatar_2d_url){ window._myAvatarUrl = data.avatar_2d_url; }
-        if(data?.avatar_3d_url){ window._myAvatar3dUrl = data.avatar_3d_url; }
+        if(data?.avatar_2d_url){
+          window._myAvatarUrl = data.avatar_2d_url;
+          try { localStorage.setItem('ts_avatar_2d_url', data.avatar_2d_url); } catch(e){}
+        }
+        if(data?.avatar_3d_url){
+          window._myAvatar3dUrl = data.avatar_3d_url;
+          try { localStorage.setItem('ts_avatar_3d_url', data.avatar_3d_url); } catch(e){}
+        }
         // Update gpsMarker jeśli jest
         if(window._myAvatarUrl && gpsMarker){
           try {
