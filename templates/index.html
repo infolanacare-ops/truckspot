@@ -16660,29 +16660,36 @@ const LAYER_STYLES = {
 
 // ── TRIBESPOT MAP SKINS — 7 skórek mapy z CSS filter + Mapbox style ────
 const MAP_SKINS = [
+  // WSZYSTKIE skiny używają Mapbox Standard (3.5D + 3D buildings + 3D trees + atmosphere)
+  // Tylko CSS filter + atmosphere preset zmienia vibe
+  // Wyjątek: Satellite (potrzebuje innego stylu z prawdziwymi zdjęciami)
   { key:'pokemon',    label:'Pokemon',    sub:'3.5D Standard',     emoji:'🎮',
     mapStyle:'mapbox://styles/mapbox/standard',          atmosphere:'gold',
     cssFilter:'none',                                     accent:'#fbbf24', isPro:false },
-  { key:'arctic',     label:'Arctic',     sub:'Vision Pro pristine',emoji:'❄️',
+  { key:'arctic',     label:'Arctic',     sub:'3.5D · Vision Pro',emoji:'❄️',
     mapStyle:'mapbox://styles/mapbox/standard',          atmosphere:'gold',
     cssFilter:'saturate(.4) brightness(1.12) contrast(.95) hue-rotate(180deg)',
     accent:'#67e8f9', isPro:false },
-  { key:'golden',     label:'Golden Hour',sub:'warm sunset',        emoji:'🌅',
+  { key:'golden',     label:'Golden Hour',sub:'3.5D · warm sunset', emoji:'🌅',
     mapStyle:'mapbox://styles/mapbox/standard',          atmosphere:'classic',
     cssFilter:'saturate(1.3) hue-rotate(-15deg) brightness(1.05) sepia(.15)',
     accent:'#f59e0b', isPro:false },
-  { key:'retrowave',  label:'Retrowave',  sub:'80s synthwave',      emoji:'🌃',
-    mapStyle:'mapbox://styles/mapbox/dark-v11',          atmosphere:'cyber',
-    cssFilter:'saturate(2.2) hue-rotate(280deg) brightness(1.15) contrast(1.2)',
+  // 3D RETROWAVE — Standard + intensywny filter retrowave (zachowane 3D buildings + atmosphere cyber)
+  { key:'retrowave',  label:'Retrowave',  sub:'3.5D · 80s synthwave', emoji:'🌃',
+    mapStyle:'mapbox://styles/mapbox/standard',          atmosphere:'cyber',
+    cssFilter:'saturate(2.4) hue-rotate(285deg) brightness(.95) contrast(1.25)',
     accent:'#ec4899', isPro:true },
-  { key:'cyberpunk',  label:'Cyberpunk',  sub:'Blade Runner night', emoji:'🌌',
-    mapStyle:'mapbox://styles/mapbox/dark-v11',          atmosphere:'cyber',
-    cssFilter:'saturate(1.8) hue-rotate(220deg) brightness(.92) contrast(1.3)',
+  // 3D CYBERPUNK — Standard + Blade Runner filter (3D buildings widoczne pod neonowym filtrem)
+  { key:'cyberpunk',  label:'Cyberpunk',  sub:'3.5D · Blade Runner', emoji:'🌌',
+    mapStyle:'mapbox://styles/mapbox/standard',          atmosphere:'cyber',
+    cssFilter:'saturate(2.0) hue-rotate(225deg) brightness(.78) contrast(1.35)',
     accent:'#06b6d4', isPro:true },
-  { key:'midnight',   label:'Midnight',   sub:'Gold luxury',        emoji:'🏙️',
-    mapStyle:'mapbox://styles/mapbox/dark-v11',          atmosphere:'gold',
-    cssFilter:'saturate(.85) brightness(.85) contrast(1.15) sepia(.1)',
+  // 3D MIDNIGHT — Standard z dark filter + gold atmosphere
+  { key:'midnight',   label:'Midnight',   sub:'3.5D · Gold luxury', emoji:'🏙️',
+    mapStyle:'mapbox://styles/mapbox/standard',          atmosphere:'gold',
+    cssFilter:'saturate(.7) brightness(.7) contrast(1.2) sepia(.18) hue-rotate(-10deg)',
     accent:'#d4af37', isPro:true },
+  // Satellite — wyjątek bo potrzebuje innego stylu (zdjęcia satelitarne)
   { key:'satellite',  label:'Satellite 3D', sub:'Real Earth + 3D buildings', emoji:'🛰️',
     mapStyle:'mapbox://styles/mapbox/standard-satellite', atmosphere:'gold',
     cssFilter:'saturate(1.15) contrast(1.08) brightness(1.02)', accent:'#10b981', isPro:true },
