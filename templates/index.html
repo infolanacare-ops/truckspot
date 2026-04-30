@@ -1374,59 +1374,125 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
   box-shadow: 0 0 8px rgba(168,85,247,.3);
 }
 
-/* ── TRIBESPOT DRAWER (hamburger) — bez kontenera, tylko same items wyskakuja ── */
+/* ── TRIBESPOT DRAWER — floating capsules, ZERO ramek, multi-layer shadows ── */
 .drawer{
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  padding: 14px 12px;
-  gap: 8px;
+  padding: 0 10px 10px !important;
+  gap: 7px;
+  box-sizing: border-box;
 }
+.drawer *, .drawer *::before, .drawer *::after{ box-sizing: border-box; }
 .drawer-header{
   background: transparent !important;
   border: none !important;
-  padding: 1.4rem .8rem 1rem !important;
+  padding: calc(env(safe-area-inset-top, 0px) + .8rem) .4rem .6rem !important;
+  overflow: visible !important;
 }
 .drawer-header::before{ display: none !important; }
-/* Profile row jako pojedyncza glass capsule */
+
+/* PROFILE ROW — soft floating glass (NO BORDER, multi shadows) */
 .drawer .profile-row{
-  background: linear-gradient(135deg, rgba(255,255,255,.42), rgba(255,255,255,.22)) !important;
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255,255,255,.25);
-  border-radius: 16px !important;
-  padding: 12px 14px !important;
-  box-shadow: 0 6px 20px rgba(0,0,0,.3), 0 0 0 1px rgba(255,255,255,.1) inset, 0 -1px 0 rgba(0,0,0,.1) inset;
+  width: 100%;
+  background: linear-gradient(135deg, rgba(255,255,255,.4), rgba(255,255,255,.2)) !important;
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  border: none !important;
+  border-radius: 18px !important;
+  padding: 10px 12px !important;
+  margin-bottom: .6rem !important;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.32) inset,
+    0 -1px 0 rgba(0,0,0,.15) inset,
+    0 10px 28px rgba(0,0,0,.22),
+    0 3px 10px rgba(0,0,0,.12),
+    0 0 26px rgba(251,191,36,.06),
+    0 0 36px rgba(6,182,212,.05);
+  min-width: 0; overflow: hidden;
+}
+.drawer .profile-row > *{ min-width: 0; }
+.drawer .profile-name, .drawer #drawer-name{
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .drawer .avatar{
-  background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.5), rgba(251,191,36,.45) 50%, rgba(6,182,212,.35)) !important;
-  border: 1px solid rgba(255,255,255,.4);
-  box-shadow: 0 4px 14px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.15) inset;
+  flex-shrink: 0;
+  background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.55), rgba(251,191,36,.45) 50%, rgba(6,182,212,.32)) !important;
+  border: none !important;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.4) inset,
+    0 -2px 4px rgba(0,0,0,.2) inset,
+    0 6px 18px rgba(251,191,36,.3),
+    0 3px 8px rgba(0,0,0,.25);
 }
-/* Każda zakładka = osobna glass capsule */
+
+/* MENU ITEM — floating capsule (NO BORDER, layered shadows) */
 .drawer .menu-item{
-  background: linear-gradient(135deg, rgba(255,255,255,.38), rgba(255,255,255,.18)) !important;
-  backdrop-filter: blur(18px) saturate(170%);
-  -webkit-backdrop-filter: blur(18px) saturate(170%);
-  border: 1px solid rgba(255,255,255,.22) !important;
-  border-bottom: 1px solid rgba(255,255,255,.22) !important;
-  border-radius: 14px !important;
-  padding: 10px 12px !important;
-  margin: 0 6px 6px !important;
-  box-shadow: 0 4px 14px rgba(0,0,0,.25), 0 0 0 1px rgba(255,255,255,.08) inset, 0 -1px 0 rgba(0,0,0,.12) inset;
-  transition: background .2s, transform .15s, box-shadow .2s;
+  width: 100%;
+  background: linear-gradient(135deg, rgba(255,255,255,.34), rgba(255,255,255,.16)) !important;
+  backdrop-filter: blur(20px) saturate(170%);
+  -webkit-backdrop-filter: blur(20px) saturate(170%);
+  border: none !important;
+  border-radius: 16px !important;
+  padding: 9px 12px !important;
+  margin: 0 0 5px !important;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.28) inset,
+    0 -1px 0 rgba(0,0,0,.12) inset,
+    0 8px 22px rgba(0,0,0,.18),
+    0 2px 6px rgba(0,0,0,.1),
+    0 0 22px rgba(255,255,255,.03);
+  transition: background .25s, transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .25s;
+  min-width: 0; overflow: hidden;
+}
+.drawer .menu-item > *{ min-width: 0; }
+.drawer .menu-label{
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .drawer .menu-item:hover, .drawer .menu-item:active{
-  background: linear-gradient(135deg, rgba(255,255,255,.55), rgba(255,255,255,.3)) !important;
-  transform: translateX(4px);
-  box-shadow: 0 6px 18px rgba(0,0,0,.32), 0 0 16px rgba(255,255,255,.1), 0 0 0 1px rgba(255,255,255,.18) inset;
+  background: linear-gradient(135deg, rgba(255,255,255,.5), rgba(255,255,255,.28)) !important;
+  transform: translateX(4px) scale(1.01);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.4) inset,
+    0 -1px 0 rgba(0,0,0,.12) inset,
+    0 12px 32px rgba(0,0,0,.22),
+    0 4px 12px rgba(0,0,0,.14),
+    0 0 30px rgba(6,182,212,.12),
+    0 0 42px rgba(251,191,36,.08);
 }
 .drawer .menu-icon{
-  background: rgba(255,255,255,.18) !important;
-  border: 1px solid rgba(255,255,255,.25) !important;
+  flex-shrink: 0;
+  background: rgba(255,255,255,.16) !important;
+  border: none !important;
   backdrop-filter: blur(10px);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.18) inset,
+    0 -1px 0 rgba(0,0,0,.08) inset,
+    0 3px 8px rgba(0,0,0,.15);
+}
+
+/* Stagger drawer items — fade-in po opening */
+.drawer.open .menu-item{
+  animation: drawerItemIn .35s cubic-bezier(.34,1.56,.64,1) both;
+}
+.drawer.open .menu-item:nth-child(1){ animation-delay: .04s }
+.drawer.open .menu-item:nth-child(2){ animation-delay: .07s }
+.drawer.open .menu-item:nth-child(3){ animation-delay: .10s }
+.drawer.open .menu-item:nth-child(4){ animation-delay: .13s }
+.drawer.open .menu-item:nth-child(5){ animation-delay: .16s }
+.drawer.open .menu-item:nth-child(6){ animation-delay: .19s }
+.drawer.open .menu-item:nth-child(7){ animation-delay: .22s }
+.drawer.open .menu-item:nth-child(8){ animation-delay: .25s }
+.drawer.open .menu-item:nth-child(9){ animation-delay: .28s }
+.drawer.open .menu-item:nth-child(10){ animation-delay: .31s }
+.drawer.open .menu-item:nth-child(n+11){ animation-delay: .34s }
+@keyframes drawerItemIn{
+  from{ opacity:0; transform:translateX(-30px) scale(.92) }
+  to{ opacity:1; transform:translateX(0) scale(1) }
 }
 /* Stagger drawer items — fade-in po opening */
 .drawer.open .menu-item{
