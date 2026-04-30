@@ -13713,12 +13713,11 @@ function _initQuantumRail(){
 }
 
 function _qrailDragStart(e){
-  // Nie startuj drag jeśli klik na tab (M już ma własny stop)
+  // Nie startuj drag jeśli klik na tab
   if(e.target.closest('.qrail-tab')) return;
   _qrailState.dragging = true;
   _qrailState.dragMoved = false;
   const rail = document.getElementById('qrail');
-  rail.classList.add('dragging');
   const evt = e.touches ? e.touches[0] : e;
   _qrailState.startX = evt.clientX;
   _qrailState.startY = evt.clientY;
@@ -13726,7 +13725,7 @@ function _qrailDragStart(e){
   document.addEventListener('mouseup', _qrailDragEnd);
   document.addEventListener('touchmove', _qrailDragMove, {passive:false});
   document.addEventListener('touchend', _qrailDragEnd);
-  e.preventDefault();
+  // NIE preventDefault tutaj — niech klik na M zadziała normalnie jeśli user nie rusza palcem
 }
 
 function _qrailDragMove(e){
@@ -13734,8 +13733,13 @@ function _qrailDragMove(e){
   const evt = e.touches ? e.touches[0] : e;
   const dx = evt.clientX - _qrailState.startX;
   const dy = evt.clientY - _qrailState.startY;
-  if(Math.abs(dx) > 5 || Math.abs(dy) > 5) _qrailState.dragMoved = true;
-  // Pionowe pozycjonowanie — top% (5..95)
+  // Drag startuje dopiero przy ruchu >5px
+  if(!_qrailState.dragMoved && (Math.abs(dx) > 5 || Math.abs(dy) > 5)){
+    _qrailState.dragMoved = true;
+    document.getElementById('qrail')?.classList.add('dragging');
+  }
+  if(!_qrailState.dragMoved) return;  // jeszcze nie drag — może być tap
+  // Pionowe pozycjonowanie — top% (8..92)
   const newTopPct = Math.max(8, Math.min(92, (evt.clientY / window.innerHeight) * 100));
   const rail = document.getElementById('qrail');
   if(rail){
@@ -13747,11 +13751,21 @@ function _qrailDragMove(e){
 
 function _qrailDragEnd(e){
   if(!_qrailState.dragging) return;
+  const wasDragMoved = _qrailState.dragMoved;
+  _qrailState.dragging = false;
+  document.removeEventListener('mousemove', _qrailDragMove);
+  document.removeEventListener('mouseup', _qrailDragEnd);
+  document.removeEventListener('touchmove', _qrailDragMove);
+  document.removeEventListener('touchend', _qrailDragEnd);
+  if(!wasDragMoved){
+    // Tylko tap — niech click handler (M lub tab) zadziała normalnie
+    return;
+  }
+  // Faktyczny drag — snap edge
   const evt = e.changedTouches ? e.changedTouches[0] : e;
   const rail = document.getElementById('qrail');
+  if(!rail) return;
   rail.classList.remove('dragging');
-  _qrailState.dragging = false;
-  // Snap left/right
   const side = (evt.clientX < window.innerWidth / 2) ? 'left' : 'right';
   _qrailState.side = side;
   rail.classList.remove('snap-left', 'snap-right');
@@ -13760,11 +13774,6 @@ function _qrailDragEnd(e){
     localStorage.setItem('ts_qrail_side', side);
     localStorage.setItem('ts_qrail_top', _qrailState.topPercent.toFixed(1));
   } catch(e){}
-  document.removeEventListener('mousemove', _qrailDragMove);
-  document.removeEventListener('mouseup', _qrailDragEnd);
-  document.removeEventListener('touchmove', _qrailDragMove);
-  document.removeEventListener('touchend', _qrailDragEnd);
-  // Jeśli expanded i zmieniliśmy side — przelicz fanout
   if(_qrailState.expanded) _qrailLayoutFanout();
 }
 
