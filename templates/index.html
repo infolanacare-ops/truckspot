@@ -14421,7 +14421,16 @@ async function openSpotModal(spotId){
   const hoursLeft = Math.floor(minutesLeft/60);
   const minsRest = minutesLeft % 60;
   const timeLeft = hoursLeft > 0 ? `${hoursLeft}h ${minsRest}m` : `${minsRest}m`;
-  const isMine = _sbUser && s.posted_by === _sbUser.id;
+  // Fallback: spots_nearby RPC nie zwraca posted_by — fetch z v_spots_active gdy brakuje
+  let postedBy = s.posted_by;
+  if(!postedBy && _sbUser && _SB){
+    try {
+      const { data: full } = await _SB.from('v_spots_active').select('posted_by').eq('id', spotId).maybeSingle();
+      if(full?.posted_by) postedBy = full.posted_by;
+      if(s) s.posted_by = postedBy;
+    } catch(e){}
+  }
+  const isMine = _sbUser && postedBy === _sbUser.id;
 
   const modal = document.createElement('div');
   modal.id = 'spot-detail-modal';
@@ -14458,7 +14467,8 @@ async function openSpotModal(spotId){
         </div>
         <div style="display:flex;gap:8px">
           ${isMine
-            ? `<button onclick="_deleteSpot(${s.id})" style="flex:1;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.5);color:#ef4444;border-radius:11px;padding:12px;font-weight:800;font-size:.82rem;cursor:pointer">🗑️ Usuń</button>`
+            ? `<button onclick="_endSpot(${s.id})" style="flex:1;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.5);color:#fbbf24;border-radius:11px;padding:12px;font-weight:800;font-size:.78rem;cursor:pointer">⏹️ Zakończ</button>
+               <button onclick="_deleteSpot(${s.id})" style="flex:1;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.5);color:#ef4444;border-radius:11px;padding:12px;font-weight:800;font-size:.78rem;cursor:pointer">🗑️ Usuń</button>`
             : amIJoined
               ? `<button onclick="_leaveSpotAction(${s.id})" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:11px;padding:12px;font-weight:800;font-size:.82rem;cursor:pointer">✓ Jesteś tu — opuść</button>`
               : `<button onclick="_joinSpotAction(${s.id})" style="flex:1;background:linear-gradient(135deg,${vibe.color},${vibe.color}cc);border:none;color:#fff;border-radius:11px;padding:12px;font-weight:900;font-size:.85rem;cursor:pointer;box-shadow:0 4px 14px ${vibe.color}66">✨ DOŁĄCZ</button>`}
@@ -14584,6 +14594,18 @@ async function _leaveSpotAction(spotId){
     document.getElementById('spot-detail-modal')?.remove();
     showAlert('👋','Opuściłeś spot','');
     setTimeout(closeAlert, 1800);
+  } catch(e){ showAlert('⚠️','Błąd', e.message||''); setTimeout(closeAlert, 3000); }
+}
+
+async function _endSpot(spotId){
+  if(!confirm('Zakończyć ten spot? Inni już go nie zobaczą.')) return;
+  try {
+    const { error } = await _SB.from('spots').update({ active_until: new Date().toISOString() }).eq('id', spotId);
+    if(error) throw error;
+    document.getElementById('spot-detail-modal')?.remove();
+    if(_spotMarkers[spotId]){ _spotMarkers[spotId].remove(); delete _spotMarkers[spotId]; }
+    _spotData.delete(spotId);
+    showAlert('⏹️','Spot zakończony',''); setTimeout(closeAlert, 1800);
   } catch(e){ showAlert('⚠️','Błąd', e.message||''); setTimeout(closeAlert, 3000); }
 }
 
