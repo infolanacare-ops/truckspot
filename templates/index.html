@@ -11956,6 +11956,7 @@ function openMetaverseHub(){
         ${_hubItem({icon: _isGhost() ? '👻' : '👁️', label: _isGhost() ? 'Tryb niewidzialny ON' : 'Tryb niewidzialny', desc: _ghostLabel(), badge: _isGhost() ? 'ON' : '', color:'rgba(168,85,247,.15)', colorB:'rgba(168,85,247,.45)', onClick:`openGhostPanel()`})}
         ${_hubItem({icon:'📡', label:'CB Radio', desc:'Mapa wiadomości, czat z okolicą', color:'rgba(59,130,246,.15)', colorB:'rgba(59,130,246,.45)', onClick:`drawerAction('cbradio')`})}
         ${_hubItem({icon:'🔥', label:'Trending teraz', desc:'Najgorętsze spoty w okolicy', badge:'LIVE', color:'rgba(236,72,153,.15)', colorB:'rgba(236,72,153,.55)', onClick:`openTrendingPanel()`})}
+        ${_hubItem({icon:'📢', label:'Spotted', desc:'Tablica miasta — zaginione, znalezione, ogłoszenia', badge:'NEW', color:'rgba(251,191,36,.15)', colorB:'rgba(251,191,36,.55)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openCitySpotted,200)`})}
         ${_hubItem({icon:'🎉', label:'Live eventy / Kampanie', desc:_activeCampaign ? _activeCampaign.title : 'Aktywne kampanie w okolicy', badge: _activeCampaign?'LIVE':'', color:'rgba(251,146,60,.15)', colorB:'rgba(251,146,60,.5)', onClick:`openMyTasksPanel()`})}
       </div>
 
@@ -20943,10 +20944,25 @@ function _peerTap(key){
         <div style="height:1px;margin:0 1.4rem .8rem;
           background:linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent)"></div>
 
-        <!-- Akcje: Napisz + Zaczep -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 1.4rem">
+        <!-- Akcje: Profil + Napisz + Zaczep -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:0 1.4rem">
+          <button onclick="document.getElementById('${id}').remove(); openPublicProfile('${key}','${safeName}','${color}','${emoji}')"
+            style="display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:1rem .3rem;
+            border:none;border-radius:16px;cursor:pointer;font-family:inherit;color:#fff;
+            background:
+              radial-gradient(circle at 35% 30%, rgba(255,255,255,.32), rgba(255,255,255,.05) 70%),
+              linear-gradient(135deg, rgba(168,85,247,.55), rgba(99,102,241,.45));
+            box-shadow:
+              0 1px 0 rgba(255,255,255,.32) inset,
+              0 -1px 0 rgba(0,0,0,.18) inset,
+              0 8px 22px rgba(168,85,247,.35),
+              0 0 0 1px rgba(255,255,255,.08) inset;
+            transition:transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .2s">
+            <span style="font-size:1.35rem;filter:drop-shadow(0 0 8px rgba(255,255,255,.4))">👤</span>
+            <span style="font-size:.66rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase">Profil</span>
+          </button>
           <button onclick="document.getElementById('${id}').remove(); _openDm('${key}','${safeName}','${emoji}')"
-            style="display:flex;flex-direction:column;align-items:center;gap:.5rem;padding:1.1rem .5rem;
+            style="display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:1rem .3rem;
             border:none;border-radius:16px;cursor:pointer;font-family:inherit;color:#fff;
             background:
               radial-gradient(circle at 35% 30%, rgba(255,255,255,.32), rgba(255,255,255,.05) 70%),
@@ -20957,11 +20973,11 @@ function _peerTap(key){
               0 8px 22px rgba(6,182,212,.35),
               0 0 0 1px rgba(255,255,255,.08) inset;
             transition:transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .2s">
-            <span style="font-size:1.5rem;filter:drop-shadow(0 0 8px rgba(255,255,255,.4))">💬</span>
-            <span style="font-size:.74rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase">Napisz</span>
+            <span style="font-size:1.35rem;filter:drop-shadow(0 0 8px rgba(255,255,255,.4))">💬</span>
+            <span style="font-size:.66rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase">Napisz</span>
           </button>
           <button onclick="document.getElementById('${id}').remove(); _peerNudge('${key}','${safeName}')"
-            style="display:flex;flex-direction:column;align-items:center;gap:.5rem;padding:1.1rem .5rem;
+            style="display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:1rem .3rem;
             border:none;border-radius:16px;cursor:pointer;font-family:inherit;color:#fff;
             background:
               radial-gradient(circle at 35% 30%, rgba(255,255,255,.32), rgba(255,255,255,.05) 70%),
@@ -20972,8 +20988,8 @@ function _peerTap(key){
               0 8px 22px rgba(251,191,36,.35),
               0 0 0 1px rgba(255,255,255,.08) inset;
             transition:transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .2s">
-            <span style="font-size:1.5rem;filter:drop-shadow(0 0 8px rgba(255,255,255,.4))">👋</span>
-            <span style="font-size:.74rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase">Zaczep</span>
+            <span style="font-size:1.35rem;filter:drop-shadow(0 0 8px rgba(255,255,255,.4))">👋</span>
+            <span style="font-size:.66rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase">Zaczep</span>
           </button>
         </div>
 
@@ -21015,6 +21031,486 @@ async function _peerNudge(key, name){
   } catch(e){
     showAlert('⚠️','Błąd zaczepu', e?.message || '');
     setTimeout(closeAlert, 3000);
+  }
+}
+
+
+// ══════════════════════════════════════════════════════
+// PUBLIC PROFILE + WALL (każdy user ma swój profil + tablicę)
+// ══════════════════════════════════════════════════════
+let _wallChannel = null;
+let _spottedChannel = null;
+
+function _wallEsc(s){ return String(s||'').replace(/[<>&"']/g, c=>({ '<':'&lt;','>':'&gt;','&':'amp;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function openPublicProfile(userId, fallbackName, color, emoji){
+  if(!userId) return;
+  const safeName = fallbackName || 'TRIBE';
+  const safeColor = color || '#a855f7';
+  const safeEmoji = emoji || '👤';
+  const isMe = _sbUser && _sbUser.id === userId;
+
+  // usuń poprzedni jeśli był
+  document.getElementById('public-profile-modal')?.remove();
+  if(_wallChannel){ try{_SB.removeChannel(_wallChannel);}catch(e){} _wallChannel=null; }
+
+  const sheet = document.createElement('div');
+  sheet.id = 'public-profile-modal';
+  sheet.style.cssText = `position:fixed;inset:0;z-index:3300;
+    background:radial-gradient(circle at 50% 50%, rgba(10,14,26,.55) 0%, rgba(10,14,26,.92) 80%);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    display:flex;align-items:flex-start;justify-content:center;padding:1.2rem;overflow-y:auto;
+    animation:fadeIn .25s ease-out`;
+
+  sheet.innerHTML = `
+    <div onclick="event.stopPropagation()" style="
+      width:100%;max-width:480px;margin-top:2vh;margin-bottom:2vh;
+      background:linear-gradient(160deg,
+        rgba(255,255,255,.14) 0%, rgba(255,255,255,.06) 50%, rgba(255,255,255,.12) 100%),
+        linear-gradient(160deg, rgba(22,28,48,.88), rgba(10,14,26,.94));
+      backdrop-filter:blur(24px) saturate(180%); -webkit-backdrop-filter:blur(24px) saturate(180%);
+      border-radius:24px; padding:0; overflow:hidden; position:relative;
+      box-shadow:
+        0 1px 0 rgba(255,255,255,.25) inset,
+        0 -1px 0 rgba(0,0,0,.18) inset,
+        0 24px 60px rgba(0,0,0,.6),
+        0 0 60px ${safeColor}22;">
+
+      <!-- glow korona -->
+      <div style="position:absolute;top:-40px;left:50%;transform:translateX(-50%);
+        width:280px;height:100px;
+        background:radial-gradient(ellipse, ${safeColor}66, transparent 70%);
+        filter:blur(28px);pointer-events:none"></div>
+
+      <!-- HEADER -->
+      <div style="position:relative;padding:1.6rem 1.4rem 1rem;display:flex;align-items:center;gap:1rem">
+        <div style="position:relative;flex-shrink:0">
+          <div style="position:absolute;inset:-4px;border-radius:50%;
+            background:conic-gradient(from 0deg, ${safeColor}, #fbbf24, #06b6d4, ${safeColor});
+            animation:peer-ring-spin 4s linear infinite;
+            filter:blur(2px);opacity:.7"></div>
+          <div style="position:relative;width:72px;height:72px;border-radius:50%;
+            background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.4), ${safeColor} 60%);
+            display:flex;align-items:center;justify-content:center;font-size:2rem;
+            box-shadow:0 4px 16px ${safeColor}88, 0 0 0 1px rgba(255,255,255,.18) inset" id="pub-prof-avatar">${safeEmoji}</div>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div id="pub-prof-name" style="font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:1.3rem;color:#fff;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_wallEsc(safeName)}</div>
+          <div id="pub-prof-bio" style="font-size:.78rem;color:rgba(255,255,255,.65);margin-top:.25rem;line-height:1.4;font-style:italic">…</div>
+          <div id="pub-prof-meta" style="font-size:.62rem;color:rgba(255,255,255,.5);margin-top:.4rem;font-family:'JetBrains Mono',monospace;letter-spacing:.04em">// ładowanie...</div>
+        </div>
+        <button onclick="document.getElementById('public-profile-modal').remove()" style="position:absolute;top:.8rem;right:.8rem;width:34px;height:34px;border:none;border-radius:50%;background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center">✕</button>
+      </div>
+
+      <!-- separator -->
+      <div style="height:1px;margin:0 1.4rem;background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent)"></div>
+
+      <!-- TABLICA HEADER -->
+      <div style="padding:1rem 1.4rem .6rem;display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:.7rem;font-weight:800;color:rgba(168,85,247,.95);letter-spacing:.08em;text-transform:uppercase">📌 Tablica</div>
+        <div style="font-size:.6rem;color:rgba(255,255,255,.4);font-family:'JetBrains Mono',monospace" id="pub-prof-count">// 0 wpisów</div>
+      </div>
+
+      <!-- COMPOSER (wszyscy mogą napisać na każdej tablicy) -->
+      ${_sbUser ? `
+      <div style="padding:0 1.4rem .8rem">
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:.7rem">
+          <textarea id="wall-input" placeholder="${isMe ? 'Co u Ciebie? Podziel się ze światem...' : `Napisz coś na tablicy ${_wallEsc(safeName)}...`}" rows="2" style="width:100%;background:transparent;border:none;color:#fff;font-family:inherit;font-size:.85rem;resize:none;outline:none"></textarea>
+          <div style="display:flex;justify-content:flex-end;margin-top:.4rem">
+            <button onclick="_wallPost('${userId}')" style="background:linear-gradient(135deg, #a855f7, #6366f1);border:none;color:#fff;padding:.5rem 1rem;border-radius:10px;font-weight:800;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 14px rgba(168,85,247,.4)">📌 Wyślij</button>
+          </div>
+        </div>
+      </div>` : `
+      <div style="padding:0 1.4rem .8rem">
+        <div style="background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.12);border-radius:14px;padding:.8rem;text-align:center;font-size:.78rem;color:rgba(255,255,255,.55)">🔒 Zaloguj się żeby pisać na tablicy</div>
+      </div>`}
+
+      <!-- LISTA WPISÓW -->
+      <div id="wall-list" style="padding:0 1.4rem 1.2rem;max-height:50vh;overflow-y:auto">
+        <div style="text-align:center;color:rgba(255,255,255,.4);padding:2rem 0;font-size:.8rem;font-family:'JetBrains Mono',monospace">// loading wall...</div>
+      </div>
+    </div>`;
+  sheet.onclick = () => sheet.remove();
+  document.body.appendChild(sheet);
+
+  // 1) Załaduj profil
+  try {
+    const { data: prof } = await _SB.from('profiles').select('*').eq('id', userId).maybeSingle();
+    if(prof){
+      const nm = prof.display_name || safeName;
+      const av = prof.avatar_2d_url || prof.avatar_url;
+      setEl('pub-prof-name', nm);
+      setEl('pub-prof-bio', prof.bio || '// brak opisu');
+      const meta = [];
+      if(prof.country)     meta.push(`📍 ${prof.country}`);
+      if(prof.home_base)   meta.push(`🏠 ${prof.home_base}`);
+      if(prof.total_pts)   meta.push(`✨ ${prof.total_pts} pkt`);
+      if(prof.total_spots) meta.push(`📍 ${prof.total_spots} spotów`);
+      setEl('pub-prof-meta', meta.length ? meta.join(' · ') : '// nowy w cyber świecie');
+      if(av){
+        const avEl = document.getElementById('pub-prof-avatar');
+        if(avEl){ avEl.style.backgroundImage = `url('${av}')`; avEl.style.backgroundSize='cover'; avEl.style.backgroundPosition='center'; avEl.textContent=''; }
+      }
+    }
+  } catch(e){ console.log('[wall] profile load err', e); }
+
+  // 2) Załaduj wall
+  await _wallLoad(userId);
+
+  // 3) Realtime subscribe
+  _wallChannel = _SB.channel(`wall-${userId}`)
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'profile_wall_posts', filter:`profile_id=eq.${userId}` }, payload=>{
+      _wallLoad(userId);
+    })
+    .subscribe();
+}
+
+async function _wallLoad(userId){
+  try {
+    const { data: posts } = await _SB.from('profile_wall_posts')
+      .select('id,author_id,body,media_url,created_at')
+      .eq('profile_id', userId).eq('hidden', false)
+      .order('created_at', { ascending:false }).limit(50);
+
+    const list = document.getElementById('wall-list');
+    const cnt = document.getElementById('pub-prof-count');
+    if(cnt) cnt.textContent = `// ${posts?.length || 0} wpisów`;
+    if(!list) return;
+
+    if(!posts?.length){
+      list.innerHTML = `<div style="text-align:center;color:rgba(255,255,255,.4);padding:2rem 0;font-size:.8rem;font-family:'JetBrains Mono',monospace">// pusta tablica<br><span style="font-size:.65rem">// bądź pierwszy</span></div>`;
+      return;
+    }
+
+    // Zbierz autorów
+    const authorIds = [...new Set(posts.map(p=>p.author_id))];
+    const { data: authors } = await _SB.from('profiles').select('id,display_name,avatar_2d_url,avatar_url').in('id', authorIds);
+    const authorMap = {};
+    (authors||[]).forEach(a=>{ authorMap[a.id] = a; });
+
+    list.innerHTML = posts.map(p=>{
+      const a = authorMap[p.author_id] || {};
+      const aName = a.display_name || 'TRIBE';
+      const aAv = a.avatar_2d_url || a.avatar_url || '';
+      const ago = _wallTimeAgo(p.created_at);
+      const canDel = _sbUser && (p.author_id === _sbUser.id || userId === _sbUser.id);
+      return `<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:.85rem;margin-bottom:.6rem">
+        <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem">
+          <div onclick="document.getElementById('public-profile-modal').remove();setTimeout(()=>openPublicProfile('${p.author_id}','${_wallEsc(aName)}','#a855f7','👤'),250)" style="width:34px;height:34px;border-radius:50%;${aAv?`background:url('${aAv}') center/cover`:'background:linear-gradient(135deg,#a855f7,#6366f1)'};flex-shrink:0;cursor:pointer;border:1.5px solid rgba(255,255,255,.18)"></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:800;font-size:.82rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_wallEsc(aName)}</div>
+            <div style="font-size:.6rem;color:rgba(255,255,255,.45);font-family:'JetBrains Mono',monospace">// ${ago}</div>
+          </div>
+          ${canDel ? `<button onclick="_wallDelete('${p.id}','${userId}')" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#f87171;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:.8rem">✕</button>` : ''}
+        </div>
+        <div style="font-size:.85rem;line-height:1.45;color:rgba(255,255,255,.92);white-space:pre-wrap;word-wrap:break-word">${_wallEsc(p.body)}</div>
+      </div>`;
+    }).join('');
+  } catch(e){
+    console.log('[wall] load err', e);
+  }
+}
+
+function _wallTimeAgo(ts){
+  const d = (Date.now() - new Date(ts).getTime())/1000;
+  if(d<60) return 'przed chwilą';
+  if(d<3600) return Math.floor(d/60)+' min';
+  if(d<86400) return Math.floor(d/3600)+' h';
+  return Math.floor(d/86400)+' d';
+}
+
+async function _wallPost(profileId){
+  if(!_sbUser){ showAlert('🔒','Zaloguj się','Aby pisać na tablicy'); setTimeout(closeAlert,2200); return; }
+  const ta = document.getElementById('wall-input');
+  const body = (ta?.value || '').trim();
+  if(!body){ showAlert('✏️','Pusty wpis','Napisz coś najpierw'); setTimeout(closeAlert,1800); return; }
+  if(body.length>2000){ showAlert('⚠️','Za długie','Max 2000 znaków'); setTimeout(closeAlert,2000); return; }
+  try {
+    const { error } = await _SB.from('profile_wall_posts').insert({ profile_id: profileId, author_id: _sbUser.id, body });
+    if(error) throw error;
+    ta.value='';
+    try { if(navigator.vibrate) navigator.vibrate([15, 30, 15]); } catch(e){}
+    await _wallLoad(profileId);
+  } catch(e){
+    console.log('[wall] post err', e);
+    showAlert('⚠️','Błąd', e?.message || 'Nie udało się wysłać');
+    setTimeout(closeAlert, 3000);
+  }
+}
+
+async function _wallDelete(postId, profileId){
+  if(!confirm('Usunąć ten wpis?')) return;
+  try {
+    const { error } = await _SB.from('profile_wall_posts').delete().eq('id', postId);
+    if(error) throw error;
+    await _wallLoad(profileId);
+  } catch(e){
+    showAlert('⚠️','Błąd usuwania', e?.message || '');
+    setTimeout(closeAlert, 2500);
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// CITY SPOTTED — globalna tablica miasta
+// ══════════════════════════════════════════════════════
+const SPOTTED_CATEGORIES = [
+  { key:'all',         label:'Wszystko',     emoji:'🌐', color:'#a855f7' },
+  { key:'lost',        label:'Zaginione',    emoji:'😿', color:'#ef4444' },
+  { key:'found',       label:'Znalezione',   emoji:'🎒', color:'#10b981' },
+  { key:'spotted',     label:'Spotted',      emoji:'👀', color:'#fbbf24' },
+  { key:'classifieds', label:'Ogłoszenia',   emoji:'🛒', color:'#06b6d4' },
+  { key:'event',       label:'Wydarzenia',   emoji:'🎉', color:'#ec4899' },
+  { key:'job',         label:'Praca',        emoji:'💼', color:'#3b82f6' },
+  { key:'other',       label:'Inne',         emoji:'💬', color:'#8b5cf6' }
+];
+let _spottedFilter = 'all';
+let _spottedCity = '';
+
+async function openCitySpotted(){
+  document.getElementById('spotted-modal')?.remove();
+  if(_spottedChannel){ try{_SB.removeChannel(_spottedChannel);}catch(e){} _spottedChannel=null; }
+
+  // Wykryj miasto z GPS (jeśli mamy)
+  if(!_spottedCity){
+    let glat = userLat, glng = userLng;
+    if((!glat||!glng)){
+      try { const c = JSON.parse(localStorage.getItem('ts_last_gps')||'null'); if(c?.lat){ glat=c.lat; glng=c.lng; } } catch(e){}
+    }
+    if(glat && glng){
+      try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${glat}&lon=${glng}&zoom=10`);
+        const j = await r.json();
+        _spottedCity = j?.address?.city || j?.address?.town || j?.address?.village || j?.address?.county || '';
+      } catch(e){}
+    }
+    if(!_spottedCity) _spottedCity = profile?.homeBase || profile?.country || 'Sieradz';
+  }
+
+  const sheet = document.createElement('div');
+  sheet.id = 'spotted-modal';
+  sheet.style.cssText = `position:fixed;inset:0;z-index:3300;
+    background:radial-gradient(circle at 50% 50%, rgba(10,14,26,.55) 0%, rgba(10,14,26,.92) 80%);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    display:flex;align-items:flex-start;justify-content:center;padding:1rem;overflow-y:auto;
+    animation:fadeIn .25s ease-out`;
+
+  const catTabs = SPOTTED_CATEGORIES.map(c=>`
+    <button onclick="_spottedSetFilter('${c.key}')" data-cat="${c.key}" style="
+      flex-shrink:0;background:${_spottedFilter===c.key ? `linear-gradient(135deg,${c.color}66,${c.color}22)` : 'rgba(255,255,255,.04)'};
+      border:1px solid ${_spottedFilter===c.key ? c.color+'88' : 'rgba(255,255,255,.08)'};
+      color:#fff;padding:.45rem .8rem;border-radius:18px;cursor:pointer;font-family:inherit;
+      font-size:.7rem;font-weight:700;letter-spacing:.04em;display:flex;align-items:center;gap:.3rem;
+      box-shadow:${_spottedFilter===c.key ? `0 0 0 1px ${c.color}44 inset, 0 4px 12px ${c.color}33` : 'none'};
+      transition:.2s">
+      <span style="font-size:.95rem">${c.emoji}</span>${c.label}
+    </button>`).join('');
+
+  sheet.innerHTML = `
+    <div onclick="event.stopPropagation()" style="
+      width:100%;max-width:560px;margin-top:1vh;margin-bottom:2vh;
+      background:linear-gradient(160deg,
+        rgba(255,255,255,.14) 0%, rgba(255,255,255,.06) 50%, rgba(255,255,255,.12) 100%),
+        linear-gradient(160deg, rgba(22,28,48,.88), rgba(10,14,26,.94));
+      backdrop-filter:blur(24px) saturate(180%); -webkit-backdrop-filter:blur(24px) saturate(180%);
+      border-radius:24px; padding:0; overflow:hidden; position:relative;
+      box-shadow:
+        0 1px 0 rgba(255,255,255,.25) inset,
+        0 -1px 0 rgba(0,0,0,.18) inset,
+        0 24px 60px rgba(0,0,0,.6),
+        0 0 60px rgba(251,191,36,.18);">
+
+      <!-- glow korona -->
+      <div style="position:absolute;top:-40px;left:50%;transform:translateX(-50%);
+        width:280px;height:100px;
+        background:radial-gradient(ellipse, rgba(251,191,36,.5), transparent 70%);
+        filter:blur(28px);pointer-events:none"></div>
+
+      <!-- HEADER -->
+      <div style="position:relative;padding:1.4rem 1.4rem .8rem;display:flex;align-items:center;gap:.8rem">
+        <div style="width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#fbbf24,#ec4899);display:flex;align-items:center;justify-content:center;font-size:1.4rem;box-shadow:0 8px 22px rgba(251,191,36,.4), 0 0 0 1px rgba(255,255,255,.18) inset">📢</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:900;font-size:1.2rem;color:#fff;letter-spacing:-.01em">Spotted</div>
+          <div id="spotted-city" style="font-size:.7rem;color:rgba(251,191,36,.85);font-family:'JetBrains Mono',monospace;letter-spacing:.04em">// 📍 ${_wallEsc(_spottedCity)}</div>
+        </div>
+        <button onclick="document.getElementById('spotted-modal').remove()" style="width:34px;height:34px;border:none;border-radius:50%;background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center">✕</button>
+      </div>
+
+      <!-- CTA: dodaj -->
+      ${_sbUser ? `
+      <div style="padding:0 1.4rem .8rem">
+        <button onclick="_spottedOpenCreate()" style="width:100%;padding:.85rem;border:none;border-radius:14px;cursor:pointer;font-family:inherit;color:#fff;
+          background:linear-gradient(135deg, rgba(251,191,36,.6), rgba(236,72,153,.45));
+          font-weight:800;font-size:.85rem;letter-spacing:.06em;text-transform:uppercase;
+          box-shadow:0 8px 22px rgba(251,191,36,.4), 0 0 0 1px rgba(255,255,255,.12) inset, 0 1px 0 rgba(255,255,255,.32) inset">
+          ➕ Dodaj ogłoszenie
+        </button>
+      </div>` : `
+      <div style="padding:0 1.4rem .8rem">
+        <div style="background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.12);border-radius:14px;padding:.7rem;text-align:center;font-size:.78rem;color:rgba(255,255,255,.55)">🔒 Zaloguj się żeby dodać ogłoszenie</div>
+      </div>`}
+
+      <!-- TABS kategorii -->
+      <div style="padding:0 1.4rem .8rem;display:flex;gap:.4rem;overflow-x:auto;scrollbar-width:none" id="spotted-tabs">${catTabs}</div>
+
+      <!-- LISTA -->
+      <div id="spotted-list" style="padding:0 1.4rem 1.2rem;max-height:60vh;overflow-y:auto">
+        <div style="text-align:center;color:rgba(255,255,255,.4);padding:2rem 0;font-size:.8rem;font-family:'JetBrains Mono',monospace">// loading...</div>
+      </div>
+    </div>`;
+  sheet.onclick = () => sheet.remove();
+  document.body.appendChild(sheet);
+
+  await _spottedLoad();
+
+  _spottedChannel = _SB.channel('spotted-global')
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'city_spotted' }, ()=>_spottedLoad())
+    .on('postgres_changes', { event:'DELETE', schema:'public', table:'city_spotted' }, ()=>_spottedLoad())
+    .subscribe();
+}
+
+function _spottedSetFilter(key){
+  _spottedFilter = key;
+  // Re-render tabs styles (lazy: re-open)
+  const tabsEl = document.getElementById('spotted-tabs');
+  if(tabsEl){
+    tabsEl.querySelectorAll('button').forEach(b=>{
+      const k = b.dataset.cat;
+      const cat = SPOTTED_CATEGORIES.find(c=>c.key===k);
+      const active = k===_spottedFilter;
+      b.style.background = active ? `linear-gradient(135deg,${cat.color}66,${cat.color}22)` : 'rgba(255,255,255,.04)';
+      b.style.border = `1px solid ${active ? cat.color+'88' : 'rgba(255,255,255,.08)'}`;
+      b.style.boxShadow = active ? `0 0 0 1px ${cat.color}44 inset, 0 4px 12px ${cat.color}33` : 'none';
+    });
+  }
+  _spottedLoad();
+}
+
+async function _spottedLoad(){
+  try {
+    let q = _SB.from('v_spotted_active').select('*').order('created_at',{ascending:false}).limit(80);
+    if(_spottedFilter !== 'all') q = q.eq('category', _spottedFilter);
+    if(_spottedCity) q = q.ilike('city', `%${_spottedCity}%`);
+    const { data: posts, error } = await q;
+    if(error) throw error;
+
+    const list = document.getElementById('spotted-list');
+    if(!list) return;
+    if(!posts?.length){
+      list.innerHTML = `<div style="text-align:center;color:rgba(255,255,255,.4);padding:2rem 0;font-size:.8rem;font-family:'JetBrains Mono',monospace">// pusto w tej kategorii<br><span style="font-size:.65rem">// dodaj pierwsze ogłoszenie</span></div>`;
+      return;
+    }
+
+    list.innerHTML = posts.map(p=>{
+      const cat = SPOTTED_CATEGORIES.find(c=>c.key===p.category) || SPOTTED_CATEGORIES[0];
+      const aName = p.display_name || 'TRIBE';
+      const aAv = p.avatar_2d_url || p.avatar_url || '';
+      const ago = _wallTimeAgo(p.created_at);
+      const canDel = _sbUser && p.author_id === _sbUser.id;
+      return `<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:.9rem;margin-bottom:.6rem;border-left:3px solid ${cat.color}88">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem">
+          <span style="background:${cat.color}33;border:1px solid ${cat.color}66;color:${cat.color};padding:.18rem .5rem;border-radius:10px;font-size:.6rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase">${cat.emoji} ${cat.label}</span>
+          <span style="font-size:.6rem;color:rgba(255,255,255,.45);font-family:'JetBrains Mono',monospace;flex:1">// ${ago} · ${_wallEsc(p.city)}</span>
+          ${canDel ? `<button onclick="_spottedDelete('${p.id}')" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#f87171;width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:.7rem">✕</button>` : ''}
+        </div>
+        <div style="font-weight:800;font-size:.95rem;color:#fff;line-height:1.3;margin-bottom:.3rem">${_wallEsc(p.title)}</div>
+        <div style="font-size:.82rem;line-height:1.45;color:rgba(255,255,255,.85);white-space:pre-wrap;word-wrap:break-word;margin-bottom:.5rem">${_wallEsc(p.body)}</div>
+        <div style="display:flex;align-items:center;gap:.5rem;padding-top:.4rem;border-top:1px solid rgba(255,255,255,.05)">
+          <div onclick="document.getElementById('spotted-modal').remove();setTimeout(()=>openPublicProfile('${p.author_id}','${_wallEsc(aName)}','#fbbf24','📢'),250)" style="display:flex;align-items:center;gap:.4rem;cursor:pointer">
+            <div style="width:24px;height:24px;border-radius:50%;${aAv?`background:url('${aAv}') center/cover`:'background:linear-gradient(135deg,#fbbf24,#ec4899)'};flex-shrink:0;border:1.5px solid rgba(255,255,255,.18)"></div>
+            <span style="font-size:.7rem;color:rgba(255,255,255,.7);font-weight:700">${_wallEsc(aName)}</span>
+          </div>
+          ${p.contact ? `<a href="${_wallEsc(p.contact).startsWith('http')?_wallEsc(p.contact):'tel:'+_wallEsc(p.contact)}" style="margin-left:auto;background:linear-gradient(135deg,#10b981,#06b6d4);color:#fff;padding:.3rem .7rem;border-radius:10px;font-size:.65rem;font-weight:800;text-decoration:none;letter-spacing:.04em">📞 KONTAKT</a>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e){
+    console.log('[spotted] load err', e);
+    const list = document.getElementById('spotted-list');
+    if(list) list.innerHTML = `<div style="text-align:center;color:#f87171;padding:1.5rem;font-size:.8rem">⚠️ Błąd: ${_wallEsc(e?.message||'')}</div>`;
+  }
+}
+
+function _spottedOpenCreate(){
+  document.getElementById('spotted-create-modal')?.remove();
+  const opts = SPOTTED_CATEGORIES.filter(c=>c.key!=='all').map(c=>`<option value="${c.key}">${c.emoji} ${c.label}</option>`).join('');
+  const m = document.createElement('div');
+  m.id = 'spotted-create-modal';
+  m.style.cssText = `position:fixed;inset:0;z-index:3400;background:rgba(10,14,26,.85);backdrop-filter:blur(12px);display:flex;align-items:flex-start;justify-content:center;padding:1rem;overflow-y:auto;animation:fadeIn .2s`;
+  m.innerHTML = `
+    <div onclick="event.stopPropagation()" style="
+      width:100%;max-width:460px;margin-top:4vh;
+      background:linear-gradient(160deg, rgba(22,28,48,.92), rgba(10,14,26,.96));
+      border:1px solid rgba(251,191,36,.3);border-radius:22px;padding:1.4rem;
+      box-shadow:0 24px 60px rgba(0,0,0,.7), 0 0 50px rgba(251,191,36,.15)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:900;font-size:1.05rem;color:#fff">📢 Nowe ogłoszenie</div>
+        <button onclick="document.getElementById('spotted-create-modal').remove()" style="width:32px;height:32px;border:none;border-radius:50%;background:rgba(255,255,255,.08);color:#fff;cursor:pointer">✕</button>
+      </div>
+      <label style="display:block;font-size:.65rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:.3rem">Kategoria</label>
+      <select id="sp-cat" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;padding:.65rem .8rem;border-radius:12px;font-family:inherit;margin-bottom:.8rem;font-size:.85rem">${opts}</select>
+
+      <label style="display:block;font-size:.65rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:.3rem">Miasto</label>
+      <input id="sp-city" value="${_wallEsc(_spottedCity)}" placeholder="np. Sieradz" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;padding:.65rem .8rem;border-radius:12px;font-family:inherit;margin-bottom:.8rem;font-size:.85rem">
+
+      <label style="display:block;font-size:.65rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:.3rem">Tytuł</label>
+      <input id="sp-title" maxlength="120" placeholder="Krótki, chwytliwy tytuł" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;padding:.65rem .8rem;border-radius:12px;font-family:inherit;margin-bottom:.8rem;font-size:.85rem">
+
+      <label style="display:block;font-size:.65rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:.3rem">Opis</label>
+      <textarea id="sp-body" maxlength="2000" rows="4" placeholder="Napisz szczegóły..." style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;padding:.65rem .8rem;border-radius:12px;font-family:inherit;margin-bottom:.8rem;font-size:.85rem;resize:vertical"></textarea>
+
+      <label style="display:block;font-size:.65rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:.3rem">Kontakt (opcjonalny)</label>
+      <input id="sp-contact" placeholder="tel / email / link" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;padding:.65rem .8rem;border-radius:12px;font-family:inherit;margin-bottom:1rem;font-size:.85rem">
+
+      <div style="display:flex;gap:.5rem">
+        <button onclick="document.getElementById('spotted-create-modal').remove()" style="flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.7);padding:.8rem;border-radius:12px;cursor:pointer;font-family:inherit;font-weight:700">Anuluj</button>
+        <button onclick="_spottedSubmit()" style="flex:2;background:linear-gradient(135deg,#fbbf24,#ec4899);border:none;color:#fff;padding:.8rem;border-radius:12px;cursor:pointer;font-family:inherit;font-weight:800;letter-spacing:.06em;text-transform:uppercase;box-shadow:0 8px 22px rgba(251,191,36,.4)">📢 Publikuj</button>
+      </div>
+      <div style="text-align:center;margin-top:.6rem;font-size:.6rem;color:rgba(255,255,255,.4);font-family:'JetBrains Mono',monospace">// limit 5 / 24h · auto-expire 7 dni</div>
+    </div>`;
+  m.onclick = () => m.remove();
+  document.body.appendChild(m);
+}
+
+async function _spottedSubmit(){
+  if(!_sbUser){ showAlert('🔒','Zaloguj się',''); setTimeout(closeAlert,2000); return; }
+  const cat = document.getElementById('sp-cat').value;
+  const city = document.getElementById('sp-city').value.trim();
+  const title = document.getElementById('sp-title').value.trim();
+  const body = document.getElementById('sp-body').value.trim();
+  const contact = document.getElementById('sp-contact').value.trim();
+  if(!city || !title || !body){ showAlert('⚠️','Brak danych','Miasto, tytuł i opis wymagane'); setTimeout(closeAlert,2500); return; }
+  try {
+    const { error } = await _SB.from('city_spotted').insert({
+      author_id: _sbUser.id, category: cat, city, title, body,
+      contact: contact || null
+    });
+    if(error){
+      if(error.message?.includes('Limit 5')){ showAlert('⏳','Limit','Max 5 ogłoszeń na 24h'); setTimeout(closeAlert,3000); return; }
+      throw error;
+    }
+    document.getElementById('spotted-create-modal').remove();
+    try { if(navigator.vibrate) navigator.vibrate([20,40,20]); } catch(e){}
+    showAlert('✅','Opublikowano!','Twoje ogłoszenie jest live');
+    setTimeout(closeAlert, 2200);
+    _spottedCity = city;
+    const cityEl = document.getElementById('spotted-city');
+    if(cityEl) cityEl.textContent = `// 📍 ${city}`;
+    _spottedLoad();
+  } catch(e){
+    showAlert('⚠️','Błąd', e?.message || '');
+    setTimeout(closeAlert, 3000);
+  }
+}
+
+async function _spottedDelete(id){
+  if(!confirm('Usunąć to ogłoszenie?')) return;
+  try {
+    const { error } = await _SB.from('city_spotted').delete().eq('id', id);
+    if(error) throw error;
+    _spottedLoad();
+  } catch(e){
+    showAlert('⚠️','Błąd usuwania', e?.message || '');
+    setTimeout(closeAlert, 2500);
   }
 }
 
