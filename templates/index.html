@@ -20499,7 +20499,20 @@ function _startPresence(){
     if(status !== 'SUBSCRIBED') return;
     // Zawsze track — nawet bez GPS (żeby kolega widział że jestem online)
     const payload = { emoji, color, name };
-    if(!_isGhost() && userLat && userLng){ payload.lat = userLat; payload.lng = userLng; }
+    if(!_isGhost()){
+      if(userLat && userLng){
+        payload.lat = userLat; payload.lng = userLng;
+        try { localStorage.setItem('ts_last_gps', JSON.stringify({lat:userLat, lng:userLng, ts:Date.now()})); } catch(e){}
+      } else {
+        // Fallback last known GPS (kolega widzi nas mimo braku live fix)
+        try {
+          const cached = JSON.parse(localStorage.getItem('ts_last_gps')||'null');
+          if(cached && Date.now() - cached.ts < 30*60*1000){
+            payload.lat = cached.lat; payload.lng = cached.lng; payload.gps_stale = true;
+          }
+        } catch(e){}
+      }
+    }
     await _presenceCh.track(payload);
     console.log('[Presence] tracked:', payload);
     // Sprawdź ile osób jest w channelu po sekundzie
@@ -20511,7 +20524,7 @@ function _startPresence(){
     if(!_lerpActive){ _lerpActive=true; requestAnimationFrame(_lerpLoop); }
   });
 
-  // Broadcast pozycji co 5s — track zawsze, lat/lng tylko gdy GPS aktywny i NIE ghost
+  // Broadcast pozycji co 5s — track zawsze, lat/lng z cache jeśli GPS chwilowo padł
   _presenceGpsTimer = setInterval(async () => {
     if(!_presenceCh) return;
     const pr = (()=>{ try{ return JSON.parse(localStorage.getItem('ts_profile')||'{}'); }catch(e){ return {}; } })();
@@ -20520,10 +20533,28 @@ function _startPresence(){
       color: pr.color || '#8b5cf6',
       name:  pr.display_name || pr.name || (_sbUser?.email?.split('@')[0]) || 'User',
     };
-    if(!_isGhost() && userLat && userLng){ payload.lat = userLat; payload.lng = userLng; }
+    if(!_isGhost()){
+      // Live GPS jeśli aktywny
+      if(userLat && userLng){
+        payload.lat = userLat; payload.lng = userLng;
+        // Cache do localStorage — żeby kolega widział nas nawet gdy GPS padnie
+        try {
+          localStorage.setItem('ts_last_gps', JSON.stringify({lat:userLat, lng:userLng, ts:Date.now()}));
+        } catch(e){}
+      } else {
+        // Fallback: ostatnia znana pozycja (do 30 min)
+        try {
+          const cached = JSON.parse(localStorage.getItem('ts_last_gps')||'null');
+          if(cached && Date.now() - cached.ts < 30*60*1000){
+            payload.lat = cached.lat; payload.lng = cached.lng;
+            payload.gps_stale = true;  // flag dla peer marker (opcjonalna opacity .6)
+          }
+        } catch(e){}
+      }
+    }
     if(!_isGhost() && _lastDetectedAction) payload.action = _lastDetectedAction;
     await _presenceCh.track(payload);
-    _updateOnlineCount();  // refresh widoczny licznik
+    _updateOnlineCount();
   }, 5000);
 }
 
