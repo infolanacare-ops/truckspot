@@ -13637,14 +13637,14 @@ async function _submitSpot(){
 
 // ── QUANTUM RAIL — pionowy, drag→snap edge, M w środku, radial fanout ─────
 const QRAIL_TABS = [
-  // {icon, label, onClick, badgeFn}
-  {icon:'✨', label:'Spot',    onClick:'openAddSpotModal()',                               cls:'tab-spot'},
-  {icon:'🧭', label:'Navi',    onClick:'(typeof toggleMetaverse===\\'function\\' ? toggleMetaverse() : (typeof openNavBuilder===\\'function\\' && openNavBuilder()))', cls:'tab-navi'},
-  {icon:'👥', label:'Ekipa',   onClick:'openFriendsPanel()',                                cls:'tab-friends'},
-  {icon:'💬', label:'Czaty',   onClick:'openConversationsList()',                           cls:'tab-chats',
-   badgeFn:()=>{ let n=0; window._dmUnreadByUser?.forEach(v=>n+=v); return n>0 ? (n>9?'9+':String(n)) : '' } },
-  {icon:'🔥', label:'Energy',  onClick:'(typeof toggleEnergyPulse===\\'function\\' && toggleEnergyPulse())',  cls:'tab-energy'},
-  {icon:'👻', label:'Ghost',   onClick:'(typeof openGhostPanel===\\'function\\' && openGhostPanel())', cls:'tab-ghost'},
+  // {icon, label, action: function, badgeFn: function}
+  {icon:'✨', label:'Spot',   action: function(){ openAddSpotModal(); }, cls:'tab-spot'},
+  {icon:'🧭', label:'Navi',   action: function(){ if(typeof toggleMetaverse==='function') toggleMetaverse(); }, cls:'tab-navi'},
+  {icon:'👥', label:'Ekipa',  action: function(){ openFriendsPanel(); }, cls:'tab-friends'},
+  {icon:'💬', label:'Czaty',  action: function(){ openConversationsList(); }, cls:'tab-chats',
+    badgeFn: function(){ let n=0; if(window._dmUnreadByUser) window._dmUnreadByUser.forEach(function(v){n+=v;}); return n>0 ? (n>9?'9+':String(n)) : ''; } },
+  {icon:'🔥', label:'Energy', action: function(){ if(typeof toggleEnergyPulse==='function') toggleEnergyPulse(); }, cls:'tab-energy'},
+  {icon:'👻', label:'Ghost',  action: function(){ if(typeof openGhostPanel==='function') openGhostPanel(); }, cls:'tab-ghost'},
 ];
 
 let _qrailState = {
@@ -13820,8 +13820,8 @@ function _qrailTabClick(idx){
   if(!t) return;
   _qrailToggleExpand(false);
   // Wykonaj akcję po krótkiej animacji collapse
-  setTimeout(() => {
-    try { eval(t.onClick); } catch(e){ console.warn('qrail tab:', e); }
+  setTimeout(function(){
+    try { if(typeof t.action === 'function') t.action(); } catch(e){ console.warn('qrail tab:', e); }
   }, 180);
 }
 
