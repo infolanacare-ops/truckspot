@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import os, json, re, secrets, time, math, requests as _requests
 from datetime import datetime, timedelta
-from flask import Flask, render_template, request, jsonify, send_from_directory, send_file
+from flask import Flask, render_template, request, jsonify, send_from_directory, send_file, redirect
 import hashlib
 
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
@@ -276,9 +276,112 @@ def manifest():
     resp.headers['Cache-Control'] = 'public, max-age=86400'
     return resp
 
+# ── TribeSpot landing translations ─────────────────────────────────────
+LANDING_T = {
+    "pl": {
+        "html_lang": "pl",
+        "meta_title": "TribeSpot — TS, see what's happening",
+        "meta_desc": "Cyber social map. Sprawdź gdzie są ludzie, dołącz do wydarzeń, twórz spoty.",
+        "nav_app": "Otwórz apkę",
+        "nav_biz": "Dla biznesu",
+        "lang_switch": "EN",
+        "hero_kicker": "✨ Cyber social map · 2026",
+        "hero_title_a": "TS — see",
+        "hero_title_b": "what's happening",
+        "hero_sub": "Live map. Real spots. Twoja ekipa. Wszystko TERAZ.",
+        "hero_cta_app": "Otwórz aplikację",
+        "hero_cta_install": "Zainstaluj na telefon",
+        "feat_title": "Co tu się dzieje",
+        "feat_1_title": "Live Map",
+        "feat_1_desc": "Mapa pulsująca w czasie rzeczywistym. 8 skinów, 3.5D buildings, atmosfera nocy.",
+        "feat_2_title": "Spots & Eventy",
+        "feat_2_desc": "Postuj gdzie się dzieje. Wydarzenia z godziną, RSVP, live counter ile osób tu JEST.",
+        "feat_3_title": "Twoja Ekipa",
+        "feat_3_desc": "Znajomi na mapie, kroki w rankingu, czaty live, ghost mode dla prywatności.",
+        "how_title": "Jak to działa",
+        "how_1_title": "Otwórz",
+        "how_1_desc": "Klik i wchodzisz w cyber świat",
+        "how_2_title": "Odkryj",
+        "how_2_desc": "Zobacz gdzie są ludzie, gdzie się dzieje",
+        "how_3_title": "Dołącz",
+        "how_3_desc": "Tap RSVP, GPS sam Cię zameldje",
+        "cta_title": "Wbij na TS",
+        "cta_sub": "Zero rejestracji żeby zobaczyć. Wypróbuj teraz.",
+        "cta_btn": "Wejdź na app.tribespot.eu",
+        "footer_made": "Made in Poland 🇵🇱 · 2026",
+        "footer_brand": "TS PRO · TribeSpot",
+        "footer_contact": "Kontakt",
+        "footer_privacy": "Prywatność",
+    },
+    "en": {
+        "html_lang": "en",
+        "meta_title": "TribeSpot — TS, see what's happening",
+        "meta_desc": "Cyber social map. See where people are, join events, drop spots.",
+        "nav_app": "Open the app",
+        "nav_biz": "For business",
+        "lang_switch": "PL",
+        "hero_kicker": "✨ Cyber social map · 2026",
+        "hero_title_a": "TS — see",
+        "hero_title_b": "what's happening",
+        "hero_sub": "Live map. Real spots. Your tribe. All happening NOW.",
+        "hero_cta_app": "Open the app",
+        "hero_cta_install": "Install on phone",
+        "feat_title": "What's happening",
+        "feat_1_title": "Live Map",
+        "feat_1_desc": "Map pulsing in real-time. 8 skins, 3.5D buildings, night atmosphere.",
+        "feat_2_title": "Spots & Events",
+        "feat_2_desc": "Drop where it's happening. Events with time, RSVP, live counter of who's HERE.",
+        "feat_3_title": "Your Tribe",
+        "feat_3_desc": "Friends on the map, steps leaderboard, live chats, ghost mode for privacy.",
+        "how_title": "How it works",
+        "how_1_title": "Open",
+        "how_1_desc": "Tap and enter the cyber world",
+        "how_2_title": "Discover",
+        "how_2_desc": "See where people are, where things happen",
+        "how_3_title": "Join",
+        "how_3_desc": "Tap RSVP, GPS auto-checks you in",
+        "cta_title": "Jump in",
+        "cta_sub": "Zero signup to look around. Try it now.",
+        "cta_btn": "Go to app.tribespot.eu",
+        "footer_made": "Made in Poland 🇵🇱 · 2026",
+        "footer_brand": "TS PRO · TribeSpot",
+        "footer_contact": "Contact",
+        "footer_privacy": "Privacy",
+    },
+}
+
+def _is_landing_host(host: str) -> bool:
+    """tribespot.eu i www.tribespot.eu → landing. App/biz/admin/inne → apka."""
+    if not host:
+        return False
+    h = host.lower().split(":")[0]
+    return h in ("tribespot.eu", "www.tribespot.eu")
+
+def _detect_lang(req) -> str:
+    """Auto-detect z Accept-Language. Default PL."""
+    al = (req.headers.get("Accept-Language") or "").lower()
+    if al.startswith("en") or ",en" in al:
+        return "en"
+    return "pl"
+
 @app.route("/")
 def index():
+    host = request.host or ""
+    if _is_landing_host(host):
+        # Auto-detect języka, redirect do /pl/ albo /en/
+        lang = _detect_lang(request)
+        return redirect(f"/{lang}/")
     return render_template("index.html", mapbox_token=MAPBOX_TOKEN)
+
+@app.route("/pl/")
+@app.route("/pl")
+def landing_pl():
+    return render_template("landing_tribespot.html", t=LANDING_T["pl"], lang="pl")
+
+@app.route("/en/")
+@app.route("/en")
+def landing_en():
+    return render_template("landing_tribespot.html", t=LANDING_T["en"], lang="en")
 
 @app.route("/biz")
 def biz_dashboard():
