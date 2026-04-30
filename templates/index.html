@@ -4980,6 +4980,7 @@ function _landingEnter(){
     <div class="topbar-logo"><span style="font-size:1.3em;letter-spacing:.02em">TS</span><span style="font-size:.65em;font-style:italic;letter-spacing:.12em;vertical-align:super"> PRO</span></div>
     <span class="topbar-mode-badge" id="topbar-mode">TIR</span>
     <span class="topbar-pts" id="topbar-pts">0 pts</span>
+    <span id="ts-online-count" onclick="_showOnlineList()" title="Ile osób ONLINE teraz" style="display:none;cursor:pointer;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.55);color:#10b981;font-size:.65rem;font-weight:900;padding:4px 9px;border-radius:8px;letter-spacing:.04em;flex-shrink:0">🟢 0</span>
     <div class="filter-btn" onclick="openFilters()"><span class="si"><svg viewBox="0 0 24 24"><line x1="21" y1="4" x2="14" y2="4"/><line x1="10" y1="4" x2="3" y2="4"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="20" x2="16" y2="20"/><line x1="12" y1="20" x2="3" y2="20"/><line x1="14" y1="2" x2="14" y2="6"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="16" y1="18" x2="16" y2="22"/></svg></span><div class="filter-badge" id="filter-badge">0</div></div>
     <div class="topbar-search" onclick="openSearch()"><span class="si"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span></div>
   </div>
@@ -20482,10 +20483,13 @@ function _startPresence(){
       if(p && p.lat && p.lng) peersSnap[key] = p;
     });
     _updateZones(peersSnap);
+    // Update widoczny licznik online w topbarze
+    _updateOnlineCount();
   });
 
   _presenceCh.subscribe(async status => {
     console.log('[Presence] subscribe status:', status);
+    _updateOnlineCount();
     if(status !== 'SUBSCRIBED') return;
     // Zawsze track — nawet bez GPS (żeby kolega widział że jestem online)
     const payload = { emoji, color, name };
@@ -20513,7 +20517,38 @@ function _startPresence(){
     if(!_isGhost() && userLat && userLng){ payload.lat = userLat; payload.lng = userLng; }
     if(!_isGhost() && _lastDetectedAction) payload.action = _lastDetectedAction;
     await _presenceCh.track(payload);
+    _updateOnlineCount();  // refresh widoczny licznik
   }, 5000);
+}
+
+// Live online counter w topbarze (debug + UX feedback)
+function _updateOnlineCount(){
+  const el = document.getElementById('ts-online-count');
+  if(!el) return;
+  if(!_presenceCh){ el.style.display='none'; return; }
+  try {
+    const state = _presenceCh.presenceState() || {};
+    const total = Object.keys(state).length;
+    const others = total - 1;  // minus my own key
+    el.textContent = `🟢 ${total}`;
+    el.style.display = '';
+    el.title = others > 0
+      ? `${total} osób online (Ty + ${others} ${others===1?'inny':'innych'}) — kliknij listę`
+      : `Tylko Ty online (jeszcze nikogo w pobliżu)`;
+  } catch(e){ el.style.display='none'; }
+}
+function _showOnlineList(){
+  if(!_presenceCh){ showAlert('🔴','Presence offline','Brak channelu'); setTimeout(closeAlert,2000); return; }
+  const state = _presenceCh.presenceState() || {};
+  const entries = Object.entries(state);
+  if(entries.length === 0){ showAlert('🔴','Pusty channel','Nikogo (nawet Ciebie nie ma)'); setTimeout(closeAlert,2500); return; }
+  const lines = entries.map(([key, presences]) => {
+    const p = presences[0] || {};
+    const isMe = key === _sbUser?.id;
+    const hasGps = (p.lat != null && p.lng != null);
+    return `${isMe?'👤':'🌐'} ${p.name||key.slice(0,8)} ${hasGps?'📍':'⏳'}`;
+  });
+  alert(`🟢 Online: ${entries.length}\n\n${lines.join('\n')}\n\n📍 = z GPS, ⏳ = bez GPS\n👤 = TY, 🌐 = inni`);
 }
 
 function _stopPresence(){
