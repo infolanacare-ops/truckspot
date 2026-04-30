@@ -10914,6 +10914,7 @@ function openMetaverseHub(){
       <!-- Sekcja: Gamifikacja -->
       <div style="font-size:.62rem;font-weight:800;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.08em;margin:0 .3rem .5rem">🎮 Gamifikacja</div>
       <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem">
+        ${_hubItem({icon:'👟', label:'Kroki dziś', desc: (_mySteps ? `${_mySteps.steps.toLocaleString('pl-PL')} / ${_mySteps.goal.toLocaleString('pl-PL')} kroków · ${Math.round(100*_mySteps.steps/_mySteps.goal)}%` : 'Cel: 10 000 kroków · zdobądź XP i rabaty'), badge: (_mySteps?.steps>=_mySteps?.goal?'✓':(_mySteps?.steps>0?String(_mySteps.steps):'NEW')), color:'rgba(16,185,129,.15)', colorB:'rgba(16,185,129,.5)', onClick:`openStepsPanel()`})}
         ${_hubItem({icon:'⚡', label:'Codzienne wyzwania', desc:'Nowe taski codziennie + bonusy', badge: _myTasks?.filter(t=>t.horizon==='daily').length ? String(_myTasks.filter(t=>t.horizon==='daily').length) : '', color:'rgba(34,197,94,.15)', colorB:'rgba(34,197,94,.45)', onClick:`openMyTasksPanel()`})}
         ${_hubItem({icon:'🏆', label:'Osiągnięcia / Odznaki', desc:'Kolekcjonuj badge i pokazuj się', color:'rgba(251,191,36,.15)', colorB:'rgba(251,191,36,.45)', onClick:`openAchievementsPanel()`})}
         ${_hubItem({icon:'🛡️', label:'Bezpieczna jazda', desc:'Punkty za jazdę bez +50 km/h', badge:`${sd.points} PKT`, color:'rgba(212,175,55,.15)', colorB:'rgba(212,175,55,.45)', onClick:`openSafeDrivePanel()`})}
@@ -12666,6 +12667,239 @@ const AVATAR_STYLES = [
 
 function _avatarUrl(style, seed, size=200){
   return `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(seed)}&size=${size}&backgroundColor=transparent`;
+}
+
+// ── STEP COUNTER ────────────────────────────────────────────────────────────
+// Stan globalny + localStorage + sync Supabase + reset Polska północ
+window._mySteps = window._mySteps || null;   // {date:'YYYY-MM-DD', steps:N, goal:N, syncedAt:ts}
+const _STEPS_GOAL_DEFAULT = 10000;
+const _STEPS_LS_KEY = 'ts_steps_today';
+let _stepsSyncTimer = null;
+let _stepsSyncInFlight = false;
+
+// Data Polska (Europe/Warsaw) jako YYYY-MM-DD
+function _polandDate(){
+  const d = new Date();
+  // pl-PL z opcjami timeZone — gwarancja północy lokalnej
+  const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Warsaw', year:'numeric', month:'2-digit', day:'2-digit' });
+  return fmt.format(d);  // 'YYYY-MM-DD'
+}
+
+function _loadStepsFromLS(){
+  try {
+    const raw = localStorage.getItem(_STEPS_LS_KEY);
+    if(!raw) return null;
+    const data = JSON.parse(raw);
+    if(!data || data.date !== _polandDate()) return null; // inny dzień = wyzeruj
+    return data;
+  } catch(e){ return null; }
+}
+
+function _saveStepsToLS(){
+  try { localStorage.setItem(_STEPS_LS_KEY, JSON.stringify(_mySteps)); } catch(e){}
+}
+
+// Inicjalizacja: lokalnie z LS, potem refresh z Supabase (autorytatywny)
+async function _initStepsToday(){
+  const today = _polandDate();
+  const ls = _loadStepsFromLS();
+  _mySteps = ls || { date: today, steps: 0, goal: _STEPS_GOAL_DEFAULT, syncedAt: 0 };
+  // Pobierz świeże z Supabase jeśli zalogowany
+  if(_sbUser && _SB){
+    try {
+      const { data } = await _SB.from('daily_steps')
+        .select('steps,goal,updated_at')
+        .eq('user_id', _sbUser.id)
+        .eq('date', today)
+        .maybeSingle();
+      if(data){
+        // Bierzemy MAX z LS i serwera (user mógł chodzić na innym urządzeniu)
+        _mySteps.steps = Math.max(_mySteps.steps, data.steps || 0);
+        _mySteps.goal  = data.goal || _STEPS_GOAL_DEFAULT;
+        _mySteps.syncedAt = Date.now();
+        _saveStepsToLS();
+      }
+    } catch(e){ console.warn('steps load:', e); }
+  }
+  _scheduleStepsSync();
+}
+
+function _scheduleStepsSync(){
+  if(_stepsSyncTimer) return;
+  _stepsSyncTimer = setInterval(_syncStepsToSupabase, 5 * 60 * 1000); // co 5 min
+}
+
+async function _syncStepsToSupabase(force=false){
+  if(_stepsSyncInFlight) return;
+  if(!_sbUser || !_SB || !_mySteps) return;
+  // Tylko jeśli mamy nowsze dane niż syncedAt (oszczędzamy zapytania)
+  if(!force && _mySteps.steps === 0) return;
+  _stepsSyncInFlight = true;
+  try {
+    const { data, error } = await _SB.rpc('upsert_daily_steps', {
+      p_steps: _mySteps.steps,
+      p_source: 'web',
+      p_goal: _mySteps.goal,
+    });
+    if(error) throw error;
+    if(data){
+      // Server może zwrócić większą wartość (z innego urządzenia) — przyjmujemy jako prawdę
+      _mySteps.steps = data.steps;
+      _mySteps.goal  = data.goal;
+      _mySteps.syncedAt = Date.now();
+      _saveStepsToLS();
+    }
+  } catch(e){
+    console.warn('steps sync fail:', e?.message||e);
+  } finally {
+    _stepsSyncInFlight = false;
+  }
+}
+
+// Dodaj N kroków (ze sensora albo testowego buttona)
+async function _addSteps(n, source='manual_test'){
+  n = Math.max(0, Math.min(50000, parseInt(n,10)||0));
+  if(!_mySteps) await _initStepsToday();
+  // Reset jeśli zmienił się dzień (np. user otworzył apkę po północy)
+  const today = _polandDate();
+  if(_mySteps.date !== today){
+    _mySteps = { date: today, steps: 0, goal: _STEPS_GOAL_DEFAULT, syncedAt: 0 };
+  }
+  const prev = _mySteps.steps;
+  _mySteps.steps += n;
+  _saveStepsToLS();
+  // Aktualizacja UI jeśli panel otwarty
+  _updateStepsPanelUI();
+  // Auto-sync co 100 kroków albo gdy przeskoczy goal
+  if(_mySteps.steps - prev >= 100 || (prev < _mySteps.goal && _mySteps.steps >= _mySteps.goal)){
+    _syncStepsToSupabase(true);
+  }
+}
+
+function _updateStepsPanelUI(){
+  if(!_mySteps) return;
+  const pct = Math.min(100, Math.round(100 * _mySteps.steps / _mySteps.goal));
+  const txt = document.getElementById('steps-current');
+  const bar = document.getElementById('steps-bar');
+  const pctEl = document.getElementById('steps-pct');
+  if(txt) txt.textContent = _mySteps.steps.toLocaleString('pl-PL');
+  if(bar) bar.style.width = pct + '%';
+  if(pctEl) pctEl.textContent = pct + '%';
+}
+
+async function openStepsPanel(){
+  if(!_sbUser){ showAlert('🔒','Zaloguj się','Kroki widoczne po logowaniu'); setTimeout(closeAlert,2200); return; }
+  document.getElementById('metaverse-hub')?.remove();
+  document.getElementById('steps-modal')?.remove();
+  if(!_mySteps) await _initStepsToday();
+
+  const pct = Math.min(100, Math.round(100 * _mySteps.steps / _mySteps.goal));
+  const remaining = Math.max(0, _mySteps.goal - _mySteps.steps);
+  const goalMet = _mySteps.steps >= _mySteps.goal;
+
+  const modal = document.createElement('div');
+  modal.id = 'steps-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:5500;background:radial-gradient(ellipse at top,#0f1f1a,#050a0e 80%);display:flex;flex-direction:column;overflow-y:auto';
+  modal.innerHTML = `
+    <div style="display:flex;align-items:center;gap:.7rem;padding:.85rem 1rem;background:rgba(0,0,0,.7);backdrop-filter:blur(10px);border-bottom:1.5px solid rgba(16,185,129,.4);z-index:2;position:sticky;top:0">
+      <button onclick="document.getElementById('steps-modal').remove()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;width:38px;height:38px;border-radius:11px;font-size:1.1rem;cursor:pointer;font-weight:800">←</button>
+      <div style="flex:1;min-width:0">
+        <div style="color:#fff;font-weight:900;font-size:1rem;background:linear-gradient(135deg,#10b981,#34d399);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">👟 Twoje Kroki</div>
+        <div style="font-size:.6rem;color:rgba(255,255,255,.6);font-weight:600">${_polandDate()} · cel ${_mySteps.goal.toLocaleString('pl-PL')}</div>
+      </div>
+    </div>
+
+    <div style="padding:1.4rem 1rem">
+      <!-- Kółko progressu -->
+      <div style="text-align:center;margin-bottom:1.2rem">
+        <div style="display:inline-block;position:relative;width:200px;height:200px">
+          <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg)">
+            <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="6"/>
+            <circle id="steps-ring" cx="50" cy="50" r="44" fill="none" stroke="url(#stepsGrad)" stroke-width="6" stroke-linecap="round" stroke-dasharray="${2*Math.PI*44}" stroke-dashoffset="${2*Math.PI*44*(1-pct/100)}" style="transition:stroke-dashoffset .8s ease"/>
+            <defs><linearGradient id="stepsGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#34d399"/></linearGradient></defs>
+          </svg>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+            <div id="steps-current" style="font-size:2rem;font-weight:900;color:#fff;font-family:var(--font-head);line-height:1">${_mySteps.steps.toLocaleString('pl-PL')}</div>
+            <div style="font-size:.65rem;color:rgba(255,255,255,.55);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-top:2px">kroków dziś</div>
+            <div id="steps-pct" style="font-size:.85rem;font-weight:900;color:#34d399;margin-top:6px">${pct}%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div style="text-align:center;margin-bottom:1rem">
+        ${goalMet
+          ? `<div style="display:inline-block;background:linear-gradient(135deg,#10b981,#34d399);color:#fff;font-weight:900;padding:8px 16px;border-radius:999px;font-size:.8rem;box-shadow:0 6px 20px rgba(16,185,129,.4)">🎉 CEL OSIĄGNIĘTY!</div>`
+          : `<div style="color:rgba(255,255,255,.7);font-size:.78rem;font-weight:700">Brakuje <span style="color:#34d399;font-weight:900">${remaining.toLocaleString('pl-PL')}</span> do celu</div>`}
+      </div>
+
+      <!-- Pasek liniowy -->
+      <div style="max-width:520px;margin:0 auto 1.4rem;background:rgba(255,255,255,.05);border-radius:999px;height:14px;overflow:hidden;border:1px solid rgba(16,185,129,.2)">
+        <div id="steps-bar" style="width:${pct}%;height:100%;background:linear-gradient(90deg,#10b981,#34d399);transition:width .8s ease"></div>
+      </div>
+
+      <!-- Test buttons (do usunięcia gdy plug pedometru) -->
+      <div style="max-width:520px;margin:0 auto 1.4rem;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.4);border-radius:14px;padding:.9rem">
+        <div style="color:#fbbf24;font-weight:900;font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">🧪 Test (przed pedometrem)</div>
+        <div style="font-size:.66rem;color:rgba(255,255,255,.6);margin-bottom:8px">Tymczasowe — sprawdź flow zanim podepniemy auto-licznik</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button onclick="_addSteps(100)" style="flex:1;min-width:90px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:10px;padding:10px;font-weight:800;font-size:.78rem;cursor:pointer">+100</button>
+          <button onclick="_addSteps(500)" style="flex:1;min-width:90px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:10px;padding:10px;font-weight:800;font-size:.78rem;cursor:pointer">+500</button>
+          <button onclick="_addSteps(1000)" style="flex:1;min-width:90px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:10px;padding:10px;font-weight:800;font-size:.78rem;cursor:pointer">+1000</button>
+          <button onclick="_syncStepsToSupabase(true).then(()=>{showAlert('✅','Sync OK','Zapisane do bazy');setTimeout(closeAlert,1500)})" style="flex:1;min-width:90px;background:linear-gradient(135deg,#10b981,#059669);border:none;color:#fff;border-radius:10px;padding:10px;font-weight:800;font-size:.78rem;cursor:pointer">💾 Sync</button>
+        </div>
+      </div>
+
+      <!-- Leaderboard znajomych -->
+      <div style="max-width:520px;margin:0 auto">
+        <div style="color:rgba(255,255,255,.85);font-weight:900;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">🏆 Ranking znajomych dziś</div>
+        <div id="steps-leaderboard" style="display:flex;flex-direction:column;gap:6px">
+          <div style="text-align:center;color:rgba(255,255,255,.4);font-size:.7rem;padding:1rem">Ładowanie...</div>
+        </div>
+      </div>
+
+      <div style="max-width:520px;margin:1.4rem auto 1rem;font-size:.62rem;color:rgba(255,255,255,.4);line-height:1.5;text-align:center">
+        💡 Reset codziennie o północy (czas Polski). Auto-sync co 5 min lub po +100 krokach. <br>
+        Twoje kroki widzą znajomi i firmy z aktywnymi kampaniami.
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  _loadStepsLeaderboard();
+}
+
+async function _loadStepsLeaderboard(){
+  const wrap = document.getElementById('steps-leaderboard');
+  if(!wrap || !_SB || !_sbUser) return;
+  try {
+    // Pobieramy z widoku — RLS sam odfiltruje (widzimy siebie + znajomych)
+    const { data, error } = await _SB.from('v_friends_leaderboard_today')
+      .select('user_id,display_name,avatar_2d_url,steps,goal,goal_met')
+      .order('steps', { ascending: false })
+      .limit(20);
+    if(error) throw error;
+    if(!data || data.length === 0){
+      wrap.innerHTML = `<div style="text-align:center;color:rgba(255,255,255,.4);font-size:.72rem;padding:1rem">Dodaj znajomych żeby zobaczyć ranking 👥</div>`;
+      return;
+    }
+    wrap.innerHTML = data.map((u,i) => {
+      const isMe = u.user_id === _sbUser.id;
+      const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`<span style="color:rgba(255,255,255,.4);font-weight:900;font-size:.72rem">#${i+1}</span>`;
+      const pct = Math.min(100, Math.round(100*u.steps/(u.goal||10000)));
+      const avatar = u.avatar_2d_url ? `<img src="${u.avatar_2d_url}" style="width:36px;height:36px;border-radius:50%;object-fit:cover">` : `<div style="width:36px;height:36px;border-radius:50%;background:rgba(16,185,129,.15);display:flex;align-items:center;justify-content:center;font-size:1.1rem">👤</div>`;
+      return `
+        <div style="display:flex;align-items:center;gap:10px;background:${isMe?'rgba(16,185,129,.15)':'rgba(255,255,255,.04)'};border:1px solid ${isMe?'rgba(16,185,129,.5)':'rgba(255,255,255,.08)'};border-radius:12px;padding:10px">
+          <div style="width:24px;text-align:center;font-size:1rem">${medal}</div>
+          ${avatar}
+          <div style="flex:1;min-width:0">
+            <div style="color:#fff;font-weight:800;font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(u.display_name||'Anonim')} ${isMe?'<span style="color:#34d399;font-size:.6rem;font-weight:900;background:rgba(16,185,129,.2);padding:2px 6px;border-radius:6px;margin-left:4px">TY</span>':''}</div>
+            <div style="height:5px;background:rgba(255,255,255,.06);border-radius:3px;margin-top:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${u.goal_met?'#fbbf24':'#10b981'}"></div></div>
+          </div>
+          <div style="color:${u.goal_met?'#fbbf24':'#34d399'};font-weight:900;font-size:.82rem;font-family:var(--font-head)">${u.steps.toLocaleString('pl-PL')}${u.goal_met?' ✓':''}</div>
+        </div>`;
+    }).join('');
+  } catch(e){
+    wrap.innerHTML = `<div style="text-align:center;color:#ef4444;font-size:.7rem;padding:.8rem">⚠️ ${e.message||'Błąd ładowania'}</div>`;
+  }
 }
 
 let _avatarPicker = { style:'avataaars', seed:'' };
@@ -18030,6 +18264,8 @@ function _onAuthUser(user) {
     setTimeout(() => { try { _startEnergyPulse(); } catch(e){ console.warn('Energy init:', e); } }, 5000);
     // Tasks & gamification
     setTimeout(() => { try { _initTasks(); } catch(e){ console.warn('Tasks init:', e); } }, 4000);
+    // Step counter — inicjalizacja (LS + sync z Supabase)
+    setTimeout(() => { try { _initStepsToday(); } catch(e){ console.warn('Steps init:', e); } }, 2500);
     // Preload avatara
     setTimeout(() => {
       _SB.from('profiles').select('avatar_2d_url,avatar_3d_url,display_name').eq('id', _sbUser.id).maybeSingle().then(({data}) => {
