@@ -1026,6 +1026,281 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
   font-size:.5rem;font-weight:900;letter-spacing:.08em;color:#fbbf24;
   text-transform:uppercase;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.6);pointer-events:none}
 
+/* ════════════════════════════════════════════════════════════════════════
+   QUANTUM MODAL — "Komputer kwantowy + cyberprzestrzeń + stonowane"
+   Filozofia: subtelne, płynne, hipnotyczne. NIE krzykliwy cyberpunk.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+#spot-modal.quantum{
+  background: radial-gradient(ellipse at 50% 90%, #1a2438 0%, #0a0e1a 45%, #050810 90%);
+  position: fixed; inset: 0; z-index: 5500;
+  display: flex; flex-direction: column; overflow-y: auto;
+  isolation: isolate;
+}
+
+/* WARSTWA 1 — głęboka cosmic mesh */
+#spot-modal.quantum::before{
+  content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(6,182,212,.08), transparent 40%),
+    radial-gradient(circle at 80% 60%, rgba(245,158,11,.06), transparent 45%),
+    radial-gradient(circle at 50% 90%, rgba(168,85,247,.07), transparent 50%);
+  animation: quantum-flow 22s ease-in-out infinite alternate;
+}
+/* WARSTWA 2 — holographic mesh siatka */
+#spot-modal.quantum::after{
+  content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    linear-gradient(rgba(6,182,212,.04) 1px, transparent 1px) 0 0/40px 40px,
+    linear-gradient(90deg, rgba(245,158,11,.04) 1px, transparent 1px) 0 0/40px 40px;
+  animation: quantum-mesh 30s linear infinite;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+}
+
+/* WARSTWA 3 — dryfujące świetliste włókna (godrays) */
+.quantum-godrays{
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+}
+.quantum-godrays::before, .quantum-godrays::after{
+  content:''; position:absolute; width:200%; height:200%; left:-50%; top:-50%;
+  background:
+    repeating-linear-gradient(95deg, transparent 0, transparent 80px, rgba(6,182,212,.025) 80px, rgba(6,182,212,.025) 81px),
+    repeating-linear-gradient(85deg, transparent 0, transparent 110px, rgba(245,158,11,.018) 110px, rgba(245,158,11,.018) 111px);
+  animation: quantum-rays 40s linear infinite;
+}
+.quantum-godrays::after{
+  animation-direction: reverse; animation-duration: 55s;
+  background:
+    repeating-linear-gradient(105deg, transparent 0, transparent 90px, rgba(168,85,247,.02) 90px, rgba(168,85,247,.02) 91px);
+}
+/* WARSTWA 4 — film grain (organiczna faktura) */
+.quantum-grain{
+  position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .35;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.92' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .8  0 0 0 0 .8  0 0 0 0 .9  0 0 0 .35 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  mix-blend-mode: overlay;
+  animation: quantum-grain-shift .25s steps(2) infinite;
+}
+
+@keyframes quantum-flow{
+  0%   {transform: translate3d(0,0,0) scale(1);    filter: hue-rotate(0deg)}
+  50%  {transform: translate3d(-2%,1%,0) scale(1.04); filter: hue-rotate(8deg)}
+  100% {transform: translate3d(1%,-1%,0) scale(1);  filter: hue-rotate(-4deg)}
+}
+@keyframes quantum-mesh{
+  from {background-position: 0 0, 0 0; opacity:.6}
+  50%  {opacity: 1}
+  to   {background-position: 40px 40px, 40px 40px; opacity:.6}
+}
+@keyframes quantum-rays{
+  from {transform: rotate(0deg) translate3d(0,0,0)}
+  to   {transform: rotate(360deg) translate3d(0,0,0)}
+}
+@keyframes quantum-grain-shift{
+  0% {transform: translate(0,0)}
+  25% {transform: translate(-3px,2px)}
+  50% {transform: translate(2px,-2px)}
+  75% {transform: translate(-1px,3px)}
+  100% {transform: translate(0,0)}
+}
+
+/* HEADER — holographic shimmer + scan line */
+.q-header{position:sticky; top:0; z-index:5; padding:1.1rem 1.2rem .85rem;
+  background: linear-gradient(180deg, rgba(10,14,26,.92), rgba(10,14,26,.55) 70%, transparent);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  display:flex; align-items:center; gap:.8rem;
+  border-bottom: 1px solid rgba(6,182,212,.15);
+  position: sticky;
+}
+.q-back{background:rgba(255,255,255,.04); border:1px solid rgba(6,182,212,.25);
+  color:#fff; width:40px; height:40px; border-radius:12px; font-size:1.1rem;
+  cursor:pointer; font-weight:300; backdrop-filter: blur(8px); transition:.2s}
+.q-back:hover{background:rgba(6,182,212,.12); border-color:rgba(6,182,212,.5)}
+.q-title-wrap{flex:1; min-width:0; position:relative; overflow:hidden}
+.q-title{font-size:1.05rem; font-weight:300; letter-spacing:.18em; line-height:1.1;
+  font-family: 'Space Grotesk','Inter',sans-serif;
+  color: #fff;
+  background: linear-gradient(90deg, #fbbf24 0%, #fde68a 30%, #06b6d4 60%, #67e8f9 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  animation: q-shimmer 5s ease-in-out infinite;
+  position: relative;
+}
+.q-title::after{
+  content:''; position:absolute; left:-30%; top:0; bottom:0; width:30%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.6), transparent);
+  animation: q-scan 4.5s ease-in-out infinite;
+  mix-blend-mode: overlay;
+}
+.q-sub{font-size:.62rem; color: rgba(255,255,255,.5); margin-top:3px;
+  font-family:'JetBrains Mono','Courier New',monospace; letter-spacing:.05em}
+.q-sub .dot{display:inline-block; width:6px; height:6px; border-radius:50%;
+  background:#10b981; margin-right:6px; animation: q-pulse-dot 1.6s ease-in-out infinite;
+  box-shadow: 0 0 8px #10b981}
+
+@keyframes q-shimmer{0%,100%{background-position:0% 50%} 50%{background-position:100% 50%}}
+@keyframes q-scan{0%{left:-30%} 35%,100%{left:130%}}
+@keyframes q-pulse-dot{0%,100%{opacity:.4; transform:scale(.85)} 50%{opacity:1; transform:scale(1.15)}}
+
+/* PORTAL — foto frame z rotującym holographic ring */
+.q-photo-wrap{display:flex; justify-content:center; padding:1.6rem 0 .8rem; position:relative; z-index:2}
+.q-portal{position:relative; width:200px; height:200px; cursor:pointer; display:block}
+.q-portal-ring{position:absolute; inset:-6px; border-radius:50%; pointer-events:none;
+  background: conic-gradient(from 0deg,
+    rgba(6,182,212,.0) 0%,
+    rgba(6,182,212,.6) 8%,
+    rgba(245,158,11,.5) 25%,
+    rgba(168,85,247,.5) 42%,
+    rgba(6,182,212,.6) 60%,
+    rgba(245,158,11,.5) 78%,
+    rgba(6,182,212,.0) 100%);
+  -webkit-mask: radial-gradient(circle, transparent 90px, black 95px, black 110px, transparent 115px);
+          mask: radial-gradient(circle, transparent 90px, black 95px, black 110px, transparent 115px);
+  animation: q-portal-spin 8s linear infinite;
+  filter: blur(.5px);
+}
+.q-portal-ring.outer{
+  inset:-14px;
+  background: conic-gradient(from 180deg,
+    rgba(245,158,11,.3) 0%, rgba(6,182,212,.0) 30%,
+    rgba(168,85,247,.25) 50%, rgba(6,182,212,.0) 70%,
+    rgba(245,158,11,.3) 100%);
+  -webkit-mask: radial-gradient(circle, transparent 105px, black 108px, black 120px, transparent 124px);
+          mask: radial-gradient(circle, transparent 105px, black 108px, black 120px, transparent 124px);
+  animation: q-portal-spin 14s linear infinite reverse;
+  opacity:.7;
+}
+.q-portal-inner{position:absolute; inset:0; border-radius:50%; overflow:hidden;
+  background: radial-gradient(circle at 50% 30%, rgba(6,182,212,.12), rgba(10,14,26,.6) 70%);
+  border: 1px solid rgba(6,182,212,.2);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  color:rgba(255,255,255,.6); transition:.3s;
+}
+.q-portal-inner::before{
+  content:''; position:absolute; inset:0;
+  background: linear-gradient(180deg, transparent 30%, rgba(6,182,212,.08) 50%, transparent 70%);
+  background-size: 100% 200%;
+  animation: q-portal-scan 5s ease-in-out infinite;
+}
+.q-portal:hover .q-portal-ring{animation-duration: 4s}
+.q-portal-icon{font-size:2.6rem; opacity:.5; margin-bottom:6px;
+  filter: drop-shadow(0 0 12px rgba(6,182,212,.5))}
+.q-portal-label{font-size:.7rem; font-weight:600; letter-spacing:.12em;
+  text-transform:uppercase; color:rgba(255,255,255,.7);
+  font-family:'Space Grotesk',sans-serif}
+.q-portal-hint{font-size:.55rem; color:rgba(255,255,255,.35); margin-top:3px;
+  font-family:'JetBrains Mono',monospace}
+.q-portal-inner img{width:100%; height:100%; object-fit:cover; border-radius:50%}
+
+@keyframes q-portal-spin{from{transform:rotate(0deg)} to{transform:rotate(360deg)}}
+@keyframes q-portal-scan{
+  0%,100%{background-position: 0 -100%; opacity:0}
+  50%{background-position: 0 100%; opacity:.8}
+}
+
+/* VIBE CARDS — kryształy kwantowe z floating particles */
+.q-vibe-section{padding: 1rem 1.2rem .4rem; position:relative; z-index:2}
+.q-section-title{text-align:center; font-size:.62rem; font-weight:300;
+  letter-spacing:.3em; text-transform:uppercase; color:rgba(255,255,255,.4);
+  margin-bottom: 14px; font-family:'JetBrains Mono',monospace; position:relative}
+.q-section-title::before, .q-section-title::after{
+  content:''; position:absolute; top:50%; width:30px; height:1px;
+  background: linear-gradient(90deg, transparent, rgba(6,182,212,.4));}
+.q-section-title::before{left:calc(50% - 100px)}
+.q-section-title::after{right:calc(50% - 100px); transform:scaleX(-1)}
+.q-vibe-grid{display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; max-width:520px; margin:0 auto}
+.q-vibe-card{position:relative; aspect-ratio: 1/1.05; cursor:pointer; padding:0; border:none;
+  background: linear-gradient(160deg, rgba(255,255,255,.04), rgba(255,255,255,.01));
+  border-radius:14px; overflow:hidden;
+  border:1px solid rgba(255,255,255,.08);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:4px; color:#fff; font-family:inherit;
+  transition: transform .25s cubic-bezier(.2,.8,.2,1), border-color .2s, background .25s;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.q-vibe-card::before{
+  content:''; position:absolute; inset:0;
+  background: radial-gradient(circle at 50% 30%, var(--vibeColor, transparent) 0%, transparent 60%);
+  opacity:.15; transition: opacity .3s;
+}
+.q-vibe-card::after{
+  content:''; position:absolute; inset:-1px; border-radius:14px; pointer-events:none;
+  background: linear-gradient(135deg, transparent 30%, rgba(255,255,255,.05) 50%, transparent 70%);
+  background-size: 200% 200%; background-position: 0 0; transition: background-position .8s;
+}
+.q-vibe-card:hover{transform: translateY(-3px); border-color: rgba(255,255,255,.18)}
+.q-vibe-card:hover::after{background-position: 100% 100%}
+.q-vibe-card:hover::before{opacity:.3}
+.q-vibe-card.active{
+  border-color: var(--vibeColor, #06b6d4);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--vibeColor) 18%, transparent), rgba(255,255,255,.02));
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--vibeColor) 25%, transparent),
+              inset 0 0 0 1px color-mix(in srgb, var(--vibeColor) 35%, transparent);
+}
+.q-vibe-card.active::before{opacity:.5}
+.q-vibe-card.active .q-vibe-emoji{
+  filter: drop-shadow(0 0 12px var(--vibeColor)) drop-shadow(0 0 22px color-mix(in srgb, var(--vibeColor) 50%, transparent));
+}
+.q-vibe-emoji{font-size:1.6rem; line-height:1;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,.15));
+  transition: filter .3s; position:relative; z-index:2}
+.q-vibe-name{font-size:.62rem; font-weight:600; letter-spacing:.04em;
+  color:rgba(255,255,255,.8); position:relative; z-index:2;
+  font-family:'Space Grotesk',sans-serif}
+/* Floating particles wewnątrz aktywnej karty */
+.q-vibe-card.active::part(p1){animation: q-float-p 4s ease-in-out infinite}
+
+/* TEXTAREA — neural input glassmorphic */
+.q-textarea-wrap{padding: 1rem 1.2rem 1rem; max-width:520px; margin:0 auto; position:relative; z-index:2}
+.q-textarea{width:100%; min-height:90px; padding: 14px 16px;
+  background: linear-gradient(160deg, rgba(255,255,255,.035), rgba(255,255,255,.01));
+  border: 1px solid rgba(6,182,212,.2);
+  border-radius: 14px; color:#fff; font-family:inherit; font-size:14px;
+  resize: vertical; outline:none; box-sizing:border-box;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  caret-color: #06b6d4;
+  transition: border-color .25s, box-shadow .25s;
+}
+.q-textarea:focus{
+  border-color: rgba(6,182,212,.55);
+  box-shadow: 0 0 0 3px rgba(6,182,212,.1), 0 0 24px rgba(6,182,212,.15);
+}
+.q-textarea::placeholder{color:rgba(255,255,255,.3); font-style:italic}
+.q-textarea-meta{display:flex; justify-content:space-between; font-size:.6rem;
+  color: rgba(255,255,255,.4); margin-top:8px; padding: 0 4px;
+  font-family:'JetBrains Mono',monospace; letter-spacing:.04em}
+.q-textarea-meta .count{color: rgba(6,182,212,.7)}
+
+/* TRANSMIT BUTTON — gradient flow */
+.q-actions{position:sticky; bottom:0; z-index:5; padding:1rem 1.2rem 1.4rem;
+  background: linear-gradient(0deg, rgba(10,14,26,.95), rgba(10,14,26,.6) 70%, transparent);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid rgba(6,182,212,.15);
+  display:flex; gap:10px; max-width:520px; margin:0 auto; left:0; right:0}
+.q-cancel{flex:1; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.12);
+  color:#fff; border-radius:12px; padding:14px; font-weight:500; font-size:.82rem;
+  cursor:pointer; letter-spacing:.05em; transition:.2s; font-family:inherit}
+.q-cancel:hover{background:rgba(255,255,255,.08); border-color: rgba(255,255,255,.2)}
+.q-transmit{flex:2; position:relative; border:none; color:#fff; border-radius:12px; padding:14px;
+  font-weight:700; font-size:.92rem; cursor:pointer; overflow:hidden;
+  letter-spacing:.18em; text-transform:uppercase;
+  font-family:'Space Grotesk',sans-serif;
+  background: linear-gradient(120deg, #fbbf24 0%, #f59e0b 30%, #06b6d4 70%, #67e8f9 100%);
+  background-size: 250% 100%; background-position: 0% 0%;
+  box-shadow: 0 8px 24px rgba(6,182,212,.35), 0 4px 12px rgba(245,158,11,.25);
+  transition: background-position 1.2s ease, transform .15s, box-shadow .25s;
+}
+.q-transmit:hover{background-position: 100% 0%;
+  transform: scale(1.02); box-shadow: 0 12px 32px rgba(6,182,212,.5), 0 6px 16px rgba(245,158,11,.4)}
+.q-transmit:active{transform: scale(.98)}
+.q-transmit:disabled{opacity:.5; cursor:wait; transform:none}
+.q-transmit::before{
+  content:''; position:absolute; inset:0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.25), transparent);
+  transform: translateX(-100%); transition: transform .8s;
+}
+.q-transmit:hover::before{transform: translateX(100%)}
+
 /* ══ RADIO MINI BAR ══ */
 .radio-mini{position:fixed;bottom:3.6rem;left:.7rem;right:.7rem;z-index:300;
   background:var(--panel);border:1px solid var(--border);border-radius:16px;
@@ -13077,65 +13352,70 @@ async function openAddSpotModal(){
 
   const modal = document.createElement('div');
   modal.id = 'spot-modal';
-  modal.style.cssText = 'position:fixed;inset:0;z-index:5500;background:radial-gradient(ellipse at top,#1a1f2e,#050a0e 80%);display:flex;flex-direction:column;overflow-y:auto';
+  modal.className = 'quantum';
   modal.innerHTML = `
-    <div style="display:flex;align-items:center;gap:.7rem;padding:.85rem 1rem;background:rgba(0,0,0,.7);backdrop-filter:blur(10px);border-bottom:1.5px solid rgba(245,158,11,.45);position:sticky;top:0;z-index:2">
-      <button onclick="document.getElementById('spot-modal').remove()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;width:38px;height:38px;border-radius:11px;font-size:1.1rem;cursor:pointer;font-weight:800">←</button>
-      <div style="flex:1;min-width:0">
-        <div style="color:#fff;font-weight:900;font-size:1rem;background:linear-gradient(135deg,#fbbf24,#06b6d4);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">✨ DODAJ SPOT</div>
-        <div style="font-size:.6rem;color:rgba(255,255,255,.6);font-weight:600">📍 ${lat.toFixed(4)}, ${lng.toFixed(4)} · aktywny 6h</div>
+    <!-- WARSTWY TŁA quantum field -->
+    <div class="quantum-godrays"></div>
+    <div class="quantum-grain"></div>
+
+    <!-- HEADER -->
+    <div class="q-header">
+      <button class="q-back" onclick="document.getElementById('spot-modal').remove()" aria-label="Zamknij">←</button>
+      <div class="q-title-wrap">
+        <div class="q-title">DODAJ SPOT</div>
+        <div class="q-sub"><span class="dot"></span>${lat.toFixed(4)}°N · ${lng.toFixed(4)}°E · TTL 6h</div>
       </div>
     </div>
 
-    <div style="padding:1.4rem 1rem">
-      <!-- Foto upload -->
-      <div style="text-align:center;margin-bottom:1.2rem">
-        <label for="spot-photo-input" style="display:inline-block;cursor:pointer;position:relative">
-          <div id="spot-photo-preview" style="width:200px;height:200px;border-radius:18px;background:rgba(245,158,11,.08);border:2px dashed rgba(245,158,11,.5);display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(255,255,255,.6);overflow:hidden">
-            <div style="font-size:3rem;opacity:.6">📸</div>
-            <div style="font-size:.75rem;font-weight:700;margin-top:6px">Dodaj zdjęcie</div>
-            <div style="font-size:.6rem;color:rgba(255,255,255,.4);margin-top:2px">opcjonalne · do 10 MB</div>
-          </div>
-        </label>
-        <input id="spot-photo-input" type="file" accept="image/*" capture="environment" onchange="_onSpotPhotoChange(this)" style="display:none">
-      </div>
+    <!-- PORTAL FOTO -->
+    <div class="q-photo-wrap">
+      <label class="q-portal" for="spot-photo-input">
+        <div class="q-portal-ring outer"></div>
+        <div class="q-portal-ring"></div>
+        <div class="q-portal-inner" id="spot-photo-preview">
+          <div class="q-portal-icon">⊙</div>
+          <div class="q-portal-label">Dodaj zdjęcie</div>
+          <div class="q-portal-hint">OPTIONAL · MAX 10MB</div>
+        </div>
+      </label>
+      <input id="spot-photo-input" type="file" accept="image/*" capture="environment" onchange="_onSpotPhotoChange(this)" style="display:none">
+    </div>
 
-      <!-- Vibe picker -->
-      <div style="font-size:.7rem;font-weight:800;color:#fbbf24;text-transform:uppercase;letter-spacing:.06em;margin:.5rem 0 .6rem;text-align:center">⚡ Co tu się dzieje?</div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-width:520px;margin:0 auto 1.2rem">
+    <!-- VIBE CRYSTALS -->
+    <div class="q-vibe-section">
+      <div class="q-section-title">CO TU SIĘ DZIEJE</div>
+      <div class="q-vibe-grid">
         ${SPOT_VIBES.map(v => `
-          <button onclick="_pickSpotVibe('${v.key}')" data-vibe="${v.key}" class="spot-vibe-btn ${_spotPicker.vibe===v.key?'active':''}" style="background:${_spotPicker.vibe===v.key?`linear-gradient(135deg,${v.color}40,${v.color}15)`:'rgba(255,255,255,.04)'};border:1.5px solid ${_spotPicker.vibe===v.key?v.color:'rgba(255,255,255,.1)'};border-radius:12px;padding:10px 4px;cursor:pointer;color:#fff;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:4px;transition:.15s">
-            <div style="font-size:1.4rem">${v.emoji}</div>
-            <div style="font-size:.62rem;font-weight:700">${v.name}</div>
+          <button onclick="_pickSpotVibe('${v.key}')" data-vibe="${v.key}" class="q-vibe-card ${_spotPicker.vibe===v.key?'active':''}" style="--vibeColor:${v.color}">
+            <div class="q-vibe-emoji">${v.emoji}</div>
+            <div class="q-vibe-name">${v.name}</div>
           </button>
         `).join('')}
       </div>
+    </div>
 
-      <!-- Opis -->
-      <div style="max-width:520px;margin:0 auto 1.4rem">
-        <textarea id="spot-desc" placeholder="Co tu się dzieje? (opcjonalne, max 280)" maxlength="280" oninput="_updateSpotCharCount()" style="width:100%;min-height:80px;padding:12px;background:rgba(0,0,0,.4);border:1px solid rgba(245,158,11,.4);border-radius:12px;color:#fff;font-family:inherit;font-size:14px;resize:vertical;outline:none;box-sizing:border-box"></textarea>
-        <div style="display:flex;justify-content:space-between;font-size:.6rem;color:rgba(255,255,255,.45);margin-top:4px;padding:0 4px">
-          <span>💡 Krótko, konkretnie, zachęcająco</span>
-          <span id="spot-char-count">0 / 280</span>
-        </div>
+    <!-- NEURAL INPUT -->
+    <div class="q-textarea-wrap">
+      <textarea id="spot-desc" class="q-textarea" placeholder="Opisz moment... co tu się dzieje?" maxlength="280" oninput="_updateSpotCharCount()"></textarea>
+      <div class="q-textarea-meta">
+        <span>// neural input · whisper to the network</span>
+        <span class="count" id="spot-char-count">0 / 280</span>
       </div>
     </div>
 
-    <div style="position:sticky;bottom:0;padding:.9rem 1rem 1.4rem;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);border-top:1.5px solid rgba(245,158,11,.4);display:flex;gap:8px">
-      <button onclick="document.getElementById('spot-modal').remove()" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:12px;padding:14px;font-weight:700;font-size:.85rem;cursor:pointer">Anuluj</button>
-      <button onclick="_submitSpot()" id="spot-submit-btn" style="flex:2;background:linear-gradient(135deg,#fbbf24,#f59e0b 50%,#06b6d4);border:none;color:#fff;border-radius:12px;padding:14px;font-weight:900;font-size:.95rem;cursor:pointer;box-shadow:0 6px 20px rgba(245,158,11,.4)">✨ POSTUJ SPOT</button>
+    <!-- TRANSMIT -->
+    <div class="q-actions">
+      <button class="q-cancel" onclick="document.getElementById('spot-modal').remove()">Anuluj</button>
+      <button class="q-transmit" id="spot-submit-btn" onclick="_submitSpot()">⚡ TRANSMIT</button>
     </div>`;
   document.body.appendChild(modal);
 }
 
 function _pickSpotVibe(key){
   _spotPicker.vibe = key;
-  document.querySelectorAll('.spot-vibe-btn').forEach(b => {
-    const v = SPOT_VIBES.find(x => x.key === b.dataset.vibe);
-    if(!v) return;
-    const isActive = b.dataset.vibe === key;
-    b.style.background = isActive ? `linear-gradient(135deg,${v.color}40,${v.color}15)` : 'rgba(255,255,255,.04)';
-    b.style.border = '1.5px solid ' + (isActive ? v.color : 'rgba(255,255,255,.1)');
+  document.querySelectorAll('.q-vibe-card').forEach(b => {
+    if(b.dataset.vibe === key) b.classList.add('active');
+    else b.classList.remove('active');
   });
 }
 
@@ -13160,9 +13440,9 @@ function _onSpotPhotoChange(input){
     _spotPicker.photoDataUrl = e.target.result;
     const preview = document.getElementById('spot-photo-preview');
     if(preview){
-      preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover">`;
-      preview.style.borderStyle = 'solid';
-      preview.style.borderColor = 'rgba(16,185,129,.7)';
+      preview.innerHTML = `<img src="${e.target.result}" alt="">`;
+      preview.style.background = '#000';
+      preview.style.border = '1px solid rgba(16,185,129,.55)';
     }
   };
   reader.readAsDataURL(file);
