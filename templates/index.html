@@ -1026,6 +1026,134 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
 #spot-live-counter.bump{transform:scale(1.5);text-shadow:0 0 24px rgba(239,68,68,.9), 0 0 12px #fff !important}
 
 /* ════════════════════════════════════════════════════════════════════════
+   MAP SKIN OVERLAY — wow effects per skin (vignette, scanlines, particles, glow)
+   Overlay div nad mapa (pod UI) — pointer-events none, czyste wizualne wow
+   ═══════════════════════════════════════════════════════════════════════ */
+#map-skin-overlay{
+  position: fixed; inset: 0; z-index: 50;
+  pointer-events: none; overflow: hidden;
+  opacity: 0; transition: opacity .8s;
+}
+#map-skin-overlay.active{ opacity: 1 }
+
+/* Warstwa 1 — VIGNETTE (ciemne narozniki dla cyberpunk vibe) */
+#map-skin-overlay .ms-vignette{
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,.65) 110%);
+  mix-blend-mode: multiply;
+}
+
+/* Warstwa 2 — SCANLINES (CRT effect, animowane) */
+#map-skin-overlay .ms-scanlines{
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(180deg, transparent 0, transparent 2px, var(--scanline-color, rgba(255,255,255,.02)) 2px, var(--scanline-color, rgba(255,255,255,.02)) 3px);
+  mix-blend-mode: overlay;
+  animation: ms-scanline-shift 8s linear infinite;
+}
+
+/* Warstwa 3 — SCAN BEAM (jednorazowa linia przelatuje co 6s) */
+#map-skin-overlay .ms-scanbeam{
+  position: absolute; left: 0; right: 0; height: 60px;
+  background: linear-gradient(180deg, transparent, var(--scanbeam-color, rgba(6,182,212,.18)) 50%, transparent);
+  mix-blend-mode: screen;
+  animation: ms-scanbeam-fly 6s cubic-bezier(.4,0,.2,1) infinite;
+  filter: blur(1px);
+}
+
+/* Warstwa 4 — EDGE GLOW (kolor obrysu ekranu, jak monitor CRT) */
+#map-skin-overlay .ms-edgeglow{
+  position: absolute; inset: 0;
+  box-shadow:
+    inset 0 0 80px var(--edge-glow-color, rgba(6,182,212,.22)),
+    inset 0 0 200px var(--edge-glow-color, rgba(6,182,212,.08));
+  mix-blend-mode: screen;
+}
+
+/* Warstwa 5 — PARTICLES (dryfujace neon kropki) */
+#map-skin-overlay .ms-particles{
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(circle at 13% 22%, var(--particle-a, rgba(236,72,153,.6)) 0, transparent 1.2px),
+    radial-gradient(circle at 28% 67%, var(--particle-b, rgba(6,182,212,.5)) 0, transparent 1.2px),
+    radial-gradient(circle at 47% 14%, var(--particle-a, rgba(236,72,153,.5)) 0, transparent 1px),
+    radial-gradient(circle at 62% 88%, var(--particle-b, rgba(6,182,212,.6)) 0, transparent 1.5px),
+    radial-gradient(circle at 78% 33%, var(--particle-a, rgba(236,72,153,.4)) 0, transparent 1px),
+    radial-gradient(circle at 91% 73%, var(--particle-b, rgba(6,182,212,.5)) 0, transparent 1.2px),
+    radial-gradient(circle at 35% 45%, var(--particle-a, rgba(236,72,153,.45)) 0, transparent 1px),
+    radial-gradient(circle at 70% 55%, var(--particle-b, rgba(6,182,212,.4)) 0, transparent 1.3px);
+  background-size: 600px 600px;
+  animation: ms-particles-drift 40s linear infinite;
+  filter: drop-shadow(0 0 4px currentColor);
+  mix-blend-mode: screen;
+}
+
+/* Warstwa 6 — CHROMATIC ABERRATION (kolor split przy krawedziach) */
+#map-skin-overlay.has-chroma::before,
+#map-skin-overlay.has-chroma::after{
+  content: ''; position: absolute; inset: 0;
+  pointer-events: none; mix-blend-mode: screen;
+  opacity: .15;
+}
+#map-skin-overlay.has-chroma::before{
+  background: radial-gradient(circle at 0% 50%, rgba(236,72,153,.5), transparent 25%);
+}
+#map-skin-overlay.has-chroma::after{
+  background: radial-gradient(circle at 100% 50%, rgba(6,182,212,.5), transparent 25%);
+}
+
+@keyframes ms-scanline-shift{
+  from{ background-position: 0 0 }
+  to{ background-position: 0 600px }
+}
+@keyframes ms-scanbeam-fly{
+  0%{ top: -60px; opacity: 0 }
+  10%{ opacity: 1 }
+  90%{ opacity: 1 }
+  100%{ top: 100vh; opacity: 0 }
+}
+@keyframes ms-particles-drift{
+  from{ background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0 }
+  to{ background-position: 600px -600px, -600px 600px, 600px 600px, -600px -600px, 600px -300px, -300px 600px, 600px 600px, -600px -600px }
+}
+
+/* ── PROFILE PER SKIN — różne kolory per vibe ── */
+#map-skin-overlay.skin-cyberpunk{
+  --scanline-color: rgba(6,182,212,.04);
+  --scanbeam-color: rgba(6,182,212,.28);
+  --edge-glow-color: rgba(6,182,212,.32);
+  --particle-a: rgba(236,72,153,.65);
+  --particle-b: rgba(6,182,212,.6);
+}
+#map-skin-overlay.skin-retrowave{
+  --scanline-color: rgba(236,72,153,.05);
+  --scanbeam-color: rgba(236,72,153,.32);
+  --edge-glow-color: rgba(236,72,153,.38);
+  --particle-a: rgba(236,72,153,.7);
+  --particle-b: rgba(168,85,247,.6);
+}
+#map-skin-overlay.skin-midnight{
+  --scanline-color: rgba(251,191,36,.03);
+  --scanbeam-color: rgba(251,191,36,.18);
+  --edge-glow-color: rgba(251,191,36,.18);
+  --particle-a: rgba(251,191,36,.5);
+  --particle-b: rgba(212,175,55,.4);
+}
+#map-skin-overlay.skin-arctic{
+  --scanline-color: rgba(103,232,249,.03);
+  --scanbeam-color: rgba(103,232,249,.15);
+  --edge-glow-color: rgba(103,232,249,.18);
+  --particle-a: rgba(255,255,255,.4);
+  --particle-b: rgba(103,232,249,.4);
+}
+#map-skin-overlay.skin-sat-night{
+  --scanline-color: rgba(6,182,212,.04);
+  --scanbeam-color: rgba(6,182,212,.25);
+  --edge-glow-color: rgba(6,182,212,.28);
+  --particle-a: rgba(168,85,247,.55);
+  --particle-b: rgba(6,182,212,.55);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
    QUANTUM MORPH WINDOW — uniwersalny floating modal wyrastający z przycisku
    Mapa widoczna u góry i dołu (topbar/QRail/FAB dostępne)
    ═══════════════════════════════════════════════════════════════════════ */
@@ -16702,14 +16830,14 @@ const MAP_SKINS = [
 function setMapSkin(key){
   const skin = MAP_SKINS.find(s => s.key === key);
   if(!skin || !window.map) return;
-  // Sprawdzenie PRO (na razie placeholder — dopuszczamy wszystkie do testu)
-  // if(skin.isPro && !_isPremium()){ showAlert('💎','PRO Skin','Odblokuj za 9.99 zł/mies'); return; }
   try { localStorage.setItem('ts_map_skin', key); } catch(e){}
   window._currentMapSkin = key;
   // 1) Apply CSS filter na canvas mapy
   const canvas = document.querySelector('.mapboxgl-canvas');
   if(canvas){ canvas.style.filter = skin.cssFilter; canvas.style.transition = 'filter .8s'; }
-  // 2) Switch mapboxstyle (jeśli inny niż obecny)
+  // 2) Apply WOW overlay (vignette + scanlines + particles + edge glow)
+  _applyMapSkinOverlay(key);
+  // 3) Switch mapboxstyle (jeśli inny niż obecny)
   const currentStyle = window._currentMapboxStyle;
   if(currentStyle !== skin.mapStyle){
     window._currentMapboxStyle = skin.mapStyle;
@@ -16717,15 +16845,84 @@ function setMapSkin(key){
     window.map.once('style.load', () => {
       try {
         if(typeof _apply3d === 'function') _apply3d(skin.atmosphere);
+        _applyMapSkinExtras(key);
       } catch(e){ console.warn('skin 3d apply:', e); }
     });
   } else {
     try { if(typeof _apply3d === 'function') _apply3d(skin.atmosphere); } catch(e){}
+    _applyMapSkinExtras(key);
   }
-  // 3) Update brand accent CSS variable
+  // 4) Update brand accent CSS variable
   document.documentElement.style.setProperty('--skin-accent', skin.accent);
   showAlert(skin.emoji, skin.label, skin.sub);
   setTimeout(closeAlert, 1800);
+}
+
+// WOW overlay — vignette + scanlines + particles + edge glow per skin
+function _applyMapSkinOverlay(key){
+  let overlay = document.getElementById('map-skin-overlay');
+  if(!overlay){
+    overlay = document.createElement('div');
+    overlay.id = 'map-skin-overlay';
+    overlay.innerHTML = `
+      <div class="ms-vignette"></div>
+      <div class="ms-scanlines"></div>
+      <div class="ms-edgeglow"></div>
+      <div class="ms-particles"></div>
+      <div class="ms-scanbeam"></div>`;
+    document.body.appendChild(overlay);
+  }
+  // Reset klasy
+  overlay.className = '';
+  // Skiny które dostają WOW overlay (cyberpunk/retrowave/midnight/arctic/sat-night)
+  const wowSkins = ['cyberpunk','retrowave','midnight','arctic','sat-night'];
+  if(wowSkins.includes(key)){
+    overlay.classList.add('active');
+    overlay.classList.add('skin-' + key);
+    // Chromatic aberration tylko dla ekstremalnych skinów
+    if(key === 'cyberpunk' || key === 'retrowave') overlay.classList.add('has-chroma');
+  } else {
+    overlay.classList.remove('active');
+  }
+}
+
+// Extras dla Mapbox — emissive 3D buildings, neon road glow, lights per skin
+function _applyMapSkinExtras(key){
+  if(!window.map || !window.map.getStyle) return;
+  try {
+    // Skiny cyberpunk/retrowave: pulsujący emissive na 3D buildings + neon roads
+    if(key === 'cyberpunk' || key === 'retrowave'){
+      const style = window.map.getStyle();
+      if(!style || !style.layers) return;
+      style.layers.forEach(layer => {
+        // 3D buildings — silniejszy emissive (świecące krawędzie)
+        if(layer.type === 'fill-extrusion' && layer.id && layer.id.includes('building')){
+          try {
+            window.map.setPaintProperty(layer.id, 'fill-extrusion-emissive-strength', 0.55);
+            window.map.setPaintProperty(layer.id, 'fill-extrusion-opacity', 0.95);
+          } catch(e){}
+        }
+        // Roads — neon edge color (jeśli to line layer drogi)
+        if(layer.type === 'line' && layer.id && (layer.id.includes('road-primary') || layer.id.includes('road-secondary') || layer.id.includes('road-major'))){
+          try {
+            const color = key === 'cyberpunk' ? '#06b6d4' : '#ec4899';
+            window.map.setPaintProperty(layer.id, 'line-color', color);
+            window.map.setPaintProperty(layer.id, 'line-emissive-strength', 1.0);
+          } catch(e){}
+        }
+      });
+      // Mapbox Standard light preset → night dla cyberpunk vibe
+      try { window.map.setConfigProperty('basemap', 'lightPreset', 'night'); } catch(e){}
+    } else if(key === 'midnight'){
+      try { window.map.setConfigProperty('basemap', 'lightPreset', 'dusk'); } catch(e){}
+    } else if(key === 'golden'){
+      try { window.map.setConfigProperty('basemap', 'lightPreset', 'dusk'); } catch(e){}
+    } else if(key === 'arctic'){
+      try { window.map.setConfigProperty('basemap', 'lightPreset', 'dawn'); } catch(e){}
+    } else {
+      try { window.map.setConfigProperty('basemap', 'lightPreset', 'day'); } catch(e){}
+    }
+  } catch(e){ console.warn('skin extras:', e); }
 }
 
 function openMapSkinPicker(){
