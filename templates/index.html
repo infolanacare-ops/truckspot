@@ -1025,6 +1025,10 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
 /* Live counter bump animation w modal */
 #spot-live-counter.bump{transform:scale(1.5);text-shadow:0 0 24px rgba(239,68,68,.9), 0 0 12px #fff !important}
 
+/* Peer card animacje (Quantum) */
+@keyframes peer-ring-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes peer-pulse-dot{0%,100%{opacity:.5;transform:scale(.85)}50%{opacity:1;transform:scale(1.2)}}
+
 /* ── RECENTER BUTTON — mirror M (po lewej), pojawia się gdy user oddalił mapę ── */
 #recenter-btn{
   position: fixed; top: 50%; left: 14px;
@@ -20674,63 +20678,149 @@ function _peerTap(key){
   })();
 
   const id = 'peer-sheet-'+Date.now();
+  const safeName = (name||'').replace(/'/g,"\\'");
   const sheet = document.createElement('div');
   sheet.id = id;
-  sheet.style.cssText = 'position:fixed;inset:0;z-index:3200;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:1.5rem';
+  sheet.style.cssText = `
+    position:fixed;inset:0;z-index:3200;
+    background:radial-gradient(circle at 50% 50%, rgba(10,14,26,.55) 0%, rgba(10,14,26,.85) 80%);
+    backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+    display:flex;align-items:center;justify-content:center;padding:1.2rem;
+    animation:fadeIn .25s ease-out`;
   sheet.innerHTML = `
-    <div onclick="event.stopPropagation()" style="
-      width:100%;max-width:320px;
-      background:var(--panel);border-radius:22px;
-      padding:0 0 1rem;
-      box-shadow:0 8px 48px rgba(0,0,0,.6);
-      transform:scale(.85);opacity:0;transition:transform .25s cubic-bezier(.34,1.56,.64,1),opacity .2s;
-      will-change:transform,opacity" id="${id}-inner">
-      <div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:10px auto 0"></div>
-      <!-- Avatar + info -->
-      <div style="display:flex;align-items:center;gap:.9rem;padding:1.1rem 1.3rem .8rem">
-        <div style="width:52px;height:52px;border-radius:50%;background:${color};
-          display:flex;align-items:center;justify-content:center;font-size:1.5rem;
-          box-shadow:0 2px 12px ${color}88;flex-shrink:0">${emoji}</div>
-        <div>
-          <div style="font-weight:800;font-size:1rem">${name}</div>
-          <div style="font-size:.72rem;color:var(--muted);margin-top:.1rem">
-            ${lastMsg ? `💬 "${lastMsg.substring(0,40)}${lastMsg.length>40?'…':''}"` : '🟢 Online'}
+    <div onclick="event.stopPropagation()" id="${id}-inner" style="
+      width:100%;max-width:340px;
+      background:linear-gradient(160deg,
+        rgba(255,255,255,.16) 0%,
+        rgba(255,255,255,.08) 50%,
+        rgba(255,255,255,.14) 100%),
+        linear-gradient(160deg, rgba(22,28,48,.85), rgba(10,14,26,.92));
+      backdrop-filter:blur(24px) saturate(180%);
+      -webkit-backdrop-filter:blur(24px) saturate(180%);
+      border-radius:24px; padding:0 0 1rem; overflow:hidden; position:relative;
+      box-shadow:
+        0 1px 0 rgba(255,255,255,.25) inset,
+        0 -1px 0 rgba(0,0,0,.18) inset,
+        0 20px 50px rgba(0,0,0,.55),
+        0 0 50px rgba(6,182,212,.12);
+      transform:scale(.86);opacity:0;
+      transition:transform .35s cubic-bezier(.34,1.56,.64,1), opacity .25s;
+      will-change:transform,opacity">
+
+      <!-- Subtle glow korona u góry -->
+      <div style="position:absolute;top:-30px;left:50%;transform:translateX(-50%);
+        width:220px;height:80px;
+        background:radial-gradient(ellipse, ${color}55, transparent 70%);
+        filter:blur(20px);pointer-events:none"></div>
+
+      <div style="position:relative">
+        <!-- Header z avatarem -->
+        <div style="display:flex;align-items:center;gap:.95rem;padding:1.4rem 1.4rem 1rem">
+          <div style="position:relative;flex-shrink:0">
+            <!-- Glow ring wokół avatara -->
+            <div style="position:absolute;inset:-4px;border-radius:50%;
+              background:conic-gradient(from 0deg, ${color}, #fbbf24, #06b6d4, ${color});
+              animation:peer-ring-spin 4s linear infinite;
+              filter:blur(2px);opacity:.7"></div>
+            <div style="position:relative;width:56px;height:56px;border-radius:50%;
+              background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.4), ${color} 60%);
+              display:flex;align-items:center;justify-content:center;font-size:1.6rem;
+              box-shadow:0 4px 16px ${color}88, 0 0 0 1px rgba(255,255,255,.18) inset">
+              ${emoji}
+            </div>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:1.1rem;
+              color:#fff;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
+            <div style="display:flex;align-items:center;gap:5px;margin-top:3px">
+              <span style="display:inline-block;width:6px;height:6px;border-radius:50%;
+                background:#10b981;box-shadow:0 0 8px #10b981;
+                animation:peer-pulse-dot 1.6s ease-in-out infinite"></span>
+              <span style="font-size:.62rem;font-family:'JetBrains Mono',monospace;
+                letter-spacing:.05em;color:rgba(255,255,255,.7);font-weight:600">
+                ${lastMsg ? `// "${lastMsg.substring(0,32)}${lastMsg.length>32?'…':''}"` : '// online · w cyber świecie'}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
-      <div style="height:1px;background:var(--border);margin:0 1.3rem .5rem"></div>
-      <!-- Akcje -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;padding:.5rem 1.3rem">
-        <button onclick="document.getElementById('${id}').remove(); _openDm('${key}','${name}','${emoji}')"
-          style="display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:1rem .5rem;
-          border:none;border-radius:16px;background:var(--blue);color:#fff;cursor:pointer;font-family:var(--font)">
-          <span style="font-size:1.5rem">💬</span>
-          <span style="font-size:.78rem;font-weight:700">Napisz</span>
+
+        <!-- Subtle separator z gradient -->
+        <div style="height:1px;margin:0 1.4rem .8rem;
+          background:linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent)"></div>
+
+        <!-- Akcje: Napisz + Zaczep -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 1.4rem">
+          <button onclick="document.getElementById('${id}').remove(); _openDm('${key}','${safeName}','${emoji}')"
+            style="display:flex;flex-direction:column;align-items:center;gap:.5rem;padding:1.1rem .5rem;
+            border:none;border-radius:16px;cursor:pointer;font-family:inherit;color:#fff;
+            background:
+              radial-gradient(circle at 35% 30%, rgba(255,255,255,.32), rgba(255,255,255,.05) 70%),
+              linear-gradient(135deg, rgba(6,182,212,.55), rgba(59,130,246,.45));
+            box-shadow:
+              0 1px 0 rgba(255,255,255,.32) inset,
+              0 -1px 0 rgba(0,0,0,.18) inset,
+              0 8px 22px rgba(6,182,212,.35),
+              0 0 0 1px rgba(255,255,255,.08) inset;
+            transition:transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .2s">
+            <span style="font-size:1.5rem;filter:drop-shadow(0 0 8px rgba(255,255,255,.4))">💬</span>
+            <span style="font-size:.74rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase">Napisz</span>
+          </button>
+          <button onclick="document.getElementById('${id}').remove(); _peerNudge('${key}','${safeName}')"
+            style="display:flex;flex-direction:column;align-items:center;gap:.5rem;padding:1.1rem .5rem;
+            border:none;border-radius:16px;cursor:pointer;font-family:inherit;color:#fff;
+            background:
+              radial-gradient(circle at 35% 30%, rgba(255,255,255,.32), rgba(255,255,255,.05) 70%),
+              linear-gradient(135deg, rgba(251,191,36,.55), rgba(236,72,153,.4));
+            box-shadow:
+              0 1px 0 rgba(255,255,255,.32) inset,
+              0 -1px 0 rgba(0,0,0,.18) inset,
+              0 8px 22px rgba(251,191,36,.35),
+              0 0 0 1px rgba(255,255,255,.08) inset;
+            transition:transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .2s">
+            <span style="font-size:1.5rem;filter:drop-shadow(0 0 8px rgba(255,255,255,.4))">👋</span>
+            <span style="font-size:.74rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase">Zaczep</span>
+          </button>
+        </div>
+
+        <!-- Anuluj -->
+        <button onclick="document.getElementById('${id}').remove()"
+          style="width:calc(100% - 2.8rem);margin:.7rem 1.4rem 0;padding:.7rem;border:none;border-radius:12px;
+          background:rgba(255,255,255,.04);color:rgba(255,255,255,.55);font-size:.78rem;
+          cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;
+          border:1px solid rgba(255,255,255,.06);transition:.2s">
+          Anuluj
         </button>
-        <button onclick="document.getElementById('${id}').remove(); _peerLike('${key}','${name}')"
-          style="display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:1rem .5rem;
-          border:none;border-radius:16px;background:var(--panel2);color:var(--text);cursor:pointer;font-family:var(--font);border:1px solid var(--border)">
-          <span style="font-size:1.5rem">👍</span>
-          <span style="font-size:.78rem;font-weight:700">Kciuk</span>
-        </button>
       </div>
-      <button onclick="document.getElementById('${id}').remove()"
-        style="width:calc(100% - 2.6rem);margin:.3rem 1.3rem 0;padding:.75rem;border:none;border-radius:14px;
-        background:transparent;color:var(--muted);font-size:.88rem;cursor:pointer;font-family:var(--font)">
-        Anuluj
-      </button>
     </div>`;
   sheet.onclick = ()=>sheet.remove();
   document.body.appendChild(sheet);
-  // Animacja wjazdu
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     const inner = document.getElementById(id+'-inner');
     if(inner){ inner.style.transform='scale(1)'; inner.style.opacity='1'; }
   }));
 }
 
-function _peerLike(key, name){
-  showAlert('👍', 'Kciuk wysłany!', `Polubiłeś kierowcę ${name}`);
+async function _peerNudge(key, name){
+  // Wyślij DM jako "nudge" — peer dostaje push "👋 [NICK] Cię zaczepia!"
+  const safeName = name || 'Ziomek';
+  if(!_sbUser){
+    showAlert('🔒','Zaloguj się','Aby zaczepiać innych');
+    setTimeout(closeAlert, 2200); return;
+  }
+  // Haptic feedback
+  try { if(navigator.vibrate) navigator.vibrate([20, 60, 20]); } catch(e){}
+  showAlert('👋','Zaczepiasz...', safeName);
+  try {
+    const result = await _dmSend(key, '👋 Zaczepia Cię!', 'nudge', { kind: 'nudge' });
+    if(result?.ok){
+      showAlert('👋','Zaczep wysłany!', `${safeName} dostanie powiadomienie`);
+      setTimeout(closeAlert, 2200);
+    }
+    // _dmSend pokazuje własny alert error gdy fail
+  } catch(e){
+    showAlert('⚠️','Błąd zaczepu', e?.message || '');
+    setTimeout(closeAlert, 3000);
+  }
 }
 
 
