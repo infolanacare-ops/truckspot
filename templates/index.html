@@ -16152,9 +16152,28 @@ function openAvatarCreator(){
       <div style="display:inline-block;position:relative;margin-bottom:1.2rem">
         <div style="position:absolute;inset:-12px;border-radius:50%;background:radial-gradient(circle,rgba(168,85,247,.4),transparent 70%);filter:blur(16px)"></div>
         <div style="position:relative;width:180px;height:180px;border-radius:50%;background:rgba(168,85,247,.1);border:3px solid rgba(168,85,247,.55);box-shadow:0 0 32px rgba(168,85,247,.5);display:flex;align-items:center;justify-content:center;overflow:hidden">
-          <img id="avatar-preview-img" src="${_avatarUrl(_avatarPicker.style, _avatarPicker.seed, 240)}" style="width:160px;height:160px;object-fit:contain">
+          <img id="avatar-preview-img" src="${_avatarPicker.photo_url || _avatarUrl(_avatarPicker.style, _avatarPicker.seed, 240)}" style="width:180px;height:180px;object-fit:cover">
         </div>
       </div>
+
+      <!-- 📸 PHOTO UPLOAD -->
+      <div style="max-width:380px;margin:0 auto 1.2rem;background:linear-gradient(135deg,rgba(34,197,94,.12),rgba(6,182,212,.06));border:1.5px solid rgba(34,197,94,.4);border-radius:16px;padding:.9rem;text-align:left">
+        <div style="font-size:.7rem;font-weight:800;color:#22c55e;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.45rem;display:flex;align-items:center;gap:.4rem">
+          <span style="font-size:1rem">📸</span> Twoje zdjęcie
+        </div>
+        <div style="font-size:.7rem;color:rgba(255,255,255,.65);margin-bottom:.6rem;line-height:1.4">Selfie albo cokolwiek — auto-przycina do koła</div>
+        <input type="file" id="avatar-photo-input" accept="image/*" capture="user" onchange="_avatarPhotoSelected(event)" style="display:none">
+        <div style="display:flex;gap:.5rem">
+          <button onclick="document.getElementById('avatar-photo-input').click()" style="flex:1;background:linear-gradient(135deg,#22c55e,#10b981);border:none;color:#fff;padding:.7rem;border-radius:12px;cursor:pointer;font-weight:800;font-size:.78rem;letter-spacing:.04em;text-transform:uppercase;box-shadow:0 6px 16px rgba(34,197,94,.35),0 1px 0 rgba(255,255,255,.3) inset">
+            ${_avatarPicker.photo_url ? '🔄 Zmień zdjęcie' : '📸 Wybierz zdjęcie'}
+          </button>
+          ${_avatarPicker.photo_url ? `<button onclick="_avatarPhotoClear()" title="Usuń zdjęcie" style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);color:#f87171;padding:.7rem .9rem;border-radius:12px;cursor:pointer;font-size:.95rem">🗑️</button>`:''}
+        </div>
+        <div id="avatar-photo-status" style="font-size:.65rem;color:rgba(255,255,255,.55);margin-top:.5rem;font-family:'JetBrains Mono',monospace;text-align:center;display:${_avatarPicker.photo_url?'block':'none'}">// foto aktywne · zostanie zapisane</div>
+      </div>
+
+      <!-- Albo wybierz preset -->
+      <div style="font-size:.6rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.1em;margin:.5rem 0 1rem;font-weight:700">— ALBO WYBIERZ PRESET —</div>
 
       <!-- Seed input -->
       <div style="max-width:320px;margin:0 auto 1rem;display:flex;gap:6px">
@@ -16266,19 +16285,98 @@ async function _pasteAvatar3dUrl(){
   setTimeout(closeAlert, 2500);
 }
 
+// 📸 PHOTO UPLOAD — square crop (canvas) → Supabase Storage
+async function _avatarPhotoSelected(ev){
+  const file = ev.target?.files?.[0];
+  if(!file) return;
+  if(!_sbUser){ showAlert('🔒','Zaloguj się',''); setTimeout(closeAlert,2000); return; }
+  if(file.size > 10*1024*1024){ showAlert('📦','Plik za duży','Max 10 MB'); setTimeout(closeAlert,2500); return; }
+
+  const status = document.getElementById('avatar-photo-status');
+  if(status){ status.style.display='block'; status.textContent='// kompresuję foto...'; status.style.color='#06b6d4'; }
+
+  try {
+    // 1. Wczytaj jako image
+    const img = await new Promise((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = reject;
+      i.src = URL.createObjectURL(file);
+    });
+
+    // 2. Square crop (centruj) + resize do 512×512 + JPEG q=0.88
+    const SIZE = 512;
+    const c = document.createElement('canvas');
+    c.width = SIZE; c.height = SIZE;
+    const ctx = c.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    const minDim = Math.min(img.width, img.height);
+    const sx = (img.width - minDim)/2;
+    const sy = (img.height - minDim)/2;
+    ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, SIZE, SIZE);
+    const blob = await new Promise(res => c.toBlob(res, 'image/jpeg', 0.88));
+    if(!blob){ throw new Error('Canvas → blob fail'); }
+
+    // 3. Upload do Supabase Storage: avatars/{user_id}/avatar_{ts}.jpg
+    if(status){ status.textContent='// upload...'; }
+    const path = `${_sbUser.id}/avatar_${Date.now()}.jpg`;
+    const { error: upErr } = await _SB.storage.from('avatars').upload(path, blob, {
+      contentType: 'image/jpeg',
+      upsert: true
+    });
+    if(upErr) throw upErr;
+    const { data: pub } = _SB.storage.from('avatars').getPublicUrl(path);
+    const url = pub?.publicUrl;
+    if(!url) throw new Error('Brak public URL');
+
+    // 4. Set state — preview update + flag photo as active
+    _avatarPicker.photo_url = url;
+    _avatarPicker.photo_path = path;
+    const preview = document.getElementById('avatar-preview-img');
+    if(preview){ preview.src = url; }
+    if(status){ status.textContent='// foto OK · klik "Zapisz Avatar" żeby zatwierdzić'; status.style.color='#22c55e'; }
+
+    // Re-render modal section (button text "Zmień" + delete button)
+    _updateAvatarPreview();
+
+    try { if(navigator.vibrate) navigator.vibrate([15,30,15]); } catch(e){}
+    showAlert('✅','Foto załadowane','Klik "Zapisz Avatar" żeby zatwierdzić');
+    setTimeout(closeAlert, 2200);
+  } catch(e){
+    console.log('[avatar photo]', e);
+    if(status){ status.textContent='// błąd: '+(e?.message||''); status.style.color='#f87171'; }
+    showAlert('⚠️','Błąd uploadu', e?.message || '');
+    setTimeout(closeAlert, 3500);
+  }
+}
+
+function _avatarPhotoClear(){
+  _avatarPicker.photo_url = null;
+  _avatarPicker.photo_path = null;
+  const preview = document.getElementById('avatar-preview-img');
+  if(preview){ preview.src = _avatarUrl(_avatarPicker.style, _avatarPicker.seed, 240); }
+  // reload modal — odśwież button text
+  document.getElementById('avatar-modal')?.remove();
+  openAvatarCreator();
+}
+
 async function _saveAvatar(){
-  const url2d = _avatarUrl(_avatarPicker.style, _avatarPicker.seed, 256);
+  // Priorytet: jeśli user wybrał własne zdjęcie → użyj go zamiast DiceBear preset
+  const photoUrl = _avatarPicker.photo_url || null;
+  const url2d = photoUrl || _avatarUrl(_avatarPicker.style, _avatarPicker.seed, 256);
   const glb   = _avatarPicker.glb_url || null;
-  const provider = glb ? (_avatarPicker.provider || 'custom') : 'dicebear';
+  const provider = photoUrl ? 'photo' : (glb ? (_avatarPicker.provider || 'custom') : 'dicebear');
   try {
     const payload = {
       avatar_2d_url: url2d,
-      avatar_url:    `${_avatarPicker.style}:${_avatarPicker.seed}`,
+      avatar_url:    photoUrl ? `photo:${_sbUser.id}` : `${_avatarPicker.style}:${_avatarPicker.seed}`,
       avatar_provider: provider,
       avatar_meta: {
         style: _avatarPicker.style,
         seed: _avatarPicker.seed,
-        source: glb ? 'selfie_3d' : 'preset_2d',
+        source: photoUrl ? 'selfie_photo' : (glb ? 'selfie_3d' : 'preset_2d'),
+        photo_path: _avatarPicker.photo_path || null,
         generated_at: new Date().toISOString(),
       },
     };
