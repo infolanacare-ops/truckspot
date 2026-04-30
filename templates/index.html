@@ -1301,6 +1301,135 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
 }
 .q-transmit:hover::before{transform: translateX(100%)}
 
+/* Stary meta-fab ukryty — zastąpiony przez Quantum Rail */
+#meta-fab{ display:none !important; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   QUANTUM RAIL — pionowa oś z M w centrum, drag→snap edge, radial fanout
+   ═══════════════════════════════════════════════════════════════════════ */
+#qrail{
+  position: fixed; top: 50%; right: 14px; z-index: 410;
+  transform: translateY(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 10px 6px;
+  background: linear-gradient(180deg, rgba(10,14,26,.55), rgba(10,14,26,.7) 50%, rgba(10,14,26,.55));
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(6,182,212,.18);
+  border-radius: 32px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.4),
+              0 0 0 1px rgba(255,255,255,.04),
+              inset 0 0 24px rgba(6,182,212,.06);
+  transition: right .45s cubic-bezier(.2,.85,.25,1), left .45s cubic-bezier(.2,.85,.25,1), top .35s ease;
+  user-select: none; -webkit-user-select: none; touch-action: none;
+}
+#qrail.snap-left{ left: 14px; right: auto }
+#qrail.snap-right{ right: 14px; left: auto }
+#qrail.dragging{ transition: none; cursor: grabbing }
+#qrail::before{
+  content:''; position:absolute; top: 12px; bottom: 12px; left: 50%;
+  width: 1px; transform: translateX(-50%); pointer-events:none;
+  background: linear-gradient(180deg, transparent, rgba(6,182,212,.35), rgba(245,158,11,.35), rgba(6,182,212,.35), transparent);
+  opacity: .5;
+}
+
+/* Drobne kropki wskazujące zakładki (gdy zwinięte) */
+.qrail-tab-dot{width: 8px; height: 8px; border-radius: 50%;
+  background: linear-gradient(135deg, rgba(6,182,212,.6), rgba(245,158,11,.5));
+  opacity: .5; transition: .25s; pointer-events: none;
+  box-shadow: 0 0 6px rgba(6,182,212,.5)}
+#qrail.expanded .qrail-tab-dot{ opacity: 0; transform: scale(.4) }
+
+/* M center button — duży, holographic */
+.qrail-M{
+  position: relative; width: 56px; height: 56px; border-radius: 50%;
+  border: none; cursor: pointer; padding: 0;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 35%, #06b6d4 80%);
+  background-size: 200% 200%; background-position: 0% 0%;
+  box-shadow: 0 6px 22px rgba(245,158,11,.5),
+              0 0 0 0 rgba(6,182,212,.45),
+              inset 0 0 0 2px rgba(255,255,255,.18);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Space Grotesk','Inter',sans-serif;
+  color: #fff; font-size: 1.5rem; font-weight: 800; letter-spacing: .02em;
+  text-shadow: 0 2px 8px rgba(0,0,0,.45);
+  animation: qrail-M-pulse 3.2s ease-in-out infinite, qrail-M-shimmer 6s ease-in-out infinite;
+  transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s;
+  z-index: 2;
+}
+.qrail-M:hover{ transform: scale(1.07); box-shadow: 0 8px 28px rgba(245,158,11,.65), 0 0 0 12px rgba(6,182,212,0) }
+.qrail-M:active{ transform: scale(.95) }
+#qrail.expanded .qrail-M{ transform: rotate(45deg); background-position: 100% 100% }
+@keyframes qrail-M-pulse{
+  0%,100%{ box-shadow: 0 6px 22px rgba(245,158,11,.5), 0 0 0 0 rgba(6,182,212,.5), inset 0 0 0 2px rgba(255,255,255,.18) }
+  50%{    box-shadow: 0 6px 26px rgba(245,158,11,.65), 0 0 0 14px rgba(6,182,212,0), inset 0 0 0 2px rgba(255,255,255,.18) }
+}
+@keyframes qrail-M-shimmer{ 0%,100%{ background-position: 0% 0% } 50%{ background-position: 100% 100% } }
+
+/* Tabs — małe Quantum capsules */
+.qrail-tab{
+  position: relative; width: 42px; height: 42px; border-radius: 50%; border: none;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(6,182,212,.22);
+  backdrop-filter: blur(8px);
+  color: #fff; cursor: pointer; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.05rem;
+  box-shadow: 0 4px 14px rgba(0,0,0,.35);
+  transition: transform .35s cubic-bezier(.34,1.56,.64,1), opacity .25s, background .2s, border-color .2s;
+  font-family: inherit;
+}
+.qrail-tab:hover{ background: rgba(6,182,212,.12); border-color: rgba(6,182,212,.5) }
+.qrail-tab .qrail-tab-icon{ filter: drop-shadow(0 0 8px rgba(255,255,255,.15)) }
+.qrail-tab .qrail-tab-badge{
+  position: absolute; top: -3px; right: -3px;
+  min-width: 16px; height: 16px; padding: 0 4px;
+  border-radius: 8px; background: #ef4444; color: #fff;
+  font-size: .55rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid #0a0e1a;
+  font-family: 'Space Grotesk',sans-serif;
+}
+
+/* RADIAL FANOUT — gdy expanded, taby rozsuwają się w półkolu */
+.qrail-tabs{
+  position: absolute; top: 50%; left: 50%; pointer-events: none;
+  width: 0; height: 0; transform: translate(-50%,-50%);
+}
+.qrail-tabs .qrail-tab{
+  position: absolute; top: 0; left: 0; margin-left: -21px; margin-top: -21px;
+  opacity: 0; transform: translate(0,0) scale(.4);
+  pointer-events: none;
+}
+#qrail.expanded .qrail-tabs .qrail-tab{
+  opacity: 1; pointer-events: auto;
+  transform: translate(var(--qx, 0px), var(--qy, 0px)) scale(1);
+}
+/* Stagger animacji wachlarza */
+#qrail.expanded .qrail-tabs .qrail-tab:nth-child(1){ transition-delay: .04s }
+#qrail.expanded .qrail-tabs .qrail-tab:nth-child(2){ transition-delay: .08s }
+#qrail.expanded .qrail-tabs .qrail-tab:nth-child(3){ transition-delay: .12s }
+#qrail.expanded .qrail-tabs .qrail-tab:nth-child(4){ transition-delay: .16s }
+#qrail.expanded .qrail-tabs .qrail-tab:nth-child(5){ transition-delay: .20s }
+#qrail.expanded .qrail-tabs .qrail-tab:nth-child(6){ transition-delay: .24s }
+#qrail.expanded .qrail-tabs .qrail-tab:nth-child(7){ transition-delay: .28s }
+
+/* Subtelny holo glow wokół rail gdy expanded */
+#qrail.expanded{
+  box-shadow: 0 8px 32px rgba(0,0,0,.5),
+              0 0 0 1px rgba(6,182,212,.18),
+              0 0 60px rgba(6,182,212,.18),
+              inset 0 0 30px rgba(6,182,212,.08);
+}
+
+/* Backdrop overlay gdy expanded — klik w tło zwija */
+#qrail-backdrop{
+  position: fixed; inset: 0; z-index: 405;
+  background: radial-gradient(circle at var(--bx, 50%) var(--by, 50%), rgba(10,14,26,.0) 0%, rgba(10,14,26,.55) 60%);
+  opacity: 0; pointer-events: none; transition: opacity .35s;
+  backdrop-filter: blur(0px);
+}
+#qrail-backdrop.show{ opacity: 1; pointer-events: auto; backdrop-filter: blur(2px) }
+
 /* ══ RADIO MINI BAR ══ */
 .radio-mini{position:fixed;bottom:3.6rem;left:.7rem;right:.7rem;z-index:300;
   background:var(--panel);border:1px solid var(--border);border-radius:16px;
@@ -5961,6 +6090,8 @@ function enterMode(mode){
       try { window._splashMapReady?.(); } catch(e){}
       // SPOTS: pokaż żywe spoty NAWET dla niezalogowanych (zachęta do rejestracji)
       setTimeout(() => { try { _loadSpotsNearby(10); _startSpotsLive(); } catch(e){ console.warn('Spots map init:', e); } }, 1500);
+      // QUANTUM RAIL: pionowa oś z M, drag→snap edge, radial fanout
+      setTimeout(() => { try { _initQuantumRail(); } catch(e){ console.warn('QRail init:', e); } }, 800);
     });
     // Re-apply 3D na każdej zmianie stylu (np. gdy user wybierze inny layer)
     map.on('style.load', ()=>{
@@ -13502,6 +13633,196 @@ async function _submitSpot(){
     setTimeout(closeAlert, 4000);
     if(btn){ btn.disabled = false; btn.textContent = '✨ POSTUJ SPOT'; btn.style.opacity = '1'; }
   }
+}
+
+// ── QUANTUM RAIL — pionowy, drag→snap edge, M w środku, radial fanout ─────
+const QRAIL_TABS = [
+  // {icon, label, onClick, badgeFn}
+  {icon:'✨', label:'Spot',    onClick:'openAddSpotModal()',                               cls:'tab-spot'},
+  {icon:'🧭', label:'Navi',    onClick:'(typeof toggleMetaverse===\\'function\\' ? toggleMetaverse() : (typeof openNavBuilder===\\'function\\' && openNavBuilder()))', cls:'tab-navi'},
+  {icon:'👥', label:'Ekipa',   onClick:'openFriendsPanel()',                                cls:'tab-friends'},
+  {icon:'💬', label:'Czaty',   onClick:'openConversationsList()',                           cls:'tab-chats',
+   badgeFn:()=>{ let n=0; window._dmUnreadByUser?.forEach(v=>n+=v); return n>0 ? (n>9?'9+':String(n)) : '' } },
+  {icon:'🔥', label:'Energy',  onClick:'(typeof toggleEnergyPulse===\\'function\\' && toggleEnergyPulse())',  cls:'tab-energy'},
+  {icon:'👻', label:'Ghost',   onClick:'(typeof openGhostPanel===\\'function\\' && openGhostPanel())', cls:'tab-ghost'},
+];
+
+let _qrailState = {
+  side: localStorage.getItem('ts_qrail_side') || 'right',  // 'left'|'right'
+  expanded: false,
+  dragging: false,
+  startX: 0, startY: 0, dragOffsetX: 0,
+  topPercent: parseFloat(localStorage.getItem('ts_qrail_top') || '50'),
+};
+
+function _initQuantumRail(){
+  if(document.getElementById('qrail')) return;
+  const rail = document.createElement('div');
+  rail.id = 'qrail';
+  rail.className = 'snap-' + _qrailState.side;
+  rail.style.top = _qrailState.topPercent + '%';
+
+  // Dot indicators (nad M, gdy zwinięte)
+  const dotsTop = QRAIL_TABS.slice(0, 3).map(()=>'<div class="qrail-tab-dot"></div>').join('');
+  const dotsBottom = QRAIL_TABS.slice(3).map(()=>'<div class="qrail-tab-dot"></div>').join('');
+
+  // Tabs (radial fanout)
+  const tabsHtml = QRAIL_TABS.map((t, i) => {
+    const badge = t.badgeFn ? t.badgeFn() : '';
+    const badgeHtml = badge ? `<span class="qrail-tab-badge">${badge}</span>` : '';
+    return `<button class="qrail-tab ${t.cls||''}" data-idx="${i}" title="${t.label}" onclick="_qrailTabClick(${i})">
+      <span class="qrail-tab-icon">${t.icon}</span>${badgeHtml}
+    </button>`;
+  }).join('');
+
+  rail.innerHTML = `
+    ${dotsTop}
+    <button class="qrail-M" id="qrail-M" title="Otwórz hub">M</button>
+    ${dotsBottom}
+    <div class="qrail-tabs">${tabsHtml}</div>`;
+  document.body.appendChild(rail);
+
+  // Backdrop dla expanded
+  const backdrop = document.createElement('div');
+  backdrop.id = 'qrail-backdrop';
+  backdrop.onclick = () => _qrailToggleExpand(false);
+  document.body.appendChild(backdrop);
+
+  // Klik M
+  document.getElementById('qrail-M').onclick = (e) => {
+    e.stopPropagation();
+    _qrailToggleExpand();
+  };
+
+  // Drag handler (mouse + touch)
+  rail.addEventListener('mousedown', _qrailDragStart);
+  rail.addEventListener('touchstart', _qrailDragStart, {passive:false});
+
+  // Auto-recompute fanout positions on resize
+  window.addEventListener('resize', () => { if(_qrailState.expanded) _qrailLayoutFanout(); });
+}
+
+function _qrailDragStart(e){
+  // Nie startuj drag jeśli klik na tab (M już ma własny stop)
+  if(e.target.closest('.qrail-tab')) return;
+  _qrailState.dragging = true;
+  _qrailState.dragMoved = false;
+  const rail = document.getElementById('qrail');
+  rail.classList.add('dragging');
+  const evt = e.touches ? e.touches[0] : e;
+  _qrailState.startX = evt.clientX;
+  _qrailState.startY = evt.clientY;
+  document.addEventListener('mousemove', _qrailDragMove);
+  document.addEventListener('mouseup', _qrailDragEnd);
+  document.addEventListener('touchmove', _qrailDragMove, {passive:false});
+  document.addEventListener('touchend', _qrailDragEnd);
+  e.preventDefault();
+}
+
+function _qrailDragMove(e){
+  if(!_qrailState.dragging) return;
+  const evt = e.touches ? e.touches[0] : e;
+  const dx = evt.clientX - _qrailState.startX;
+  const dy = evt.clientY - _qrailState.startY;
+  if(Math.abs(dx) > 5 || Math.abs(dy) > 5) _qrailState.dragMoved = true;
+  // Pionowe pozycjonowanie — top% (5..95)
+  const newTopPct = Math.max(8, Math.min(92, (evt.clientY / window.innerHeight) * 100));
+  const rail = document.getElementById('qrail');
+  if(rail){
+    rail.style.top = newTopPct + '%';
+    _qrailState.topPercent = newTopPct;
+  }
+  e.preventDefault();
+}
+
+function _qrailDragEnd(e){
+  if(!_qrailState.dragging) return;
+  const evt = e.changedTouches ? e.changedTouches[0] : e;
+  const rail = document.getElementById('qrail');
+  rail.classList.remove('dragging');
+  _qrailState.dragging = false;
+  // Snap left/right
+  const side = (evt.clientX < window.innerWidth / 2) ? 'left' : 'right';
+  _qrailState.side = side;
+  rail.classList.remove('snap-left', 'snap-right');
+  rail.classList.add('snap-' + side);
+  try {
+    localStorage.setItem('ts_qrail_side', side);
+    localStorage.setItem('ts_qrail_top', _qrailState.topPercent.toFixed(1));
+  } catch(e){}
+  document.removeEventListener('mousemove', _qrailDragMove);
+  document.removeEventListener('mouseup', _qrailDragEnd);
+  document.removeEventListener('touchmove', _qrailDragMove);
+  document.removeEventListener('touchend', _qrailDragEnd);
+  // Jeśli expanded i zmieniliśmy side — przelicz fanout
+  if(_qrailState.expanded) _qrailLayoutFanout();
+}
+
+function _qrailToggleExpand(force){
+  const rail = document.getElementById('qrail');
+  const backdrop = document.getElementById('qrail-backdrop');
+  if(!rail) return;
+  const willExpand = (force === undefined) ? !_qrailState.expanded : !!force;
+  _qrailState.expanded = willExpand;
+  if(willExpand){
+    rail.classList.add('expanded');
+    backdrop.classList.add('show');
+    // Center backdrop na rail
+    const r = rail.getBoundingClientRect();
+    backdrop.style.setProperty('--bx', (r.left + r.width/2) + 'px');
+    backdrop.style.setProperty('--by', (r.top + r.height/2) + 'px');
+    _qrailLayoutFanout();
+    // Refresh badges
+    document.querySelectorAll('#qrail .qrail-tab').forEach((btn, i) => {
+      const t = QRAIL_TABS[i];
+      if(t?.badgeFn){
+        const b = btn.querySelector('.qrail-tab-badge');
+        const val = t.badgeFn();
+        if(val){
+          if(b) b.textContent = val;
+          else btn.insertAdjacentHTML('beforeend', `<span class="qrail-tab-badge">${val}</span>`);
+        } else {
+          b?.remove();
+        }
+      }
+    });
+  } else {
+    rail.classList.remove('expanded');
+    backdrop.classList.remove('show');
+  }
+}
+
+function _qrailLayoutFanout(){
+  const rail = document.getElementById('qrail');
+  if(!rail) return;
+  const tabs = rail.querySelectorAll('.qrail-tabs .qrail-tab');
+  const N = tabs.length;
+  const radius = 110;  // odległość od centrum M
+  // Półkole 180° w kierunku przeciwnym do edge
+  // snap-right → wachlarz w lewo (kąty od 90° do 270° = -90°..+90° z 180° offset)
+  // snap-left  → wachlarz w prawo (kąty od -90° do +90°)
+  const baseAngle = (_qrailState.side === 'right') ? 180 : 0;  // 180=left, 0=right
+  const arc = 180; // pełne półkole
+  const step = (N === 1) ? 0 : arc / (N - 1);
+  const startAngle = baseAngle - arc/2;
+  tabs.forEach((tab, i) => {
+    const angleDeg = startAngle + i * step;
+    const rad = angleDeg * Math.PI / 180;
+    const x = Math.cos(rad) * radius;
+    const y = Math.sin(rad) * radius;
+    tab.style.setProperty('--qx', x.toFixed(1) + 'px');
+    tab.style.setProperty('--qy', y.toFixed(1) + 'px');
+  });
+}
+
+function _qrailTabClick(idx){
+  const t = QRAIL_TABS[idx];
+  if(!t) return;
+  _qrailToggleExpand(false);
+  // Wykonaj akcję po krótkiej animacji collapse
+  setTimeout(() => {
+    try { eval(t.onClick); } catch(e){ console.warn('qrail tab:', e); }
+  }, 180);
 }
 
 // ── TRIBESPOT: SPOTS LIVE LAYER ─────────────────────────────────────────────
