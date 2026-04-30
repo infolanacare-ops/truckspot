@@ -6,7 +6,7 @@ from flask import Flask, render_template, request, jsonify, send_from_directory,
 import hashlib
 
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
-MAIL_FROM      = os.environ.get("MAIL_FROM", "TruckSpot <info@truckspot.pl>")
+MAIL_FROM      = os.environ.get("MAIL_FROM", "TribeSpot <info@truckspot.pl>")
 
 # Lista publicznych instancji Overpass — fallback gdy główna padnie
 _OVERPASS_MIRRORS = [
@@ -53,13 +53,13 @@ WELCOME_HTML = """<!DOCTYPE html>
     <table width="520" cellpadding="0" cellspacing="0" style="background:#1a1f2e;border-radius:16px;overflow:hidden;max-width:520px;width:100%">
       <tr><td style="background:linear-gradient(135deg,#004a52,#00b4c8);padding:32px 40px;text-align:center">
         <div style="font-size:2.5rem">🚛</div>
-        <h1 style="color:#fff;margin:12px 0 4px;font-size:1.6rem;font-weight:800">Witaj w TruckSpot!</h1>
+        <h1 style="color:#fff;margin:12px 0 4px;font-size:1.6rem;font-weight:800">Witaj w TribeSpot!</h1>
         <p style="color:#b2f0f8;margin:0;font-size:.95rem">Nawigacja i parkingi dla kierowców TIR</p>
       </td></tr>
       <tr><td style="padding:32px 40px;color:#e2e8f0">
         <p style="font-size:1rem;line-height:1.6;margin:0 0 20px">
           Cześć! Cieszymy się, że jesteś z nami. 👋<br><br>
-          TruckSpot to aplikacja stworzona przez kierowców dla kierowców —
+          TribeSpot to aplikacja stworzona przez kierowców dla kierowców —
           znajdziesz tu <strong>10 000+ parkingów TIR</strong> w całej Europie,
           nawigację dostosowaną do ciężarówki i asystentkę AI, która zna trasy jak własną kieszeń.
         </p>
@@ -80,9 +80,9 @@ WELCOME_HTML = """<!DOCTYPE html>
           </tr>
         </table>
         <div style="text-align:center;margin:32px 0">
-          <a href="https://truckspot.pl" style="background:linear-gradient(135deg,#00b4c8,#0ea5e9);color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:700;font-size:1rem;display:inline-block">Otwórz TruckSpot 🚀</a>
+          <a href="https://truckspot.pl" style="background:linear-gradient(135deg,#00b4c8,#0ea5e9);color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:700;font-size:1rem;display:inline-block">Otwórz TribeSpot 🚀</a>
         </div>
-        <p style="color:#64748b;font-size:.8rem;text-align:center;margin:0">TruckSpot · truckspot.pl · Dobrej drogi! 🛣️</p>
+        <p style="color:#64748b;font-size:.8rem;text-align:center;margin:0">TribeSpot · truckspot.pl · Dobrej drogi! 🛣️</p>
       </td></tr>
     </table>
   </td></tr>
@@ -124,6 +124,39 @@ SUBSCRIPTIONS_PATH  = os.path.join(DATA_DIR, "subscriptions.json")
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
 VAPID_PUBLIC_KEY  = os.environ.get("VAPID_PUBLIC_KEY", "")
 VAPID_EMAIL       = os.environ.get("VAPID_EMAIL", "mailto:admin@truckspot.app")
+
+# Fallback — załaduj z pliku jeśli env nie ustawione (multi-line PEM key)
+_VAPID_FILE = "/app/vapid_keys.txt"
+if (not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY) and os.path.exists(_VAPID_FILE):
+    try:
+        with open(_VAPID_FILE) as f:
+            content = f.read()
+        # Prosty parser: znajdź klucze
+        if not VAPID_PUBLIC_KEY:
+            for line in content.split("\n"):
+                if line.startswith("VAPID_PUBLIC_KEY="):
+                    VAPID_PUBLIC_KEY = line.split("=", 1)[1].strip()
+                    break
+        if not VAPID_PRIVATE_KEY:
+            # Wyciągnij multi-line PEM między VAPID_PRIVATE_KEY= a VAPID_EMAIL=
+            in_private = False
+            lines = []
+            for line in content.split("\n"):
+                if line.startswith("VAPID_PRIVATE_KEY="):
+                    in_private = True
+                    lines.append(line.split("=", 1)[1])
+                elif line.startswith("VAPID_") or line.startswith("#"):
+                    if in_private: break
+                elif in_private:
+                    lines.append(line)
+            VAPID_PRIVATE_KEY = "\n".join(lines).strip()
+        if not VAPID_EMAIL or VAPID_EMAIL == "mailto:admin@truckspot.app":
+            for line in content.split("\n"):
+                if line.startswith("VAPID_EMAIL="):
+                    VAPID_EMAIL = line.split("=", 1)[1].strip()
+                    break
+    except Exception as e:
+        print(f"[VAPID load file error] {e}")
 MAPBOX_TOKEN      = os.environ.get("MAPBOX_TOKEN", "")
 
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
@@ -166,7 +199,7 @@ def send_push_nearby(lat, lng, cat, text, radius_km=PUSH_ALERT_RADIUS_KM):
     if not PUSH_AVAILABLE or not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
         return 0
     subs = load_subscriptions()
-    title = CAT_LABELS_PL.get(cat, 'ℹ️ Alert TruckSpot')
+    title = CAT_LABELS_PL.get(cat, 'ℹ️ Alert TribeSpot')
     payload = json.dumps({
         'title': title,
         'body':  text[:120],
@@ -246,6 +279,15 @@ def manifest():
 @app.route("/")
 def index():
     return render_template("index.html", mapbox_token=MAPBOX_TOKEN)
+
+@app.route("/biz")
+def biz_dashboard():
+    return render_template("biz.html")
+
+@app.route("/admin/tasks")
+@app.route("/admin")
+def admin_tasks():
+    return render_template("admin_tasks.html")
 
 @app.route("/api/parkings")
 def api_parkings():
@@ -994,6 +1036,7 @@ def api_push_subscribe():
         "subscription": data["subscription"],
         "lat":          data.get("lat"),
         "lng":          data.get("lng"),
+        "user_id":      data.get("user_id"),  # NEW: powiązanie z Supabase user
         "ts":           time.time(),
     }
     if existing:
@@ -1002,6 +1045,56 @@ def api_push_subscribe():
         subs.append(entry)
     save_subscriptions(subs)
     return jsonify({"ok": True, "id": sub_id})
+
+@app.route("/api/push/dm", methods=["POST"])
+def api_push_dm():
+    """Wyślij push notification do konkretnego usera (DM/pin/meet)."""
+    if not PUSH_AVAILABLE or not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
+        return jsonify({"ok": False, "error": "push not configured"}), 503
+    data = request.get_json(force=True) or {}
+    to_user_id = data.get("to_user_id")
+    if not to_user_id:
+        return jsonify({"ok": False, "error": "missing to_user_id"}), 400
+    title = (data.get("title") or "💬 Nowa wiadomość")[:100]
+    body = (data.get("body") or "")[:200]
+    from_user_id = data.get("from_user_id") or ""
+
+    payload = json.dumps({
+        "title": title,
+        "body":  body,
+        "icon":  "/static/icons/ts-pro-192.png",
+        "badge": "/static/icons/ts-pro-96.png",
+        "tag":   f"dm-{from_user_id}",
+        "data":  {
+            "kind": "dm",
+            "from_user_id": from_user_id,
+            "url": f"/?dm={from_user_id}",
+        },
+    })
+
+    subs = load_subscriptions()
+    target_subs = [s for s in subs if s.get("user_id") == to_user_id]
+    if not target_subs:
+        return jsonify({"ok": True, "sent": 0, "note": "no subscriptions for user"})
+
+    dead, sent = [], 0
+    for sub in target_subs:
+        try:
+            webpush(
+                subscription_info=sub["subscription"],
+                data=payload,
+                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_claims={"sub": VAPID_EMAIL},
+            )
+            sent += 1
+        except WebPushException as ex:
+            if ex.response and ex.response.status_code in (404, 410):
+                dead.append(sub["id"])
+        except Exception as e:
+            print(f"[PUSH DM error] {e}")
+    if dead:
+        save_subscriptions([s for s in subs if s.get("id") not in dead])
+    return jsonify({"ok": True, "sent": sent})
 
 @app.route("/api/push/update-position", methods=["POST"])
 def api_push_update_position():
@@ -1357,7 +1450,7 @@ def api_convoy_ping():
     existing = next((d for d in drivers if d["voter_id"] == voter_id), None)
     entry = {
         "voter_id":   voter_id,
-        "name":       str(data.get("name", "TRUCKER"))[:30],
+        "name":       str(data.get("name", "TRIBE"))[:30],
         "avatar":     str(data.get("avatar", "🚛"))[:8],
         "avatar_color": str(data.get("avatar_color", "#f59e0b"))[:10],
         "lat":        lat,
@@ -1434,7 +1527,7 @@ def api_convoy_message():
     from_id = str(data.get("from_id", ""))[:64]
     to_id   = str(data.get("to_id", ""))[:64]
     text    = str(data.get("text", ""))[:300]
-    name    = str(data.get("name", "TRUCKER"))[:30]
+    name    = str(data.get("name", "TRIBE"))[:30]
     avatar  = str(data.get("avatar", "🚛"))[:8]
     if not from_id or not to_id or not text:
         return jsonify({"error": "missing fields"}), 400
@@ -1464,7 +1557,7 @@ def api_convoy_messages():
     return jsonify(result)
 
 
-SYSTEM_PROMPT_BASE = """Jesteś TruckBot — najlepsza asystentka kierowcy w Polsce, wbudowana w TruckSpot.
+SYSTEM_PROMPT_BASE = """Jesteś TruckBot — najlepsza asystentka kierowcy w Polsce, wbudowana w TribeSpot.
 Masz charakter: jesteś ciepła, wygadana, dowcipna i trochę złośliwa — jak dobra koleżanka za kierownicą.
 Znasz kierowcę z imienia, pamiętasz o czym rozmawialiście i traktujesz go jak starego znajomego.
 Odpowiadasz ZAWSZE PO POLSKU. Jesteś konkretna i zwięzła (max 2-3 zdania) — kierowca nie może patrzeć w telefon.
@@ -1598,7 +1691,7 @@ def api_ai_chat():
 
     system = (
         SYSTEM_PROMPT_BASE +
-        f"\n\nKierowca: {driver_name} ({mode_label}), {driver_pts} punktów w TruckSpot{fav_txt}."
+        f"\n\nKierowca: {driver_name} ({mode_label}), {driver_pts} punktów w TribeSpot{fav_txt}."
         + memory_txt
     )
 
@@ -1896,7 +1989,7 @@ def api_send_welcome():
     if not email:
         return jsonify({"ok": False})
     name = (user.user_metadata or {}).get("full_name") or (user.user_metadata or {}).get("name") or email.split("@")[0]
-    ok = send_email(email, f"Witaj w TruckSpot, {name}! 🚛", WELCOME_HTML)
+    ok = send_email(email, f"Witaj w TribeSpot, {name}! 🚛", WELCOME_HTML)
     return jsonify({"ok": ok})
 
 
