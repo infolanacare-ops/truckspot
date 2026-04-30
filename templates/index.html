@@ -1118,11 +1118,11 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
 
 /* ── PROFILE PER SKIN — różne kolory per vibe ── */
 #map-skin-overlay.skin-cyberpunk{
-  --scanline-color: rgba(6,182,212,.04);
-  --scanbeam-color: rgba(6,182,212,.28);
-  --edge-glow-color: rgba(6,182,212,.32);
-  --particle-a: rgba(236,72,153,.65);
-  --particle-b: rgba(6,182,212,.6);
+  --scanline-color: rgba(6,182,212,.05);
+  --scanbeam-color: rgba(251,191,36,.3);
+  --edge-glow-color: rgba(6,182,212,.28);
+  --particle-a: rgba(251,191,36,.65);  /* amber circuit */
+  --particle-b: rgba(6,182,212,.7);     /* cyan circuit (Tron) */
 }
 #map-skin-overlay.skin-retrowave{
   --scanline-color: rgba(236,72,153,.05);
@@ -16807,10 +16807,10 @@ const MAP_SKINS = [
     mapStyle:'mapbox://styles/mapbox/standard',          atmosphere:'cyber',
     cssFilter:'saturate(2.4) hue-rotate(285deg) brightness(.95) contrast(1.25)',
     accent:'#ec4899', isPro:true },
-  // 3D CYBERPUNK — Standard + Blade Runner filter (3D buildings widoczne pod neonowym filtrem)
-  { key:'cyberpunk',  label:'Cyberpunk',  sub:'3.5D · Blade Runner', emoji:'🌌',
+  // 3D CYBERPUNK ROBO — Tron Legacy / Bumblebee vibe (cyan + amber circuit lights)
+  { key:'cyberpunk',  label:'Cyberpunk',  sub:'3.5D · Tron Robo', emoji:'🤖',
     mapStyle:'mapbox://styles/mapbox/standard',          atmosphere:'cyber',
-    cssFilter:'saturate(2.0) hue-rotate(225deg) brightness(.78) contrast(1.35)',
+    cssFilter:'saturate(1.65) hue-rotate(215deg) brightness(1.02) contrast(1.18)',
     accent:'#06b6d4', isPro:true },
   // 3D MIDNIGHT — Standard z dark filter + gold atmosphere
   { key:'midnight',   label:'Midnight',   sub:'3.5D · Gold luxury', emoji:'🏙️',
@@ -16902,12 +16902,28 @@ function _applyMapSkinExtras(key){
           } catch(e){}
         }
         // Roads — neon edge color (jeśli to line layer drogi)
-        if(layer.type === 'line' && layer.id && (layer.id.includes('road-primary') || layer.id.includes('road-secondary') || layer.id.includes('road-major'))){
-          try {
-            const color = key === 'cyberpunk' ? '#06b6d4' : '#ec4899';
-            window.map.setPaintProperty(layer.id, 'line-color', color);
-            window.map.setPaintProperty(layer.id, 'line-emissive-strength', 1.0);
-          } catch(e){}
+        if(layer.type === 'line' && layer.id){
+          // Cyberpunk: cyan dla głównych dróg + amber dla mniejszych (Tron grid effect)
+          if(key === 'cyberpunk'){
+            if(layer.id.includes('road-primary') || layer.id.includes('road-major')){
+              try {
+                window.map.setPaintProperty(layer.id, 'line-color', '#06b6d4');
+                window.map.setPaintProperty(layer.id, 'line-emissive-strength', 1.0);
+              } catch(e){}
+            } else if(layer.id.includes('road-secondary') || layer.id.includes('road-tertiary')){
+              try {
+                window.map.setPaintProperty(layer.id, 'line-color', '#fbbf24');
+                window.map.setPaintProperty(layer.id, 'line-emissive-strength', 0.85);
+              } catch(e){}
+            }
+          } else if(key === 'retrowave'){
+            if(layer.id.includes('road-primary') || layer.id.includes('road-secondary') || layer.id.includes('road-major')){
+              try {
+                window.map.setPaintProperty(layer.id, 'line-color', '#ec4899');
+                window.map.setPaintProperty(layer.id, 'line-emissive-strength', 1.0);
+              } catch(e){}
+            }
+          }
         }
       });
       // Mapbox Standard light preset → night dla cyberpunk vibe
