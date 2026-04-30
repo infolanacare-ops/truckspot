@@ -1025,6 +1025,35 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
 /* Live counter bump animation w modal */
 #spot-live-counter.bump{transform:scale(1.5);text-shadow:0 0 24px rgba(239,68,68,.9), 0 0 12px #fff !important}
 
+/* ── RECENTER BUTTON — mirror M (po lewej), pojawia się gdy user oddalił mapę ── */
+#recenter-btn{
+  position: fixed; top: 50%; left: 14px;
+  transform: translateY(-50%) scale(.7);
+  width: 42px; height: 42px; border-radius: 50%;
+  border: none; cursor: pointer; padding: 0;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255,255,255,.45), rgba(255,255,255,.12) 55%, rgba(255,255,255,.04) 100%),
+    linear-gradient(135deg, rgba(6,182,212,.4), rgba(34,197,94,.3));
+  border: 1px solid rgba(255,255,255,.32);
+  box-shadow:
+    0 4px 14px rgba(0,0,0,.32),
+    0 0 0 1px rgba(255,255,255,.08) inset,
+    0 -1px 0 rgba(0,0,0,.18) inset,
+    0 0 18px rgba(6,182,212,.25);
+  color: #fff; font-size: 1.15rem;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 410; opacity: 0; pointer-events: none;
+  transition: opacity .35s, transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .25s;
+  text-shadow: 0 1px 2px rgba(0,0,0,.4), 0 0 8px rgba(255,255,255,.3);
+}
+#recenter-btn.visible{ opacity: 1; pointer-events: auto; transform: translateY(-50%) scale(1) }
+#recenter-btn:hover{ box-shadow: 0 6px 20px rgba(6,182,212,.4), 0 0 24px rgba(34,197,94,.25), 0 0 0 1px rgba(255,255,255,.18) inset }
+#recenter-btn:active{ transform: translateY(-50%) scale(.92) }
+@media (max-width: 480px){ #recenter-btn{ width: 48px; height: 48px; font-size: 1.3rem } }
+/* Gdy QRail snap-left, recenter wskakuje na prawą stronę (mirror) */
+body.qrail-left #recenter-btn{ left: auto; right: 14px }
+body.qrail-left #recenter-btn.visible{ transform: translateY(-50%) scale(1) }
+
 /* ════════════════════════════════════════════════════════════════════════
    MAP SKIN OVERLAY — wow effects per skin (vignette, scanlines, particles, glow)
    Overlay div nad mapa (pod UI) — pointer-events none, czyste wizualne wow
@@ -6642,6 +6671,8 @@ function enterMode(mode){
       setTimeout(() => { try { _initQuantumRail(); } catch(e){ console.warn('QRail init:', e); } }, 800);
       // Map Skin restore z localStorage
       setTimeout(() => { try { _restoreMapSkin(); } catch(e){ console.warn('skin restore:', e); } }, 1800);
+      // Recenter button + user panning detection (cyber świat exploration)
+      try { _initRecenterButton(); } catch(e){ console.warn('recenter init:', e); }
     });
     // Re-apply 3D na każdej zmianie stylu (np. gdy user wybierze inny layer)
     map.on('style.load', ()=>{
@@ -7301,12 +7332,15 @@ function startGps(){
         const targetBear = moved && bearFromGps !== null
           ? bearFromGps
           : (_gyroHeading !== null ? _gyroHeading : null);
-        const opts = {center:[lng,lat], pitch:72, zoom:Math.max(map.getZoom(), 17.5), duration:700, easing:t=>t*(2-t)};
-        if(targetBear !== null){
-          _hubBearing = _hubBearing == null ? targetBear : _hubBearing + ((((targetBear - _hubBearing + 540) % 360) - 180) * (moved?0.25:0.12));
-          opts.bearing = _hubBearing;
+        // Jeśli user manualnie przesuwa mapę (cyber świat exploration) — NIE rób easeTo
+        if(!window._userPanning){
+          const opts = {center:[lng,lat], pitch:72, zoom:Math.max(map.getZoom(), 17.5), duration:700, easing:t=>t*(2-t)};
+          if(targetBear !== null){
+            _hubBearing = _hubBearing == null ? targetBear : _hubBearing + ((((targetBear - _hubBearing + 540) % 360) - 180) * (moved?0.25:0.12));
+            opts.bearing = _hubBearing;
+          }
+          map.easeTo(opts);
         }
-        map.easeTo(opts);
         _hubLastLat = lat; _hubLastLng = lng;
       }
     }
@@ -14466,6 +14500,80 @@ async function _submitSpot(){
     if(btn){ btn.disabled = false; btn.textContent = '✨ POSTUJ SPOT'; btn.style.opacity = '1'; }
   }
 }
+
+// ── RECENTER BUTTON — cyber świat exploration ──────────────────────────────
+// User może oddalić mapę dowolnie daleko. Camera follow OFF gdy panuje.
+// Po manualnym ruchu pojawia się przycisk "🎯" po przeciwnej stronie do M.
+window._userPanning = false;
+
+function _initRecenterButton(){
+  if(!window.map) return;
+  // Stwórz przycisk jeśli nie ma
+  if(!document.getElementById('recenter-btn')){
+    const btn = document.createElement('button');
+    btn.id = 'recenter-btn';
+    btn.title = 'Wróć do mojej pozycji';
+    btn.innerHTML = '🎯';
+    btn.onclick = (e) => { e.stopPropagation(); _recenterToGps(); };
+    document.body.appendChild(btn);
+  }
+  // Detect manual map move: drag/zoom z prawdziwym oryginalEvent (user gesture)
+  // navActive = nawigacja aktywna (NAVI) — wtedy używa innego mechanizmu (onNavUserInteract)
+  const onUserInteract = (e) => {
+    if(!e.originalEvent) return;       // ignore programmatic moves (flyTo/easeTo)
+    if(typeof navActive !== 'undefined' && navActive) return; // nav has own logic
+    window._userPanning = true;
+    document.getElementById('recenter-btn')?.classList.add('visible');
+  };
+  window.map.on('dragstart', onUserInteract);
+  window.map.on('zoomstart', onUserInteract);
+  window.map.on('rotatestart', onUserInteract);
+  window.map.on('pitchstart', onUserInteract);
+  // Synchronizuj pozycję recenter button z QRail side (przeciwna strona)
+  window.addEventListener('iconpackchange', _syncRecenterSide);
+  // Init pozycji wg QRail snap stanu
+  _syncRecenterSide();
+}
+
+function _syncRecenterSide(){
+  // QRail jest po prawej (default) → recenter po lewej
+  // QRail po lewej (snap-left) → recenter po prawej
+  const rail = document.getElementById('qrail');
+  if(rail && rail.classList.contains('snap-left')){
+    document.body.classList.add('qrail-left');
+  } else {
+    document.body.classList.remove('qrail-left');
+  }
+}
+
+function _recenterToGps(){
+  if(!window.map) return;
+  // Brak GPS — alert
+  if(typeof userLat === 'undefined' || userLat == null || userLng == null){
+    showAlert('📍','Czekaj na GPS','Sygnał lokalizacji jeszcze nie odebrany');
+    setTimeout(closeAlert, 2200); return;
+  }
+  // Wróć do pozycji usera + reset flag + ukryj button
+  window._userPanning = false;
+  document.getElementById('recenter-btn')?.classList.remove('visible');
+  window.map.flyTo({
+    center: [userLng, userLat],
+    zoom: 18, pitch: 72, bearing: 0,
+    duration: 1500, essential: true
+  });
+}
+
+// Hook na zmianę QRail side — gdy snap-left/snap-right zmieni się, sync recenter
+const _origSetIconPack = window.setIconPack;
+// Zamiast hookować setIconPack, obserwuj klasy QRail
+function _watchQrailSide(){
+  if(typeof MutationObserver === 'undefined') return;
+  const rail = document.getElementById('qrail');
+  if(!rail) { setTimeout(_watchQrailSide, 500); return; }
+  const observer = new MutationObserver(_syncRecenterSide);
+  observer.observe(rail, { attributes: true, attributeFilter: ['class'] });
+}
+setTimeout(_watchQrailSide, 1500);
 
 // ── QUANTUM RAIL — pionowy, drag→snap edge, M w środku, radial fanout ─────
 const QRAIL_TABS = [
