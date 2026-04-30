@@ -1025,6 +1025,66 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
 /* Live counter bump animation w modal */
 #spot-live-counter.bump{transform:scale(1.5);text-shadow:0 0 24px rgba(239,68,68,.9), 0 0 12px #fff !important}
 
+/* ════════════════════════════════════════════════════════════════════════
+   QUANTUM MORPH WINDOW — uniwersalny floating modal wyrastający z przycisku
+   Mapa widoczna u góry i dołu (topbar/QRail/FAB dostępne)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Backdrop — subtle dim z radial gradient od origin point */
+.q-morph-backdrop{
+  position: fixed; inset: 0; z-index: 5300;
+  background: radial-gradient(circle at var(--origin-x, 50%) var(--origin-y, 50%),
+    rgba(10,14,26,.0) 0%, rgba(10,14,26,.55) 60%, rgba(10,14,26,.7) 100%);
+  opacity: 0; pointer-events: auto; cursor: pointer;
+  backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px);
+  animation: q-morph-backdrop-in .45s cubic-bezier(.2,.85,.25,1) forwards;
+}
+@keyframes q-morph-backdrop-in{
+  to{ opacity: 1; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+}
+
+/* Floating window — wycentrowany, NIE pełnoekran (110px pad góra/dół) */
+.q-morph-window{
+  position: fixed; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100vw - 24px); max-width: 480px;
+  max-height: calc(100vh - 220px);
+  z-index: 5400;
+  border-radius: 22px; overflow: hidden;
+  background: linear-gradient(160deg, rgba(22,28,48,.92), rgba(10,14,26,.96));
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow:
+    0 20px 60px rgba(0,0,0,.55),
+    0 0 0 1px rgba(255,255,255,.08) inset,
+    0 -1px 0 rgba(0,0,0,.3) inset,
+    0 0 60px rgba(6,182,212,.08);
+  display: flex; flex-direction: column;
+  clip-path: circle(0% at var(--origin-x, 50%) var(--origin-y, 100%));
+  opacity: 0;
+  animation: q-morph-portal .55s cubic-bezier(.2,.85,.25,1) forwards;
+}
+@keyframes q-morph-portal{
+  0%{   clip-path: circle(0% at var(--origin-x, 50%) var(--origin-y, 100%)); opacity: 0; }
+  60%{  opacity: 1; }
+  100%{ clip-path: circle(180% at var(--origin-x, 50%) var(--origin-y, 100%)); opacity: 1; }
+}
+
+/* Karta wewnątrz windowa — fade-in subtle slide */
+.q-morph-window > .q-morph-content{
+  animation: q-morph-card-in .35s cubic-bezier(.34,1.56,.64,1) .12s both;
+  display: flex; flex-direction: column; flex: 1; overflow-y: auto; min-height: 0;
+}
+@keyframes q-morph-card-in{
+  from{ transform: translateY(10px); opacity: 0 }
+  to{ transform: translateY(0); opacity: 1 }
+}
+
+/* Mobile: szerszy modal, trochę mniejszy padding od krawędzi */
+@media (max-width: 480px){
+  .q-morph-window{ max-height: calc(100vh - 180px); }
+}
+
 /* ══ TRIBESPOT — Add Spot FAB (Apple Vision glass, jasny+subtelny) ══ */
 .fab-spot-add{position:fixed;left:14px;bottom:90px;z-index:400;
   width:44px;height:44px;border-radius:50%;border:none;cursor:pointer;padding:0;
@@ -14045,6 +14105,60 @@ function _onSpotPhotoChange(input){
     }
   };
   reader.readAsDataURL(file);
+}
+
+// ── QUANTUM MORPH WINDOW — uniwersalny floating modal ──────────────────────
+// Każde wywołanie: _morphWindow({id, html, originEv, onClose})
+// → tworzy backdrop + window które WYRASTA z miejsca klika (clip-path circle)
+// Mapa widoczna u góry i dołu (max-height calc(100vh - 220px))
+function _morphWindow(opts){
+  const id = opts.id || ('q-morph-' + Math.random().toString(36).slice(2,8));
+  // Usuń istniejący jeśli jest
+  document.getElementById(id)?.remove();
+  document.getElementById(id + '-backdrop')?.remove();
+  // Wylicz origin point z eventu lub środek ekranu
+  let ox = window.innerWidth / 2;
+  let oy = window.innerHeight - 80;
+  try {
+    if(opts.originEv){
+      const e = opts.originEv;
+      if(e.clientX != null && e.clientY != null){
+        ox = e.clientX; oy = e.clientY;
+      } else if(e.target && e.target.getBoundingClientRect){
+        const r = e.target.getBoundingClientRect();
+        ox = r.left + r.width/2;
+        oy = r.top + r.height/2;
+      } else if(e.currentTarget?.getBoundingClientRect){
+        const r = e.currentTarget.getBoundingClientRect();
+        ox = r.left + r.width/2;
+        oy = r.top + r.height/2;
+      }
+    }
+  } catch(e){}
+  const closeAll = () => {
+    if(typeof opts.onClose === 'function') try { opts.onClose(); } catch(e){}
+    document.getElementById(id)?.remove();
+    document.getElementById(id + '-backdrop')?.remove();
+  };
+  // Backdrop
+  const backdrop = document.createElement('div');
+  backdrop.id = id + '-backdrop';
+  backdrop.className = 'q-morph-backdrop';
+  backdrop.style.setProperty('--origin-x', ox + 'px');
+  backdrop.style.setProperty('--origin-y', oy + 'px');
+  backdrop.onclick = closeAll;
+  document.body.appendChild(backdrop);
+  // Window
+  const win = document.createElement('div');
+  win.id = id;
+  win.className = 'q-morph-window';
+  if(opts.extraClass) win.className += ' ' + opts.extraClass;
+  win.style.setProperty('--origin-x', ox + 'px');
+  win.style.setProperty('--origin-y', oy + 'px');
+  win.innerHTML = `<div class="q-morph-content">${opts.html || ''}</div>`;
+  win.onclick = (e) => e.stopPropagation();
+  document.body.appendChild(win);
+  return { id, close: closeAll };
 }
 
 // Quantum particle burst — eksplozja od centrum przycisku
