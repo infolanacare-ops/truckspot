@@ -383,6 +383,55 @@ def landing_pl():
 def landing_en():
     return render_template("landing_tribespot.html", t=LANDING_T["en"], lang="en")
 
+@app.route("/android")
+@app.route("/apk")
+def download_apk():
+    """Krótki link do APK — np. tribespot.eu/android"""
+    return send_from_directory("static", "ts-pro-latest.apk", as_attachment=True, download_name="TribeSpot.apk")
+
+@app.route("/install")
+def install_page():
+    """Strona wyboru: Android APK / iPhone PWA"""
+    html = """<!DOCTYPE html><html lang="pl"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zainstaluj TribeSpot</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(circle at 50% 30%,#0f172a,#020617);color:#fff;min-height:100vh;padding:2rem 1rem;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.card{max-width:440px;width:100%;background:linear-gradient(160deg,rgba(255,255,255,.08),rgba(255,255,255,.02));border:1px solid rgba(6,182,212,.3);border-radius:24px;padding:2rem;backdrop-filter:blur(28px);box-shadow:0 24px 60px rgba(0,0,0,.6),0 0 80px rgba(6,182,212,.15)}
+h1{font-size:1.6rem;font-weight:900;margin-bottom:.5rem;background:linear-gradient(135deg,#06b6d4,#a855f7);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.sub{font-size:.85rem;color:rgba(255,255,255,.7);margin-bottom:1.6rem;line-height:1.5}
+.btn{display:flex;align-items:center;gap:.85rem;padding:1.1rem 1.2rem;border-radius:16px;text-decoration:none;color:#fff;margin-bottom:.8rem;transition:.2s;font-weight:800;font-size:1rem}
+.btn:hover{transform:translateY(-2px)}
+.btn-android{background:linear-gradient(135deg,#22c55e,#10b981);box-shadow:0 8px 24px rgba(34,197,94,.4),0 1px 0 rgba(255,255,255,.3) inset}
+.btn-ios{background:linear-gradient(135deg,#06b6d4,#3b82f6);box-shadow:0 8px 24px rgba(6,182,212,.4),0 1px 0 rgba(255,255,255,.3) inset}
+.btn-emoji{font-size:1.8rem}
+.btn-text{flex:1}
+.btn-text small{display:block;font-size:.7rem;opacity:.85;font-weight:600;margin-top:2px}
+.note{font-size:.7rem;color:rgba(255,255,255,.55);text-align:center;margin-top:1.4rem;line-height:1.5;padding:.8rem;background:rgba(251,191,36,.05);border:1px solid rgba(251,191,36,.2);border-radius:10px}
+.back{display:block;text-align:center;color:rgba(6,182,212,.7);font-size:.78rem;margin-top:1rem;text-decoration:none}
+</style></head><body>
+<div class="card">
+  <h1>📥 Zainstaluj TribeSpot</h1>
+  <div class="sub">Wybierz wersję dla swojego telefonu — apka działa offline, jest darmowa, bez reklam.</div>
+  <a href="/static/ts-pro-latest.apk" download="TribeSpot.apk" class="btn btn-android">
+    <span class="btn-emoji">🤖</span>
+    <span class="btn-text">Android APK<small>Bezpośrednia instalka (3.5 MB)</small></span>
+    <span style="font-size:1.2rem">→</span>
+  </a>
+  <a href="https://app.tribespot.eu" class="btn btn-ios">
+    <span class="btn-emoji">🍎</span>
+    <span class="btn-text">iPhone / Web App<small>Otwórz w Safari → Dodaj do ekranu</small></span>
+    <span style="font-size:1.2rem">→</span>
+  </a>
+  <div class="note">
+    💡 <b>Android:</b> jeśli pojawi się ostrzeżenie "Niebezpieczna aplikacja" — to normalne, plik nie jest jeszcze w Play Store. Kliknij <b>"Mimo to zainstaluj"</b>.
+  </div>
+  <a href="/" class="back">← Wróć na stronę główną</a>
+</div>
+</body></html>"""
+    return html
+
 @app.route("/biz")
 def biz_dashboard():
     return render_template("biz.html")
