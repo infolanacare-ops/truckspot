@@ -13078,20 +13078,39 @@ function _formatLastSeen(iso){
 
 // Send — with structured result + push notification
 async function _dmSend(toUserId, body, msgType='text', meta={}){
-  if(!_sbUser) return {ok:false, error:'Nie zalogowany'};
+  if(!_sbUser){
+    showAlert('🔒','Nie zalogowany','Zaloguj się żeby pisać');
+    setTimeout(closeAlert, 2500);
+    return {ok:false, error:'Nie zalogowany'};
+  }
   const txt = (body || '').toString().trim().slice(0, 2000);
   if(msgType === 'text' && !txt) return {ok:false, error:'Pusta wiadomość'};
   try {
+    console.log('[DM] sending to', toUserId, 'type=', msgType, 'len=', txt.length);
     const {data, error} = await _SB.from('private_messages')
       .insert({from_user:_sbUser.id, to_user:toUserId, body:txt, msg_type:msgType, meta})
       .select().single();
-    if(error) return {ok:false, error: error.message || error.code || 'insert failed'};
-    // Wyślij push notification do odbiorcy (działa nawet gdy ma zamkniętą apkę)
+    if(error){
+      console.error('[DM] INSERT error:', error);
+      // Pokaż user-friendly błąd
+      let msg = error.message || error.code || 'Błąd wysyłania';
+      if((error.message||'').includes('row-level security') || (error.code||'') === '42501'){
+        msg = 'RLS: brak uprawnień (sprawdź policies private_messages)';
+      } else if((error.code||'') === '23503'){
+        msg = 'Odbiorca nie istnieje';
+      }
+      showAlert('⚠️','Wiadomość nie wysłana', msg);
+      setTimeout(closeAlert, 4000);
+      return {ok:false, error: msg};
+    }
+    console.log('[DM] sent OK', data?.id);
     _firePushDM(toUserId, msgType, txt, meta).catch(()=>{});
-    // Update last_seen w profilu (do "ostatnio aktywna X min temu")
     _dmTouchLastSeen().catch(()=>{});
     return {ok:true, msg:data};
   } catch(e){
+    console.error('[DM] exception:', e);
+    showAlert('⚠️','Błąd', e?.message || String(e));
+    setTimeout(closeAlert, 4000);
     return {ok:false, error: e?.message || String(e)};
   }
 }
