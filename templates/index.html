@@ -14783,6 +14783,84 @@ function _qrailTabClick(idx){
   }, 180);
 }
 
+// ── TRIBESPOT: AUTO CHECK-IN LOOP — geo+time triggered RSVP→checked_in ─────
+// Co 30s sprawdza moje aktywne RSVP do eventów. Jeśli now ∈ [start, end] AND dist ≤ 100m
+// → server-side RPC check_in_spot (walidacja czasu+distance) → push do organizatora.
+window._autoCheckInTimer = null;
+window._lastCheckInAttempt = new Map();  // spot_id → timestamp ostatniej próby (anti-spam)
+
+async function _autoCheckInTick(){
+  if(!_sbUser || !_SB) return;
+  if(typeof userLat !== 'number' || typeof userLng !== 'number') return;
+  try {
+    const { data: rsvps, error } = await _SB.rpc('my_active_event_rsvps');
+    if(error || !rsvps || !rsvps.length) return;
+    const now = Date.now();
+    for(const r of rsvps){
+      if(r.status === 'checked_in') continue;            // już zameldowany
+      if(r.status !== 'interested') continue;            // tylko RSVP
+      const startMs = new Date(r.start_at).getTime();
+      const endMs = new Date(r.end_at).getTime();
+      if(now < startMs || now > endMs) continue;         // event nie jest LIVE
+      // Anti-spam: nie próbuj częściej niż co 60s per spot
+      const last = window._lastCheckInAttempt.get(r.spot_id) || 0;
+      if(now - last < 60000) continue;
+      window._lastCheckInAttempt.set(r.spot_id, now);
+      // Distance check (frontend wstępny — dokładny po stronie serwera)
+      const distM = _haversineKm(userLat, userLng, parseFloat(r.spot_lat), parseFloat(r.spot_lng)) * 1000;
+      if(distM > 150) continue;                          // poza zasięgiem (150m bufor żeby nie tracić borderline)
+      // Server-side check-in (walidacja + update + zwraca dane do push)
+      try {
+        const { data: result, error: rpcErr } = await _SB.rpc('check_in_spot', {
+          p_spot_id: r.spot_id, p_lat: userLat, p_lng: userLng,
+        });
+        if(rpcErr){ console.warn('[checkin] RPC fail:', rpcErr.message); continue; }
+        const row = result && result[0];
+        if(!row || !row.ok) continue;
+        // ✅ Auto check-in udany!
+        console.log('[checkin] ✅ Auto check-in udany:', row.event_title);
+        showAlert('🔥', `Jesteś tu!`, `Auto check-in: ${row.event_title}`);
+        setTimeout(closeAlert, 3500);
+        // Haptic feedback (mobile)
+        try { if(navigator.vibrate) navigator.vibrate([20, 60, 20, 60, 200]); } catch(e){}
+        // Refresh marker spotu (counter +1 widoczny od razu)
+        try {
+          if(typeof _refreshSpotMarker === 'function' && _spotData.has(r.spot_id)){
+            const s = _spotData.get(r.spot_id);
+            if(s){ s.checked_in_count = row.total_count; _refreshSpotMarker(r.spot_id); }
+          }
+        } catch(e){}
+        // Push do organizatora (etap E)
+        try {
+          await fetch('/api/notify-checkin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              organizer_id: row.posted_by,
+              user_name: row.user_name,
+              event_title: row.event_title,
+              total_count: row.total_count,
+              spot_id: r.spot_id,
+            }),
+          });
+        } catch(e){ console.warn('[checkin] push fail:', e); }
+      } catch(e){ console.warn('[checkin] err:', e); }
+    }
+  } catch(e){ console.warn('[checkin] tick fail:', e?.message||e); }
+}
+
+function _startAutoCheckIn(){
+  if(window._autoCheckInTimer) return;
+  // Pierwszy tick po 10s (żeby GPS się ustabilizował), potem co 30s
+  setTimeout(_autoCheckInTick, 10000);
+  window._autoCheckInTimer = setInterval(_autoCheckInTick, 30000);
+}
+
+function _stopAutoCheckIn(){
+  if(window._autoCheckInTimer){ clearInterval(window._autoCheckInTimer); window._autoCheckInTimer = null; }
+  window._lastCheckInAttempt.clear();
+}
+
 // ── TRIBESPOT: SPOTS LIVE LAYER ─────────────────────────────────────────────
 const _spotMarkers = {};   // id → mapboxgl.Marker
 const _spotData    = new Map();  // id → spot row
@@ -20897,6 +20975,8 @@ function _onAuthUser(user) {
     setTimeout(() => { try { _initStepsToday(); } catch(e){ console.warn('Steps init:', e); } }, 2500);
     // SPOTS — load + Realtime live layer
     setTimeout(() => { try { _loadSpotsNearby(10); _startSpotsLive(); } catch(e){ console.warn('Spots init:', e); } }, 3500);
+    // EVENTS — auto check-in geo+time loop (co 30s sprawdza RSVP)
+    setTimeout(() => { try { _startAutoCheckIn(); } catch(e){ console.warn('Auto check-in init:', e); } }, 4000);
     // PRESENCE — start NIEZALEŻNIE od GPS fix (żeby koledzy widzieli się od razu jak otworzą apkę)
     // GPS update i tak zaktualizuje payload gdy pozycja pojawi się
     setTimeout(() => { try { if(typeof _startPresence === 'function' && !_presenceCh) _startPresence(); } catch(e){ console.warn('Presence early init:', e); } }, 2000);

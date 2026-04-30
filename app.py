@@ -1199,6 +1199,58 @@ def api_push_dm():
         save_subscriptions([s for s in subs if s.get("id") not in dead])
     return jsonify({"ok": True, "sent": sent})
 
+@app.route("/api/notify-checkin", methods=["POST"])
+def api_notify_checkin():
+    """Push notification do organizatora gdy ktoś auto check-in na jego event."""
+    if not PUSH_AVAILABLE or not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
+        return jsonify({"ok": False, "error": "push not configured"}), 503
+    data = request.get_json(force=True) or {}
+    organizer_id = data.get("organizer_id")
+    user_name = (data.get("user_name") or "Ktoś")[:50]
+    event_title = (data.get("event_title") or "Twój event")[:80]
+    total_count = int(data.get("total_count") or 1)
+    spot_id = data.get("spot_id")
+    if not organizer_id:
+        return jsonify({"ok": False, "error": "missing organizer_id"}), 400
+
+    payload = json.dumps({
+        "title": f"🔥 {user_name} właśnie wszedł!",
+        "body":  f"{event_title} · łącznie: {total_count} osób TERAZ",
+        "icon":  "/static/icons/ts-pro-192.png",
+        "badge": "/static/icons/ts-pro-96.png",
+        "tag":   f"checkin-{spot_id}",
+        "renotify": True,
+        "data": {
+            "kind": "checkin",
+            "spot_id": spot_id,
+            "url": f"/?spot={spot_id}" if spot_id else "/",
+        },
+    })
+
+    subs = load_subscriptions()
+    target_subs = [s for s in subs if s.get("user_id") == organizer_id]
+    if not target_subs:
+        return jsonify({"ok": True, "sent": 0, "note": "no subs"})
+
+    dead, sent = [], 0
+    for sub in target_subs:
+        try:
+            webpush(
+                subscription_info=sub["subscription"],
+                data=payload,
+                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_claims={"sub": VAPID_EMAIL},
+            )
+            sent += 1
+        except WebPushException as ex:
+            if ex.response and ex.response.status_code in (404, 410):
+                dead.append(sub["id"])
+        except Exception as e:
+            print(f"[PUSH checkin error] {e}")
+    if dead:
+        save_subscriptions([s for s in subs if s.get("id") not in dead])
+    return jsonify({"ok": True, "sent": sent})
+
 @app.route("/api/push/update-position", methods=["POST"])
 def api_push_update_position():
     data = request.get_json(force=True)
