@@ -13287,13 +13287,22 @@ function _dmToast(name, preview, fromUserId){
 // ════════════════════════════════════════════════════════════════
 let _chatChannel = null;
 let _chatPeerId = null;
+let _groupChannel = null;
+let _groupCurrentId = null;
+let _chatTab = 'dm'; // 'dm' lub 'group'
 
-async function openChat(){
+async function openChat(tab){
   if(!_sbUser){ showAlert('🔒','Zaloguj się',''); setTimeout(closeAlert,2000); return; }
   document.getElementById('metaverse-hub')?.remove();
   document.getElementById('chat-list-modal')?.remove();
   document.getElementById('chat-room')?.remove();
+  document.getElementById('group-room')?.remove();
   if(_chatChannel){ try{_SB.removeChannel(_chatChannel)}catch(e){} _chatChannel=null; }
+  if(_groupChannel){ try{_SB.removeChannel(_groupChannel)}catch(e){} _groupChannel=null; }
+  if(tab === 'group' || tab === 'dm') _chatTab = tab;
+
+  const dmActive = _chatTab === 'dm';
+  const grpActive = _chatTab === 'group';
 
   const m = document.createElement('div');
   m.id = 'chat-list-modal';
@@ -13303,15 +13312,20 @@ async function openChat(){
       <button onclick="document.getElementById('chat-list-modal').remove()" style="background:#1e293b;border:none;color:#fff;width:38px;height:38px;border-radius:10px;font-size:20px;cursor:pointer;font-weight:800">←</button>
       <div style="flex:1">
         <div style="font-size:18px;font-weight:900">💬 Czaty</div>
-        <div style="font-size:11px;color:#64748b">Wszystkie rozmowy</div>
+        <div style="font-size:11px;color:#64748b">Rozmowy + grupy znajomych</div>
       </div>
-      <button onclick="_chatPickPeer()" title="Nowa rozmowa" style="background:linear-gradient(135deg,#06b6d4,#3b82f6);border:none;color:#fff;width:42px;height:42px;border-radius:10px;font-size:22px;font-weight:900;cursor:pointer">+</button>
+      <button onclick="${grpActive?'openCreateGroup()':'_chatPickPeer()'}" title="${grpActive?'Nowa grupa':'Nowa rozmowa'}" style="background:linear-gradient(135deg,${grpActive?'#a855f7,#ec4899':'#06b6d4,#3b82f6'});border:none;color:#fff;width:42px;height:42px;border-radius:10px;font-size:22px;font-weight:900;cursor:pointer">+</button>
+    </div>
+    <div style="display:flex;gap:6px;padding:10px 12px 0;background:#0f172a;border-bottom:1px solid #1e293b">
+      <button onclick="openChat('dm')" style="flex:1;background:${dmActive?'#06b6d4':'#1e293b'};border:none;color:${dmActive?'#fff':'#94a3b8'};padding:9px;border-radius:10px 10px 0 0;cursor:pointer;font-weight:800;font-size:13px;letter-spacing:.04em;text-transform:uppercase">💬 1:1</button>
+      <button onclick="openChat('group')" style="flex:1;background:${grpActive?'#a855f7':'#1e293b'};border:none;color:${grpActive?'#fff':'#94a3b8'};padding:9px;border-radius:10px 10px 0 0;cursor:pointer;font-weight:800;font-size:13px;letter-spacing:.04em;text-transform:uppercase">👥 Grupy</button>
     </div>
     <div id="chat-list" style="flex:1;overflow-y:auto;padding:8px;background:#0a0e1a">
       <div style="text-align:center;padding:30px;color:#64748b">Ładowanie...</div>
     </div>`;
   document.body.appendChild(m);
-  await _chatLoadList();
+  if(grpActive) await _groupLoadList();
+  else await _chatLoadList();
 }
 
 async function _chatLoadList(){
@@ -13579,6 +13593,363 @@ function _chatStartRealtime(userId){
     })
     .subscribe();
 }
+// ════════════════════════════════════════════════════════════════
+// GROUP CHATS — ekipy znajomych z 'Ustaw spot'
+// ════════════════════════════════════════════════════════════════
+
+async function _groupLoadList(){
+  const el = document.getElementById('chat-list');
+  if(!el || !_sbUser) return;
+  try {
+    const { data, error } = await _SB.from('v_my_groups').select('*').order('last_msg_at',{ascending:false,nullsFirst:false}).limit(80);
+    if(error) throw error;
+    if(!data?.length){
+      el.innerHTML = `<div style="text-align:center;padding:50px 20px;color:#64748b">
+        <div style="font-size:50px;margin-bottom:10px;opacity:.5">👥</div>
+        <div style="color:#fff;font-weight:800;margin-bottom:6px;font-size:16px">Brak ekip jeszcze</div>
+        <div style="font-size:13px;line-height:1.5;margin-bottom:18px">Stwórz grupę ze znajomymi<br>i ustal spot w jednym kliknięciu</div>
+        <button onclick="openCreateGroup()" style="background:linear-gradient(135deg,#a855f7,#ec4899);border:none;color:#fff;padding:12px 22px;border-radius:12px;cursor:pointer;font-weight:900;font-size:14px;letter-spacing:.04em;text-transform:uppercase;box-shadow:0 8px 22px rgba(168,85,247,.4)">+ Stwórz ekipę</button>
+      </div>`;
+      return;
+    }
+    el.innerHTML = data.map(g=>{
+      const t = g.last_msg_at ? _formatRelativeTime(g.last_msg_at) : _formatRelativeTime(g.created_at);
+      const preview = g.last_msg ? String(g.last_msg).slice(0,50) : '— brak wiadomości —';
+      const hasSpot = g.active_spot_id != null;
+      return `<div onclick="openGroupChat('${g.id}','${_escHtml(g.name).replace(/'/g,'')}')" style="display:flex;gap:12px;padding:12px;background:${hasSpot?'linear-gradient(135deg,rgba(251,191,36,.08),rgba(168,85,247,.05))':'#1e293b'};border-radius:12px;margin-bottom:6px;cursor:pointer;border:1px solid ${hasSpot?'rgba(251,191,36,.35)':'#334155'}">
+        <div style="width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#a855f7,#ec4899);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:18px;flex-shrink:0">👥</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:3px">
+            <span style="font-weight:800;font-size:15px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff">${_escHtml(g.name)}</span>
+            <span style="font-size:11px;color:#64748b;flex-shrink:0">${t}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:13px;color:${g.unread_count>0?'#fff':'#94a3b8'};${g.unread_count>0?'font-weight:700':''};flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${hasSpot?'📍 Spot ustawiony · ':''}${_escHtml(preview)}</span>
+            ${g.unread_count>0?`<span style="background:#22c55e;color:#0a0e1a;font-size:11px;font-weight:900;padding:2px 8px;border-radius:10px">${g.unread_count>9?'9+':g.unread_count}</span>`:''}
+          </div>
+          <div style="font-size:11px;color:#64748b;margin-top:3px">👥 ${g.member_count} osób · ${g.role==='admin'?'admin':'member'}</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e){
+    el.innerHTML = `<div style="color:#ef4444;text-align:center;padding:30px">Błąd: ${_escHtml(e.message||'')}</div>`;
+  }
+}
+
+async function openCreateGroup(){
+  if(!_sbUser) return;
+  document.getElementById('create-group-modal')?.remove();
+
+  // Pobierz znajomych + online userów (kandydatów do dodania)
+  const candIds = new Set();
+  try { (_friendIds||new Set()).forEach(id=>{if(id!==_sbUser.id)candIds.add(id)}); } catch(e){}
+  try { Object.keys(_presenceCh?.presenceState()||{}).forEach(k=>{if(k!==_sbUser.id)candIds.add(k)}); } catch(e){}
+  let profs = [];
+  if(candIds.size){
+    try {
+      const { data } = await _SB.from('profiles').select('id,display_name,avatar_2d_url,avatar_url').in('id', [...candIds]).limit(60);
+      profs = data || [];
+    } catch(e){}
+  }
+
+  const m = document.createElement('div');
+  m.id = 'create-group-modal';
+  m.style.cssText = 'position:fixed;inset:0;z-index:5700;background:#0a0e1a;color:#fff;display:flex;flex-direction:column';
+  m.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;background:#0f172a;border-bottom:1px solid #1e293b">
+      <button onclick="document.getElementById('create-group-modal').remove()" style="background:#1e293b;border:none;color:#fff;width:38px;height:38px;border-radius:10px;font-size:20px;cursor:pointer">←</button>
+      <div style="flex:1">
+        <div style="font-size:17px;font-weight:900">+ Nowa ekipa</div>
+        <div style="font-size:11px;color:#64748b">Dodaj znajomych do grupy</div>
+      </div>
+    </div>
+    <div style="padding:14px 16px;background:#0f172a;border-bottom:1px solid #1e293b">
+      <input id="cg-name" maxlength="80" placeholder="Nazwa ekipy (np. 'Piątek wieczór')" style="width:100%;padding:11px 14px;background:#1e293b;border:1px solid #334155;border-radius:12px;color:#fff;font-size:15px;outline:none">
+    </div>
+    <div style="padding:10px 16px;color:#94a3b8;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em">Wybierz członków (${profs.length})</div>
+    <div id="cg-members" style="flex:1;overflow-y:auto;padding:0 12px 12px">
+      ${profs.length ? profs.map(p=>{
+        const av = p.avatar_2d_url || p.avatar_url;
+        const nm = (p.display_name||'?').replace(/'/g,'');
+        return `<label style="display:flex;gap:12px;padding:10px;background:#1e293b;border-radius:10px;margin-bottom:5px;cursor:pointer;border:1px solid #334155;align-items:center">
+          <input type="checkbox" data-uid="${p.id}" class="cg-cb" style="width:20px;height:20px;accent-color:#a855f7;cursor:pointer;flex-shrink:0">
+          <div style="width:38px;height:38px;border-radius:50%;${av?`background:url('${av}') center/cover`:'background:linear-gradient(135deg,#06b6d4,#3b82f6)'};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;flex-shrink:0">${av?'':(nm[0]||'?').toUpperCase()}</div>
+          <div style="flex:1;font-weight:700;font-size:14px">${_escHtml(nm)}</div>
+        </label>`;
+      }).join('') : `<div style="text-align:center;padding:40px 20px;color:#64748b"><div style="font-size:40px;margin-bottom:10px">😶</div>Nie masz jeszcze znajomych<br><span style="font-size:12px">Dodaj kogoś przez peer card → Zaczep / Napisz</span></div>`}
+    </div>
+    <div style="padding:12px 16px;background:#0f172a;border-top:1px solid #1e293b;display:flex;gap:10px">
+      <button onclick="document.getElementById('create-group-modal').remove()" style="flex:1;background:#1e293b;border:1px solid #334155;color:#94a3b8;padding:13px;border-radius:12px;cursor:pointer;font-weight:700">Anuluj</button>
+      <button onclick="_submitCreateGroup()" style="flex:2;background:linear-gradient(135deg,#a855f7,#ec4899);border:none;color:#fff;padding:13px;border-radius:12px;cursor:pointer;font-weight:900;letter-spacing:.04em;text-transform:uppercase;box-shadow:0 8px 22px rgba(168,85,247,.4)">+ Stwórz ekipę</button>
+    </div>`;
+  document.body.appendChild(m);
+}
+
+async function _submitCreateGroup(){
+  const name = (document.getElementById('cg-name')?.value || '').trim();
+  if(!name){ showAlert('⚠️','Brak nazwy','Daj jakąś nazwę grupie'); setTimeout(closeAlert,2000); return; }
+  const ids = [...document.querySelectorAll('.cg-cb:checked')].map(cb=>cb.dataset.uid);
+  try {
+    const { data, error } = await _SB.rpc('create_group_with_members', { p_name: name, p_member_ids: ids });
+    if(error) throw error;
+    document.getElementById('create-group-modal')?.remove();
+    showAlert('✅','Ekipa stworzona', name+' · członków: '+(ids.length+1));
+    setTimeout(closeAlert, 2500);
+    // Otwórz od razu czat tej grupy
+    setTimeout(()=>openGroupChat(data, name), 400);
+    // Refresh listę
+    if(document.getElementById('chat-list')) _groupLoadList();
+  } catch(e){
+    showAlert('⚠️','Błąd', e?.message||''); setTimeout(closeAlert,3000);
+  }
+}
+
+async function openGroupChat(groupId, groupName){
+  if(!_sbUser) return;
+  document.getElementById('chat-list-modal')?.remove();
+  document.getElementById('group-room')?.remove();
+  if(_groupChannel){ try{_SB.removeChannel(_groupChannel)}catch(e){} _groupChannel=null; }
+  _groupCurrentId = groupId;
+  const safeName = (groupName||'Ekipa').replace(/'/g,'');
+
+  // Pobierz info grupy + members
+  let gInfo = null, members = [];
+  try {
+    const { data: g } = await _SB.from('v_my_groups').select('*').eq('id', groupId).maybeSingle();
+    gInfo = g;
+    const { data: ms } = await _SB.from('group_chat_members').select('user_id,role').eq('group_id', groupId);
+    members = ms || [];
+  } catch(e){}
+  const memberCount = gInfo?.member_count || members.length || 1;
+  const hasSpot = gInfo?.active_spot_id != null;
+
+  const m = document.createElement('div');
+  m.id = 'group-room';
+  m.style.cssText = 'position:fixed;inset:0;z-index:5600;background:#0a0e1a;color:#fff;display:flex;flex-direction:column';
+  m.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:#0f172a;border-bottom:1px solid #1e293b">
+      <button onclick="_groupBack()" style="background:#1e293b;border:none;color:#fff;width:36px;height:36px;border-radius:10px;font-size:20px;cursor:pointer;font-weight:800">←</button>
+      <div style="width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,#a855f7,#ec4899);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">👥</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(safeName)}</div>
+        <div style="font-size:11px;color:#94a3b8">${memberCount} osób${hasSpot?' · 📍 spot ustawiony':''}</div>
+      </div>
+      <button onclick="_groupOpenSetSpot('${groupId}','${_escHtml(safeName).replace(/'/g,'')}')" title="Ustaw spot" style="background:linear-gradient(135deg,#fbbf24,#d4af37);border:none;color:#0a0e1a;padding:8px 12px;border-radius:10px;font-size:12px;cursor:pointer;font-weight:900;letter-spacing:.04em;text-transform:uppercase">📍 SPOT</button>
+    </div>
+    ${hasSpot ? `<div style="padding:10px 14px;background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(168,85,247,.08));border-bottom:1px solid rgba(251,191,36,.3);display:flex;align-items:center;gap:10px">
+      <div style="font-size:24px">📍</div>
+      <div style="flex:1;font-size:13px;color:#fbbf24;font-weight:700">Spot aktywny — kliknij aby zobaczyć</div>
+      <button onclick="openSpotModal(${gInfo.active_spot_id})" style="background:#fbbf24;border:none;color:#0a0e1a;padding:6px 12px;border-radius:8px;font-weight:900;font-size:12px;cursor:pointer">OTWÓRZ</button>
+    </div>` : ''}
+    <div id="group-msgs" style="flex:1 1 0;min-height:0;overflow-y:auto;padding:14px;background:#0a0e1a">
+      <div style="text-align:center;padding:30px;color:#64748b">Ładowanie...</div>
+    </div>
+    <div style="display:flex;gap:8px;padding:10px 12px;background:#0f172a;border-top:1px solid #1e293b">
+      <input id="group-input" type="text" placeholder="Napisz do ekipy..." onkeydown="if(event.key==='Enter')_groupSend()" maxlength="2000" style="flex:1;padding:11px 14px;background:#1e293b;border:1px solid #334155;border-radius:12px;color:#fff;font-size:15px;outline:none;font-family:inherit">
+      <button onclick="_groupSend()" style="background:linear-gradient(135deg,#a855f7,#ec4899);border:none;color:#fff;width:48px;border-radius:12px;font-size:20px;font-weight:900;cursor:pointer">➤</button>
+    </div>`;
+  document.body.appendChild(m);
+  await _groupLoadMsgs(groupId);
+  _groupStartRealtime(groupId);
+  // Mark read
+  _SB.from('group_chat_members').update({last_read_at:new Date().toISOString()}).eq('group_id',groupId).eq('user_id',_sbUser.id).then(()=>{});
+  setTimeout(()=>document.getElementById('group-input')?.focus(), 200);
+}
+
+function _groupBack(){
+  if(_groupChannel){ try{_SB.removeChannel(_groupChannel)}catch(e){} _groupChannel=null; }
+  _groupCurrentId = null;
+  document.getElementById('group-room')?.remove();
+  openChat('group');
+}
+
+async function _groupLoadMsgs(groupId){
+  const el = document.getElementById('group-msgs');
+  if(!el) return;
+  try {
+    const { data, error } = await _SB.from('group_chat_messages')
+      .select('id,from_user,body,msg_type,meta,created_at')
+      .eq('group_id', groupId).order('created_at',{ascending:true}).limit(300);
+    if(error) throw error;
+    if(!data?.length){
+      el.innerHTML = `<div style="text-align:center;padding:40px 20px;color:#64748b">
+        <div style="font-size:40px;margin-bottom:10px;opacity:.5">👥</div>
+        <div style="color:#fff;font-weight:700">Cisza w ekipie</div>
+        <div style="font-size:13px;margin-top:5px">Powiedz coś pierwszy 👋</div>
+      </div>`;
+      return;
+    }
+    // Pobierz autorów raz
+    const ids = [...new Set(data.map(m=>m.from_user))];
+    const { data: profs } = await _SB.from('profiles').select('id,display_name,avatar_2d_url,avatar_url').in('id', ids);
+    const pmap = new Map((profs||[]).map(p=>[p.id, p]));
+    el.innerHTML = data.map(m=>_groupBubble(m, pmap.get(m.from_user))).join('');
+    el.scrollTop = el.scrollHeight;
+  } catch(e){
+    el.innerHTML = `<div style="color:#ef4444;padding:20px;text-align:center">Błąd: ${_escHtml(e.message||'')}</div>`;
+  }
+}
+
+function _groupBubble(m, prof){
+  const mine = m.from_user === _sbUser?.id;
+  const time = new Date(m.created_at).toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'});
+  const nm = (prof?.display_name || '?').replace(/[<>]/g,'');
+  const av = prof?.avatar_2d_url || prof?.avatar_url;
+  if(m.msg_type === 'system'){
+    return `<div style="text-align:center;color:#64748b;font-size:12px;margin:8px 0;font-style:italic">${_escHtml(m.body)}</div>`;
+  }
+  let body = '';
+  if(m.msg_type === 'spot_set' && m.meta){
+    const lat=m.meta.lat,lng=m.meta.lng,label=m.meta.label||'Spot ekipy',spotId=m.meta.spot_id;
+    body = `📍 <b>${_escHtml(label)}</b><br><span style="font-size:11px;opacity:.8">Spot ekipy ustawiony</span>${spotId?`<br><button onclick="openSpotModal(${spotId})" style="margin-top:6px;background:#fbbf24;border:none;color:#0a0e1a;border-radius:8px;padding:5px 10px;font-weight:900;font-size:12px;cursor:pointer">📍 OTWÓRZ SPOT</button>`:''}`;
+  } else {
+    body = _escHtml(m.body || '');
+  }
+  if(mine){
+    return `<div style="text-align:right;margin-bottom:8px">
+      <div style="display:inline-block;max-width:82%;text-align:left;background:linear-gradient(135deg,#a855f7,#ec4899);color:#fff;padding:9px 13px;border-radius:16px 16px 4px 16px;font-size:14px;line-height:1.4">${body}<div style="font-size:10px;opacity:.75;margin-top:4px;text-align:right">${time}</div></div>
+    </div>`;
+  } else {
+    const avHtml = av ? `<div style="width:32px;height:32px;border-radius:50%;background:url('${av}') center/cover;flex-shrink:0;margin-top:14px"></div>` : `<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#06b6d4,#3b82f6);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:13px;flex-shrink:0;margin-top:14px">${(nm[0]||'?').toUpperCase()}</div>`;
+    return `<div style="display:flex;gap:8px;margin-bottom:8px;align-items:flex-start">
+      ${avHtml}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;color:#94a3b8;font-weight:700;margin-bottom:3px;padding-left:4px">${_escHtml(nm)}</div>
+        <div style="display:inline-block;max-width:90%;background:#334155;color:#fff;padding:9px 13px;border-radius:14px 14px 14px 4px;font-size:14px;line-height:1.4">${body}<div style="font-size:10px;opacity:.7;margin-top:4px;text-align:right">${time}</div></div>
+      </div>
+    </div>`;
+  }
+}
+
+async function _groupSend(){
+  const inp = document.getElementById('group-input');
+  const txt = (inp?.value||'').trim();
+  if(!txt || !_groupCurrentId || !_sbUser) return;
+  inp.value = '';
+  // Optimistic
+  const optMsg = { from_user:_sbUser.id, body:txt, msg_type:'text', meta:null, created_at:new Date().toISOString() };
+  const el = document.getElementById('group-msgs');
+  if(el){
+    if(el.querySelector('div[style*="font-size:40px"]')) el.innerHTML='';
+    el.insertAdjacentHTML('beforeend', _groupBubble(optMsg, null));
+    el.scrollTop = el.scrollHeight;
+  }
+  try {
+    const { error } = await _SB.from('group_chat_messages').insert({
+      group_id: _groupCurrentId, from_user: _sbUser.id, body: txt, msg_type: 'text'
+    });
+    if(error) throw error;
+  } catch(e){
+    showAlert('⚠️','Nie wysłano', e.message||''); setTimeout(closeAlert,3000);
+  }
+}
+
+function _groupStartRealtime(groupId){
+  _groupChannel = _SB.channel(`group-${groupId}-${Date.now()}`)
+    .on('postgres_changes', {event:'INSERT', schema:'public', table:'group_chat_messages', filter:`group_id=eq.${groupId}`}, async payload => {
+      const m = payload.new;
+      if(!m) return;
+      if(m.from_user === _sbUser?.id) return; // optimistic already added
+      // Pobierz autora
+      let prof = null;
+      try { const { data } = await _SB.from('profiles').select('id,display_name,avatar_2d_url,avatar_url').eq('id', m.from_user).maybeSingle(); prof = data; } catch(e){}
+      const el = document.getElementById('group-msgs');
+      if(!el) return;
+      if(el.querySelector('div[style*="font-size:40px"]')) el.innerHTML='';
+      el.insertAdjacentHTML('beforeend', _groupBubble(m, prof));
+      el.scrollTop = el.scrollHeight;
+      try { if(navigator.vibrate) navigator.vibrate(20); } catch(e){}
+      // Mark read
+      _SB.from('group_chat_members').update({last_read_at:new Date().toISOString()}).eq('group_id',groupId).eq('user_id',_sbUser.id).then(()=>{});
+    })
+    .subscribe();
+}
+
+// ── USTAW SPOT W GRUPIE ─────────────────────────────────────────────────
+async function _groupOpenSetSpot(groupId, groupName){
+  if(!_sbUser) return;
+  let lat = userLat, lng = userLng;
+  if(!lat || !lng){
+    try { const c = JSON.parse(localStorage.getItem('ts_last_gps')||'null'); if(c?.lat){ lat=c.lat; lng=c.lng; } } catch(e){}
+  }
+  if(!lat || !lng){ showAlert('📍','Brak GPS','Włącz lokalizację'); setTimeout(closeAlert,2200); return; }
+
+  document.getElementById('group-set-spot-modal')?.remove();
+  const m = document.createElement('div');
+  m.id = 'group-set-spot-modal';
+  m.style.cssText = 'position:fixed;inset:0;z-index:5800;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);display:flex;align-items:flex-start;justify-content:center;padding:1rem;overflow-y:auto';
+  m.innerHTML = `
+    <div onclick="event.stopPropagation()" style="width:100%;max-width:440px;margin-top:5vh;background:#0f172a;border:1px solid rgba(251,191,36,.4);border-radius:20px;color:#fff;padding:1.4rem;box-shadow:0 24px 60px rgba(0,0,0,.7),0 0 50px rgba(251,191,36,.15)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+        <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#fbbf24,#d4af37);display:flex;align-items:center;justify-content:center;font-size:20px">📍</div>
+        <div style="flex:1">
+          <div style="font-weight:900;font-size:16px">Ustaw spot ekipy</div>
+          <div style="font-size:12px;color:#94a3b8">Stwórz miejsce spotkania dla grupy ${_escHtml(groupName)}</div>
+        </div>
+        <button onclick="document.getElementById('group-set-spot-modal').remove()" style="background:#1e293b;border:none;color:#fff;width:32px;height:32px;border-radius:10px;cursor:pointer">✕</button>
+      </div>
+      <label style="display:block;font-size:12px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px">Tytuł spotkania</label>
+      <input id="gss-title" maxlength="80" placeholder="np. 'Plac Wolności wieczór'" style="width:100%;padding:11px;background:#1e293b;border:1px solid #334155;border-radius:10px;color:#fff;font-size:14px;outline:none;margin-bottom:10px">
+      <label style="display:block;font-size:12px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px">Kiedy</label>
+      <select id="gss-when" style="width:100%;padding:11px;background:#1e293b;border:1px solid #334155;border-radius:10px;color:#fff;font-size:14px;margin-bottom:10px">
+        <option value="now">Teraz (od razu)</option>
+        <option value="30">Za 30 minut</option>
+        <option value="60" selected>Za 1 godzinę</option>
+        <option value="120">Za 2 godziny</option>
+        <option value="240">Za 4 godziny</option>
+      </select>
+      <div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:10px;padding:10px;font-size:12px;color:#fbbf24;margin-bottom:14px">
+        📍 Lokalizacja: <b>Twoja aktualna pozycja</b><br>
+        <span style="font-family:monospace;font-size:11px;color:#94a3b8">${lat.toFixed(5)}, ${lng.toFixed(5)}</span>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="document.getElementById('group-set-spot-modal').remove()" style="flex:1;background:#1e293b;border:1px solid #334155;color:#94a3b8;padding:12px;border-radius:10px;cursor:pointer;font-weight:700">Anuluj</button>
+        <button onclick="_groupSubmitSetSpot('${groupId}',${lat},${lng})" style="flex:2;background:linear-gradient(135deg,#fbbf24,#d4af37);border:none;color:#0a0e1a;padding:12px;border-radius:10px;cursor:pointer;font-weight:900;letter-spacing:.04em;text-transform:uppercase;box-shadow:0 6px 18px rgba(251,191,36,.4)">📍 USTAW SPOT</button>
+      </div>
+    </div>`;
+  m.onclick = (e) => { if(e.target===m) m.remove(); };
+  document.body.appendChild(m);
+  setTimeout(()=>document.getElementById('gss-title')?.focus(), 150);
+}
+
+async function _groupSubmitSetSpot(groupId, lat, lng){
+  const title = (document.getElementById('gss-title')?.value || '').trim() || 'Spot ekipy';
+  const when = document.getElementById('gss-when')?.value || '60';
+  const startMin = when === 'now' ? 0 : parseInt(when);
+  const start_at = new Date(Date.now() + startMin*60*1000).toISOString();
+  const end_at = new Date(Date.now() + (startMin + 180)*60*1000).toISOString(); // +3h
+  try {
+    // 1. Utwórz spot (event-style, vibe='event')
+    const { data: spot, error: e1 } = await _SB.from('spots').insert({
+      lat, lng, vibe: 'event', title,
+      start_at, end_at, event_type: 'meetup',
+      posted_by: _sbUser.id
+    }).select().maybeSingle();
+    if(e1) throw e1;
+    // 2. Powiąż z grupą (active_spot_id)
+    await _SB.from('group_chats').update({ active_spot_id: spot.id, active_spot_at: new Date().toISOString() }).eq('id', groupId);
+    // 3. Wiadomość spot_set w grupie
+    await _SB.from('group_chat_messages').insert({
+      group_id: groupId, from_user: _sbUser.id,
+      body: '📍 Spot ustawiony: ' + title,
+      msg_type: 'spot_set',
+      meta: { spot_id: spot.id, lat, lng, label: title, when: start_at }
+    });
+    document.getElementById('group-set-spot-modal')?.remove();
+    try { if(navigator.vibrate) navigator.vibrate([20,40,20]); } catch(e){}
+    showAlert('✅','Spot ustawiony!','Cała ekipa dostanie info');
+    setTimeout(closeAlert, 2500);
+    // Refresh widoku grupy (header z banerem spot)
+    if(_groupCurrentId === groupId){
+      document.getElementById('group-room')?.remove();
+      openGroupChat(groupId, '');
+    }
+    if(window.map) window.map.flyTo({center:[lng,lat], zoom:16, duration:800});
+  } catch(e){
+    showAlert('⚠️','Błąd', e?.message||''); setTimeout(closeAlert,3000);
+  }
+}
+
 // ════════════════════════════════════════════════════════════════
 // END TS CHAT v2
 // ════════════════════════════════════════════════════════════════
