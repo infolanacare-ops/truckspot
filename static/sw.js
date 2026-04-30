@@ -1,9 +1,9 @@
-// TruckSpot Service Worker — v12
+// TruckSpot Service Worker — v22
 // HTML nigdy nie cachowany → zawsze świeży kod przy każdym otwarciu
 // Aktualizacja: cichy reload wszystkich klientów, zero banerów
-const STATIC_CACHE = 'ts-static-v12';  // ikony, manifest (rzadko się zmieniają)
-const DATA_CACHE   = 'ts-data-v12';    // API responses
-const TILE_CACHE   = 'ts-tiles-v12';   // kafelki mapy
+const STATIC_CACHE = 'ts-static-v22';  // ikony, manifest (rzadko się zmieniają)
+const DATA_CACHE   = 'ts-data-v22';    // API responses
+const TILE_CACHE   = 'ts-tiles-v22';   // kafelki mapy
 
 // Tylko naprawdę statyczne assety — NIE cachujemy HTML
 const STATIC_ASSETS = [
@@ -166,8 +166,32 @@ const CAT_VIBRATE = {
 };
 
 self.addEventListener('push', e => {
-  let payload = { title: 'TruckSpot', body: 'Nowy alert w pobliżu' };
+  let payload = { title: 'TS PRO', body: 'Nowy alert w pobliżu' };
   try { payload = e.data?.json() || payload; } catch(err) {}
+
+  const kind = payload.data?.kind || 'cb';
+  const isDM = kind === 'dm';
+
+  // DM notification — inny vibrate, akcje, otwiera czat
+  if(isDM){
+    const fromId = payload.data?.from_user_id || '';
+    e.waitUntil(self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: payload.icon || '/static/icons/ts-pro-192.png',
+      badge: payload.badge || '/static/icons/ts-pro-96.png',
+      tag: payload.tag || `dm-${fromId}`,
+      renotify: true,
+      vibrate: [120, 60, 120, 60, 200],
+      data: { url: payload.data?.url || `/?dm=${fromId}`, kind: 'dm', from_user_id: fromId },
+      actions: [
+        { action: 'open-chat', title: '💬 Otwórz czat' },
+        { action: 'dismiss',   title: '✕ Zamknij' },
+      ],
+    }));
+    return;
+  }
+
+  // CB / alerty (legacy)
   const cat = payload.data?.cat || 'info';
   const lat = payload.data?.lat;
   const lng = payload.data?.lng;
