@@ -13694,6 +13694,50 @@ const AVATAR_STYLES = [
   {key:'thumbs',        name:'Thumbs',      emoji:'👍'},
 ];
 
+// ── WAKE LOCK — ekran nie wygaszał się gdy apka jest otwarta ──────────────
+// Działa: Chrome 84+ / Edge 84+ / Safari 16.4+ (iOS tylko w PWA standalone) / Firefox 126+
+window._tsWakeLock = null;
+async function _requestWakeLock(){
+  if(!('wakeLock' in navigator)){
+    console.warn('Wake Lock API niedostępne');
+    return;
+  }
+  if(window._tsWakeLock){ return; } // już mamy
+  try {
+    window._tsWakeLock = await navigator.wakeLock.request('screen');
+    console.log('🔆 Wake lock active');
+    window._tsWakeLock.addEventListener('release', () => {
+      console.log('🌙 Wake lock released (system)');
+      window._tsWakeLock = null;
+    });
+  } catch(e){
+    console.warn('Wake lock fail:', e?.message||e);
+    window._tsWakeLock = null;
+  }
+}
+function _releaseWakeLock(){
+  if(window._tsWakeLock){
+    try { window._tsWakeLock.release(); } catch(e){}
+    window._tsWakeLock = null;
+  }
+}
+// Initial request (gdy strona widoczna)
+if(typeof document !== 'undefined' && document.visibilityState === 'visible'){
+  _requestWakeLock();
+}
+// Re-request gdy strona wraca z tła (system wylacza wake lock automatycznie)
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible'){
+    _requestWakeLock();
+  }
+});
+// Re-request po user gesture (np. iOS Safari może wymagać interakcji)
+document.addEventListener('click', () => {
+  if(!window._tsWakeLock && document.visibilityState === 'visible'){
+    _requestWakeLock();
+  }
+}, { once: true, passive: true });
+
 // ── AVATAR INSTANT RESTORE (przed czymkolwiek innym, żeby GPS marker miał) ──
 try {
   const cached2d = localStorage.getItem('ts_avatar_2d_url');
