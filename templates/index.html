@@ -13282,7 +13282,313 @@ function _dmToast(name, preview, fromUserId){
   try { navigator.vibrate?.(80); } catch(e){}
 }
 
+// ════════════════════════════════════════════════════════════════
+// TS CHAT v2 — od zera, prosty, 100% działa (replace cyber czat)
+// ════════════════════════════════════════════════════════════════
+let _chatChannel = null;
+let _chatPeerId = null;
+
+async function openChat(){
+  if(!_sbUser){ showAlert('🔒','Zaloguj się',''); setTimeout(closeAlert,2000); return; }
+  document.getElementById('metaverse-hub')?.remove();
+  document.getElementById('chat-list-modal')?.remove();
+  document.getElementById('chat-room')?.remove();
+  if(_chatChannel){ try{_SB.removeChannel(_chatChannel)}catch(e){} _chatChannel=null; }
+
+  const m = document.createElement('div');
+  m.id = 'chat-list-modal';
+  m.style.cssText = 'position:fixed;inset:0;z-index:5500;background:#0a0e1a;color:#fff;display:flex;flex-direction:column';
+  m.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;background:#0f172a;border-bottom:1px solid #1e293b">
+      <button onclick="document.getElementById('chat-list-modal').remove()" style="background:#1e293b;border:none;color:#fff;width:38px;height:38px;border-radius:10px;font-size:20px;cursor:pointer;font-weight:800">←</button>
+      <div style="flex:1">
+        <div style="font-size:18px;font-weight:900">💬 Czaty</div>
+        <div style="font-size:11px;color:#64748b">Wszystkie rozmowy</div>
+      </div>
+      <button onclick="_chatPickPeer()" title="Nowa rozmowa" style="background:linear-gradient(135deg,#06b6d4,#3b82f6);border:none;color:#fff;width:42px;height:42px;border-radius:10px;font-size:22px;font-weight:900;cursor:pointer">+</button>
+    </div>
+    <div id="chat-list" style="flex:1;overflow-y:auto;padding:8px;background:#0a0e1a">
+      <div style="text-align:center;padding:30px;color:#64748b">Ładowanie...</div>
+    </div>`;
+  document.body.appendChild(m);
+  await _chatLoadList();
+}
+
+async function _chatLoadList(){
+  const el = document.getElementById('chat-list');
+  if(!el || !_sbUser) return;
+  const myId = _sbUser.id;
+  try {
+    const [sent, recv] = await Promise.all([
+      _SB.from('private_messages').select('to_user,body,msg_type,created_at,read_at').eq('from_user', myId).order('created_at',{ascending:false}).limit(150),
+      _SB.from('private_messages').select('from_user,body,msg_type,created_at,read_at').eq('to_user', myId).order('created_at',{ascending:false}).limit(150)
+    ]);
+    const peerMap = new Map();
+    (sent.data||[]).forEach(m=>{
+      const cur = peerMap.get(m.to_user);
+      if(!cur || new Date(m.created_at) > new Date(cur.lastTime)){
+        peerMap.set(m.to_user, {lastMsg:m, lastTime:m.created_at, mine:true, unread:cur?.unread||0});
+      }
+    });
+    (recv.data||[]).forEach(m=>{
+      const isUnread = !m.read_at;
+      const cur = peerMap.get(m.from_user);
+      if(!cur || new Date(m.created_at) > new Date(cur.lastTime)){
+        peerMap.set(m.from_user, {lastMsg:m, lastTime:m.created_at, mine:false, unread:(cur?.unread||0)+(isUnread?1:0)});
+      } else if(isUnread){ cur.unread = (cur.unread||0)+1; }
+    });
+    if(peerMap.size === 0){
+      el.innerHTML = `<div style="text-align:center;padding:50px 20px;color:#64748b">
+        <div style="font-size:50px;margin-bottom:10px;opacity:.5">💬</div>
+        <div style="color:#fff;font-weight:800;margin-bottom:6px;font-size:16px">Brak rozmów jeszcze</div>
+        <div style="font-size:13px;line-height:1.5">Klik <b>+</b> żeby napisać do kogoś<br>albo kliknij avatar na mapie</div>
+      </div>`;
+      return;
+    }
+    const ids = Array.from(peerMap.keys());
+    const {data:profs} = await _SB.from('profiles').select('id,display_name,avatar_2d_url,avatar_url').in('id', ids);
+    const pmap = new Map((profs||[]).map(p=>[p.id,p]));
+    const items = Array.from(peerMap.entries()).sort((a,b)=>new Date(b[1].lastTime)-new Date(a[1].lastTime));
+    el.innerHTML = items.map(([pid,info])=>{
+      const p = pmap.get(pid) || {};
+      const av = p.avatar_2d_url || p.avatar_url;
+      const nm = (p.display_name||'?').replace(/'/g,'');
+      const m = info.lastMsg;
+      const preview = m.msg_type==='pin'?'📍 Pin lokalizacji':m.msg_type==='meet_request'?'🤝 Spotkanie':m.msg_type==='nudge'?'👋 Zaczepia Cię!':(m.body||'').slice(0,50);
+      const t = _formatRelativeTime(info.lastTime);
+      const tickColor = info.mine ? (m.read_at?'#06b6d4':'#64748b') : '';
+      const ticks = info.mine ? `<span style="color:${tickColor};font-weight:900;letter-spacing:-2px;margin-right:3px">✓✓</span>` : '';
+      return `<div onclick="_chatOpenWith('${pid}','${_escHtml(nm).replace(/'/g,'')}')" style="display:flex;gap:12px;padding:12px;background:#1e293b;border-radius:12px;margin-bottom:6px;cursor:pointer;border:1px solid #334155">
+        <div style="width:46px;height:46px;border-radius:50%;${av?`background:url('${av}') center/cover`:'background:linear-gradient(135deg,#06b6d4,#3b82f6)'};flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:18px">${av?'':(nm[0]||'?').toUpperCase()}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:3px">
+            <span style="font-weight:800;font-size:15px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff">${_escHtml(nm)}</span>
+            <span style="font-size:11px;color:#64748b;flex-shrink:0">${t}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:13px;color:${info.unread>0?'#fff':'#94a3b8'};${info.unread>0?'font-weight:700':''};flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ticks}${_escHtml(preview)}</span>
+            ${info.unread>0?`<span style="background:#22c55e;color:#0a0e1a;font-size:11px;font-weight:900;padding:2px 8px;border-radius:10px">${info.unread>9?'9+':info.unread}</span>`:''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e){
+    el.innerHTML = `<div style="color:#ef4444;text-align:center;padding:30px">Błąd: ${_escHtml(e.message||'')}</div>`;
+  }
+}
+
+async function _chatPickPeer(){
+  const el = document.getElementById('chat-list');
+  if(!el) return;
+  const onlineIds = new Set();
+  try { Object.keys(_presenceCh?.presenceState()||{}).forEach(k=>{if(k!==_sbUser.id)onlineIds.add(k)}); } catch(e){}
+  const ids = [...onlineIds];
+  try { (_friendIds||new Set()).forEach(id=>{if(id!==_sbUser.id && !onlineIds.has(id)) ids.push(id)}); } catch(e){}
+  const uniq = [...new Set(ids)];
+  if(!uniq.length){
+    el.innerHTML = `<div style="text-align:center;padding:50px 20px;color:#64748b">
+      <div style="font-size:40px;margin-bottom:10px">🔍</div>
+      <div style="color:#fff;font-weight:700;margin-bottom:8px">Nikogo nie ma online</div>
+      <div style="font-size:12px">Wróć później albo dodaj znajomych</div>
+      <button onclick="_chatLoadList()" style="margin-top:14px;background:#1e293b;border:1px solid #334155;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer">← Wróć</button>
+    </div>`;
+    return;
+  }
+  try {
+    const {data:profs} = await _SB.from('profiles').select('id,display_name,avatar_2d_url,avatar_url').in('id', uniq).limit(60);
+    el.innerHTML = `<div style="padding:8px 4px 12px;color:#94a3b8;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em">Wybierz kontakt</div>` + (profs||[]).map(p=>{
+      const av = p.avatar_2d_url || p.avatar_url;
+      const nm = (p.display_name||'?').replace(/'/g,'');
+      const online = onlineIds.has(p.id);
+      return `<div onclick="_chatOpenWith('${p.id}','${_escHtml(nm).replace(/'/g,'')}')" style="display:flex;gap:12px;padding:12px;background:#1e293b;border-radius:12px;margin-bottom:6px;cursor:pointer;border:1px solid #334155">
+        <div style="width:42px;height:42px;border-radius:50%;${av?`background:url('${av}') center/cover`:'background:linear-gradient(135deg,#06b6d4,#3b82f6)'};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;position:relative">${av?'':(nm[0]||'?').toUpperCase()}${online?'<span style="position:absolute;bottom:-1px;right:-1px;width:12px;height:12px;background:#22c55e;border:2px solid #0a0e1a;border-radius:50%"></span>':''}</div>
+        <div style="flex:1;display:flex;align-items:center;font-weight:700;font-size:15px;color:#fff">${_escHtml(nm)}${online?'<span style="margin-left:8px;font-size:10px;color:#22c55e;font-weight:800">● ONLINE</span>':''}</div>
+        <div style="display:flex;align-items:center;color:#06b6d4;font-size:20px">💬</div>
+      </div>`;
+    }).join('') + `<button onclick="_chatLoadList()" style="margin-top:8px;width:100%;background:#1e293b;border:1px solid #334155;color:#94a3b8;padding:10px;border-radius:10px;cursor:pointer;font-weight:700">← Wróć do listy</button>`;
+  } catch(e){
+    el.innerHTML = `<div style="color:#ef4444;padding:20px">Błąd: ${_escHtml(e.message||'')}</div>`;
+  }
+}
+
+async function _chatOpenWith(userId, name){
+  if(!_sbUser){ showAlert('🔒','Zaloguj się',''); setTimeout(closeAlert,2000); return; }
+  document.getElementById('chat-list-modal')?.remove();
+  document.getElementById('chat-room')?.remove();
+  document.getElementById('friends-panel')?.remove();
+  document.getElementById('metaverse-hub')?.remove();
+  document.getElementById('dm-chat-modal')?.remove();
+  if(_chatChannel){ try{_SB.removeChannel(_chatChannel)}catch(e){} _chatChannel=null; }
+  _chatPeerId = userId;
+
+  const safeName = (name||'Anonim').replace(/'/g,'');
+  // Pobierz avatar
+  let avHtml = '';
+  try {
+    const {data:p} = await _SB.from('profiles').select('avatar_2d_url,avatar_url,display_name').eq('id',userId).maybeSingle();
+    const av = p?.avatar_2d_url || p?.avatar_url;
+    avHtml = av ? `<div style="width:36px;height:36px;border-radius:50%;background:url('${av}') center/cover;flex-shrink:0"></div>` : `<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#06b6d4,#3b82f6);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;flex-shrink:0">${(safeName[0]||'?').toUpperCase()}</div>`;
+  } catch(e){
+    avHtml = `<div style="width:36px;height:36px;border-radius:50%;background:#334155;flex-shrink:0"></div>`;
+  }
+
+  const m = document.createElement('div');
+  m.id = 'chat-room';
+  m.style.cssText = 'position:fixed;inset:0;z-index:5600;background:#0a0e1a;color:#fff;display:flex;flex-direction:column';
+  m.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:#0f172a;border-bottom:1px solid #1e293b">
+      <button onclick="_chatBack()" style="background:#1e293b;border:none;color:#fff;width:36px;height:36px;border-radius:10px;font-size:20px;cursor:pointer;font-weight:800">←</button>
+      ${avHtml}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(safeName)}</div>
+        <div style="font-size:11px;color:#06b6d4">online</div>
+      </div>
+      <button onclick="_chatSendPin()" title="Wyślij pin lokalizacji" style="background:#1e293b;border:1px solid #334155;color:#22c55e;width:36px;height:36px;border-radius:10px;font-size:16px;cursor:pointer">📍</button>
+    </div>
+    <div id="chat-msgs" style="flex:1 1 0;min-height:0;overflow-y:auto;padding:14px;background:#0a0e1a">
+      <div style="text-align:center;padding:30px;color:#64748b">Ładowanie...</div>
+    </div>
+    <div style="display:flex;gap:8px;padding:10px 12px;background:#0f172a;border-top:1px solid #1e293b">
+      <input id="chat-input" type="text" placeholder="Napisz wiadomość..." onkeydown="if(event.key==='Enter')_chatSend()" maxlength="2000" autocomplete="off" autocapitalize="sentences" style="flex:1;padding:11px 14px;background:#1e293b;border:1px solid #334155;border-radius:12px;color:#fff;font-size:15px;outline:none;font-family:inherit">
+      <button onclick="_chatSend()" style="background:linear-gradient(135deg,#06b6d4,#3b82f6);border:none;color:#fff;width:48px;border-radius:12px;font-size:20px;font-weight:900;cursor:pointer">➤</button>
+    </div>`;
+  document.body.appendChild(m);
+  await _chatLoadMsgs(userId);
+  _chatStartRealtime(userId);
+  setTimeout(()=>document.getElementById('chat-input')?.focus(), 200);
+}
+
+function _chatBack(){
+  if(_chatChannel){ try{_SB.removeChannel(_chatChannel)}catch(e){} _chatChannel=null; }
+  _chatPeerId = null;
+  document.getElementById('chat-room')?.remove();
+  openChat();
+}
+
+async function _chatLoadMsgs(userId){
+  const el = document.getElementById('chat-msgs');
+  if(!el || !_sbUser) return;
+  const myId = _sbUser.id;
+  try {
+    const {data, error} = await _SB.from('private_messages')
+      .select('id,from_user,to_user,body,msg_type,meta,created_at,read_at')
+      .or(`and(from_user.eq.${myId},to_user.eq.${userId}),and(from_user.eq.${userId},to_user.eq.${myId})`)
+      .order('created_at',{ascending:true}).limit(300);
+    if(error) throw error;
+    if(!data?.length){
+      el.innerHTML = `<div style="text-align:center;padding:40px 20px;color:#64748b">
+        <div style="font-size:40px;margin-bottom:10px;opacity:.5">💬</div>
+        <div style="color:#fff;font-weight:700;margin-bottom:5px">Pusto tutaj</div>
+        <div style="font-size:13px">Napisz pierwszą wiadomość 👋</div>
+      </div>`;
+      return;
+    }
+    el.innerHTML = data.map(m=>_chatBubble(m)).join('');
+    el.scrollTop = el.scrollHeight;
+    // Mark read async
+    _SB.from('private_messages').update({read_at:new Date().toISOString()}).eq('to_user',myId).eq('from_user',userId).is('read_at',null).then(()=>{});
+  } catch(e){
+    el.innerHTML = `<div style="color:#ef4444;text-align:center;padding:30px">Błąd: ${_escHtml(e.message||'')}<br><button onclick="_chatLoadMsgs('${userId}')" style="margin-top:10px;background:#1e293b;border:1px solid #334155;color:#fff;padding:8px 14px;border-radius:8px;cursor:pointer">🔄 Spróbuj jeszcze raz</button></div>`;
+  }
+}
+
+function _chatBubble(m){
+  const mine = m.from_user === _sbUser?.id;
+  const time = new Date(m.created_at).toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'});
+  let body = '';
+  if(m.msg_type === 'pin' && m.meta){
+    const lat=m.meta.lat,lng=m.meta.lng,label=m.meta.label||'Lokalizacja';
+    body = `📍 <b>${_escHtml(label)}</b><br><span style="font-size:11px;opacity:.75">${(lat||0).toFixed(4)}, ${(lng||0).toFixed(4)}</span><br><button onclick="_navToFriend(${lat},${lng},'${_escHtml(label).replace(/'/g,'')}')" style="margin-top:6px;background:#22c55e;border:none;color:#fff;border-radius:8px;padding:5px 10px;font-weight:800;font-size:12px;cursor:pointer">🚗 JEDŹ</button>`;
+  } else if(m.msg_type === 'meet_request' && m.meta){
+    const lat=m.meta.lat,lng=m.meta.lng;
+    body = `🤝 <b>Spotkajmy się tutaj!</b><br><span style="font-size:11px;opacity:.8">${(lat||0).toFixed(4)}, ${(lng||0).toFixed(4)}</span><br><button onclick="_navToFriend(${lat},${lng},'Spotkanie')" style="margin-top:6px;background:#fbbf24;border:none;color:#0a0e1a;border-radius:8px;padding:5px 10px;font-weight:900;font-size:12px;cursor:pointer">🚗 JADĘ!</button>`;
+  } else if(m.msg_type === 'nudge'){
+    body = '👋 <b>Zaczepia Cię!</b>';
+  } else {
+    body = _escHtml(m.body||'');
+  }
+  const ticks = mine ? `<span style="color:${m.read_at?'#06b6d4':'#64748b'};font-weight:900;letter-spacing:-2px;margin-left:4px">✓✓</span>` : '';
+  const bg = mine ? 'background:linear-gradient(135deg,#06b6d4,#3b82f6)' : 'background:#334155';
+  const radius = mine ? 'border-radius:16px 16px 4px 16px' : 'border-radius:16px 16px 16px 4px';
+  return `<div style="text-align:${mine?'right':'left'};margin-bottom:8px">
+    <div data-msg-id="${m.id||''}" style="display:inline-block;max-width:82%;text-align:left;${bg};${radius};padding:9px 13px;color:#fff;font-size:14px;line-height:1.4">${body}<div style="font-size:10px;opacity:.75;margin-top:4px;text-align:right">${time}${ticks}</div></div>
+  </div>`;
+}
+
+async function _chatSend(){
+  const inp = document.getElementById('chat-input');
+  const txt = (inp?.value||'').trim();
+  if(!txt || !_chatPeerId || !_sbUser) return;
+  inp.value = '';
+  const optMsg = { from_user:_sbUser.id, to_user:_chatPeerId, body:txt, msg_type:'text', meta:null, created_at:new Date().toISOString(), read_at:null };
+  const el = document.getElementById('chat-msgs');
+  if(el){
+    // Jeśli był empty state — nadpisz
+    if(el.querySelector('div[style*="font-size:40px"]')){ el.innerHTML = ''; }
+    el.insertAdjacentHTML('beforeend', _chatBubble(optMsg));
+    el.scrollTop = el.scrollHeight;
+  }
+  try {
+    const {error} = await _SB.from('private_messages').insert({
+      from_user:_sbUser.id, to_user:_chatPeerId, body:txt, msg_type:'text'
+    });
+    if(error) throw error;
+  } catch(e){
+    showAlert('⚠️','Nie wysłano', e.message||'Sprawdź czy jesteście znajomymi');
+    setTimeout(closeAlert,3000);
+  }
+}
+
+async function _chatSendPin(){
+  if(!_chatPeerId || !_sbUser) return;
+  if(!userLat || !userLng){ showAlert('📍','Brak GPS','Włącz lokalizację'); setTimeout(closeAlert,2200); return; }
+  const meta = { lat:userLat, lng:userLng, label:'Moja pozycja' };
+  try {
+    await _SB.from('private_messages').insert({
+      from_user:_sbUser.id, to_user:_chatPeerId, body:'📍 Pin lokalizacji', msg_type:'pin', meta
+    });
+    const optMsg = { from_user:_sbUser.id, to_user:_chatPeerId, body:'📍 Pin lokalizacji', msg_type:'pin', meta, created_at:new Date().toISOString(), read_at:null };
+    const el = document.getElementById('chat-msgs');
+    if(el){
+      if(el.querySelector('div[style*="font-size:40px"]')){ el.innerHTML = ''; }
+      el.insertAdjacentHTML('beforeend', _chatBubble(optMsg));
+      el.scrollTop = el.scrollHeight;
+    }
+  } catch(e){
+    showAlert('⚠️','Błąd', e.message||''); setTimeout(closeAlert,3000);
+  }
+}
+
+function _chatStartRealtime(userId){
+  if(!_sbUser) return;
+  const myId = _sbUser.id;
+  _chatChannel = _SB.channel(`chat-${myId.slice(0,8)}-${userId.slice(0,8)}-${Date.now()}`)
+    .on('postgres_changes', {event:'INSERT', schema:'public', table:'private_messages'}, payload => {
+      const m = payload.new;
+      if(!m) return;
+      const ours = (m.from_user===myId && m.to_user===userId) || (m.from_user===userId && m.to_user===myId);
+      if(!ours) return;
+      if(m.from_user === myId) return; // optimistic already added
+      const el = document.getElementById('chat-msgs');
+      if(!el) return;
+      if(el.querySelector('div[style*="font-size:40px"]')){ el.innerHTML = ''; }
+      el.insertAdjacentHTML('beforeend', _chatBubble(m));
+      el.scrollTop = el.scrollHeight;
+      try { if(navigator.vibrate) navigator.vibrate(20); } catch(e){}
+      _SB.from('private_messages').update({read_at:new Date().toISOString()}).eq('id',m.id).then(()=>{});
+    })
+    .subscribe();
+}
+// ════════════════════════════════════════════════════════════════
+// END TS CHAT v2
+// ════════════════════════════════════════════════════════════════
+
 async function openChatWith(otherUserId, otherName){
+  // Alias do nowego czata — wszystkie istniejące wywołania używają TS Chat v2
+  return _chatOpenWith(otherUserId, otherName);
+}
+
+async function _legacy_openChatWith_OLD(otherUserId, otherName){
   if(!_sbUser){ showAlert('🔒','Logowanie wymagane',''); setTimeout(closeAlert,2000); return; }
   document.getElementById('friends-panel')?.remove();
   document.getElementById('metaverse-hub')?.remove();
@@ -17030,6 +17336,11 @@ function _arRenderLoop(){
 // LISTA KONWERSACJI (jak WhatsApp main screen)
 // ══════════════════════════════════════════════════════════════════
 async function openConversationsList(){
+  // Alias do nowego TS Chat v2
+  return openChat();
+}
+
+async function _legacy_openConversationsList_OLD(){
   if(!_sbUser){ showAlert('🔒','Zaloguj się',''); setTimeout(closeAlert,2000); return; }
   document.getElementById('metaverse-hub')?.remove();
   document.getElementById('conversations-modal')?.remove();
