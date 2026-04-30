@@ -1001,8 +1001,29 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
 .spot-marker.vibe-event .spot-bubble{background:linear-gradient(135deg,#fbbf24,#f59e0b)}
 .spot-marker.vibe-other .spot-bubble{background:linear-gradient(135deg,#a855f7,#7c3aed)}
 .spot-marker .spot-bubble img{width:100%;height:100%;object-fit:cover;border-radius:50%}
-.spot-marker .spot-count{position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#fff;color:#0a0e1a;font-size:.65rem;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.4);border:2px solid rgba(245,158,11,.8);font-family:var(--font-head,'Space Grotesk',sans-serif)}
+.spot-marker .spot-count{position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#fff;color:#0a0e1a;font-size:.65rem;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.4);border:2px solid rgba(245,158,11,.8);font-family:var(--font-head,'Space Grotesk',sans-serif);transition:transform .25s cubic-bezier(.34,1.56,.64,1)}
+.spot-marker .spot-count.bump{transform:scale(1.45)}
 @keyframes spot-pulse{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.15)}}
+
+/* Łezka EVENT nad markerem (jak place-alert dla wydarzeń) */
+.spot-event-bubble{position:absolute;left:50%;bottom:50px;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;cursor:pointer;
+  filter:drop-shadow(0 4px 12px rgba(251,191,36,.45));
+  animation:spot-event-pulse 2.6s ease-in-out infinite;z-index:2}
+.spot-event-bubble .spot-event-title{
+  margin-top:2px;background:linear-gradient(180deg,rgba(10,14,26,.92),rgba(10,14,26,.78));
+  color:#fbbf24;font-size:.55rem;font-weight:800;letter-spacing:.05em;
+  padding:3px 7px;border-radius:6px;border:1px solid rgba(251,191,36,.5);
+  white-space:nowrap;font-family:'Space Grotesk',sans-serif;
+  text-shadow:0 1px 2px rgba(0,0,0,.6)}
+@keyframes spot-event-pulse{
+  0%,100%{transform:translateX(-50%) translateY(0)}
+  50%{transform:translateX(-50%) translateY(-4px)}
+}
+.spot-marker.is-event{z-index:5}
+
+/* Live counter bump animation w modal */
+#spot-live-counter.bump{transform:scale(1.5);text-shadow:0 0 24px rgba(239,68,68,.9), 0 0 12px #fff !important}
 
 /* ══ TRIBESPOT — Add Spot FAB (Apple Vision glass, jasny+subtelny) ══ */
 .fab-spot-add{position:fixed;left:14px;bottom:90px;z-index:400;
@@ -14406,18 +14427,37 @@ async function _loadSpotsNearby(maxKm = 10){
 
 function _mkSpotMarker(s){
   const el = document.createElement('div');
-  el.className = `spot-marker vibe-${s.vibe || 'other'}`;
+  el.className = `spot-marker vibe-${s.vibe || 'other'}${s.title ? ' is-event' : ''}`;
   el.dataset.spotId = s.id;
   const emoji = _spotVibeEmoji(s.vibe);
   const inner = s.photo_url
     ? `<img src="${s.photo_url}" alt="" onerror="this.outerHTML='<span>${emoji}</span>'">`
     : `<span>${emoji}</span>`;
-  const count = s.joins_count > 0 ? `<div class="spot-count">${s.joins_count}</div>` : '';
+  // Live count: jeśli event i ktoś już check-inął → pokaż checked_in_count, inaczej joins_count
+  const liveCount = (s.checked_in_count != null && s.checked_in_count > 0) ? s.checked_in_count : (s.joins_count || 0);
+  const count = liveCount > 0 ? `<div class="spot-count">${liveCount}</div>` : '';
+  // Łezka nad markerem dla eventów (bubble z tytułem + ikoną)
+  const eventBubble = s.title ? `
+    <div class="spot-event-bubble" onclick="event.stopPropagation();openSpotModal(${s.id},event)" title="${(s.title||'').replace(/"/g,'&quot;').slice(0,80)}">
+      <svg xmlns="http://www.w3.org/2000/svg" width="44" height="56" viewBox="0 0 40 53" style="overflow:visible">
+        <defs>
+          <linearGradient id="evtG${s.id}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#fef3c7"/>
+            <stop offset="50%" stop-color="#fbbf24"/>
+            <stop offset="100%" stop-color="#d4af37"/>
+          </linearGradient>
+        </defs>
+        <path d="M20 2C10.6 2 3 9.6 3 19c0 9 7.4 17.4 14.8 23.8L20 44.8l2.2-2C29.6 36.4 37 28 37 19 37 9.6 29.4 2 20 2z" fill="url(#evtG${s.id})" stroke="#0a0e1a" stroke-width="1.5"/>
+        <text x="20" y="27" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-weight="900" font-size="22" fill="#0a0e1a">!</text>
+      </svg>
+      <div class="spot-event-title">${_escHtml((s.title||'').slice(0,18))}${(s.title||'').length>18?'…':''}</div>
+    </div>` : '';
   el.innerHTML = `
+    ${eventBubble}
     <div class="spot-glow"></div>
     <div class="spot-bubble">${inner}</div>
     ${count}`;
-  el.onclick = (e) => { e.stopPropagation(); openSpotModal(s.id); };
+  el.onclick = (e) => { e.stopPropagation(); openSpotModal(s.id, e); };
   return new mapboxgl.Marker({ element: el, anchor: 'center' })
     .setLngLat([s.lng, s.lat])
     .addTo(window.map);
@@ -14530,6 +14570,21 @@ async function openSpotModal(spotId){
   const hoursLeft = Math.floor(minutesLeft/60);
   const minsRest = minutesLeft % 60;
   const timeLeft = hoursLeft > 0 ? `${hoursLeft}h ${minsRest}m` : `${minsRest}m`;
+  const isEvent = !!s.title;
+  const startD  = s.start_at ? new Date(s.start_at) : null;
+  const endD    = s.end_at ? new Date(s.end_at) : null;
+  const now = new Date();
+  const eventState = isEvent && startD && endD
+    ? (now < startD ? 'upcoming' : (now <= endD ? 'live' : 'ended'))
+    : 'spot';
+  const eventCountdown = isEvent && startD ? (() => {
+    const diff = (now < startD ? startD - now : (now < endD ? endD - now : 0)) / 1000;
+    if(diff <= 0) return 'zakończone';
+    const h = Math.floor(diff/3600), m = Math.floor((diff%3600)/60);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  })() : null;
+  const fmtTime = (d) => d ? d.toLocaleString('pl-PL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+  const evType = EVENT_TYPES.find(t => t.key === s.event_type) || EVENT_TYPES[8];
   // Fallback: spots_nearby RPC nie zwraca posted_by — fetch z v_spots_active gdy brakuje
   let postedBy = s.posted_by;
   if(!postedBy && _sbUser && _SB){
@@ -14544,36 +14599,70 @@ async function openSpotModal(spotId){
   const modal = document.createElement('div');
   modal.id = 'spot-detail-modal';
   modal.style.cssText = 'position:fixed;inset:0;z-index:5400;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;padding:0';
-  modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
+  modal.onclick = (e) => { if(e.target === modal){ _stopSpotLiveCounter(); modal.remove(); } };
   modal.innerHTML = `
-    <div onclick="event.stopPropagation()" style="width:100%;max-width:520px;background:linear-gradient(160deg,rgba(22,28,48,.98),rgba(10,14,26,.99));border-top:2px solid ${vibe.color};border-radius:24px 24px 0 0;padding:0;color:#fff;max-height:85vh;overflow-y:auto;animation:dmBubbleIn .35s">
+    <div onclick="event.stopPropagation()" style="width:100%;max-width:520px;background:linear-gradient(160deg,rgba(22,28,48,.98),rgba(10,14,26,.99));border-top:2px solid ${isEvent?'#fbbf24':vibe.color};border-radius:24px 24px 0 0;padding:0;color:#fff;max-height:85vh;overflow-y:auto;animation:dmBubbleIn .35s">
       ${s.photo_url ? `<div style="width:100%;height:240px;background:#000;overflow:hidden;border-radius:24px 24px 0 0;position:relative">
         <img src="${s.photo_url}" style="width:100%;height:100%;object-fit:cover">
         <div style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,.7);color:#fbbf24;font-size:.7rem;font-weight:900;padding:6px 10px;border-radius:8px;backdrop-filter:blur(8px)">⏳ ${timeLeft}</div>
       </div>` : ''}
       <div style="padding:1.2rem 1.2rem 1rem">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,${vibe.color},${vibe.color}aa);display:flex;align-items:center;justify-content:center;font-size:1.4rem;box-shadow:0 4px 14px ${vibe.color}66">${vibe.emoji}</div>
-          <div style="flex:1;min-width:0">
-            <div style="color:#fff;font-weight:900;font-size:1rem">${vibe.name}</div>
-            <div style="font-size:.65rem;color:rgba(255,255,255,.6);font-weight:600;display:flex;align-items:center;gap:4px">
-              ${s.posted_by_avatar ? `<img src="${s.posted_by_avatar}" style="width:14px;height:14px;border-radius:50%">` : ''}
-              ${_escHtml(s.posted_by_name || 'Anonim')}${s.place_name ? ' · '+_escHtml(s.place_name) : ''}
+        ${isEvent ? `
+          <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px">
+            <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#fbbf24,#d4af37);display:flex;align-items:center;justify-content:center;font-size:1.5rem;box-shadow:0 4px 16px rgba(251,191,36,.5);flex-shrink:0">${evType.emoji}</div>
+            <div style="flex:1;min-width:0">
+              <div style="color:#fff;font-weight:900;font-size:1.1rem;line-height:1.2;margin-bottom:2px">${_escHtml(s.title)}</div>
+              <div style="font-size:.62rem;color:#fbbf24;font-weight:700;text-transform:uppercase;letter-spacing:.06em">${evType.name} ${eventState==='live'?'· 🔴 LIVE TERAZ':eventState==='upcoming'?'· ⏳ Wkrótce':'· Zakończone'}</div>
+              <div style="font-size:.65rem;color:rgba(255,255,255,.65);margin-top:4px">📅 ${fmtTime(startD)}${endD ? ' – '+fmtTime(endD).split(', ').pop() : ''}</div>
             </div>
           </div>
-          ${!s.photo_url ? `<div style="background:rgba(0,0,0,.4);color:#fbbf24;font-size:.65rem;font-weight:900;padding:5px 9px;border-radius:8px">⏳ ${timeLeft}</div>` : ''}
-        </div>
-        ${s.description ? `<div style="color:rgba(255,255,255,.85);font-size:.85rem;line-height:1.45;margin:10px 0 14px;padding:10px 12px;background:rgba(255,255,255,.04);border-radius:10px">${_escHtml(s.description)}</div>` : ''}
-        <div style="display:flex;gap:6px;margin-bottom:14px">
-          <div style="flex:1;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.4);border-radius:10px;padding:8px;text-align:center">
-            <div style="color:#fbbf24;font-weight:900;font-size:1.1rem;font-family:var(--font-head)">${s.joins_count || 0}</div>
-            <div style="color:rgba(255,255,255,.55);font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em">w środku</div>
+          ${s.why ? `<div style="color:#fff;font-size:.82rem;line-height:1.45;margin:8px 0 10px;padding:10px 12px;background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(251,191,36,.04));border-left:3px solid #fbbf24;border-radius:8px"><b style="color:#fbbf24;font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:3px">// dlaczego warto</b>${_escHtml(s.why)}</div>` : ''}
+          ${s.description ? `<div style="color:rgba(255,255,255,.85);font-size:.78rem;line-height:1.45;margin-bottom:10px;padding:8px 10px;background:rgba(255,255,255,.04);border-radius:8px">${_escHtml(s.description)}</div>` : ''}
+          <div style="display:flex;gap:6px;font-size:.65rem;color:rgba(255,255,255,.7);margin-bottom:12px;flex-wrap:wrap">
+            ${s.price_info ? `<span style="background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);padding:4px 8px;border-radius:6px;color:#22c55e;font-weight:700">💰 ${_escHtml(s.price_info)}</span>` : ''}
+            ${s.contact ? `<span style="background:rgba(96,165,250,.15);border:1px solid rgba(96,165,250,.4);padding:4px 8px;border-radius:6px;color:#60a5fa;font-weight:700">📞 ${_escHtml(s.contact)}</span>` : ''}
+            ${s.place_name ? `<span style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);padding:4px 8px;border-radius:6px;color:rgba(255,255,255,.85);font-weight:700">📍 ${_escHtml(s.place_name)}</span>` : ''}
           </div>
-          <div style="flex:1;background:rgba(6,182,212,.1);border:1px solid rgba(6,182,212,.4);border-radius:10px;padding:8px;text-align:center">
-            <div style="color:#06b6d4;font-weight:900;font-size:1.1rem;font-family:var(--font-head)">${minutesLeft}m</div>
-            <div style="color:rgba(255,255,255,.55);font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em">do końca</div>
+          <!-- 3 LIVE STATS -->
+          <div style="display:flex;gap:6px;margin-bottom:14px">
+            <div style="flex:1;background:linear-gradient(135deg,rgba(96,165,250,.12),rgba(96,165,250,.03));border:1px solid rgba(96,165,250,.45);border-radius:11px;padding:10px;text-align:center">
+              <div style="color:#60a5fa;font-weight:900;font-size:1.25rem;font-family:var(--font-head);line-height:1">${s.joins_count || 0}</div>
+              <div style="color:rgba(255,255,255,.5);font-size:.5rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-top:3px">👁️ RSVP</div>
+            </div>
+            <div style="flex:1;background:linear-gradient(135deg,rgba(239,68,68,.18),rgba(239,68,68,.05));border:1px solid rgba(239,68,68,.55);border-radius:11px;padding:10px;text-align:center;position:relative;overflow:hidden">
+              <div id="spot-live-counter" style="color:#fff;font-weight:900;font-size:1.25rem;font-family:var(--font-head);line-height:1;text-shadow:0 0 12px rgba(239,68,68,.6);transition:transform .3s cubic-bezier(.34,1.56,.64,1)">${s.checked_in_count || 0}</div>
+              <div style="color:rgba(255,255,255,.5);font-size:.5rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-top:3px">🔥 TERAZ</div>
+              ${eventState==='live' ? `<div style="position:absolute;top:4px;right:6px;width:6px;height:6px;border-radius:50%;background:#ef4444;box-shadow:0 0 8px #ef4444;animation:spot-pulse 1.4s ease-in-out infinite"></div>` : ''}
+            </div>
+            <div style="flex:1;background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(251,191,36,.03));border:1px solid rgba(251,191,36,.45);border-radius:11px;padding:10px;text-align:center">
+              <div style="color:#fbbf24;font-weight:900;font-size:1.05rem;font-family:var(--font-head);line-height:1">${eventCountdown||'-'}</div>
+              <div style="color:rgba(255,255,255,.5);font-size:.5rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-top:3px">⏰ ${eventState==='live'?'DO KOŃCA':'DO STARTU'}</div>
+            </div>
           </div>
-        </div>
+        ` : `
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,${vibe.color},${vibe.color}aa);display:flex;align-items:center;justify-content:center;font-size:1.4rem;box-shadow:0 4px 14px ${vibe.color}66">${vibe.emoji}</div>
+            <div style="flex:1;min-width:0">
+              <div style="color:#fff;font-weight:900;font-size:1rem">${vibe.name}</div>
+              <div style="font-size:.65rem;color:rgba(255,255,255,.6);font-weight:600;display:flex;align-items:center;gap:4px">
+                ${s.posted_by_avatar ? `<img src="${s.posted_by_avatar}" style="width:14px;height:14px;border-radius:50%">` : ''}
+                ${_escHtml(s.posted_by_name || 'Anonim')}${s.place_name ? ' · '+_escHtml(s.place_name) : ''}
+              </div>
+            </div>
+            ${!s.photo_url ? `<div style="background:rgba(0,0,0,.4);color:#fbbf24;font-size:.65rem;font-weight:900;padding:5px 9px;border-radius:8px">⏳ ${timeLeft}</div>` : ''}
+          </div>
+          ${s.description ? `<div style="color:rgba(255,255,255,.85);font-size:.85rem;line-height:1.45;margin:10px 0 14px;padding:10px 12px;background:rgba(255,255,255,.04);border-radius:10px">${_escHtml(s.description)}</div>` : ''}
+          <div style="display:flex;gap:6px;margin-bottom:14px">
+            <div style="flex:1;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.4);border-radius:10px;padding:8px;text-align:center">
+              <div style="color:#fbbf24;font-weight:900;font-size:1.1rem;font-family:var(--font-head)">${s.joins_count || 0}</div>
+              <div style="color:rgba(255,255,255,.55);font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em">w środku</div>
+            </div>
+            <div style="flex:1;background:rgba(6,182,212,.1);border:1px solid rgba(6,182,212,.4);border-radius:10px;padding:8px;text-align:center">
+              <div style="color:#06b6d4;font-weight:900;font-size:1.1rem;font-family:var(--font-head)">${minutesLeft}m</div>
+              <div style="color:rgba(255,255,255,.55);font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em">do końca</div>
+            </div>
+          </div>
+        `}
         <div style="display:flex;gap:8px">
           ${isMine
             ? `<button onclick="_endSpot(${s.id})" style="flex:1;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.5);color:#fbbf24;border-radius:11px;padding:12px;font-weight:800;font-size:.78rem;cursor:pointer">⏹️ Zakończ</button>
@@ -14581,11 +14670,12 @@ async function openSpotModal(spotId){
             : amIJoined
               ? `<button onclick="_leaveSpotAction(${s.id})" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:11px;padding:12px;font-weight:800;font-size:.82rem;cursor:pointer">✓ Jesteś tu — opuść</button>`
               : `<button onclick="_joinSpotAction(${s.id})" style="flex:1;background:linear-gradient(135deg,${vibe.color},${vibe.color}cc);border:none;color:#fff;border-radius:11px;padding:12px;font-weight:900;font-size:.85rem;cursor:pointer;box-shadow:0 4px 14px ${vibe.color}66">✨ DOŁĄCZ</button>`}
-          <button onclick="document.getElementById('spot-detail-modal').remove();if(window.map)window.map.flyTo({center:[${s.lng},${s.lat}],zoom:17,duration:800})" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:11px;padding:12px;font-weight:800;font-size:.82rem;cursor:pointer">📍 Pokaż na mapie</button>
+          <button onclick="_stopSpotLiveCounter();document.getElementById('spot-detail-modal').remove();if(window.map)window.map.flyTo({center:[${s.lng},${s.lat}],zoom:17,duration:800})" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:11px;padding:12px;font-weight:800;font-size:.82rem;cursor:pointer">📍 Pokaż na mapie</button>
         </div>
       </div>
     </div>`;
   document.body.appendChild(modal);
+  if(isEvent) _startSpotLiveCounter(spotId);
 }
 
 // ── TRIBESPOT TRENDING — top 10 spotów dziś w okolicy ───────────────────────
@@ -14684,6 +14774,40 @@ async function _loadTrendingList(showRefreshAnim){
   } catch(e){
     wrap.innerHTML = `<div style="text-align:center;color:#ef4444;font-size:.75rem;padding:1.5rem">⚠️ ${e.message||'Błąd ładowania'}</div>`;
   }
+}
+
+// Live counter: subscribe Realtime do spot_joins dla otwartego spotu
+let _spotLiveCounterCh = null;
+let _spotLiveCounterSpotId = null;
+
+function _startSpotLiveCounter(spotId){
+  if(!_SB || _spotLiveCounterSpotId === spotId) return;
+  _stopSpotLiveCounter();
+  _spotLiveCounterSpotId = spotId;
+  _spotLiveCounterCh = _SB.channel(`spot-live-${spotId}`)
+    .on('postgres_changes', { event:'*', schema:'public', table:'spot_joins', filter:`spot_id=eq.${spotId}` }, async () => {
+      // Pobierz świeży count
+      try {
+        const { count } = await _SB.from('spot_joins')
+          .select('id', { count:'exact', head:true })
+          .eq('spot_id', spotId).eq('status','checked_in').is('left_at', null);
+        const el = document.getElementById('spot-live-counter');
+        if(el && count != null){
+          el.textContent = count;
+          el.classList.add('bump');
+          setTimeout(() => el.classList.remove('bump'), 350);
+        }
+        // Update marker count też
+        const s = _spotData.get(spotId);
+        if(s){ s.checked_in_count = count; _refreshSpotMarker(spotId); }
+      } catch(e){}
+    })
+    .subscribe();
+}
+
+function _stopSpotLiveCounter(){
+  if(_spotLiveCounterCh){ try { _SB.removeChannel(_spotLiveCounterCh); } catch(e){} _spotLiveCounterCh = null; }
+  _spotLiveCounterSpotId = null;
 }
 
 async function _joinSpotAction(spotId){
