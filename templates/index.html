@@ -6409,6 +6409,8 @@ function enterMode(mode){
       setTimeout(() => { try { _loadSpotsNearby(10); _startSpotsLive(); } catch(e){ console.warn('Spots map init:', e); } }, 1500);
       // QUANTUM RAIL: pionowa oś z M, drag→snap edge, radial fanout
       setTimeout(() => { try { _initQuantumRail(); } catch(e){ console.warn('QRail init:', e); } }, 800);
+      // Map Skin restore z localStorage
+      setTimeout(() => { try { _restoreMapSkin(); } catch(e){ console.warn('skin restore:', e); } }, 1800);
     });
     // Re-apply 3D na każdej zmianie stylu (np. gdy user wybierze inny layer)
     map.on('style.load', ()=>{
@@ -16109,9 +16111,136 @@ const LAYER_STYLES = {
   dark:      ()=>'mapbox://styles/mapbox/dark-v11',
 };
 
+// ── TRIBESPOT MAP SKINS — 7 skórek mapy z CSS filter + Mapbox style ────
+const MAP_SKINS = [
+  { key:'pokemon',    label:'Pokemon',    sub:'3.5D Standard',     emoji:'🎮',
+    mapStyle:'mapbox://styles/mapbox/standard',          atmosphere:'gold',
+    cssFilter:'none',                                     accent:'#fbbf24', isPro:false },
+  { key:'arctic',     label:'Arctic',     sub:'Vision Pro pristine',emoji:'❄️',
+    mapStyle:'mapbox://styles/mapbox/standard',          atmosphere:'gold',
+    cssFilter:'saturate(.4) brightness(1.12) contrast(.95) hue-rotate(180deg)',
+    accent:'#67e8f9', isPro:false },
+  { key:'golden',     label:'Golden Hour',sub:'warm sunset',        emoji:'🌅',
+    mapStyle:'mapbox://styles/mapbox/standard',          atmosphere:'classic',
+    cssFilter:'saturate(1.3) hue-rotate(-15deg) brightness(1.05) sepia(.15)',
+    accent:'#f59e0b', isPro:false },
+  { key:'retrowave',  label:'Retrowave',  sub:'80s synthwave',      emoji:'🌃',
+    mapStyle:'mapbox://styles/mapbox/dark-v11',          atmosphere:'cyber',
+    cssFilter:'saturate(2.2) hue-rotate(280deg) brightness(1.15) contrast(1.2)',
+    accent:'#ec4899', isPro:true },
+  { key:'cyberpunk',  label:'Cyberpunk',  sub:'Blade Runner night', emoji:'🌌',
+    mapStyle:'mapbox://styles/mapbox/dark-v11',          atmosphere:'cyber',
+    cssFilter:'saturate(1.8) hue-rotate(220deg) brightness(.92) contrast(1.3)',
+    accent:'#06b6d4', isPro:true },
+  { key:'midnight',   label:'Midnight',   sub:'Gold luxury',        emoji:'🏙️',
+    mapStyle:'mapbox://styles/mapbox/dark-v11',          atmosphere:'gold',
+    cssFilter:'saturate(.85) brightness(.85) contrast(1.15) sepia(.1)',
+    accent:'#d4af37', isPro:true },
+  { key:'satellite',  label:'Satellite',  sub:'Real Earth + 3D',    emoji:'🛰️',
+    mapStyle:'mapbox://styles/mapbox/satellite-streets-v12', atmosphere:'gold',
+    cssFilter:'saturate(1.1) contrast(1.05)',            accent:'#10b981', isPro:true },
+];
+
+function setMapSkin(key){
+  const skin = MAP_SKINS.find(s => s.key === key);
+  if(!skin || !window.map) return;
+  // Sprawdzenie PRO (na razie placeholder — dopuszczamy wszystkie do testu)
+  // if(skin.isPro && !_isPremium()){ showAlert('💎','PRO Skin','Odblokuj za 9.99 zł/mies'); return; }
+  try { localStorage.setItem('ts_map_skin', key); } catch(e){}
+  window._currentMapSkin = key;
+  // 1) Apply CSS filter na canvas mapy
+  const canvas = document.querySelector('.mapboxgl-canvas');
+  if(canvas){ canvas.style.filter = skin.cssFilter; canvas.style.transition = 'filter .8s'; }
+  // 2) Switch mapboxstyle (jeśli inny niż obecny)
+  const currentStyle = window._currentMapboxStyle;
+  if(currentStyle !== skin.mapStyle){
+    window._currentMapboxStyle = skin.mapStyle;
+    window.map.setStyle(skin.mapStyle);
+    window.map.once('style.load', () => {
+      try {
+        if(typeof _apply3d === 'function') _apply3d(skin.atmosphere);
+      } catch(e){ console.warn('skin 3d apply:', e); }
+    });
+  } else {
+    try { if(typeof _apply3d === 'function') _apply3d(skin.atmosphere); } catch(e){}
+  }
+  // 3) Update brand accent CSS variable
+  document.documentElement.style.setProperty('--skin-accent', skin.accent);
+  showAlert(skin.emoji, skin.label, skin.sub);
+  setTimeout(closeAlert, 1800);
+}
+
+function openMapSkinPicker(){
+  document.getElementById('layers-menu')?.classList.remove('open');
+  document.getElementById('map-skin-modal')?.remove();
+  const currentKey = window._currentMapSkin || localStorage.getItem('ts_map_skin') || 'pokemon';
+  const isPremium = false; // TODO: real premium check
+  const modal = document.createElement('div');
+  modal.id = 'map-skin-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:5500;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .25s';
+  modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
+  modal.innerHTML = `
+    <div onclick="event.stopPropagation()" style="width:100%;max-width:480px;max-height:80vh;overflow-y:auto;
+      background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08) 60%, rgba(255,255,255,.14));
+      backdrop-filter:blur(28px) saturate(180%); -webkit-backdrop-filter:blur(28px) saturate(180%);
+      border-radius:24px 24px 0 0; padding:1.2rem 1rem 1.6rem; color:#fff;
+      box-shadow: 0 -10px 40px rgba(0,0,0,.5), 0 -1px 0 rgba(255,255,255,.18) inset;
+      animation:slideup .35s cubic-bezier(.34,1.56,.64,1)">
+      <div style="display:flex;align-items:center;gap:.7rem;margin-bottom:1rem">
+        <div style="width:38px;height:38px;border-radius:12px;
+          background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.4), rgba(251,191,36,.4) 50%, rgba(6,182,212,.3));
+          display:flex;align-items:center;justify-content:center;font-size:1.2rem;
+          box-shadow:0 4px 12px rgba(0,0,0,.3),0 0 0 1px rgba(255,255,255,.15) inset">🎨</div>
+        <div style="flex:1">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:1.1rem;font-weight:800;letter-spacing:-.01em">Skórki Mapy</div>
+          <div style="font-size:.6rem;color:rgba(255,255,255,.6);font-family:'JetBrains Mono',monospace;letter-spacing:.05em">Wybierz vibe swojego metaverse</div>
+        </div>
+        <button onclick="document.getElementById('map-skin-modal').remove()" style="background:rgba(255,255,255,.12);border:none;width:34px;height:34px;border-radius:11px;color:#fff;font-size:1rem;cursor:pointer">✕</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+        ${MAP_SKINS.map(s => {
+          const active = s.key === currentKey;
+          const locked = s.isPro && !isPremium;
+          return `<button onclick="setMapSkin('${s.key}');setTimeout(()=>document.getElementById('map-skin-modal')?.remove(),350)"
+            style="background:linear-gradient(135deg, rgba(255,255,255,.${active?'42':'22'}), rgba(255,255,255,.${active?'2':'08'}));
+              backdrop-filter:blur(14px); border:none; padding:14px 12px; border-radius:16px; color:#fff;
+              cursor:pointer; text-align:left; font-family:inherit; position:relative;
+              box-shadow: ${active
+                ? `0 1px 0 rgba(255,255,255,.4) inset, 0 -1px 0 rgba(0,0,0,.15) inset, 0 8px 22px rgba(0,0,0,.25), 0 0 18px ${s.accent}45, 0 0 30px ${s.accent}25`
+                : '0 1px 0 rgba(255,255,255,.22) inset, 0 -1px 0 rgba(0,0,0,.12) inset, 0 6px 16px rgba(0,0,0,.18)'};
+              transition:transform .18s cubic-bezier(.34,1.56,.64,1)">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+              <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg, ${s.accent}66, ${s.accent}22);
+                display:flex;align-items:center;justify-content:center;font-size:1.3rem;
+                box-shadow: 0 1px 0 rgba(255,255,255,.3) inset, 0 4px 10px ${s.accent}45">${s.emoji}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:800;font-size:.82rem;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.label}</div>
+                <div style="font-size:.55rem;color:rgba(255,255,255,.6);font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.sub}</div>
+              </div>
+            </div>
+            ${active ? `<div style="position:absolute;top:8px;right:8px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-size:.5rem;font-weight:900;padding:3px 7px;border-radius:6px;letter-spacing:.06em">✓ ON</div>` : ''}
+            ${s.isPro && !active ? `<div style="position:absolute;top:8px;right:8px;background:linear-gradient(135deg,#fbbf24,#d4af37);color:#0a0e1a;font-size:.5rem;font-weight:900;padding:3px 7px;border-radius:6px;letter-spacing:.06em">PRO</div>` : ''}
+          </button>`;
+        }).join('')}
+      </div>
+
+      <div style="margin-top:1rem;padding:10px 14px;background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(6,182,212,.08));border-radius:14px;font-size:.65rem;color:rgba(255,255,255,.75);line-height:1.4">
+        💎 <b>PRO skórki</b> dostępne za 9.99 zł/mies (wkrótce). Teraz wszystkie odblokowane do testu.
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+// Auto-restore skin przy starcie
+function _restoreMapSkin(){
+  const saved = localStorage.getItem('ts_map_skin');
+  if(saved) setTimeout(() => setMapSkin(saved), 600);
+}
+
 function toggleLayersMenu(){
-  document.getElementById('layers-menu').classList.toggle('open');
-  document.addEventListener('click', _closeLayersOutside, { once: true, capture: true });
+  // Nowa wersja: otwiera Quantum Skin Picker zamiast starego dropdown
+  openMapSkinPicker();
 }
 function _closeLayersOutside(e){
   if(!e.target.closest('#layers-menu') && !e.target.closest('#fab-layers')){
