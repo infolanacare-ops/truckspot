@@ -16136,9 +16136,13 @@ const MAP_SKINS = [
     mapStyle:'mapbox://styles/mapbox/dark-v11',          atmosphere:'gold',
     cssFilter:'saturate(.85) brightness(.85) contrast(1.15) sepia(.1)',
     accent:'#d4af37', isPro:true },
-  { key:'satellite',  label:'Satellite',  sub:'Real Earth + 3D',    emoji:'🛰️',
-    mapStyle:'mapbox://styles/mapbox/satellite-streets-v12', atmosphere:'gold',
-    cssFilter:'saturate(1.1) contrast(1.05)',            accent:'#10b981', isPro:true },
+  { key:'satellite',  label:'Satellite 3D', sub:'Real Earth + 3D buildings', emoji:'🛰️',
+    mapStyle:'mapbox://styles/mapbox/standard-satellite', atmosphere:'gold',
+    cssFilter:'saturate(1.15) contrast(1.08) brightness(1.02)', accent:'#10b981', isPro:true },
+  { key:'sat-night',  label:'Sat Night',  sub:'Satellite + cyberpunk glow', emoji:'🌃',
+    mapStyle:'mapbox://styles/mapbox/standard-satellite', atmosphere:'cyber',
+    cssFilter:'saturate(1.4) hue-rotate(220deg) brightness(.85) contrast(1.25)',
+    accent:'#06b6d4', isPro:true },
 ];
 
 function setMapSkin(key){
