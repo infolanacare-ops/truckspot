@@ -20429,11 +20429,17 @@ function _startPresence(){
   // Sync — ktoś dołączył lub zaktualizował pozycję
   _presenceCh.on('presence', { event: 'sync' }, () => {
     const state = _presenceCh.presenceState();
+    console.log('[Presence] SYNC — keys in channel:', Object.keys(state).length, Object.keys(state));
     const seen = new Set();
     Object.entries(state).forEach(([key, presences]) => {
       const p = presences[0];
-      if(!p || !p.lat || !p.lng) return;
-      if(key === (_sbUser?.id)) return; // nie pokazuj siebie
+      const isMe = key === (_sbUser?.id);
+      console.log(`[Presence] peer ${isMe?'(MNIE)':''}`, key.slice(0,8), 'lat=', p?.lat, 'lng=', p?.lng, 'name=', p?.name);
+      if(!p || !p.lat || !p.lng){
+        if(!isMe) console.warn('[Presence] ⚠️ peer BEZ GPS — marker SKIP', key.slice(0,8), p?.name);
+        return;
+      }
+      if(isMe) return; // nie pokazuj siebie
       seen.add(key);
       if(_peerMarkers[key]){
         const d = _peerData[key];
