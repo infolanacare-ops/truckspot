@@ -1307,6 +1307,24 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
 
 /* Stary meta-fab ukryty — zastąpiony przez Quantum Rail */
 #meta-fab{ display:none !important; }
+/* Stary fab-add (kółko z plus, dla legacy reportów) — ukryte w metaverse */
+#fab-add{ display:none !important; }
+/* Filtry w topbarze — niepotrzebne w metaverse */
+.filter-btn{ display:none !important; }
+/* Map style picker (fab-layers) — przeniesiony do TOP RIGHT (zamiast filtrów) */
+.fab-layers{
+  top: 12px !important; right: 64px !important;
+  bottom: auto !important; left: auto !important;
+  width: 40px !important; height: 40px !important;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255,255,255,.4), rgba(255,255,255,.08) 60%, rgba(255,255,255,.02)) !important;
+  border: 1px solid rgba(255,255,255,.18) !important;
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  box-shadow: 0 3px 10px rgba(0,0,0,.25), 0 0 0 1px rgba(255,255,255,.06) inset !important;
+}
+/* Layers menu też w prawym górnym (pod fab-layers) */
+.layers-menu{ top: 64px !important; right: .5rem !important; bottom: auto !important; }
 
 /* ════════════════════════════════════════════════════════════════════════
    QUANTUM RAIL — pionowa oś z M w centrum, drag→snap edge, radial fanout
@@ -1334,7 +1352,7 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
   transition: height .55s cubic-bezier(.2,.85,.25,1) .05s, opacity .3s;
   opacity: 0;
 }
-#qrail.expanded::before{ height: 380px; opacity: 1 }
+#qrail.expanded::before{ height: var(--qrail-line-h, 380px); opacity: 1 }
 
 /* Kropki wskazujące — DOMYŚLNIE UKRYTE (tylko M widoczne idle) */
 .qrail-tab-dot{ display: none; }
@@ -13649,12 +13667,16 @@ async function _submitSpot(){
 const QRAIL_TABS = [
   // {icon, label, action: function, badgeFn: function}
   {icon:'✨', label:'Spot',   action: function(){ openAddSpotModal(); }, cls:'tab-spot'},
-  {icon:'🧭', label:'Navi',   action: function(){ if(typeof toggleMetaverse==='function') toggleMetaverse(); }, cls:'tab-navi'},
+  {icon:'👟', label:'Kroki',  action: function(){ if(typeof openStepsPanel==='function') openStepsPanel(); }, cls:'tab-steps'},
+  {icon:'🎯', label:'Tasks',  action: function(){ if(typeof openMyTasksPanel==='function') openMyTasksPanel(); }, cls:'tab-tasks'},
+  {icon:'🏆', label:'Badge',  action: function(){ if(typeof openAchievementsPanel==='function') openAchievementsPanel(); }, cls:'tab-badges'},
   {icon:'👥', label:'Ekipa',  action: function(){ openFriendsPanel(); }, cls:'tab-friends'},
   {icon:'💬', label:'Czaty',  action: function(){ openConversationsList(); }, cls:'tab-chats',
     badgeFn: function(){ let n=0; if(window._dmUnreadByUser) window._dmUnreadByUser.forEach(function(v){n+=v;}); return n>0 ? (n>9?'9+':String(n)) : ''; } },
   {icon:'🔥', label:'Energy', action: function(){ if(typeof toggleEnergyPulse==='function') toggleEnergyPulse(); }, cls:'tab-energy'},
+  {icon:'🎨', label:'Avatar', action: function(){ if(typeof openAvatarCreator==='function') openAvatarCreator(); }, cls:'tab-avatar'},
   {icon:'👻', label:'Ghost',  action: function(){ if(typeof openGhostPanel==='function') openGhostPanel(); }, cls:'tab-ghost'},
+  {icon:'☰', label:'Menu',    action: function(){ if(typeof openMetaverseHub==='function') openMetaverseHub(); }, cls:'tab-menu'},
 ];
 
 let _qrailState = {
@@ -13816,23 +13838,26 @@ function _qrailLayoutFanout(){
   if(!rail) return;
   const tabs = rail.querySelectorAll('.qrail-tabs .qrail-tab');
   const N = tabs.length;
-  const gap = 50;  // odstęp między tabami w pionie
-  // Pionowo wzdłuż linii: równo nad i pod M
-  // 6 tabów: 3 nad (-150,-100,-50) + 3 pod (50,100,150)
-  // Nieparzysta liczba: środkowy = 0 (na M), reszta wokół
+  // Auto-gap: dopasuj żeby wszystkie taby zmieściły się na ekranie
+  // Dostępna wysokość (od centrum w obie strony, minus margin na M):
+  const usable = (window.innerHeight / 2) - 60;  // px w jedną stronę
   const half = Math.floor(N / 2);
+  const tabsPerSide = Math.ceil(N / 2);
+  let gap = Math.min(46, Math.max(36, usable / (tabsPerSide + 0.5)));
   tabs.forEach((tab, i) => {
     let y;
     if(N % 2 === 0){
-      // 6 tabów → indeksy 0,1,2 nad M, 3,4,5 pod M
-      if(i < half){ y = (i - half) * gap; }       // -150, -100, -50
-      else        { y = (i - half + 1) * gap; }   // 50, 100, 150
+      if(i < half){ y = (i - half) * gap; }       // np. -3*gap..-gap dla pierwszej połowy
+      else        { y = (i - half + 1) * gap; }   // gap..3*gap dla drugiej
     } else {
       y = (i - half) * gap;
     }
     tab.style.setProperty('--qx', '0px');
     tab.style.setProperty('--qy', y.toFixed(1) + 'px');
   });
+  // Linia musi sięgać do najdalszego taba
+  const reach = Math.ceil(tabsPerSide * gap) + 30;
+  rail.style.setProperty('--qrail-line-h', (reach * 2) + 'px');
 }
 
 function _qrailTabClick(idx){
