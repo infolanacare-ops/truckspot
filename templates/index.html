@@ -13305,16 +13305,13 @@ async function _dmLoadAndRender(otherUserId, otherName){
   // DEBUG: sprawdź wymiary
   const rect = el.getBoundingClientRect();
   console.log('[DM] dm-messages element:', { width: rect.width, height: rect.height, visible: rect.height > 0 });
-  el.innerHTML = `<div class="dm-status" style="text-align:center;color:rgba(255,255,255,.5);font-size:.72rem;padding:1.5rem;background:#fff3;border:2px solid red">🔌 Ładuję wiadomości… [el ${rect.width}x${rect.height}]</div>`;
+  el.innerHTML = `<div class="dm-status" style="text-align:center;color:rgba(255,255,255,.5);font-size:.78rem;padding:1.5rem">🔌 Ładuję wiadomości…</div>`;
   const t0 = Date.now();
   const res = await _dmLoad(otherUserId);
   const dt = Date.now() - t0;
 
-  // DEBUG bar — ZAWSZE widoczny na górze czatu (pomaga diagnozować bugi)
-  const myShort = (_sbUser?.id || '?').slice(0, 8);
-  const otherShort = (otherUserId || '?').slice(0, 8);
-  const sessInfo = res.sessionInfo || 'no-info';
-  const debugBar = `<div style="background:rgba(212,175,55,.1);border:1px solid rgba(212,175,55,.3);border-radius:8px;padding:6px 10px;margin-bottom:8px;font-size:.6rem;color:#d4af37;font-family:monospace;text-align:center;line-height:1.5">🔍 Me:${myShort} ↔ Peer:${otherShort}<br>A:${res.debugA||0} B:${res.debugB||0} · ${dt}ms · ${sessInfo} ${res.ok?'✓':'❌'}</div>`;
+  // Debug bar tylko przy errorach — produkcja wygląda czysto
+  const debugBar = '';
 
   if(!res.ok){
     el.innerHTML = debugBar + `<div class="dm-status" style="text-align:center;color:#fca5a5;font-size:.78rem;padding:1.5rem;line-height:1.5">⚠️ Błąd: ${res.error}<br><br><button onclick="_dmLoadAndRender('${otherUserId}','${(otherName||'').replace(/'/g,'')}')" style="background:rgba(96,165,250,.2);border:1px solid rgba(96,165,250,.5);color:#60a5fa;border-radius:9px;padding:.5rem 1rem;font-weight:800;font-size:.75rem;cursor:pointer">🔄 Spróbuj ponownie</button></div>`;
@@ -16738,6 +16735,11 @@ async function openConversationsList(){
         </div>
         <button onclick="document.getElementById('conversations-modal').remove()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);width:36px;height:36px;border-radius:11px;color:#fff;font-size:1.1rem;cursor:pointer">✕</button>
       </div>
+      <div style="padding:.6rem .8rem .3rem;border-bottom:1px solid rgba(255,255,255,.06)">
+        <button onclick="_openNewChatPicker()" style="width:100%;background:linear-gradient(135deg, rgba(96,165,250,.25), rgba(59,130,246,.18));border:1.5px solid rgba(96,165,250,.45);color:#fff;padding:.7rem;border-radius:12px;cursor:pointer;font-weight:800;font-size:.82rem;letter-spacing:.04em;display:flex;align-items:center;justify-content:center;gap:.5rem;box-shadow:0 6px 18px rgba(59,130,246,.18)">
+          <span style="font-size:1.1rem">➕</span> Nowa rozmowa
+        </button>
+      </div>
       <div id="conversations-list" style="flex:1;overflow-y:auto;padding:.6rem .8rem">
         <div style="text-align:center;color:rgba(255,255,255,.5);font-size:.78rem;padding:2rem">🔌 Ładuję konwersacje…</div>
       </div>
@@ -16785,7 +16787,12 @@ async function _renderConversationsList(){
     });
 
     if(peerMap.size === 0){
-      el.innerHTML = `<div style="text-align:center;color:rgba(255,255,255,.55);font-size:.85rem;padding:3rem 1rem;line-height:1.6">💬 Brak konwersacji<br><span style="font-size:.7rem;opacity:.7;display:block;margin-top:.5rem">Wejdź w Znajomych i kliknij 💬 przy kimś żeby zacząć rozmowę</span></div>`;
+      el.innerHTML = `<div style="text-align:center;color:rgba(255,255,255,.6);font-size:.85rem;padding:2.5rem 1rem;line-height:1.6">
+        <div style="font-size:2.5rem;margin-bottom:.6rem;opacity:.6">💬</div>
+        <div style="font-weight:800;color:#fff;margin-bottom:.3rem">Brak rozmów jeszcze</div>
+        <div style="font-size:.72rem;opacity:.7;margin-bottom:1rem">Klik <b>+ Nowa rozmowa</b> aby zacząć,<br>lub kliknij na czyjeś marker na mapie</div>
+        <button onclick="_openNewChatPicker()" style="background:linear-gradient(135deg,#60a5fa,#3b82f6);border:none;color:#fff;padding:.7rem 1.2rem;border-radius:12px;font-weight:800;font-size:.78rem;cursor:pointer">➕ Nowa rozmowa</button>
+      </div>`;
       return;
     }
 
@@ -16836,6 +16843,110 @@ function _formatRelativeTime(iso){
   const d = Math.floor(h / 24);
   if(d < 7) return `${d}d`;
   return new Date(iso).toLocaleDateString('pl-PL', {day:'2-digit', month:'2-digit'});
+}
+
+// Picker — nowa rozmowa (online userzy + search po nicku)
+async function _openNewChatPicker(){
+  if(!_sbUser){ showAlert('🔒','Zaloguj się',''); setTimeout(closeAlert,2000); return; }
+  document.getElementById('new-chat-picker')?.remove();
+
+  const m = document.createElement('div');
+  m.id = 'new-chat-picker';
+  m.style.cssText = 'position:fixed;inset:0;z-index:3700;background:rgba(0,0,0,.85);display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(8px)';
+  m.innerHTML = `
+    <div onclick="event.stopPropagation()" style="width:100%;max-width:460px;background:linear-gradient(160deg,rgba(22,28,48,.98),rgba(10,14,26,.99));border:1.5px solid rgba(96,165,250,.4);border-bottom:none;border-radius:24px 24px 0 0;color:#fff;display:flex;flex-direction:column;height:80vh;animation:slideup .25s">
+      <div style="display:flex;align-items:center;gap:.6rem;padding:1rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.08)">
+        <div style="font-size:1.3rem">➕</div>
+        <div style="flex:1">
+          <div style="font-family:var(--font-head);font-size:1.05rem;font-weight:900">Nowa rozmowa</div>
+          <div style="font-size:.62rem;color:rgba(255,255,255,.55)">Wybierz z kim chcesz pisać</div>
+        </div>
+        <button onclick="document.getElementById('new-chat-picker').remove()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);width:34px;height:34px;border-radius:11px;color:#fff;font-size:1rem;cursor:pointer">✕</button>
+      </div>
+      <div style="padding:.7rem .9rem;border-bottom:1px solid rgba(255,255,255,.06)">
+        <input id="ncp-search" type="text" placeholder="🔍 Szukaj po nicku..." oninput="_ncpSearch(this.value)" style="width:100%;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.12);color:#fff;padding:.65rem .8rem;border-radius:12px;font-family:inherit;font-size:.85rem;outline:none">
+      </div>
+      <div id="ncp-list" style="flex:1;overflow-y:auto;padding:.6rem .8rem">
+        <div style="text-align:center;color:rgba(255,255,255,.5);font-size:.78rem;padding:2rem">🔌 Ładuję…</div>
+      </div>
+    </div>`;
+  m.onclick = (e) => { if(e.target===m) m.remove(); };
+  document.body.appendChild(m);
+
+  // Pokaż online userów + przyjaciół jako default
+  await _ncpRender('');
+  setTimeout(()=>document.getElementById('ncp-search')?.focus(), 200);
+}
+
+let _ncpSearchTimer = null;
+function _ncpSearch(q){
+  clearTimeout(_ncpSearchTimer);
+  _ncpSearchTimer = setTimeout(()=>_ncpRender((q||'').trim()), 250);
+}
+
+async function _ncpRender(query){
+  const list = document.getElementById('ncp-list');
+  if(!list) return;
+  try {
+    let users = [];
+    if(query.length >= 2){
+      // Search po display_name (case insensitive)
+      const { data } = await _SB.from('profiles')
+        .select('id,display_name,avatar_2d_url,avatar_url')
+        .ilike('display_name', `%${query}%`)
+        .neq('id', _sbUser.id)
+        .limit(40);
+      users = data || [];
+    } else {
+      // Default: online + przyjaciele
+      const onlineIds = new Set();
+      try {
+        const state = _presenceCh?.presenceState() || {};
+        Object.keys(state).forEach(k => { if(k !== _sbUser.id) onlineIds.add(k); });
+      } catch(e){}
+      const friendIds = new Set();
+      try { (_friendIds || new Set()).forEach(id => friendIds.add(id)); } catch(e){}
+      const ids = [...new Set([...onlineIds, ...friendIds])].filter(id => id !== _sbUser.id);
+      if(ids.length){
+        const { data } = await _SB.from('profiles')
+          .select('id,display_name,avatar_2d_url,avatar_url')
+          .in('id', ids).limit(40);
+        users = data || [];
+        // Sort: online first
+        users.sort((a,b) => (onlineIds.has(b.id)?1:0) - (onlineIds.has(a.id)?1:0));
+      }
+    }
+
+    if(!users.length){
+      list.innerHTML = `<div style="text-align:center;color:rgba(255,255,255,.5);font-size:.8rem;padding:2.5rem 1rem;line-height:1.6">
+        <div style="font-size:2rem;margin-bottom:.5rem;opacity:.5">🔍</div>
+        ${query ? `Brak userów dla <b>"${_wallEsc(query)}"</b>` : 'Nikogo nie ma online ani w znajomych'}
+        <div style="font-size:.65rem;opacity:.7;margin-top:.7rem">Spróbuj wpisać nick (min 2 litery)</div>
+      </div>`;
+      return;
+    }
+
+    const onlineIds = new Set();
+    try { Object.keys(_presenceCh?.presenceState()||{}).forEach(k=>onlineIds.add(k)); } catch(e){}
+
+    list.innerHTML = users.map(u=>{
+      const av = u.avatar_2d_url || u.avatar_url || '';
+      const online = onlineIds.has(u.id);
+      const nm = u.display_name || 'TRIBE';
+      return `<div onclick="document.getElementById('new-chat-picker').remove();document.getElementById('conversations-modal')?.remove();openChatWith('${u.id}','${_wallEsc(nm).replace(/'/g,'')}')" style="display:flex;align-items:center;gap:.7rem;padding:.7rem .6rem;cursor:pointer;border-radius:12px;transition:.15s;margin-bottom:.2rem" onmouseover="this.style.background='rgba(255,255,255,.04)'" onmouseout="this.style.background='transparent'">
+        <div style="position:relative;width:46px;height:46px;border-radius:50%;${av?`background:url('${av}') center/cover`:'background:linear-gradient(135deg,#60a5fa,#3b82f6)'};border:1.5px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0">${av?'':'👤'}
+          ${online ? '<span style="position:absolute;bottom:-2px;right:-2px;width:13px;height:13px;border-radius:50%;background:#22c55e;border:2.5px solid #0a0e1a;box-shadow:0 0 8px rgba(34,197,94,.7)"></span>' : ''}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:.92rem;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_wallEsc(nm)}</div>
+          <div style="font-size:.65rem;color:${online?'#22c55e':'rgba(255,255,255,.5)'};font-family:'JetBrains Mono',monospace">${online?'● online':'// offline'}</div>
+        </div>
+        <div style="font-size:1.2rem;color:rgba(96,165,250,.7)">💬</div>
+      </div>`;
+    }).join('');
+  } catch(e){
+    list.innerHTML = `<div style="text-align:center;color:#fca5a5;font-size:.78rem;padding:1.5rem">⚠️ ${_wallEsc(e?.message||String(e))}</div>`;
+  }
 }
 
 // Tracking dla głosowego ostrzeżenia "ZWOLNIJ" przy +50 km/h
