@@ -9690,6 +9690,39 @@ document.addEventListener('visibilitychange', ()=>{
   if(navActive && document.visibilityState === 'visible') acquireWakeLock();
 });
 
+// ══════════════════════════════════════════════════════
+// PERFORMANCE — pauza timerów / animacji gdy karta w tle
+// (oszczędność CPU/baterii ~70% gdy zminimalizowana)
+// ══════════════════════════════════════════════════════
+let _tsPaused = false;
+const _tsPausedAnims = new Set();
+
+function _tsApplyPause(paused){
+  _tsPaused = paused;
+  // Wyłącz/włącz CSS animacje na markerach (drop pulse, glow ring etc.)
+  try {
+    const style = document.getElementById('ts-pause-anims-style') || (() => {
+      const s = document.createElement('style');
+      s.id = 'ts-pause-anims-style';
+      document.head.appendChild(s);
+      return s;
+    })();
+    style.textContent = paused
+      ? '*,*::before,*::after{animation-play-state:paused !important;transition:none !important}'
+      : '';
+  } catch(e){}
+  // Mapbox repaint off / on
+  try {
+    if(window.map){
+      if(paused) window.map.stop();
+    }
+  } catch(e){}
+}
+
+document.addEventListener('visibilitychange', () => {
+  _tsApplyPause(document.hidden);
+});
+
 // ══════════════════════════════════════
 // OFFLINE / SŁABY ZASIĘG
 // ══════════════════════════════════════
@@ -15057,78 +15090,161 @@ function _haversineKm(lat1, lng1, lat2, lng2){
 }
 
 // ══════════════════════════════════════════════════════
-// LIVE DROPS — kto pierwszy ten bierze 🎁
+// LIVE DROPS — kto pierwszy ten bierze 🎁  (WebGL layers)
 // ══════════════════════════════════════════════════════
-const _dropMarkers = {};
 const _dropData    = new Map();
 let _dropsRealtimeCh = null;
 let _dropsRefreshTimer = null;
+let _dropsLayerInited = false;
+
+// Helper: emoji + bg gradient → canvas image (dla map.addImage)
+function _emojiToImage(emoji, bgColors=['#fef3c7','#fbbf24','#d4af37'], size=72){
+  const c = document.createElement('canvas');
+  c.width = size; c.height = size;
+  const ctx = c.getContext('2d');
+  // glow halo
+  const halo = ctx.createRadialGradient(size/2, size/2, size/4, size/2, size/2, size/2);
+  halo.addColorStop(0, bgColors[1]+'cc');
+  halo.addColorStop(1, 'transparent');
+  ctx.fillStyle = halo;
+  ctx.fillRect(0,0,size,size);
+  // bubble gradient
+  const grad = ctx.createRadialGradient(size*0.42, size*0.36, size*0.05, size/2, size/2, size*0.42);
+  grad.addColorStop(0, bgColors[0]);
+  grad.addColorStop(0.5, bgColors[1]);
+  grad.addColorStop(1, bgColors[2]);
+  ctx.beginPath();
+  ctx.arc(size/2, size/2, size*0.42, 0, Math.PI*2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(255,255,255,.6)';
+  ctx.stroke();
+  // emoji
+  ctx.font = `${Math.floor(size*0.45)}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(emoji, size/2, size/2 + 2);
+  return c;
+}
+
+function _initDropsLayer(){
+  if(_dropsLayerInited || !window.map) return;
+  if(!window.map.loaded()){
+    window.map.once('load', _initDropsLayer);
+    return;
+  }
+  // Image (one-time)
+  if(!window.map.hasImage('ts-drop-icon')){
+    window.map.addImage('ts-drop-icon', _emojiToImage('🎁', ['#fef3c7','#fbbf24','#d4af37'], 72));
+  }
+  // Source
+  window.map.addSource('ts-drops', { type:'geojson', data:{type:'FeatureCollection', features:[]} });
+
+  // Pulsing halo (circle layer, GPU-rendered, animowany przez setPaintProperty)
+  window.map.addLayer({
+    id: 'ts-drops-halo',
+    type: 'circle',
+    source: 'ts-drops',
+    paint: {
+      'circle-radius':  ['interpolate',['linear'],['zoom'], 10, 18, 16, 38, 20, 70],
+      'circle-color':   '#fbbf24',
+      'circle-opacity': 0.32,
+      'circle-blur':    0.7
+    }
+  });
+
+  // Icon
+  window.map.addLayer({
+    id: 'ts-drops-icons',
+    type: 'symbol',
+    source: 'ts-drops',
+    layout: {
+      'icon-image': 'ts-drop-icon',
+      'icon-size':  ['interpolate',['linear'],['zoom'], 10, 0.5, 16, 0.85, 20, 1.15],
+      'icon-allow-overlap': true,
+      'icon-anchor': 'center'
+    }
+  });
+
+  // Remaining count badge (małe zielone kółko z liczbą u góry-prawej)
+  window.map.addLayer({
+    id: 'ts-drops-count',
+    type: 'symbol',
+    source: 'ts-drops',
+    filter: ['>', ['get','remaining'], 0],
+    layout: {
+      'text-field': ['to-string', ['get','remaining']],
+      'text-size': ['interpolate',['linear'],['zoom'], 10, 9, 16, 12, 20, 14],
+      'text-font': ['Open Sans Bold','Arial Unicode MS Bold'],
+      'text-offset': [1.1, -1.0],
+      'text-allow-overlap': true,
+      'text-ignore-placement': true
+    },
+    paint: {
+      'text-color': '#fff',
+      'text-halo-color': '#10b981',
+      'text-halo-width': 3
+    }
+  });
+
+  // Click → openDropModal
+  window.map.on('click', 'ts-drops-icons', (e) => {
+    const id = e.features?.[0]?.properties?.id;
+    if(id) openDropModal(id);
+  });
+  window.map.on('mouseenter', 'ts-drops-icons', () => { window.map.getCanvas().style.cursor = 'pointer'; });
+  window.map.on('mouseleave', 'ts-drops-icons', () => { window.map.getCanvas().style.cursor = ''; });
+
+  // GPU-driven halo pulse (RAF, throttled, paused gdy hidden)
+  let _haloT = 0;
+  function _dropHaloTick(){
+    if(!_tsPaused && window.map?.getLayer('ts-drops-halo')){
+      _haloT += 0.05;
+      const op = 0.18 + Math.sin(_haloT) * 0.18;
+      try { window.map.setPaintProperty('ts-drops-halo', 'circle-opacity', op); } catch(e){}
+    }
+    requestAnimationFrame(_dropHaloTick);
+  }
+  requestAnimationFrame(_dropHaloTick);
+
+  _dropsLayerInited = true;
+}
+
+function _setDropsData(){
+  if(!window.map?.getSource('ts-drops')) return;
+  const features = [];
+  _dropData.forEach(d => {
+    const remaining = Math.max(0, (d.quantity||1) - (d.claimed_count||0));
+    features.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [parseFloat(d.lng), parseFloat(d.lat)] },
+      properties: { id: d.id, remaining }
+    });
+  });
+  window.map.getSource('ts-drops').setData({ type:'FeatureCollection', features });
+}
 
 async function _loadDropsNearby(maxKm = 15){
   if(!_SB || !window.map) return;
+  _initDropsLayer();
   try {
     const { data, error } = await _SB.from('v_drops_active').select('*').limit(200);
     if(error){ console.warn('drops load:', error); return; }
     const seen = new Set();
     let cLat = userLat, cLng = userLng;
     try { const c = window.map.getCenter(); cLat = c.lat; cLng = c.lng; } catch(e){}
+    _dropData.clear();
     (data||[]).forEach(d => {
-      // Filter by distance from view
       if(cLat && cLng){
         const km = _haversineKm(cLat, cLng, d.lat, d.lng);
         if(km > maxKm) return;
       }
       seen.add(d.id);
       _dropData.set(d.id, d);
-      if(_dropMarkers[d.id]) _refreshDropMarker(d.id);
-      else _dropMarkers[d.id] = _mkDropMarker(d);
     });
-    Object.keys(_dropMarkers).forEach(id => {
-      if(!seen.has(id)){
-        _dropMarkers[id].remove();
-        delete _dropMarkers[id];
-        _dropData.delete(id);
-      }
-    });
+    _setDropsData();
   } catch(e){ console.warn('drops load fail:', e); }
-}
-
-function _mkDropMarker(d){
-  const el = document.createElement('div');
-  el.className = 'drop-marker';
-  el.style.cssText = `position:relative;width:50px;height:50px;cursor:pointer;
-    display:flex;align-items:center;justify-content:center`;
-  const remaining = Math.max(0, (d.quantity||1) - (d.claimed_count||0));
-  el.innerHTML = `
-    <div style="position:absolute;inset:-8px;border-radius:50%;
-      background:radial-gradient(circle, rgba(251,191,36,.6), transparent 65%);
-      animation:drop-pulse 1.6s ease-in-out infinite;pointer-events:none"></div>
-    <div style="position:relative;width:46px;height:46px;border-radius:50%;
-      background:linear-gradient(140deg, #fef3c7, #fbbf24 50%, #d4af37);
-      box-shadow:0 8px 22px rgba(251,191,36,.5),
-                 0 0 0 2px rgba(255,255,255,.45) inset,
-                 0 -2px 4px rgba(0,0,0,.18) inset,
-                 0 0 18px rgba(251,191,36,.6);
-      display:flex;align-items:center;justify-content:center;font-size:1.45rem;
-      filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))">🎁</div>
-    ${remaining>0 ? `<div style="position:absolute;top:-4px;right:-6px;background:#10b981;color:#fff;
-      font-size:.62rem;font-weight:900;padding:.1rem .35rem;border-radius:10px;
-      border:2px solid #0a0e1a;font-family:'JetBrains Mono',monospace">${remaining}</div>` : ''}
-  `;
-  el.onclick = (e) => { e.stopPropagation(); openDropModal(d.id); };
-  return new mapboxgl.Marker({ element: el, anchor:'center' })
-    .setLngLat([d.lng, d.lat])
-    .addTo(window.map);
-}
-
-function _refreshDropMarker(id){
-  const d = _dropData.get(id);
-  if(!d) return;
-  const m = _dropMarkers[id];
-  if(!m) return;
-  m.remove();
-  delete _dropMarkers[id];
-  if(window.map) _dropMarkers[id] = _mkDropMarker(d);
 }
 
 function _startDropsLive(){
@@ -15159,25 +15275,21 @@ function _startDropsLive(){
       if(_dropData.has(d.id)){
         Object.assign(_dropData.get(d.id), d);
         if(d.hidden || d.status !== 'active' || (d.expires_at && new Date(d.expires_at) < new Date())){
-          _dropMarkers[d.id]?.remove();
-          delete _dropMarkers[d.id];
           _dropData.delete(d.id);
-        } else {
-          _refreshDropMarker(d.id);
         }
+        _setDropsData();
       }
     })
     .on('postgres_changes', { event:'DELETE', schema:'public', table:'live_drops' }, payload => {
       const id = payload.old?.id;
-      if(id && _dropMarkers[id]){
-        _dropMarkers[id].remove();
-        delete _dropMarkers[id];
+      if(id && _dropData.has(id)){
         _dropData.delete(id);
+        _setDropsData();
       }
     })
     .subscribe();
   if(!_dropsRefreshTimer){
-    _dropsRefreshTimer = setInterval(() => _loadDropsNearby(15), 3 * 60 * 1000);
+    _dropsRefreshTimer = setInterval(() => { if(!_tsPaused) _loadDropsNearby(15); }, 3 * 60 * 1000);
   }
 }
 
