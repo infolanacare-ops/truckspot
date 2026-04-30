@@ -1036,10 +1036,10 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
 }
 #map-skin-overlay.active{ opacity: 1 }
 
-/* Warstwa 1 — VIGNETTE (ciemne narozniki dla cyberpunk vibe) */
+/* Warstwa 1 — VIGNETTE (ciemne narozniki, subtelne) */
 #map-skin-overlay .ms-vignette{
   position: absolute; inset: 0;
-  background: radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,.65) 110%);
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.32) 115%);
   mix-blend-mode: multiply;
 }
 
@@ -16868,8 +16868,7 @@ function _applyMapSkinOverlay(key){
       <div class="ms-vignette"></div>
       <div class="ms-scanlines"></div>
       <div class="ms-edgeglow"></div>
-      <div class="ms-particles"></div>
-      <div class="ms-scanbeam"></div>`;
+      <div class="ms-particles"></div>`;
     document.body.appendChild(overlay);
   }
   // Reset klasy
