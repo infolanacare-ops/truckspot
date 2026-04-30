@@ -1,9 +1,9 @@
-// TruckSpot Service Worker — v22
+// TruckSpot Service Worker — v23
 // HTML nigdy nie cachowany → zawsze świeży kod przy każdym otwarciu
 // Aktualizacja: cichy reload wszystkich klientów, zero banerów
-const STATIC_CACHE = 'ts-static-v22';  // ikony, manifest (rzadko się zmieniają)
-const DATA_CACHE   = 'ts-data-v22';    // API responses
-const TILE_CACHE   = 'ts-tiles-v22';   // kafelki mapy
+const STATIC_CACHE = 'ts-static-v23';  // ikony, manifest (rzadko się zmieniają)
+const DATA_CACHE   = 'ts-data-v23';    // API responses
+const TILE_CACHE   = 'ts-tiles-v23';   // kafelki mapy
 
 // Tylko naprawdę statyczne assety — NIE cachujemy HTML
 const STATIC_ASSETS = [

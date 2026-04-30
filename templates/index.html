@@ -15078,17 +15078,14 @@ function _initSpotsLayer(){
   window.map.on('mouseenter', 'ts-spots-icons', () => { window.map.getCanvas().style.cursor = 'pointer'; });
   window.map.on('mouseleave', 'ts-spots-icons', () => { window.map.getCanvas().style.cursor = ''; });
 
-  // GPU-driven halo pulse (RAF, paused gdy hidden)
+  // GPU-driven halo pulse (throttled 10fps żeby nie spowalniać)
   let _spotsHaloT = 0;
-  function _spotHaloTick(){
-    if(!_tsPaused && window.map?.getLayer('ts-spots-halo')){
-      _spotsHaloT += 0.045;
-      const op = 0.18 + Math.sin(_spotsHaloT) * 0.18;
-      try { window.map.setPaintProperty('ts-spots-halo', 'circle-opacity', op); } catch(e){}
-    }
-    requestAnimationFrame(_spotHaloTick);
-  }
-  requestAnimationFrame(_spotHaloTick);
+  setInterval(() => {
+    if(_tsPaused || !window.map?.getLayer('ts-spots-halo')) return;
+    _spotsHaloT += 0.27;
+    const op = 0.18 + Math.sin(_spotsHaloT) * 0.18;
+    try { window.map.setPaintProperty('ts-spots-halo', 'circle-opacity', op); } catch(e){}
+  }, 100);
 
   _spotsLayerInited = true;
 }
@@ -15333,17 +15330,14 @@ function _initDropsLayer(){
   window.map.on('mouseenter', 'ts-drops-icons', () => { window.map.getCanvas().style.cursor = 'pointer'; });
   window.map.on('mouseleave', 'ts-drops-icons', () => { window.map.getCanvas().style.cursor = ''; });
 
-  // GPU-driven halo pulse (RAF, throttled, paused gdy hidden)
+  // GPU-driven halo pulse (throttled 10fps żeby nie zżerać CPU/GPU)
   let _haloT = 0;
-  function _dropHaloTick(){
-    if(!_tsPaused && window.map?.getLayer('ts-drops-halo')){
-      _haloT += 0.05;
-      const op = 0.18 + Math.sin(_haloT) * 0.18;
-      try { window.map.setPaintProperty('ts-drops-halo', 'circle-opacity', op); } catch(e){}
-    }
-    requestAnimationFrame(_dropHaloTick);
-  }
-  requestAnimationFrame(_dropHaloTick);
+  setInterval(() => {
+    if(_tsPaused || !window.map?.getLayer('ts-drops-halo')) return;
+    _haloT += 0.3;
+    const op = 0.18 + Math.sin(_haloT) * 0.18;
+    try { window.map.setPaintProperty('ts-drops-halo', 'circle-opacity', op); } catch(e){}
+  }, 100);
 
   _dropsLayerInited = true;
 }
@@ -21823,8 +21817,7 @@ async function _loadMyStatus(){
     const { data } = await _SB.from('profiles').select('status_key,status_text,status_expires_at').eq('id', _sbUser.id).maybeSingle();
     if(data?.status_key && data?.status_expires_at && new Date(data.status_expires_at) > new Date()){
       _myStatus = { key: data.status_key, text: data.status_text || '', expires_at: data.status_expires_at };
-      // Re-track presence with status
-      try { _presenceCh?.track({ ..._presenceCh._lastPayload, status_key:_myStatus.key, status_text:_myStatus.text, status_expires_at:_myStatus.expires_at }); } catch(e){}
+      // NIE wymuszamy track — następny naturalny track injectuje status przez monkey-patch
     } else {
       _myStatus = null;
     }
