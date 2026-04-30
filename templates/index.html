@@ -4141,12 +4141,31 @@ body.navigating .convoy-btn{display:none}
 /* Ukryj logo Mapbox i "Improve this map" */
 .mapboxgl-ctrl-logo{display:none!important}
 .mapboxgl-ctrl-attrib{display:none!important}
-/* Statyczna atybucja Mapbox (wymagana ToS) */
+/* Statyczna atybucja Mapbox (wymagana ToS) — compact ⓘ */
 .map-attrib{
-  position:fixed;bottom:52px;right:4px;z-index:100;
-  font-size:9px;color:rgba(255,255,255,.35);
-  pointer-events:none;line-height:1.2;text-align:right;
+  position:fixed;bottom:52px;right:6px;z-index:100;
+  width:18px;height:18px;border-radius:50%;
+  background:rgba(0,0,0,.45);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.18);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:rgba(255,255,255,.6);
+  cursor:pointer;font-family:'JetBrains Mono',sans-serif;
+  text-decoration:none;line-height:1;letter-spacing:0;
 }
+.map-attrib:hover{color:#fff;border-color:rgba(255,255,255,.35);background:rgba(0,0,0,.6)}
+.map-attrib::before{content:'i'}
+.map-attrib-pop{
+  position:fixed;bottom:78px;right:6px;z-index:101;
+  background:rgba(10,14,26,.92);backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,.15);border-radius:10px;
+  padding:.5rem .7rem;font-size:10px;color:rgba(255,255,255,.75);
+  font-family:'JetBrains Mono',monospace;letter-spacing:.02em;
+  box-shadow:0 8px 22px rgba(0,0,0,.5);
+  display:none;white-space:nowrap;
+}
+.map-attrib-pop.show{display:block}
+.map-attrib-pop a{color:rgba(6,182,212,.85);text-decoration:none}
+.map-attrib-pop a:hover{color:#06b6d4}
 /* ══ NAV POI STRIP ══ */
 /* old nav-pois styles removed — replaced by TomTom nav styles above */
 /* ══ JEDŹ BUTTON ══ */
@@ -4990,7 +5009,8 @@ function _landingEnter(){
     <div class="topbar-search" onclick="openSearch()"><span class="si"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span></div>
   </div>
   <div id="map"></div>
-  <div class="map-attrib">© Mapbox © OpenStreetMap</div>
+  <a class="map-attrib" onclick="event.preventDefault();const p=document.getElementById('map-attrib-pop');p.classList.toggle('show');setTimeout(()=>p.classList.remove('show'),5000)" title="Sources" href="#"></a>
+  <div id="map-attrib-pop" class="map-attrib-pop">© <a href="https://www.mapbox.com/about/maps/" target="_blank" rel="noopener">Mapbox</a> © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></div>
 
   <!-- Layer switcher -->
   <button class="fab-layers" id="fab-layers" onclick="toggleLayersMenu()" title="Zmień styl mapy"><span class="ts-icon"><svg><use href="#ts-map"/></svg></span></button>
@@ -22135,17 +22155,30 @@ async function openCitySpotted(){
   document.getElementById('spotted-modal')?.remove();
   if(_spottedChannel){ try{_SB.removeChannel(_spottedChannel);}catch(e){} _spottedChannel=null; }
 
-  // Wykryj miasto z GPS (jeśli mamy)
+  // Wykryj miasto z GPS (cache 7 dni w localStorage; nie hit'uje OSM przy każdym otwarciu)
   if(!_spottedCity){
     let glat = userLat, glng = userLng;
     if((!glat||!glng)){
       try { const c = JSON.parse(localStorage.getItem('ts_last_gps')||'null'); if(c?.lat){ glat=c.lat; glng=c.lng; } } catch(e){}
     }
-    if(glat && glng){
+    // 1. Cache check — jeśli mam miasto + GPS niedaleko (≤5km od ostatniego), użyj cache
+    try {
+      const cache = JSON.parse(localStorage.getItem('ts_city_cache')||'null');
+      if(cache?.city && cache?.lat && cache?.lng && cache?.ts){
+        const ageDays = (Date.now() - cache.ts) / (1000*60*60*24);
+        const distKm = (glat && glng) ? _haversineKm(glat, glng, cache.lat, cache.lng) : 0;
+        if(ageDays < 7 && distKm < 5){ _spottedCity = cache.city; }
+      }
+    } catch(e){}
+    // 2. Cache miss → fetch z Nominatim raz i zapisz
+    if(!_spottedCity && glat && glng){
       try {
         const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${glat}&lon=${glng}&zoom=10`);
         const j = await r.json();
         _spottedCity = j?.address?.city || j?.address?.town || j?.address?.village || j?.address?.county || '';
+        if(_spottedCity){
+          try { localStorage.setItem('ts_city_cache', JSON.stringify({city:_spottedCity, lat:glat, lng:glng, ts:Date.now()})); } catch(e){}
+        }
       } catch(e){}
     }
     if(!_spottedCity) _spottedCity = profile?.homeBase || profile?.country || 'Sieradz';
