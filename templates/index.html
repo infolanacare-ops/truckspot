@@ -15814,12 +15814,10 @@ async function openSpotModal(spotId){
               : `<button onclick="_joinSpotAction(${s.id})" style="flex:1;background:linear-gradient(135deg,${vibe.color},${vibe.color}cc);border:none;color:#fff;border-radius:11px;padding:12px;font-weight:900;font-size:.85rem;cursor:pointer;box-shadow:0 4px 14px ${vibe.color}66">✨ DOŁĄCZ</button>`}
           <button onclick="_stopSpotLiveCounter();document.getElementById('spot-detail-modal').remove();if(window.map)window.map.flyTo({center:[${s.lng},${s.lat}],zoom:17,duration:800})" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:11px;padding:12px;font-weight:800;font-size:.82rem;cursor:pointer">📍 Pokaż na mapie</button>
         </div>
-        ${isEvent ? `
-        <button onclick="_stopSpotLiveCounter();document.getElementById('spot-detail-modal').remove();setTimeout(()=>_openSpotChat(${s.id}, '${(s.title||'').replace(/'/g,"\\'").slice(0,40)}'), 200)" style="width:100%;margin-top:10px;background:linear-gradient(135deg,rgba(6,182,212,.45),rgba(59,130,246,.35));border:1px solid rgba(6,182,212,.6);color:#fff;border-radius:12px;padding:13px;font-weight:900;font-size:.85rem;cursor:pointer;letter-spacing:.04em;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(6,182,212,.3)">
+        <button onclick="_stopSpotLiveCounter();document.getElementById('spot-detail-modal').remove();setTimeout(()=>_openSpotChat(${s.id}, '${((s.title||'spot')+'').replace(/'/g,"\\'").slice(0,40)}'), 200)" style="width:100%;margin-top:10px;background:linear-gradient(135deg,rgba(6,182,212,.45),rgba(59,130,246,.35));border:1px solid rgba(6,182,212,.6);color:#fff;border-radius:12px;padding:13px;font-weight:900;font-size:.85rem;cursor:pointer;letter-spacing:.04em;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(6,182,212,.3)">
           <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;animation:peer-pulse-dot 1.6s ease-in-out infinite"></span>
           💬 LIVE CHAT NA MIEJSCU
         </button>
-        ` : ''}
       </div>
     </div>`;
   document.body.appendChild(modal);
