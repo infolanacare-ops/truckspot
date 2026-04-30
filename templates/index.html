@@ -21449,6 +21449,106 @@ async function requestPushPermission(){
   if(perm === 'granted') initPush();
 }
 
+// Auto-prompt push po 30s aktywności (custom modal zamiast brzydkiego browser dialog)
+function _maybePromptPushSoon(){
+  if(!('Notification' in window)) return;
+  if(Notification.permission !== 'default') return; // już dał allow/deny
+  // Sprawdź dismissed
+  try {
+    const dismissTs = parseInt(localStorage.getItem('ts_push_prompt_dismissed') || '0');
+    if(Date.now() - dismissTs < 7*24*3600*1000) return; // 7 dni cooldown
+  } catch(e){}
+  // 30s wait
+  setTimeout(() => {
+    if(Notification.permission !== 'default') return;
+    if(!_sbUser) return; // tylko zalogowani
+    if(document.hidden) return; // czekaj aż użytkownik aktywny
+    _showPushPrompt();
+  }, 30000);
+}
+
+function _showPushPrompt(){
+  if(document.getElementById('push-prompt-modal')) return;
+  const m = document.createElement('div');
+  m.id = 'push-prompt-modal';
+  m.style.cssText = 'position:fixed;left:50%;bottom:80px;transform:translateX(-50%);z-index:6500;width:calc(100% - 24px);max-width:380px;background:linear-gradient(160deg,rgba(15,23,42,.98),rgba(2,6,23,.99));border:1.5px solid rgba(6,182,212,.45);border-radius:18px;color:#fff;padding:16px;box-shadow:0 20px 50px rgba(0,0,0,.7),0 0 50px rgba(6,182,212,.18);animation:slideup .35s cubic-bezier(.34,1.56,.64,1)';
+  m.innerHTML = `
+    <div style="display:flex;align-items:start;gap:12px">
+      <div style="width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#06b6d4,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 6px 16px rgba(6,182,212,.4);flex-shrink:0">🔔</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:900;font-size:15px;margin-bottom:4px">Włącz powiadomienia?</div>
+        <div style="font-size:12px;color:#94a3b8;line-height:1.5">Wiadomości od znajomych, dropy obok, eventy w okolicy — bez nich coś przegapisz.</div>
+      </div>
+      <button onclick="_dismissPushPrompt()" style="background:transparent;border:none;color:#64748b;font-size:18px;cursor:pointer;flex-shrink:0;padding:4px">✕</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button onclick="_dismissPushPrompt()" style="flex:1;background:#1e293b;border:1px solid #334155;color:#94a3b8;padding:10px;border-radius:10px;cursor:pointer;font-weight:700;font-size:13px">Później</button>
+      <button onclick="_acceptPushPrompt()" style="flex:2;background:linear-gradient(135deg,#06b6d4,#3b82f6);border:none;color:#fff;padding:10px;border-radius:10px;cursor:pointer;font-weight:900;font-size:13px;letter-spacing:.04em;text-transform:uppercase">🔔 Włącz</button>
+    </div>`;
+  document.body.appendChild(m);
+}
+
+function _dismissPushPrompt(){
+  document.getElementById('push-prompt-modal')?.remove();
+  try { localStorage.setItem('ts_push_prompt_dismissed', String(Date.now())); } catch(e){}
+}
+
+async function _acceptPushPrompt(){
+  document.getElementById('push-prompt-modal')?.remove();
+  await requestPushPermission();
+  if(Notification.permission === 'granted'){
+    showAlert('🔔','Powiadomienia ON','Będziesz wiedzieć o wszystkim');
+    setTimeout(closeAlert, 2500);
+  } else if(Notification.permission === 'denied'){
+    showAlert('🔕','Zablokowane','Możesz włączyć w Ustawieniach przeglądarki');
+    setTimeout(closeAlert, 3500);
+    try { localStorage.setItem('ts_push_prompt_dismissed', String(Date.now())); } catch(e){}
+  }
+}
+
+// iPhone PWA "Dodaj do ekranu" banner
+function _isIOS(){
+  const ua = navigator.userAgent.toLowerCase();
+  return /iphone|ipad|ipod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+function _isStandalone(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+function _maybeShowIOSPWAbanner(){
+  if(!_isIOS()) return;
+  if(_isStandalone()) return; // już zainstalowana
+  try {
+    const ts = parseInt(localStorage.getItem('ts_ios_pwa_dismissed') || '0');
+    if(Date.now() - ts < 7*24*3600*1000) return;
+  } catch(e){}
+  setTimeout(() => {
+    if(_isStandalone()) return;
+    if(document.hidden) return;
+    if(document.getElementById('ios-pwa-banner')) return;
+    const m = document.createElement('div');
+    m.id = 'ios-pwa-banner';
+    m.style.cssText = 'position:fixed;left:50%;bottom:80px;transform:translateX(-50%);z-index:6500;width:calc(100% - 24px);max-width:380px;background:linear-gradient(160deg,rgba(15,23,42,.98),rgba(2,6,23,.99));border:1.5px solid rgba(168,85,247,.45);border-radius:18px;color:#fff;padding:16px;box-shadow:0 20px 50px rgba(0,0,0,.7),0 0 50px rgba(168,85,247,.18);animation:slideup .35s cubic-bezier(.34,1.56,.64,1)';
+    m.innerHTML = `
+      <div style="display:flex;align-items:start;gap:12px">
+        <div style="width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#a855f7,#ec4899);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">📲</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:900;font-size:15px;margin-bottom:4px">Zainstaluj TribeSpot</div>
+          <div style="font-size:12px;color:#94a3b8;line-height:1.5">Pełen ekran, push, offline — jak natywna apka.</div>
+        </div>
+        <button onclick="_dismissIOSpwa()" style="background:transparent;border:none;color:#64748b;font-size:18px;cursor:pointer;padding:4px">✕</button>
+      </div>
+      <div style="background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);border-radius:10px;padding:10px;margin-top:12px;font-size:12px;line-height:1.6;color:#c4b5fd">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="background:#a855f7;color:#fff;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-weight:900;font-size:11px;flex-shrink:0">1</span>Klik <b style="color:#fff">Udostępnij</b> <span style="background:rgba(255,255,255,.1);padding:0 5px;border-radius:4px">⬆️</span> w pasku Safari</div>
+        <div style="display:flex;align-items:center;gap:6px"><span style="background:#a855f7;color:#fff;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-weight:900;font-size:11px;flex-shrink:0">2</span>Wybierz <b style="color:#fff">Do ekranu początkowego</b></div>
+      </div>`;
+    document.body.appendChild(m);
+  }, 60000); // 60s po starcie
+}
+function _dismissIOSpwa(){
+  document.getElementById('ios-pwa-banner')?.remove();
+  try { localStorage.setItem('ts_ios_pwa_dismissed', String(Date.now())); } catch(e){}
+}
+
 function updatePushPosition(lat, lng){
   if(!pushSubId) return;
   fetch('/api/push/update-position', {
@@ -23246,6 +23346,10 @@ _SB.auth.onAuthStateChange((_event, session) => {
 
 function _onAuthUser(user) {
   _sbUser = user;
+  // Auto-prompt push 30s po zalogowaniu
+  if(user) _maybePromptPushSoon();
+  // iPhone PWA banner — pokaż gdy iOS Safari i nie zainstalowane
+  if(user) _maybeShowIOSPWAbanner();
   const nameEl   = document.getElementById('drawer-name');
   const subEl    = document.getElementById('drawer-mode-sub');
   const avatarEl = document.getElementById('drawer-avatar');
