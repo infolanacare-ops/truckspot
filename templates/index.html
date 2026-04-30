@@ -10902,9 +10902,9 @@ function openMetaverseHub(){
       <!-- Sekcja: Społeczność -->
       <div style="font-size:.62rem;font-weight:800;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.08em;margin:0 .3rem .5rem">👥 Społeczność</div>
       <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem">
-        ${_hubItem({icon:'👥', label:'Znajomi', desc:'Wyszukaj, dodaj, zobacz na mapie', color:'rgba(59,130,246,.15)', colorB:'rgba(59,130,246,.45)', onClick:`openFriendsPanel()`})}
+        ${_hubItem({icon: _iconSvg('social',{size:24,emoji:'👥'}), label:'Znajomi', desc:'Wyszukaj, dodaj, zobacz na mapie', color:'rgba(59,130,246,.15)', colorB:'rgba(59,130,246,.45)', onClick:`openFriendsPanel()`})}
         ${_hubItem({icon:'💬', label:'Czaty', desc:'Wszystkie konwersacje', badge: (()=>{ let n=0; _dmUnreadByUser?.forEach(v=>n+=v); return n>0 ? (n>9?'9+':String(n)) : ''; })(), color:'rgba(96,165,250,.15)', colorB:'rgba(96,165,250,.45)', onClick:`openConversationsList()`})}
-        ${_hubItem({icon:'📸', label:'AR LIVE', desc:'Kamera + lokale i ziomki w realu', badge:'NEW', color:'rgba(245,158,11,.15)', colorB:'rgba(245,158,11,.45)', onClick:`openARLive()`})}
+        ${_hubItem({icon: _iconSvg('photo',{size:24,emoji:'📸'}), label:'AR LIVE', desc:'Kamera + lokale i ziomki w realu', badge:'NEW', color:'rgba(245,158,11,.15)', colorB:'rgba(245,158,11,.45)', onClick:`openARLive()`})}
         ${_hubItem({icon:'💓', label:'Energy Pulse', desc:'Mapa pulsuje energią miasta', badge: _energyEnabled ? 'ON' : '', color:'rgba(239,68,68,.15)', colorB:'rgba(239,68,68,.45)', onClick:`toggleEnergyPulse();document.getElementById('metaverse-hub')?.remove();setTimeout(openMetaverseHub,200)`})}
         ${_hubItem({icon: _isGhost() ? '👻' : '👁️', label: _isGhost() ? 'Tryb niewidzialny ON' : 'Tryb niewidzialny', desc: _ghostLabel(), badge: _isGhost() ? 'ON' : '', color:'rgba(168,85,247,.15)', colorB:'rgba(168,85,247,.45)', onClick:`openGhostPanel()`})}
         ${_hubItem({icon:'📡', label:'CB Radio', desc:'Mapa wiadomości, czat z okolicą', color:'rgba(59,130,246,.15)', colorB:'rgba(59,130,246,.45)', onClick:`drawerAction('cbradio')`})}
@@ -10914,7 +10914,7 @@ function openMetaverseHub(){
       <!-- Sekcja: Gamifikacja -->
       <div style="font-size:.62rem;font-weight:800;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.08em;margin:0 .3rem .5rem">🎮 Gamifikacja</div>
       <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem">
-        ${_hubItem({icon:'👟', label:'Kroki dziś', desc: (_mySteps ? `${_mySteps.steps.toLocaleString('pl-PL')} / ${_mySteps.goal.toLocaleString('pl-PL')} kroków · ${Math.round(100*_mySteps.steps/_mySteps.goal)}%` : 'Cel: 10 000 kroków · zdobądź XP i rabaty'), badge: (_mySteps?.steps>=_mySteps?.goal?'✓':(_mySteps?.steps>0?String(_mySteps.steps):'NEW')), color:'rgba(16,185,129,.15)', colorB:'rgba(16,185,129,.5)', onClick:`openStepsPanel()`})}
+        ${_hubItem({icon: _iconSvg('steps',{size:24,emoji:'👟'}), label:'Kroki dziś', desc: (_mySteps ? `${_mySteps.steps.toLocaleString('pl-PL')} / ${_mySteps.goal.toLocaleString('pl-PL')} kroków · ${Math.round(100*_mySteps.steps/_mySteps.goal)}%` : 'Cel: 10 000 kroków · zdobądź XP i rabaty'), badge: (_mySteps?.steps>=_mySteps?.goal?'✓':(_mySteps?.steps>0?String(_mySteps.steps):'NEW')), color:'rgba(16,185,129,.15)', colorB:'rgba(16,185,129,.5)', onClick:`openStepsPanel()`})}
         ${_hubItem({icon:'⚡', label:'Codzienne wyzwania', desc:'Nowe taski codziennie + bonusy', badge: _myTasks?.filter(t=>t.horizon==='daily').length ? String(_myTasks.filter(t=>t.horizon==='daily').length) : '', color:'rgba(34,197,94,.15)', colorB:'rgba(34,197,94,.45)', onClick:`openMyTasksPanel()`})}
         ${_hubItem({icon:'🏆', label:'Osiągnięcia / Odznaki', desc:'Kolekcjonuj badge i pokazuj się', color:'rgba(251,191,36,.15)', colorB:'rgba(251,191,36,.45)', onClick:`openAchievementsPanel()`})}
         ${_hubItem({icon:'🛡️', label:'Bezpieczna jazda', desc:'Punkty za jazdę bez +50 km/h', badge:`${sd.points} PKT`, color:'rgba(212,175,55,.15)', colorB:'rgba(212,175,55,.45)', onClick:`openSafeDrivePanel()`})}
@@ -12664,6 +12664,126 @@ const AVATAR_STYLES = [
   {key:'notionists',    name:'Notion',      emoji:'📓'},
   {key:'thumbs',        name:'Thumbs',      emoji:'👍'},
 ];
+
+// ── ICON PACKS ENGINE ───────────────────────────────────────────────────────
+// 4 paczki ikon: NEON HOLO (default), GLASS 3D, LIQUID METAL, CLASSIC (emoji fallback)
+// User wybiera w drawerze, zapisane w localStorage, event 'iconpackchange' triggers re-render
+window._iconPack = window._iconPack || (localStorage.getItem('ts_icon_pack') || 'neon');
+
+function setIconPack(pack){
+  if(!ICON_PACKS[pack]) return;
+  window._iconPack = pack;
+  try { localStorage.setItem('ts_icon_pack', pack); } catch(e){}
+  // Re-render hub jeśli otwarty
+  if(document.getElementById('metaverse-hub')){
+    const wasOpen = true;
+    document.getElementById('metaverse-hub').remove();
+    if(wasOpen) setTimeout(() => { try { openMetaverseHub(); } catch(e){} }, 60);
+  }
+  window.dispatchEvent(new CustomEvent('iconpackchange', { detail:{ pack } }));
+}
+
+// Generator ikony — używaj wszędzie zamiast emoji
+function _iconSvg(name, opts){
+  opts = opts || {};
+  const pack = opts.pack || window._iconPack || 'neon';
+  const size = opts.size || 28;
+  const fn = (ICON_PACKS[pack] && ICON_PACKS[pack][name]) || (ICON_PACKS.classic[name]) || null;
+  if(!fn){
+    // Fallback: emoji jeśli podany w opts.emoji, inaczej dot
+    return opts.emoji ? `<span style="font-size:${size}px;line-height:1">${opts.emoji}</span>` : `<span style="font-size:${size}px">●</span>`;
+  }
+  return fn(size, opts);
+}
+
+// ── ICON PACKS REGISTRY ─────────────────────────────────────────────────────
+// Każdy pack to obiekt { iconName: (size, opts) => svgString }
+// MVP: neon ma 3 ikony (steps, photo, social), classic = emoji fallback dla wszystkich
+const _NEON_GRADIENTS = {
+  // Każdy ID gradientu MUSI być unikalny w SVG, używam losowego suffixu
+  pinkPurple: ['#ec4899', '#a855f7', '#06b6d4'],
+  emerald:    ['#10b981', '#34d399', '#06b6d4'],
+  blue:       ['#3b82f6', '#06b6d4', '#a855f7'],
+};
+
+function _neonDefs(uid, colors){
+  const [c1,c2,c3] = colors;
+  return `
+    <defs>
+      <linearGradient id="g${uid}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="${c1}"/>
+        <stop offset="50%" stop-color="${c2}"/>
+        <stop offset="100%" stop-color="${c3}"/>
+      </linearGradient>
+      <filter id="f${uid}" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="1.2" result="blur"/>
+        <feMerge>
+          <feMergeNode in="blur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+    </defs>`;
+}
+
+const ICON_PACKS = {
+  // ── NEON HOLO ─────────────────────────────────────────────────────────────
+  neon: {
+    // 👟 Steps — footprints (2 kroki, każdy z innym gradientem dla ruchu)
+    steps: (size) => {
+      const uid = 'step'+Math.random().toString(36).slice(2,7);
+      return `<svg viewBox="0 0 32 32" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible">
+        ${_neonDefs(uid, _NEON_GRADIENTS.emerald)}
+        <g filter="url(#f${uid})" fill="none" stroke="url(#g${uid})" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <ellipse cx="9" cy="14" rx="3.2" ry="4.5"/>
+          <circle cx="6.5" cy="8.5" r="1.2"/>
+          <circle cx="9.5" cy="6.5" r="1"/>
+          <circle cx="12" cy="8.5" r="1"/>
+          <ellipse cx="22" cy="22" rx="3.2" ry="4.5"/>
+          <circle cx="19.5" cy="16.5" r="1.2"/>
+          <circle cx="22.5" cy="14.5" r="1"/>
+          <circle cx="25" cy="16.5" r="1"/>
+        </g>
+      </svg>`;
+    },
+    // 📸 Photo — kamera z aperturą
+    photo: (size) => {
+      const uid = 'cam'+Math.random().toString(36).slice(2,7);
+      return `<svg viewBox="0 0 32 32" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible">
+        ${_neonDefs(uid, _NEON_GRADIENTS.pinkPurple)}
+        <g filter="url(#f${uid})" fill="none" stroke="url(#g${uid})" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 11h4l2-2h10l2 2h4v14H5z"/>
+          <circle cx="16" cy="18" r="5"/>
+          <circle cx="16" cy="18" r="2.5"/>
+          <circle cx="24" cy="13.5" r=".7" fill="url(#g${uid})"/>
+        </g>
+      </svg>`;
+    },
+    // 👥 Social — 2 osoby połączone glową linią
+    social: (size) => {
+      const uid = 'soc'+Math.random().toString(36).slice(2,7);
+      return `<svg viewBox="0 0 32 32" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible">
+        ${_neonDefs(uid, _NEON_GRADIENTS.blue)}
+        <g filter="url(#f${uid})" fill="none" stroke="url(#g${uid})" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="3.5"/>
+          <path d="M5 26c0-3.5 2.7-6.5 6-6.5s6 3 6 6.5"/>
+          <circle cx="22" cy="13" r="2.8"/>
+          <path d="M17 24.5c0-2.7 2.2-5 5-5s5 2.3 5 5"/>
+          <circle cx="16" cy="16" r=".8" fill="url(#g${uid})"/>
+        </g>
+      </svg>`;
+    },
+  },
+  // ── CLASSIC (emoji fallback dla wszystkiego) ─────────────────────────────
+  classic: {
+    steps:  (size) => `<span style="font-size:${size*0.85}px;line-height:1">👟</span>`,
+    photo:  (size) => `<span style="font-size:${size*0.85}px;line-height:1">📸</span>`,
+    social: (size) => `<span style="font-size:${size*0.85}px;line-height:1">👥</span>`,
+  },
+  // ── GLASS 3D (TODO Faza 2) ────────────────────────────────────────────────
+  glass: {},
+  // ── LIQUID METAL (TODO Faza 3) ────────────────────────────────────────────
+  metal: {},
+};
 
 function _avatarUrl(style, seed, size=200){
   return `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(seed)}&size=${size}&backgroundColor=transparent`;
