@@ -981,6 +981,28 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
 .fab-add.picking{background:linear-gradient(135deg,#ef4444,#f87171);animation:pulse-fab 1s infinite}
 @keyframes pulse-fab{0%,100%{box-shadow:0 4px 16px rgba(239,68,68,.5)}50%{box-shadow:0 4px 28px rgba(239,68,68,.8)}}
 
+/* ══ TRIBESPOT — Add Spot FAB (gold + turkus, lewy dolny) ══ */
+.fab-spot-add{position:fixed;left:1rem;bottom:5.5rem;z-index:400;
+  width:60px;height:60px;border-radius:50%;border:none;cursor:pointer;
+  background:linear-gradient(135deg,#fbbf24 0%,#f59e0b 40%,#06b6d4 100%);
+  box-shadow:0 6px 22px rgba(245,158,11,.55), 0 0 0 0 rgba(6,182,212,.6);
+  font-size:1.7rem;font-weight:900;color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  text-shadow:0 1px 2px rgba(0,0,0,.4);
+  animation:pulse-spot-fab 2.5s ease-in-out infinite;
+  transition:.2s}
+.fab-spot-add:hover{transform:scale(1.08)}
+.fab-spot-add:active{transform:scale(.95)}
+.fab-spot-add::after{
+  content:'+';line-height:0;font-size:2rem;font-weight:300;
+  filter:drop-shadow(0 0 6px rgba(255,255,255,.6))}
+@keyframes pulse-spot-fab{
+  0%,100%{box-shadow:0 6px 22px rgba(245,158,11,.55), 0 0 0 0 rgba(6,182,212,.5)}
+  50%{box-shadow:0 6px 26px rgba(245,158,11,.7), 0 0 0 14px rgba(6,182,212,0)}}
+.fab-spot-add-label{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);
+  font-size:.5rem;font-weight:900;letter-spacing:.08em;color:#fbbf24;
+  text-transform:uppercase;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.6);pointer-events:none}
+
 /* ══ RADIO MINI BAR ══ */
 .radio-mini{position:fixed;bottom:3.6rem;left:.7rem;right:.7rem;z-index:300;
   background:var(--panel);border:1px solid var(--border);border-radius:16px;
@@ -4885,6 +4907,11 @@ function _landingEnter(){
 
 <!-- FAB -->
 <button class="fab-add" id="fab-add" onclick="togglePicking()" style="display:none">＋</button>
+
+<!-- TribeSpot: Add Spot FAB (lewy dolny, gold→turkus pulse glow) -->
+<button class="fab-spot-add" id="fab-spot-add" onclick="openAddSpotModal()" title="Dodaj spot — pokaż gdzie się dzieje">
+  <span class="fab-spot-add-label">SPOT</span>
+</button>
 <button class="fab-ai" id="fab-ai" onclick="openAiAssistant()" title="Asystent AI" style="display:none"><span class="ts-icon"><svg><use href="#ts-mic"/></svg></span></button>
 
 <!-- Radio — mała pigułka -->
@@ -12985,6 +13012,191 @@ async function openStepsPanel(){
     </div>`;
   document.body.appendChild(modal);
   _loadStepsLeaderboard();
+}
+
+// ── TRIBESPOT: ADD SPOT ─────────────────────────────────────────────────────
+const SPOT_VIBES = [
+  {key:'party',  name:'Impreza',  emoji:'🎉', color:'#ec4899'},
+  {key:'chill',  name:'Chill',    emoji:'🍻', color:'#06b6d4'},
+  {key:'food',   name:'Jedzenie', emoji:'🍕', color:'#f59e0b'},
+  {key:'sport',  name:'Sport',    emoji:'⚽', color:'#10b981'},
+  {key:'view',   name:'Widok',    emoji:'🌅', color:'#8b5cf6'},
+  {key:'queue',  name:'Kolejka',  emoji:'⏳', color:'#ef4444'},
+  {key:'event',  name:'Event',    emoji:'🎤', color:'#fbbf24'},
+  {key:'other',  name:'Inne',     emoji:'✨', color:'#a855f7'},
+];
+
+let _spotPicker = { vibe:'chill', photoFile:null, photoDataUrl:null, lat:null, lng:null };
+
+async function openAddSpotModal(){
+  if(!_sbUser){
+    showAlert('🔒','Zaloguj się','Aby dodać spot musisz być zalogowany');
+    setTimeout(closeAlert, 2500);
+    return;
+  }
+  // Pobierz GPS — jeśli mapa już ma fix, użyj
+  let lat = null, lng = null;
+  try {
+    if(gpsMarker){
+      const ll = gpsMarker.getLngLat();
+      lat = ll.lat; lng = ll.lng;
+    }
+  } catch(e){}
+  if(!lat){
+    showAlert('📍','Czekaj na GPS...','Włącz lokalizację i poczekaj na sygnał');
+    setTimeout(closeAlert, 2500);
+    return;
+  }
+  _spotPicker = { vibe:'chill', photoFile:null, photoDataUrl:null, lat, lng };
+  document.getElementById('spot-modal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'spot-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:5500;background:radial-gradient(ellipse at top,#1a1f2e,#050a0e 80%);display:flex;flex-direction:column;overflow-y:auto';
+  modal.innerHTML = `
+    <div style="display:flex;align-items:center;gap:.7rem;padding:.85rem 1rem;background:rgba(0,0,0,.7);backdrop-filter:blur(10px);border-bottom:1.5px solid rgba(245,158,11,.45);position:sticky;top:0;z-index:2">
+      <button onclick="document.getElementById('spot-modal').remove()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;width:38px;height:38px;border-radius:11px;font-size:1.1rem;cursor:pointer;font-weight:800">←</button>
+      <div style="flex:1;min-width:0">
+        <div style="color:#fff;font-weight:900;font-size:1rem;background:linear-gradient(135deg,#fbbf24,#06b6d4);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">✨ DODAJ SPOT</div>
+        <div style="font-size:.6rem;color:rgba(255,255,255,.6);font-weight:600">📍 ${lat.toFixed(4)}, ${lng.toFixed(4)} · aktywny 6h</div>
+      </div>
+    </div>
+
+    <div style="padding:1.4rem 1rem">
+      <!-- Foto upload -->
+      <div style="text-align:center;margin-bottom:1.2rem">
+        <label for="spot-photo-input" style="display:inline-block;cursor:pointer;position:relative">
+          <div id="spot-photo-preview" style="width:200px;height:200px;border-radius:18px;background:rgba(245,158,11,.08);border:2px dashed rgba(245,158,11,.5);display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(255,255,255,.6);overflow:hidden">
+            <div style="font-size:3rem;opacity:.6">📸</div>
+            <div style="font-size:.75rem;font-weight:700;margin-top:6px">Dodaj zdjęcie</div>
+            <div style="font-size:.6rem;color:rgba(255,255,255,.4);margin-top:2px">opcjonalne · do 10 MB</div>
+          </div>
+        </label>
+        <input id="spot-photo-input" type="file" accept="image/*" capture="environment" onchange="_onSpotPhotoChange(this)" style="display:none">
+      </div>
+
+      <!-- Vibe picker -->
+      <div style="font-size:.7rem;font-weight:800;color:#fbbf24;text-transform:uppercase;letter-spacing:.06em;margin:.5rem 0 .6rem;text-align:center">⚡ Co tu się dzieje?</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-width:520px;margin:0 auto 1.2rem">
+        ${SPOT_VIBES.map(v => `
+          <button onclick="_pickSpotVibe('${v.key}')" data-vibe="${v.key}" class="spot-vibe-btn ${_spotPicker.vibe===v.key?'active':''}" style="background:${_spotPicker.vibe===v.key?`linear-gradient(135deg,${v.color}40,${v.color}15)`:'rgba(255,255,255,.04)'};border:1.5px solid ${_spotPicker.vibe===v.key?v.color:'rgba(255,255,255,.1)'};border-radius:12px;padding:10px 4px;cursor:pointer;color:#fff;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:4px;transition:.15s">
+            <div style="font-size:1.4rem">${v.emoji}</div>
+            <div style="font-size:.62rem;font-weight:700">${v.name}</div>
+          </button>
+        `).join('')}
+      </div>
+
+      <!-- Opis -->
+      <div style="max-width:520px;margin:0 auto 1.4rem">
+        <textarea id="spot-desc" placeholder="Co tu się dzieje? (opcjonalne, max 280)" maxlength="280" oninput="_updateSpotCharCount()" style="width:100%;min-height:80px;padding:12px;background:rgba(0,0,0,.4);border:1px solid rgba(245,158,11,.4);border-radius:12px;color:#fff;font-family:inherit;font-size:14px;resize:vertical;outline:none;box-sizing:border-box"></textarea>
+        <div style="display:flex;justify-content:space-between;font-size:.6rem;color:rgba(255,255,255,.45);margin-top:4px;padding:0 4px">
+          <span>💡 Krótko, konkretnie, zachęcająco</span>
+          <span id="spot-char-count">0 / 280</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="position:sticky;bottom:0;padding:.9rem 1rem 1.4rem;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);border-top:1.5px solid rgba(245,158,11,.4);display:flex;gap:8px">
+      <button onclick="document.getElementById('spot-modal').remove()" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:12px;padding:14px;font-weight:700;font-size:.85rem;cursor:pointer">Anuluj</button>
+      <button onclick="_submitSpot()" id="spot-submit-btn" style="flex:2;background:linear-gradient(135deg,#fbbf24,#f59e0b 50%,#06b6d4);border:none;color:#fff;border-radius:12px;padding:14px;font-weight:900;font-size:.95rem;cursor:pointer;box-shadow:0 6px 20px rgba(245,158,11,.4)">✨ POSTUJ SPOT</button>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function _pickSpotVibe(key){
+  _spotPicker.vibe = key;
+  document.querySelectorAll('.spot-vibe-btn').forEach(b => {
+    const v = SPOT_VIBES.find(x => x.key === b.dataset.vibe);
+    if(!v) return;
+    const isActive = b.dataset.vibe === key;
+    b.style.background = isActive ? `linear-gradient(135deg,${v.color}40,${v.color}15)` : 'rgba(255,255,255,.04)';
+    b.style.border = '1.5px solid ' + (isActive ? v.color : 'rgba(255,255,255,.1)');
+  });
+}
+
+function _updateSpotCharCount(){
+  const el = document.getElementById('spot-desc');
+  const count = document.getElementById('spot-char-count');
+  if(el && count) count.textContent = `${el.value.length} / 280`;
+}
+
+function _onSpotPhotoChange(input){
+  const file = input.files?.[0];
+  if(!file) return;
+  if(file.size > 10 * 1024 * 1024){
+    showAlert('⚠️','Za duże zdjęcie','Maksymalnie 10 MB');
+    setTimeout(closeAlert, 2500);
+    input.value = '';
+    return;
+  }
+  _spotPicker.photoFile = file;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    _spotPicker.photoDataUrl = e.target.result;
+    const preview = document.getElementById('spot-photo-preview');
+    if(preview){
+      preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover">`;
+      preview.style.borderStyle = 'solid';
+      preview.style.borderColor = 'rgba(16,185,129,.7)';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+async function _submitSpot(){
+  if(!_sbUser || !_SB){
+    showAlert('🔒','Zaloguj się',''); setTimeout(closeAlert, 2000); return;
+  }
+  if(!_spotPicker.lat || !_spotPicker.lng){
+    showAlert('📍','Brak GPS','Czekam na sygnał lokalizacji'); setTimeout(closeAlert, 2500); return;
+  }
+  const btn = document.getElementById('spot-submit-btn');
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ Postuje...'; btn.style.opacity = '0.7'; }
+  const desc = (document.getElementById('spot-desc')?.value || '').trim().slice(0, 280);
+
+  try {
+    let photoUrl = null;
+    // 1) Upload foto jeśli jest
+    if(_spotPicker.photoFile){
+      const ext = (_spotPicker.photoFile.name.split('.').pop()||'jpg').toLowerCase().slice(0,4);
+      const path = `${_sbUser.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await _SB.storage.from('spots').upload(path, _spotPicker.photoFile, {
+        cacheControl:'3600', upsert:false, contentType: _spotPicker.photoFile.type || 'image/jpeg',
+      });
+      if(upErr) throw upErr;
+      const { data: pub } = _SB.storage.from('spots').getPublicUrl(path);
+      photoUrl = pub?.publicUrl || null;
+    }
+    // 2) Insert do tabeli spots (auto-join trigger doda nas do spot_joins)
+    const { data, error } = await _SB.from('spots').insert({
+      posted_by: _sbUser.id,
+      lat: _spotPicker.lat,
+      lng: _spotPicker.lng,
+      photo_url: photoUrl,
+      description: desc || null,
+      vibe: _spotPicker.vibe,
+    }).select().single();
+    if(error) throw error;
+
+    // 3) Sukces
+    document.getElementById('spot-modal')?.remove();
+    showAlert('✨','Spot postowany!','Widoczny dla innych przez 6h');
+    setTimeout(closeAlert, 3000);
+
+    // 4) (B3 zrobi to automatycznie z Realtime — na razie ręczny refresh markerów jeśli mamy)
+    if(typeof _refreshSpotMarkers === 'function') _refreshSpotMarkers();
+
+    return data;
+  } catch(e){
+    console.error('Spot submit:', e);
+    let msg = e?.message || 'Błąd nieznany';
+    if(msg.toLowerCase().includes('storage') || msg.toLowerCase().includes('bucket')){
+      msg = 'Problem z uploadem zdjęcia — spróbuj bez foto';
+    }
+    showAlert('⚠️','Błąd', msg);
+    setTimeout(closeAlert, 4000);
+    if(btn){ btn.disabled = false; btn.textContent = '✨ POSTUJ SPOT'; btn.style.opacity = '1'; }
+  }
 }
 
 async function _loadStepsLeaderboard(){
