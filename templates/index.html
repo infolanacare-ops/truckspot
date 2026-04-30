@@ -1087,12 +1087,12 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
   mix-blend-mode: screen;
 }
 
-/* Warstwa 6 — CHROMATIC ABERRATION (kolor split przy krawedziach) */
+/* Warstwa 6 — CHROMATIC ABERRATION (kolor split przy krawedziach, subtelne) */
 #map-skin-overlay.has-chroma::before,
 #map-skin-overlay.has-chroma::after{
   content: ''; position: absolute; inset: 0;
   pointer-events: none; mix-blend-mode: screen;
-  opacity: .15;
+  opacity: .07;
 }
 #map-skin-overlay.has-chroma::before{
   background: radial-gradient(circle at 0% 50%, rgba(236,72,153,.5), transparent 25%);
@@ -1125,11 +1125,11 @@ body.navigating .msgs-panel{z-index:1250;height:65vh}
   --particle-b: rgba(6,182,212,.7);     /* cyan circuit (Tron) */
 }
 #map-skin-overlay.skin-retrowave{
-  --scanline-color: rgba(236,72,153,.05);
-  --scanbeam-color: rgba(236,72,153,.32);
-  --edge-glow-color: rgba(236,72,153,.38);
-  --particle-a: rgba(236,72,153,.7);
-  --particle-b: rgba(168,85,247,.6);
+  --scanline-color: rgba(236,72,153,.04);
+  --scanbeam-color: rgba(236,72,153,.2);
+  --edge-glow-color: rgba(236,72,153,.2);
+  --particle-a: rgba(236,72,153,.55);
+  --particle-b: rgba(168,85,247,.45);
 }
 #map-skin-overlay.skin-midnight{
   --scanline-color: rgba(251,191,36,.03);
@@ -16802,10 +16802,10 @@ const MAP_SKINS = [
     mapStyle:'mapbox://styles/mapbox/standard',          atmosphere:'classic',
     cssFilter:'saturate(1.3) hue-rotate(-15deg) brightness(1.05) sepia(.15)',
     accent:'#f59e0b', isPro:false },
-  // 3D RETROWAVE — Standard + intensywny filter retrowave (zachowane 3D buildings + atmosphere cyber)
+  // 3D RETROWAVE — Standard + filter synthwave (czysty magenta bez zielonego skrętu)
   { key:'retrowave',  label:'Retrowave',  sub:'3.5D · 80s synthwave', emoji:'🌃',
     mapStyle:'mapbox://styles/mapbox/standard',          atmosphere:'cyber',
-    cssFilter:'saturate(2.4) hue-rotate(285deg) brightness(.95) contrast(1.25)',
+    cssFilter:'saturate(2.0) hue-rotate(310deg) brightness(1.0) contrast(1.18)',
     accent:'#ec4899', isPro:true },
   // 3D CYBERPUNK ROBO — Tron Legacy / Bumblebee vibe (cyan + amber circuit lights)
   { key:'cyberpunk',  label:'Cyberpunk',  sub:'3.5D · Tron Robo', emoji:'🤖',
