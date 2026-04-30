@@ -11685,7 +11685,8 @@ function openMetaverseHub(){
         ${_hubItem({icon:'💓', label:'Energy Pulse', desc:'Mapa pulsuje energią miasta', badge: _energyEnabled ? 'ON' : '', color:'rgba(239,68,68,.15)', colorB:'rgba(239,68,68,.45)', onClick:`toggleEnergyPulse();document.getElementById('metaverse-hub')?.remove();setTimeout(openMetaverseHub,200)`})}
         ${_hubItem({icon: _isGhost() ? '👻' : '👁️', label: _isGhost() ? 'Tryb niewidzialny ON' : 'Tryb niewidzialny', desc: _ghostLabel(), badge: _isGhost() ? 'ON' : '', color:'rgba(168,85,247,.15)', colorB:'rgba(168,85,247,.45)', onClick:`openGhostPanel()`})}
         ${_hubItem({icon:'📡', label:'CB Radio', desc:'Mapa wiadomości, czat z okolicą', color:'rgba(59,130,246,.15)', colorB:'rgba(59,130,246,.45)', onClick:`drawerAction('cbradio')`})}
-        ${_hubItem({icon:'🔥', label:'Live eventy / Kampanie', desc:_activeCampaign ? _activeCampaign.title : 'Aktywne kampanie w okolicy', badge: _activeCampaign?'LIVE':'', color:'rgba(251,146,60,.15)', colorB:'rgba(251,146,60,.5)', onClick:`openMyTasksPanel()`})}
+        ${_hubItem({icon:'🔥', label:'Trending teraz', desc:'Najgorętsze spoty w okolicy', badge:'LIVE', color:'rgba(236,72,153,.15)', colorB:'rgba(236,72,153,.55)', onClick:`openTrendingPanel()`})}
+        ${_hubItem({icon:'🎉', label:'Live eventy / Kampanie', desc:_activeCampaign ? _activeCampaign.title : 'Aktywne kampanie w okolicy', badge: _activeCampaign?'LIVE':'', color:'rgba(251,146,60,.15)', colorB:'rgba(251,146,60,.5)', onClick:`openMyTasksPanel()`})}
       </div>
 
       <!-- Sekcja: Gamifikacja -->
@@ -14398,6 +14399,104 @@ async function openSpotModal(spotId){
       </div>
     </div>`;
   document.body.appendChild(modal);
+}
+
+// ── TRIBESPOT TRENDING — top 10 spotów dziś w okolicy ───────────────────────
+let _trendingRefreshTimer = null;
+
+async function openTrendingPanel(){
+  document.getElementById('metaverse-hub')?.remove();
+  document.getElementById('trending-modal')?.remove();
+  let cLat = userLat, cLng = userLng;
+  try { if(window.map){ const c = window.map.getCenter(); cLat = c.lat; cLng = c.lng; } } catch(e){}
+  if(!cLat || !cLng){
+    showAlert('📍','Czekam na GPS','Włącz lokalizację żeby zobaczyć trending');
+    setTimeout(closeAlert, 2500); return;
+  }
+  const modal = document.createElement('div');
+  modal.id = 'trending-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:5500;background:radial-gradient(ellipse at top,#1a1f2e,#050a0e 80%);display:flex;flex-direction:column;overflow-y:auto';
+  modal.innerHTML = `
+    <div style="display:flex;align-items:center;gap:.7rem;padding:.95rem 1rem;background:rgba(0,0,0,.6);backdrop-filter:blur(14px);border-bottom:1.5px solid rgba(236,72,153,.4);position:sticky;top:0;z-index:2">
+      <button onclick="_closeTrendingPanel()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;width:38px;height:38px;border-radius:11px;font-size:1.1rem;cursor:pointer;font-weight:800">←</button>
+      <div style="flex:1;min-width:0">
+        <div style="color:#fff;font-weight:900;font-size:1rem;background:linear-gradient(135deg,#ec4899,#f97316);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">🔥 TRENDING TERAZ</div>
+        <div style="font-size:.6rem;color:rgba(255,255,255,.6);font-weight:600;font-family:'JetBrains Mono',monospace">// gdzie się dzieje · radius 10km</div>
+      </div>
+      <button onclick="_loadTrendingList(true)" id="trending-refresh-btn" title="Odśwież" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;width:38px;height:38px;border-radius:11px;font-size:1rem;cursor:pointer">↻</button>
+    </div>
+    <div id="trending-list" style="padding:1rem;display:flex;flex-direction:column;gap:8px;max-width:560px;margin:0 auto;width:100%;box-sizing:border-box">
+      <div style="text-align:center;color:rgba(255,255,255,.5);font-size:.75rem;padding:2rem">Ładowanie spotów...</div>
+    </div>`;
+  document.body.appendChild(modal);
+  await _loadTrendingList(false);
+  // Auto-refresh co 30s
+  if(_trendingRefreshTimer) clearInterval(_trendingRefreshTimer);
+  _trendingRefreshTimer = setInterval(() => _loadTrendingList(false), 30000);
+}
+
+function _closeTrendingPanel(){
+  document.getElementById('trending-modal')?.remove();
+  if(_trendingRefreshTimer){ clearInterval(_trendingRefreshTimer); _trendingRefreshTimer = null; }
+}
+
+async function _loadTrendingList(showRefreshAnim){
+  const wrap = document.getElementById('trending-list');
+  if(!wrap || !_SB) return;
+  let cLat = userLat, cLng = userLng;
+  try { if(window.map){ const c = window.map.getCenter(); cLat = c.lat; cLng = c.lng; } } catch(e){}
+  if(showRefreshAnim){
+    const btn = document.getElementById('trending-refresh-btn');
+    if(btn){ btn.style.transform = 'rotate(360deg)'; btn.style.transition = 'transform .6s'; setTimeout(()=>{btn.style.transform=''; btn.style.transition='';}, 700); }
+  }
+  try {
+    const { data, error } = await _SB.rpc('spots_trending', {
+      p_lat: cLat, p_lng: cLng, p_radius_km: 10, p_limit: 10
+    });
+    if(error) throw error;
+    if(!data || data.length === 0){
+      wrap.innerHTML = `
+        <div style="text-align:center;padding:3rem 1rem;color:rgba(255,255,255,.5)">
+          <div style="font-size:3rem;margin-bottom:1rem;opacity:.5">🌌</div>
+          <div style="font-size:.95rem;font-weight:700;color:#fff;margin-bottom:6px">Cisza w okolicy</div>
+          <div style="font-size:.75rem;line-height:1.5">Bądź pierwszy! Klik <b style="color:#fbbf24">+ SPOT</b> w lewym dolnym żeby pokazać gdzie się dzieje.</div>
+        </div>`;
+      return;
+    }
+    wrap.innerHTML = data.map((s, i) => {
+      const vibe = SPOT_VIBES.find(v => v.key === s.vibe) || SPOT_VIBES[1];
+      const minutesLeft = Math.max(0, Math.floor((s.seconds_left || 0)/60));
+      const timeLeft = minutesLeft >= 60 ? `${Math.floor(minutesLeft/60)}h ${minutesLeft%60}m` : `${minutesLeft}m`;
+      const distStr = s.distance_km < 1 ? `${Math.round(s.distance_km*1000)}m` : `${s.distance_km.toFixed(1)}km`;
+      const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`<span style="color:rgba(255,255,255,.4);font-weight:900;font-size:.72rem">#${i+1}</span>`;
+      const photo = s.photo_url
+        ? `<div style="width:64px;height:64px;border-radius:12px;overflow:hidden;background:#000;flex-shrink:0;position:relative">
+            <img src="${s.photo_url}" style="width:100%;height:100%;object-fit:cover">
+            <div style="position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,.7);color:#fbbf24;font-size:.5rem;font-weight:900;padding:1px 4px;border-radius:4px">⏳${timeLeft}</div>
+           </div>`
+        : `<div style="width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,${vibe.color}50,${vibe.color}20);display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0;border:1px solid ${vibe.color}55;box-shadow:0 4px 12px ${vibe.color}30">${vibe.emoji}</div>`;
+      return `
+        <button onclick="_closeTrendingPanel();setTimeout(()=>openSpotModal(${s.id}),200)" style="display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:10px 12px;cursor:pointer;color:#fff;text-align:left;font-family:inherit;width:100%;backdrop-filter:blur(12px);transition:transform .15s, background .2s">
+          <div style="width:24px;text-align:center;font-size:1.1rem;flex-shrink:0">${medal}</div>
+          ${photo}
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+              <div style="width:18px;height:18px;border-radius:6px;background:${vibe.color};display:flex;align-items:center;justify-content:center;font-size:.7rem;flex-shrink:0">${vibe.emoji}</div>
+              <span style="font-size:.78rem;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.04em">${vibe.name}</span>
+              ${s.place_name ? `<span style="font-size:.6rem;color:rgba(255,255,255,.55);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">· ${_escHtml(s.place_name)}</span>` : ''}
+            </div>
+            <div style="font-size:.7rem;color:rgba(255,255,255,.7);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.3">${s.description ? _escHtml(s.description) : `<span style="color:rgba(255,255,255,.4)">${_escHtml(s.posted_by_name || 'Anonim')}</span>`}</div>
+            <div style="display:flex;gap:8px;font-size:.62rem;color:rgba(255,255,255,.55);margin-top:4px;font-family:'JetBrains Mono',monospace">
+              <span>👥 ${s.joins_count}</span>
+              <span>📍 ${distStr}</span>
+              <span style="color:#ec4899">🔥 ${s.trending_score}</span>
+            </div>
+          </div>
+        </button>`;
+    }).join('');
+  } catch(e){
+    wrap.innerHTML = `<div style="text-align:center;color:#ef4444;font-size:.75rem;padding:1.5rem">⚠️ ${e.message||'Błąd ładowania'}</div>`;
+  }
 }
 
 async function _joinSpotAction(spotId){
