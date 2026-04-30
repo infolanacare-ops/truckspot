@@ -15179,6 +15179,12 @@ async function openSpotModal(spotId){
               : `<button onclick="_joinSpotAction(${s.id})" style="flex:1;background:linear-gradient(135deg,${vibe.color},${vibe.color}cc);border:none;color:#fff;border-radius:11px;padding:12px;font-weight:900;font-size:.85rem;cursor:pointer;box-shadow:0 4px 14px ${vibe.color}66">✨ DOŁĄCZ</button>`}
           <button onclick="_stopSpotLiveCounter();document.getElementById('spot-detail-modal').remove();if(window.map)window.map.flyTo({center:[${s.lng},${s.lat}],zoom:17,duration:800})" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:11px;padding:12px;font-weight:800;font-size:.82rem;cursor:pointer">📍 Pokaż na mapie</button>
         </div>
+        ${isEvent ? `
+        <button onclick="_stopSpotLiveCounter();document.getElementById('spot-detail-modal').remove();setTimeout(()=>_openSpotChat(${s.id}, '${(s.title||'').replace(/'/g,"\\'").slice(0,40)}'), 200)" style="width:100%;margin-top:10px;background:linear-gradient(135deg,rgba(6,182,212,.45),rgba(59,130,246,.35));border:1px solid rgba(6,182,212,.6);color:#fff;border-radius:12px;padding:13px;font-weight:900;font-size:.85rem;cursor:pointer;letter-spacing:.04em;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(6,182,212,.3)">
+          <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;animation:peer-pulse-dot 1.6s ease-in-out infinite"></span>
+          💬 LIVE CHAT NA MIEJSCU
+        </button>
+        ` : ''}
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -15315,6 +15321,192 @@ function _startSpotLiveCounter(spotId){
 function _stopSpotLiveCounter(){
   if(_spotLiveCounterCh){ try { _SB.removeChannel(_spotLiveCounterCh); } catch(e){} _spotLiveCounterCh = null; }
   _spotLiveCounterSpotId = null;
+}
+
+// ── LIVE SPOT CHAT — czat aktywny tylko gdy ktoś jest checked_in ────────────
+let _spotChatChannel = null;
+let _spotChatCurrentId = null;
+let _spotChatCanWrite = false;
+
+async function _openSpotChat(spotId, eventTitle){
+  document.getElementById('spot-chat-modal')?.remove();
+  _stopSpotChat();
+  _spotChatCurrentId = spotId;
+
+  // Sprawdź czy mogę pisać (checked_in lub owner)
+  let canWrite = false;
+  try {
+    const { data } = await _SB.rpc('can_write_spot_chat', { p_spot_id: spotId });
+    canWrite = !!data;
+  } catch(e){}
+  _spotChatCanWrite = canWrite;
+
+  const modal = document.createElement('div');
+  modal.id = 'spot-chat-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:5500;background:radial-gradient(ellipse at top,#1a1f2e,#050a0e 80%);display:flex;flex-direction:column;overflow:hidden';
+  modal.innerHTML = `
+    <div style="display:flex;align-items:center;gap:.7rem;padding:.85rem 1rem;background:rgba(0,0,0,.7);backdrop-filter:blur(12px);border-bottom:1.5px solid rgba(6,182,212,.45);position:sticky;top:0;z-index:2">
+      <button onclick="_closeSpotChat()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;width:38px;height:38px;border-radius:11px;font-size:1.1rem;cursor:pointer;font-weight:800">←</button>
+      <div style="flex:1;min-width:0">
+        <div style="color:#fff;font-weight:900;font-size:.95rem;background:linear-gradient(135deg,#06b6d4,#67e8f9);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;display:flex;align-items:center;gap:6px">
+          <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;animation:peer-pulse-dot 1.6s ease-in-out infinite"></span>
+          LIVE CHAT · ${_escHtml(eventTitle || 'Spot').slice(0,28)}
+        </div>
+        <div style="font-size:.6rem;color:rgba(255,255,255,.6);font-family:'JetBrains Mono',monospace">// only people on the spot can write</div>
+      </div>
+    </div>
+
+    <div id="spot-chat-msgs" style="flex:1;overflow-y:auto;padding:14px 14px 8px;display:flex;flex-direction:column;gap:8px;background:linear-gradient(180deg,rgba(0,0,0,.35),rgba(0,0,0,.6))">
+      <div style="text-align:center;color:rgba(255,255,255,.4);font-size:.7rem;padding:1rem">Ładowanie wiadomości...</div>
+    </div>
+
+    <div style="padding:.8rem 1rem 1.2rem;background:rgba(0,0,0,.85);backdrop-filter:blur(14px);border-top:1.5px solid rgba(6,182,212,.3)">
+      ${canWrite ? `
+        <div style="display:flex;gap:8px">
+          <input id="spot-chat-input" type="text" placeholder="Napisz na żywo..." maxlength="500"
+            onkeydown="if(event.key==='Enter')_sendSpotChat()"
+            style="flex:1;padding:12px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(6,182,212,.4);border-radius:12px;color:#fff;font-family:inherit;font-size:.88rem;outline:none">
+          <button onclick="_sendSpotChat()" style="background:linear-gradient(135deg,#06b6d4,#0891b2);border:none;color:#fff;border-radius:12px;padding:0 20px;font-weight:900;font-size:.85rem;cursor:pointer;letter-spacing:.05em;box-shadow:0 4px 14px rgba(6,182,212,.4)">SEND</button>
+        </div>
+      ` : `
+        <div style="text-align:center;padding:12px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.4);border-radius:12px;color:#fbbf24;font-size:.78rem;font-weight:700">
+          🔒 Aby pisać — przyjdź na miejsce. Auto check-in po wejściu.
+        </div>
+      `}
+    </div>`;
+  document.body.appendChild(modal);
+
+  // Załaduj historię + Realtime
+  await _loadSpotChatMessages(spotId);
+  _startSpotChatRealtime(spotId);
+}
+
+function _closeSpotChat(){
+  document.getElementById('spot-chat-modal')?.remove();
+  _stopSpotChat();
+}
+
+function _stopSpotChat(){
+  if(_spotChatChannel){ try { _SB.removeChannel(_spotChatChannel); } catch(e){} _spotChatChannel = null; }
+  _spotChatCurrentId = null;
+}
+
+async function _loadSpotChatMessages(spotId){
+  const wrap = document.getElementById('spot-chat-msgs');
+  if(!wrap || !_SB) return;
+  try {
+    const { data, error } = await _SB.from('spot_chat_messages')
+      .select('id, user_id, body, msg_type, created_at')
+      .eq('spot_id', spotId)
+      .order('created_at', { ascending: true })
+      .limit(50);
+    if(error) throw error;
+    if(!data || data.length === 0){
+      wrap.innerHTML = `
+        <div style="text-align:center;padding:3rem 1rem;color:rgba(255,255,255,.4)">
+          <div style="font-size:2.5rem;margin-bottom:8px;opacity:.6">💬</div>
+          <div style="font-size:.85rem;font-weight:700;color:#fff;margin-bottom:4px">Cisza w eterze</div>
+          <div style="font-size:.7rem;line-height:1.5">Bądź pierwszy! Czat aktywny tylko gdy ktoś jest na miejscu.</div>
+        </div>`;
+      return;
+    }
+    // Pobierz nazwy userów do display (ale szybkie, nie blokuj)
+    const userIds = [...new Set(data.map(m => m.user_id))];
+    const profMap = new Map();
+    if(userIds.length){
+      const { data: profs } = await _SB.from('profiles')
+        .select('id, display_name, avatar_2d_url').in('id', userIds);
+      (profs||[]).forEach(p => profMap.set(p.id, p));
+    }
+    wrap.innerHTML = data.map(m => _renderSpotChatMsg(m, profMap.get(m.user_id))).join('');
+    wrap.scrollTop = wrap.scrollHeight;
+  } catch(e){
+    wrap.innerHTML = `<div style="text-align:center;color:#ef4444;font-size:.75rem;padding:1rem">⚠️ ${e.message||'Błąd'}</div>`;
+  }
+}
+
+function _renderSpotChatMsg(m, prof){
+  const isMe = _sbUser && m.user_id === _sbUser.id;
+  const name = prof?.display_name || (isMe ? 'Ty' : 'Anonim');
+  const avatar = prof?.avatar_2d_url
+    ? `<img src="${prof.avatar_2d_url}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0">`
+    : `<div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#06b6d4,#0891b2);display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0;color:#fff;font-weight:900">${(name[0]||'?').toUpperCase()}</div>`;
+  const time = new Date(m.created_at).toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'});
+  if(isMe){
+    return `
+      <div style="display:flex;align-items:flex-end;gap:6px;align-self:flex-end;max-width:80%">
+        <div style="background:linear-gradient(135deg,#06b6d4,#0891b2);color:#fff;padding:8px 12px;border-radius:14px 14px 4px 14px;font-size:.85rem;line-height:1.4;box-shadow:0 3px 10px rgba(6,182,212,.3)">${_escHtml(m.body)}</div>
+        <div style="font-size:.55rem;color:rgba(255,255,255,.4);font-family:monospace">${time}</div>
+      </div>`;
+  } else {
+    return `
+      <div style="display:flex;align-items:flex-end;gap:8px;max-width:80%">
+        ${avatar}
+        <div>
+          <div style="font-size:.6rem;color:rgba(255,255,255,.55);font-weight:700;margin-bottom:2px;padding-left:4px">${_escHtml(name)} · ${time}</div>
+          <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:#fff;padding:8px 12px;border-radius:14px 14px 14px 4px;font-size:.85rem;line-height:1.4">${_escHtml(m.body)}</div>
+        </div>
+      </div>`;
+  }
+}
+
+async function _sendSpotChat(){
+  const input = document.getElementById('spot-chat-input');
+  if(!input || !_sbUser || !_spotChatCurrentId) return;
+  const txt = input.value.trim().slice(0, 500);
+  if(!txt) return;
+  input.value = '';
+  try {
+    const { error } = await _SB.from('spot_chat_messages').insert({
+      spot_id: _spotChatCurrentId,
+      user_id: _sbUser.id,
+      body: txt,
+    });
+    if(error){
+      let msg = error.message || 'Błąd wysyłania';
+      if((error.message||'').includes('row-level security') || (error.code||'') === '42501'){
+        msg = 'Tylko osoby na miejscu mogą pisać';
+      }
+      showAlert('⚠️','Nie wysłano', msg);
+      setTimeout(closeAlert, 3000);
+      input.value = txt; // przywróć tekst
+    }
+  } catch(e){
+    showAlert('⚠️','Błąd', e.message||'');
+    setTimeout(closeAlert, 3000);
+  }
+}
+
+function _startSpotChatRealtime(spotId){
+  if(_spotChatChannel) return;
+  _spotChatChannel = _SB.channel(`spot-chat-${spotId}`)
+    .on('postgres_changes', {
+      event: 'INSERT', schema: 'public', table: 'spot_chat_messages',
+      filter: `spot_id=eq.${spotId}`,
+    }, async (payload) => {
+      const m = payload.new;
+      if(!m) return;
+      const wrap = document.getElementById('spot-chat-msgs');
+      if(!wrap) return;
+      // Fetch profile for this user (cache)
+      let prof = null;
+      try {
+        const { data } = await _SB.from('profiles')
+          .select('id, display_name, avatar_2d_url').eq('id', m.user_id).maybeSingle();
+        prof = data;
+      } catch(e){}
+      // Usuń placeholder "Cisza w eterze" jeśli jest
+      if(wrap.querySelector('div[style*="Cisza w eterze"]')){
+        wrap.innerHTML = '';
+      }
+      wrap.insertAdjacentHTML('beforeend', _renderSpotChatMsg(m, prof));
+      wrap.scrollTop = wrap.scrollHeight;
+      // Haptic dla incoming (tylko jeśli to nie ja)
+      if(m.user_id !== _sbUser?.id){
+        try { if(navigator.vibrate) navigator.vibrate([15, 30]); } catch(e){}
+      }
+    })
+    .subscribe();
 }
 
 async function _joinSpotAction(spotId){
