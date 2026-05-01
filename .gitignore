@@ -9,3 +9,5 @@ android/app/build/
 android/.gradle/
 android/build/
 static/audio/nav/
+.memory_backup/
+.claude/
