@@ -15902,6 +15902,11 @@ const QRAIL_TABS = [
     {icon:'🎯', label:'Łowca', fn:function(){ if(typeof openHunter==='function') openHunter(); }},
     {icon:'🌐', label:'Cyber Zone', fn:function(){ if(typeof openMetaverseHub==='function') openMetaverseHub(); }},
   ]},
+  {icon:'🧭', label:'Navi', cls:'tab-navi', subActions:[
+    {icon:'🧭', label:'Plan trasy', fn:function(){ drawerAction('route'); }},
+    {icon:'🅿️', label:'Najbliższe parkingi', fn:function(){ drawerAction('nearby'); }},
+    {icon:'🔍', label:'Szukaj miejsca', fn:function(){ drawerAction('search'); }},
+  ]},
 ];
 
 let _qrailState = {
