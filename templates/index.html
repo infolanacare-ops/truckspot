@@ -2266,6 +2266,41 @@ body.qrail-left #recenter-btn.visible{ transform: translateY(-50%) scale(1) }
   z-index:2;
 }
 .player-emoji{display:block;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))}
+
+/* NAV ARROW RING — gdy nav active, avatar dostaje strzałkę kierunku */
+.player-avatar.nav-arrow .player-bubble{
+  border-color:#06b6d4;
+  box-shadow:
+    0 4px 16px rgba(0,0,0,.5),
+    0 0 22px rgba(6,182,212,.7),
+    0 0 0 3px rgba(6,182,212,.3);
+}
+.nav-arrow-ring{
+  position:absolute;top:50%;left:50%;
+  width:78px;height:78px;
+  margin:-39px 0 0 -39px;
+  pointer-events:none;
+  transform:rotate(var(--nav-bearing,0deg));
+  transition:transform .3s ease-out;
+  z-index:1;
+}
+.nav-arrow-ring::before{
+  content:'';
+  position:absolute;top:-8px;left:50%;
+  transform:translateX(-50%);
+  width:0;height:0;
+  border-left:11px solid transparent;
+  border-right:11px solid transparent;
+  border-bottom:18px solid #06b6d4;
+  filter:drop-shadow(0 0 8px rgba(6,182,212,.85)) drop-shadow(0 2px 4px rgba(0,0,0,.4));
+}
+.nav-arrow-ring::after{
+  content:'';
+  position:absolute;inset:0;border-radius:50%;
+  border:1.5px dashed rgba(6,182,212,.45);
+  animation:nav-ring-spin 8s linear infinite reverse;
+}
+@keyframes nav-ring-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 @keyframes player-bob{
   0%,100%{transform:translateY(0)}
   50%{transform:translateY(-4px)}
@@ -7863,15 +7898,16 @@ function _hubMarkerLerpTo(lat, lng){
 }
 
 function mkGpsDotMarker(lat, lng){
-  // Pokemon Go style — TY jako CZŁOWIEK na mapie
+  // Pokemon Go style — TY jako CZŁOWIEK na mapie (w nav: avatar w arrow ring)
   const profile = (()=>{ try{ return JSON.parse(localStorage.getItem('ts_profile')||'{}'); }catch(e){ return {}; } })();
   const emoji = profile.pedestrianEmoji || '🚶';
-  // Avatar URL z _sbUser (jeśli zapisany przez DiceBear)
   const avatarUrl = window._myAvatarUrl || (_sbUser?.user_metadata?.avatar_2d_url) || null;
   const el = document.createElement('div');
-  el.className = 'player-avatar';
+  el.className = 'player-avatar' + (navActive ? ' nav-arrow' : '');
+  if(navActive) el.style.setProperty('--nav-bearing', (navCurrentHeading||0)+'deg');
   el.innerHTML = `
     <div class="player-shadow"></div>
+    ${navActive ? '<div class="nav-arrow-ring"></div>' : ''}
     <div class="player-bubble">
       ${avatarUrl ? `<img src="${avatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="this.outerHTML='<span class=\\'player-emoji\\'>${emoji}</span>'">` : `<span class="player-emoji">${emoji}</span>`}
     </div>
@@ -11114,6 +11150,8 @@ function startNavigation(){
   _unlockSpeech();         // odblokuj speechSynthesis — Android wymaga user gesture
   _startAudioKeepAlive();  // cicha pętla = audio focus w tle i przy zablokowanym ekranie
   navActive=true; navStepIdx=0; navCIdx=0; navLastLat=null; navLastLng=null;
+  // Re-render gpsMarker żeby dostał arrow ring
+  if(gpsMarker){ try { const ll = gpsMarker.getLngLat(); gpsMarker.remove(); gpsMarker = mkGpsDotMarker(ll.lat, ll.lng); } catch(e){} }
   _smoothBearing=null; _navLockedZoom=null; _zuptSnapLat=null; _zuptSnapLng=null;
   _snapEmaLat=null; _snapEmaLng=null;
   _kalman.reset(); _strBuf=[]; _strLat=null; _strLng=null; resetTrafficEta();
@@ -20142,7 +20180,16 @@ function onNavPosition(pos){
   // Map matching wyłączony — wcześniej palił free tier Mapboxa, używany tylko do debug
   // _runSnapToRoad(lat, lng);
   setGpsArrow(snapLat, snapLng);
-  if(gpsMarker) gpsMarker.setRotation(navCurrentHeading);
+  if(gpsMarker){
+    gpsMarker.setRotation(navCurrentHeading);
+    // Update arrow ring bearing CSS variable (jeśli avatar ma .nav-arrow)
+    try {
+      const elM = gpsMarker.getElement();
+      if(elM && elM.classList.contains('nav-arrow')){
+        elM.style.setProperty('--nav-bearing', (navCurrentHeading||0)+'deg');
+      }
+    } catch(e){}
+  }
   _updateGpsDebug(
     {lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy},
     {lat, lng},
@@ -20640,6 +20687,8 @@ function stopNavigation(){
     setTimeout(_showTripSummary, 600);
   }
   navActive=false; navOverviewMode=false;
+  // Re-render gpsMarker żeby zdjąć arrow ring
+  if(gpsMarker){ try { const ll = gpsMarker.getLngLat(); gpsMarker.remove(); gpsMarker = mkGpsDotMarker(ll.lat, ll.lng); } catch(e){} }
   _kalman.reset(); // reset filtra po nav — hub zacznie świeżo
   _stopPoiAutoRefetch(); // zatrzymaj auto-refetch POI
   if(_drCheckInterval){ clearInterval(_drCheckInterval); _drCheckInterval = null; }
