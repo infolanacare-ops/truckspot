@@ -15769,9 +15769,10 @@ const QRAIL_TABS = [
     {icon:'🎯', label:'Zadania', fn:function(){ if(typeof openMyTasksPanel==='function') openMyTasksPanel(); }},
     {icon:'⚡', label:'Daily', fn:function(){ if(typeof openMyTasksPanel==='function') openMyTasksPanel(); }},
   ]},
-  {icon:'👥', label:'Ekipa', cls:'tab-friends', subActions:[
-    {icon:'👥', label:'Znajomi', fn:function(){ openFriendsPanel(); }},
-    {icon:'➕', label:'Grupa', fn:function(){ if(typeof openCreateGroup==='function') openCreateGroup(); }},
+  {icon:'👤', label:'Profil', cls:'tab-avatar', subActions:[
+    {icon:'👤', label:'Profil', fn:function(){ if(typeof openProfile==='function') openProfile(); }},
+    {icon:'🌍', label:'Tablica', fn:function(){ if(typeof openMyWorld==='function') openMyWorld(); }},
+    {icon:'🎯', label:'Status', fn:function(){ if(typeof openStatusPicker==='function') openStatusPicker(); }},
   ]},
   {icon:'💬', label:'Czaty', cls:'tab-chats',
     badgeFn: function(){ let n=0; if(window._dmUnreadByUser) window._dmUnreadByUser.forEach(function(v){n+=v;}); return n>0 ? (n>9?'9+':String(n)) : ''; },
@@ -15783,10 +15784,9 @@ const QRAIL_TABS = [
     {icon:'💓', label:'Pulse', fn:function(){ if(typeof toggleEnergyPulse==='function') toggleEnergyPulse(); }},
     {icon:'🎉', label:'Eventy', fn:function(){ if(typeof _showCampaignList==='function') _showCampaignList(); }},
   ]},
-  {icon:'🎨', label:'Avatar', cls:'tab-avatar', subActions:[
-    {icon:'👤', label:'Profil', fn:function(){ if(typeof openProfile==='function') openProfile(); }},
-    {icon:'🌍', label:'Tablica', fn:function(){ if(typeof openMyWorld==='function') openMyWorld(); }},
-    {icon:'🎯', label:'Status', fn:function(){ if(typeof openStatusPicker==='function') openStatusPicker(); }},
+  {icon:'👥', label:'Ekipa', cls:'tab-friends', subActions:[
+    {icon:'👥', label:'Znajomi', fn:function(){ openFriendsPanel(); }},
+    {icon:'➕', label:'Grupa', fn:function(){ if(typeof openCreateGroup==='function') openCreateGroup(); }},
   ]},
   {icon:'👻', label:'Ghost', cls:'tab-ghost', subActions:[
     {icon:'👻', label:'Tryb Duch', fn:function(){ if(typeof openGhostPanel==='function') openGhostPanel(); }},
