@@ -23828,7 +23828,19 @@ async function openPublicProfile(userId, fallbackName, color, emoji){
         <div style="font-size:.6rem;color:rgba(255,255,255,.4);font-family:'JetBrains Mono',monospace" id="pub-prof-count">// 0 wpisów</div>
       </div>
 
-      <!-- COMPOSER (wszyscy mogą napisać na każdej tablicy) -->
+      <!-- 🌐 SOCIAL ICONS (Linktree-style row pod headerem) -->
+      <div id="pub-prof-socials" style="padding:0 1.4rem .6rem;display:flex;flex-wrap:wrap;gap:6px"></div>
+
+      <!-- TABS: Tablica / Spotted / Drops / Spoty -->
+      <div style="padding:0 1.4rem .8rem;display:flex;gap:5px;overflow-x:auto;scrollbar-width:none">
+        <button onclick="_pubProfTab('${userId}','wall')" data-tab="wall" class="pub-tab pub-tab-active" style="flex-shrink:0;background:linear-gradient(135deg,rgba(168,85,247,.35),rgba(99,102,241,.25));border:1px solid rgba(168,85,247,.6);color:#fff;padding:.4rem .75rem;border-radius:11px;cursor:pointer;font-size:.7rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;font-family:inherit">📌 Tablica</button>
+        <button onclick="_pubProfTab('${userId}','spotted')" data-tab="spotted" class="pub-tab" style="flex-shrink:0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.7);padding:.4rem .75rem;border-radius:11px;cursor:pointer;font-size:.7rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;font-family:inherit">📢 Ogłoszenia</button>
+        <button onclick="_pubProfTab('${userId}','drops')" data-tab="drops" class="pub-tab" style="flex-shrink:0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.7);padding:.4rem .75rem;border-radius:11px;cursor:pointer;font-size:.7rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;font-family:inherit">🎁 Dropy</button>
+        <button onclick="_pubProfTab('${userId}','spots')" data-tab="spots" class="pub-tab" style="flex-shrink:0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.7);padding:.4rem .75rem;border-radius:11px;cursor:pointer;font-size:.7rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;font-family:inherit">📍 Spoty</button>
+      </div>
+
+      <!-- COMPOSER (tylko dla taba 'wall') -->
+      <div id="pub-prof-composer">
       ${_sbUser ? `
       <div style="padding:0 1.4rem .8rem">
         <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:.7rem">
@@ -23841,10 +23853,13 @@ async function openPublicProfile(userId, fallbackName, color, emoji){
       <div style="padding:0 1.4rem .8rem">
         <div style="background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.12);border-radius:14px;padding:.8rem;text-align:center;font-size:.78rem;color:rgba(255,255,255,.55)">🔒 Zaloguj się żeby pisać na tablicy</div>
       </div>`}
+      </div>
 
-      <!-- LISTA WPISÓW -->
-      <div id="wall-list" style="padding:0 1.4rem 1.2rem;max-height:50vh;overflow-y:auto">
-        <div style="text-align:center;color:rgba(255,255,255,.4);padding:2rem 0;font-size:.8rem;font-family:'JetBrains Mono',monospace">// loading wall...</div>
+      <!-- LISTA — content per tab -->
+      <div id="pub-prof-content" style="padding:0 1.4rem 1.2rem;max-height:50vh;overflow-y:auto">
+        <div id="wall-list">
+          <div style="text-align:center;color:rgba(255,255,255,.4);padding:2rem 0;font-size:.8rem;font-family:'JetBrains Mono',monospace">// loading wall...</div>
+        </div>
       </div>
     </div>`;
   sheet.onclick = () => sheet.remove();
@@ -23863,11 +23878,13 @@ async function openPublicProfile(userId, fallbackName, color, emoji){
       if(prof.home_base)   meta.push(`🏠 ${prof.home_base}`);
       if(prof.total_pts)   meta.push(`✨ ${prof.total_pts} pkt`);
       if(prof.total_spots) meta.push(`📍 ${prof.total_spots} spotów`);
+      if(prof.phone_verified) meta.push(`✓ verified`);
       setEl('pub-prof-meta', meta.length ? meta.join(' · ') : '// nowy w cyber świecie');
       if(av){
         const avEl = document.getElementById('pub-prof-avatar');
         if(avEl){ avEl.style.backgroundImage = `url('${av}')`; avEl.style.backgroundSize='cover'; avEl.style.backgroundPosition='center'; avEl.textContent=''; }
       }
+      _pubProfRenderSocials(prof);
     }
   } catch(e){ console.log('[wall] profile load err', e); }
 
@@ -23880,6 +23897,154 @@ async function openPublicProfile(userId, fallbackName, color, emoji){
       _wallLoad(userId);
     })
     .subscribe();
+}
+
+function _pubProfRenderSocials(prof){
+  const wrap = document.getElementById('pub-prof-socials');
+  if(!wrap) return;
+  const socials = [
+    { key:'instagram', val: prof.instagram_handle, ver: prof.instagram_verified, color:'#E4405F', emoji:'📷', url: h => 'https://instagram.com/'+h, label:'@'+ (prof.instagram_handle||'') },
+    { key:'tiktok',    val: prof.tiktok_handle,    ver: prof.tiktok_verified,    color:'#000',    emoji:'🎵', url: h => 'https://tiktok.com/@'+h, label:'@'+ (prof.tiktok_handle||'') },
+    { key:'facebook',  val: prof.facebook_url,     ver: prof.facebook_verified,  color:'#1877F2', emoji:'📘', url: u => u, label:'Facebook' },
+    { key:'twitter',   val: prof.twitter_handle,   ver: false,                   color:'#1DA1F2', emoji:'🐦', url: h => 'https://twitter.com/'+h, label:'@'+ (prof.twitter_handle||'') },
+    { key:'spotify',   val: prof.spotify_url,      ver: prof.spotify_verified,   color:'#1DB954', emoji:'🎵', url: u => u, label:'Spotify' },
+    { key:'youtube',   val: prof.youtube_handle,   ver: false,                   color:'#FF0000', emoji:'▶️', url: h => 'https://youtube.com/@'+h, label:'@'+ (prof.youtube_handle||'') },
+    { key:'linkedin',  val: prof.linkedin_url,     ver: false,                   color:'#0A66C2', emoji:'💼', url: u => u, label:'LinkedIn' },
+    { key:'website',   val: prof.website_url,      ver: false,                   color:'#06b6d4', emoji:'🌐', url: u => u, label:'Strona' }
+  ].filter(s => s.val);
+  if(!socials.length){ wrap.style.display = 'none'; return; }
+  wrap.style.display = 'flex';
+  wrap.innerHTML = socials.map(s=>{
+    const url = s.url(s.val);
+    const verifiedBadge = s.ver ? '<span style="position:absolute;top:-3px;right:-3px;background:#06b6d4;color:#fff;font-size:9px;width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1.5px solid #0a0e1a;font-weight:900">✓</span>' : '';
+    return `<a href="${_wallEsc(url)}" target="_blank" rel="noopener" title="${_wallEsc(s.label)}" style="position:relative;display:inline-flex;align-items:center;gap:5px;padding:6px 10px;background:${s.color}1f;border:1px solid ${s.color}55;border-radius:10px;color:${s.color};font-size:.7rem;font-weight:700;text-decoration:none">
+      <span style="font-size:13px">${s.emoji}</span>${_wallEsc(s.label).slice(0,16)}${verifiedBadge}
+    </a>`;
+  }).join('');
+}
+
+async function _pubProfTab(userId, tab){
+  // Update buttons styles
+  document.querySelectorAll('.pub-tab').forEach(b=>{
+    const isActive = b.dataset.tab === tab;
+    if(isActive){
+      b.classList.add('pub-tab-active');
+      b.style.background = 'linear-gradient(135deg,rgba(168,85,247,.35),rgba(99,102,241,.25))';
+      b.style.borderColor = 'rgba(168,85,247,.6)';
+      b.style.color = '#fff';
+    } else {
+      b.classList.remove('pub-tab-active');
+      b.style.background = 'rgba(255,255,255,.04)';
+      b.style.borderColor = 'rgba(255,255,255,.08)';
+      b.style.color = 'rgba(255,255,255,.7)';
+    }
+  });
+  // Composer pokazuje się tylko dla 'wall'
+  const composer = document.getElementById('pub-prof-composer');
+  if(composer) composer.style.display = tab === 'wall' ? 'block' : 'none';
+  // Content
+  const content = document.getElementById('pub-prof-content');
+  if(!content) return;
+  content.innerHTML = `<div style="text-align:center;padding:2rem 0;color:rgba(255,255,255,.4);font-family:'JetBrains Mono',monospace;font-size:.8rem">// loading...</div>`;
+
+  if(tab === 'wall'){
+    content.innerHTML = `<div id="wall-list"></div>`;
+    return _wallLoad(userId);
+  }
+  if(tab === 'spotted')  return _pubProfLoadSpotted(userId);
+  if(tab === 'drops')    return _pubProfLoadDrops(userId);
+  if(tab === 'spots')    return _pubProfLoadSpots(userId);
+}
+
+async function _pubProfLoadSpotted(userId){
+  const el = document.getElementById('pub-prof-content');
+  if(!el) return;
+  try {
+    const { data } = await _SB.from('city_spotted').select('*').eq('author_id',userId).eq('hidden',false).order('created_at',{ascending:false}).limit(40);
+    if(!data?.length){
+      el.innerHTML = `<div style="text-align:center;padding:2.5rem 1rem;color:rgba(255,255,255,.4);font-size:.85rem"><div style="font-size:38px;margin-bottom:8px;opacity:.5">📢</div>Brak ogłoszeń jeszcze</div>`;
+      return;
+    }
+    el.innerHTML = data.map(p=>{
+      const cat = (typeof SPOTTED_CATEGORIES!=='undefined' ? SPOTTED_CATEGORIES.find(c=>c.key===p.category) : null) || {emoji:'💬',label:p.category,color:'#a855f7'};
+      const ago = _wallTimeAgo(p.created_at);
+      const expired = new Date(p.expires_at) < new Date();
+      return `<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:.8rem;margin-bottom:.5rem;border-left:3px solid ${cat.color}88;${expired?'opacity:.5':''}">
+        <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.4rem">
+          <span style="background:${cat.color}33;border:1px solid ${cat.color}66;color:${cat.color};padding:.15rem .45rem;border-radius:8px;font-size:.55rem;font-weight:800;text-transform:uppercase">${cat.emoji} ${cat.label}</span>
+          <span style="font-size:.6rem;color:rgba(255,255,255,.4);font-family:monospace">// ${ago}${expired?' · WYGASŁO':''}</span>
+        </div>
+        <div style="font-weight:800;font-size:.88rem;color:#fff;margin-bottom:.2rem">${_wallEsc(p.title)}</div>
+        <div style="font-size:.78rem;color:rgba(255,255,255,.75);line-height:1.4">${_wallEsc(p.body).slice(0,180)}${p.body.length>180?'…':''}</div>
+        <div style="font-size:.55rem;color:rgba(255,255,255,.35);margin-top:.4rem;font-family:monospace">📍 ${_wallEsc(p.city)}</div>
+      </div>`;
+    }).join('');
+  } catch(e){
+    el.innerHTML = `<div style="color:#f87171;padding:1rem;text-align:center;font-size:.8rem">${_wallEsc(e.message||'')}</div>`;
+  }
+}
+
+async function _pubProfLoadDrops(userId){
+  const el = document.getElementById('pub-prof-content');
+  if(!el) return;
+  try {
+    const { data } = await _SB.from('live_drops').select('*').eq('author_id',userId).eq('hidden',false).order('created_at',{ascending:false}).limit(40);
+    if(!data?.length){
+      el.innerHTML = `<div style="text-align:center;padding:2.5rem 1rem;color:rgba(255,255,255,.4);font-size:.85rem"><div style="font-size:38px;margin-bottom:8px;opacity:.5">🎁</div>Brak dropów jeszcze</div>`;
+      return;
+    }
+    el.innerHTML = data.map(d=>{
+      const ago = _wallTimeAgo(d.created_at);
+      const remaining = Math.max(0, (d.quantity||1) - (d.claimed_count||0));
+      const isOfficial = !!d.is_official;
+      const isClaimed = d.status === 'claimed' || remaining === 0;
+      const isExpired = d.status === 'expired' || (d.expires_at && new Date(d.expires_at) < new Date());
+      return `<div onclick="document.getElementById('public-profile-modal').remove();setTimeout(()=>openDropModal('${d.id}'),250)" style="background:${isOfficial?'linear-gradient(135deg,rgba(212,175,55,.12),rgba(251,191,36,.04))':'rgba(255,255,255,.03)'};border:1px solid ${isOfficial?'rgba(212,175,55,.4)':'rgba(255,255,255,.07)'};border-radius:12px;padding:.8rem;margin-bottom:.5rem;cursor:pointer;${(isClaimed||isExpired)?'opacity:.55':''}">
+        <div style="display:flex;align-items:center;gap:.6rem">
+          <div style="width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#fef3c7,#fbbf24,#d4af37);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${isOfficial?'👑':'🎁'}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:800;font-size:.85rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_wallEsc(d.title)}</div>
+            <div style="font-size:.62rem;color:rgba(255,255,255,.55);font-family:monospace">// ${ago}${d.prize_label?' · '+_wallEsc(d.prize_label):''}</div>
+          </div>
+          <div style="font-size:.62rem;color:${isClaimed?'#f87171':'#22c55e'};font-weight:700">${isClaimed?'wzięty':isExpired?'wygasł':remaining+'/'+(d.quantity||1)}</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e){
+    el.innerHTML = `<div style="color:#f87171;padding:1rem;text-align:center;font-size:.8rem">${_wallEsc(e.message||'')}</div>`;
+  }
+}
+
+async function _pubProfLoadSpots(userId){
+  const el = document.getElementById('pub-prof-content');
+  if(!el) return;
+  try {
+    const { data } = await _SB.from('spots').select('*').eq('posted_by',userId).eq('hidden',false).order('created_at',{ascending:false}).limit(40);
+    if(!data?.length){
+      el.innerHTML = `<div style="text-align:center;padding:2.5rem 1rem;color:rgba(255,255,255,.4);font-size:.85rem"><div style="font-size:38px;margin-bottom:8px;opacity:.5">📍</div>Brak spotów jeszcze</div>`;
+      return;
+    }
+    el.innerHTML = data.map(s=>{
+      const vibe = (typeof SPOT_VIBES!=='undefined' ? SPOT_VIBES.find(v=>v.key===s.vibe) : null) || {emoji:'✨',name:s.vibe||'spot',color:'#a855f7'};
+      const ago = _wallTimeAgo(s.created_at);
+      const isEvent = !!s.title;
+      const expired = s.active_until && new Date(s.active_until) < new Date();
+      return `<div onclick="document.getElementById('public-profile-modal').remove();setTimeout(()=>{if(window.map)window.map.flyTo({center:[${s.lng},${s.lat}],zoom:15,duration:800});openSpotModal(${s.id})},250)" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:.8rem;margin-bottom:.5rem;border-left:3px solid ${vibe.color}88;cursor:pointer;${expired?'opacity:.5':''}">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem">
+          <span style="font-size:18px">${vibe.emoji}</span>
+          <span style="background:${vibe.color}33;border:1px solid ${vibe.color}66;color:${vibe.color};padding:.15rem .45rem;border-radius:8px;font-size:.55rem;font-weight:800;text-transform:uppercase">${vibe.name}</span>
+          ${isEvent ? '<span style="background:rgba(251,191,36,.2);color:#fbbf24;padding:.15rem .45rem;border-radius:8px;font-size:.55rem;font-weight:800;text-transform:uppercase">EVENT</span>' : ''}
+          <span style="flex:1"></span>
+          <span style="font-size:.6rem;color:rgba(255,255,255,.4);font-family:monospace">${ago}${expired?' · ⏳':''}</span>
+        </div>
+        ${s.title ? `<div style="font-weight:800;font-size:.88rem;color:#fff;margin-bottom:.2rem">${_wallEsc(s.title)}</div>` : ''}
+        ${s.why ? `<div style="font-size:.78rem;color:rgba(255,255,255,.75);line-height:1.4">${_wallEsc(s.why).slice(0,160)}</div>` : ''}
+        <div style="font-size:.6rem;color:rgba(255,255,255,.45);margin-top:.4rem">👥 ${s.joins_count||0} dołączyło${s.checked_in_count?' · 🔥 '+s.checked_in_count+' w środku':''}</div>
+      </div>`;
+    }).join('');
+  } catch(e){
+    el.innerHTML = `<div style="color:#f87171;padding:1rem;text-align:center;font-size:.8rem">${_wallEsc(e.message||'')}</div>`;
+  }
 }
 
 async function _wallLoad(userId){
