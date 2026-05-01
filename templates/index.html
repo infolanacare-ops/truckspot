@@ -16124,7 +16124,7 @@ let _dropsRealtimeCh = null;
 let _dropsRefreshTimer = null;
 let _dropsLayerInited = false;
 
-// Helper: emoji + bg gradient → canvas image (dla map.addImage)
+// Helper: emoji + bg gradient → ImageData (dla map.addImage — Mapbox wymaga ImageData/ImageBitmap, nie canvas)
 function _emojiToImage(emoji, bgColors=['#fef3c7','#fbbf24','#d4af37'], size=72){
   const c = document.createElement('canvas');
   c.width = size; c.height = size;
@@ -16152,7 +16152,9 @@ function _emojiToImage(emoji, bgColors=['#fef3c7','#fbbf24','#d4af37'], size=72)
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(emoji, size/2, size/2 + 2);
-  return c;
+  // Zwróć ImageData (Mapbox preferowany format) z explicit width/height
+  const imgData = ctx.getImageData(0, 0, size, size);
+  return { width: imgData.width, height: imgData.height, data: imgData.data };
 }
 
 function _initDropsLayer(){
