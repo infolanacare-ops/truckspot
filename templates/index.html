@@ -1896,6 +1896,56 @@ body.qrail-left #recenter-btn.visible{ transform: translateY(-50%) scale(1) }
 /* Kropki wskazujące — DOMYŚLNIE UKRYTE (tylko M widoczne idle) */
 .qrail-tab-dot{ display: none; }
 
+/* ── QUANTUM RAIL SUB-FAN — radial submenu (poziomo w bok) ── */
+@keyframes qrail-sub-in{from{opacity:0;transform:scale(.6) translateX(20px)}to{opacity:1;transform:scale(1) translateX(0)}}
+.qrail-sub-fan{
+  position:fixed;z-index:9999;
+  display:flex;align-items:center;gap:8px;
+  pointer-events:none;
+  transform:translateY(-50%);
+}
+.qrail-sub-fan.fan-left{ flex-direction:row }
+.qrail-sub-fan.fan-right{ flex-direction:row-reverse }
+.qrail-sub-fan.show{ pointer-events:auto }
+.qrail-sub{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 14px;
+  background:linear-gradient(160deg,rgba(15,23,42,.95),rgba(2,6,23,.97));
+  border:1px solid rgba(6,182,212,.45);
+  border-radius:14px;
+  color:#fff;cursor:pointer;
+  font-family:'Space Grotesk','Inter',sans-serif;
+  font-size:.78rem;font-weight:800;letter-spacing:-.005em;
+  white-space:nowrap;
+  backdrop-filter:blur(20px) saturate(160%);
+  -webkit-backdrop-filter:blur(20px) saturate(160%);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.18) inset,
+    0 8px 22px rgba(0,0,0,.45),
+    0 0 30px rgba(6,182,212,.2);
+  opacity:0;
+  transform:scale(.6) translateX(20px);
+  animation:qrail-sub-in .35s cubic-bezier(.34,1.56,.64,1) forwards;
+  transition:transform .2s,box-shadow .2s,border-color .2s;
+}
+.qrail-sub:hover{
+  transform:scale(1.06) translateX(0) !important;
+  border-color:rgba(6,182,212,.85);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.25) inset,
+    0 12px 30px rgba(0,0,0,.55),
+    0 0 50px rgba(6,182,212,.45);
+}
+.qrail-sub:active{ transform:scale(.96) translateX(0) !important }
+.qrail-sub-icon{
+  font-size:1.15rem;
+  filter:drop-shadow(0 0 6px rgba(6,182,212,.4));
+  flex-shrink:0;
+}
+.qrail-sub-label{
+  font-size:.74rem;
+}
+
 /* M center button — Apple Vision glass, czytelne M (mocniejszy kontrast) */
 .qrail-M{
   position: relative; width: 48px; height: 48px; border-radius: 50%;
@@ -5123,6 +5173,7 @@ function _landingEnter(){
     <div class="menu-item" onclick="drawerAction('add')"><div class="menu-icon" style="background:rgba(139,92,246,.12);border-color:#8b5cf6"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></span></div><span class="menu-label" data-i="menu_add">Add a spot</span><span class="menu-badge">+10 pts</span></div>
     <div class="menu-item" onclick="closeDrawer();setTimeout(openHunter,250)"><div class="menu-icon" style="background:rgba(6,182,212,.15);border-color:#06b6d4"><span style="font-size:1.2rem">🎯</span></div><span class="menu-label">Łowca — polowanie na okazje</span><span class="menu-badge" style="background:linear-gradient(135deg,#06b6d4,#3b82f6);color:#fff">NEW</span></div>
     <div class="menu-item" onclick="closeDrawer();setTimeout(openMyWorld,250)"><div class="menu-icon" style="background:rgba(168,85,247,.18);border-color:#a855f7"><span style="font-size:1.2rem">🌍</span></div><span class="menu-label">Twój świat — lustro aktywności</span><span class="menu-badge" style="background:linear-gradient(135deg,#a855f7,#ec4899);color:#fff">NEW</span></div>
+    <div class="menu-item" onclick="closeDrawer();setTimeout(openMetaverseHub,250)"><div class="menu-icon" style="background:linear-gradient(140deg,rgba(6,182,212,.2),rgba(168,85,247,.15));border-color:#06b6d4"><span style="font-size:1.2rem">🌐</span></div><span class="menu-label">Cyber Zone — wszystkie funkcje</span><span class="menu-badge" style="background:linear-gradient(135deg,#06b6d4,#3b82f6);color:#fff">HUB</span></div>
     <div class="menu-item" onclick="drawerAction('myspots')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg></span></div><span class="menu-label" data-i="menu_myspots">My spots</span></div>
     <div class="menu-item" onclick="drawerAction('favs')"><div class="menu-icon" style="background:rgba(212,175,55,.12);border-color:#d4af37"><span class="si"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span></div><span class="menu-label">Ulubione parkingi</span><span class="menu-badge" id="favs-count" style="display:none">0</span></div>
     <div class="menu-item" onclick="drawerAction('rank')"><div class="menu-icon" style="background:rgba(212,175,55,.12);border-color:#d4af37"><span class="si"><svg viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg></span></div><span class="menu-label" data-i="menu_rank">Ranking</span></div>
@@ -15702,19 +15753,48 @@ function _watchQrailSide(){
 setTimeout(_watchQrailSide, 1500);
 
 // ── QUANTUM RAIL — pionowy, drag→snap edge, M w środku, radial fanout ─────
+// Quantum Rail z RADIAL SUB-MENU — każdy tab ma 1-3 podakcje (poziomo w bok)
 const QRAIL_TABS = [
-  // {icon, label, action: function, badgeFn: function}
-  {icon:'✨', label:'Spot',   action: function(){ openAddSpotModal(); }, cls:'tab-spot'},
-  {icon:'👟', label:'Kroki',  action: function(){ if(typeof openStepsPanel==='function') openStepsPanel(); }, cls:'tab-steps'},
-  {icon:'🎯', label:'Tasks',  action: function(){ if(typeof openMyTasksPanel==='function') openMyTasksPanel(); }, cls:'tab-tasks'},
-  {icon:'🏆', label:'Badge',  action: function(){ if(typeof openAchievementsPanel==='function') openAchievementsPanel(); }, cls:'tab-badges'},
-  {icon:'👥', label:'Ekipa',  action: function(){ openFriendsPanel(); }, cls:'tab-friends'},
-  {icon:'💬', label:'Czaty',  action: function(){ openConversationsList(); }, cls:'tab-chats',
-    badgeFn: function(){ let n=0; if(window._dmUnreadByUser) window._dmUnreadByUser.forEach(function(v){n+=v;}); return n>0 ? (n>9?'9+':String(n)) : ''; } },
-  {icon:'🔥', label:'Energy', action: function(){ if(typeof toggleEnergyPulse==='function') toggleEnergyPulse(); }, cls:'tab-energy'},
-  {icon:'🎨', label:'Avatar', action: function(){ if(typeof openAvatarCreator==='function') openAvatarCreator(); }, cls:'tab-avatar'},
-  {icon:'👻', label:'Ghost',  action: function(){ if(typeof openGhostPanel==='function') openGhostPanel(); }, cls:'tab-ghost'},
-  {icon:'☰', label:'Menu',    action: function(){ if(typeof openMetaverseHub==='function') openMetaverseHub(); }, cls:'tab-menu'},
+  {icon:'✨', label:'Spot', cls:'tab-spot', subActions:[
+    {icon:'➕', label:'Postaw', fn:function(){ openAddSpotModal(); }},
+    {icon:'🔥', label:'Trending', fn:function(){ if(typeof openTrendingPanel==='function') openTrendingPanel(); }},
+    {icon:'📢', label:'Spotted', fn:function(){ if(typeof openCitySpotted==='function') openCitySpotted(); }},
+  ]},
+  {icon:'👟', label:'Kroki', cls:'tab-steps', subActions:[
+    {icon:'👟', label:'Licznik', fn:function(){ if(typeof openStepsPanel==='function') openStepsPanel(); }},
+    {icon:'🛡️', label:'Safe drive', fn:function(){ if(typeof openSafeDrivePanel==='function') openSafeDrivePanel(); }},
+  ]},
+  {icon:'🎯', label:'Tasks', cls:'tab-tasks', subActions:[
+    {icon:'🎯', label:'Zadania', fn:function(){ if(typeof openMyTasksPanel==='function') openMyTasksPanel(); }},
+    {icon:'🏆', label:'Achievements', fn:function(){ if(typeof openAchievementsPanel==='function') openAchievementsPanel(); }},
+  ]},
+  {icon:'👥', label:'Ekipa', cls:'tab-friends', subActions:[
+    {icon:'👥', label:'Znajomi', fn:function(){ openFriendsPanel(); }},
+    {icon:'➕', label:'Grupa', fn:function(){ if(typeof openCreateGroup==='function') openCreateGroup(); }},
+  ]},
+  {icon:'💬', label:'Czaty', cls:'tab-chats',
+    badgeFn: function(){ let n=0; if(window._dmUnreadByUser) window._dmUnreadByUser.forEach(function(v){n+=v;}); return n>0 ? (n>9?'9+':String(n)) : ''; },
+    subActions:[
+      {icon:'💬', label:'Wszystkie', fn:function(){ openConversationsList(); }},
+      {icon:'📡', label:'CB Radio', fn:function(){ drawerAction('cbradio'); }},
+    ]},
+  {icon:'🔥', label:'Energy', cls:'tab-energy', subActions:[
+    {icon:'💓', label:'Pulse', fn:function(){ if(typeof toggleEnergyPulse==='function') toggleEnergyPulse(); }},
+    {icon:'🎉', label:'Eventy', fn:function(){ if(typeof _showCampaignList==='function') _showCampaignList(); }},
+  ]},
+  {icon:'🎨', label:'Avatar', cls:'tab-avatar', subActions:[
+    {icon:'👤', label:'Profil', fn:function(){ if(typeof openProfile==='function') openProfile(); }},
+    {icon:'🎨', label:'Studio', fn:function(){ if(typeof openAvatarCreator==='function') openAvatarCreator(); }},
+    {icon:'🎯', label:'Status', fn:function(){ if(typeof openStatusPicker==='function') openStatusPicker(); }},
+  ]},
+  {icon:'👻', label:'Ghost', cls:'tab-ghost', subActions:[
+    {icon:'👻', label:'Tryb Duch', fn:function(){ if(typeof openGhostPanel==='function') openGhostPanel(); }},
+  ]},
+  {icon:'☰', label:'Menu', cls:'tab-menu', subActions:[
+    {icon:'🌍', label:'Twój świat', fn:function(){ if(typeof openMyWorld==='function') openMyWorld(); }},
+    {icon:'🎯', label:'Łowca', fn:function(){ if(typeof openHunter==='function') openHunter(); }},
+    {icon:'🌐', label:'Cyber Zone', fn:function(){ if(typeof openMetaverseHub==='function') openMetaverseHub(); }},
+  ]},
 ];
 
 let _qrailState = {
@@ -15902,10 +15982,73 @@ function _qrailLayoutFanout(){
 function _qrailTabClick(idx){
   const t = QRAIL_TABS[idx];
   if(!t) return;
+  // Backwards-compat: jeśli istnieje stare 'action' bez subActions
+  if(typeof t.action === 'function' && (!t.subActions || t.subActions.length === 0)){
+    _qrailToggleExpand(false);
+    setTimeout(function(){ try { t.action(); } catch(e){} }, 180);
+    return;
+  }
+  // Single sub-action → wykonaj od razu
+  if(t.subActions && t.subActions.length === 1){
+    _qrailToggleExpand(false);
+    setTimeout(function(){
+      try { t.subActions[0].fn(); } catch(e){ console.warn('qrail single:', e); }
+    }, 180);
+    return;
+  }
+  // Wiele sub-actions → wysuń sub-fan w bok
+  _qrailShowSubFan(idx);
+}
+
+function _qrailShowSubFan(idx){
+  const t = QRAIL_TABS[idx];
+  if(!t || !t.subActions) return;
+  // Usuń stary sub-fan jeśli był
+  document.getElementById('qrail-sub-fan')?.remove();
+
+  const tabEl = document.querySelector('.qrail-tab[data-idx="'+idx+'"]');
+  if(!tabEl) return;
+  const tabRect = tabEl.getBoundingClientRect();
+  const railSide = _qrailState.side; // 'left' | 'right'
+  const isRight = railSide === 'right';
+
+  const fan = document.createElement('div');
+  fan.id = 'qrail-sub-fan';
+  fan.className = 'qrail-sub-fan ' + (isRight ? 'fan-right' : 'fan-left');
+  // Pozycja: dokładnie obok klikniętego taba, na jego wysokości
+  fan.style.top = (tabRect.top + tabRect.height/2) + 'px';
+  if(isRight){
+    fan.style.right = (window.innerWidth - tabRect.left + 8) + 'px';
+  } else {
+    fan.style.left = (tabRect.right + 8) + 'px';
+  }
+
+  fan.innerHTML = t.subActions.map((sa, si) => `
+    <button class="qrail-sub" data-si="${si}" style="animation-delay:${si*60}ms" onclick="_qrailSubClick(${idx},${si})">
+      <span class="qrail-sub-icon">${sa.icon}</span>
+      <span class="qrail-sub-label">${sa.label}</span>
+    </button>`).join('');
+  document.body.appendChild(fan);
+  requestAnimationFrame(()=>fan.classList.add('show'));
+
+  // Backdrop click = ukryj
+  const closeFan = (e) => {
+    if(e.target.closest('#qrail-sub-fan') || e.target.closest('.qrail-tab')) return;
+    fan.remove();
+    document.removeEventListener('click', closeFan, true);
+  };
+  setTimeout(()=>document.addEventListener('click', closeFan, true), 100);
+  // Auto-close po 6s bez interakcji
+  setTimeout(()=>{ fan?.classList.remove('show'); setTimeout(()=>fan?.remove(), 300); }, 6000);
+}
+
+function _qrailSubClick(tabIdx, subIdx){
+  const t = QRAIL_TABS[tabIdx];
+  if(!t || !t.subActions || !t.subActions[subIdx]) return;
+  document.getElementById('qrail-sub-fan')?.remove();
   _qrailToggleExpand(false);
-  // Wykonaj akcję po krótkiej animacji collapse
   setTimeout(function(){
-    try { if(typeof t.action === 'function') t.action(); } catch(e){ console.warn('qrail tab:', e); }
+    try { t.subActions[subIdx].fn(); } catch(e){ console.warn('qrail sub:', e); }
   }, 180);
 }
 
