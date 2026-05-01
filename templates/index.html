@@ -16415,7 +16415,10 @@ async function openDropModal(dropId){
         </div>` : ''}
 
       <div style="position:relative;padding:1.4rem 1.4rem 1rem">
-        <button onclick="document.getElementById('drop-modal').remove()" style="position:absolute;top:.8rem;right:.8rem;width:34px;height:34px;border:none;border-radius:50%;background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;z-index:5">✕</button>
+        <div style="position:absolute;top:.8rem;right:.8rem;display:flex;gap:.4rem;z-index:5">
+          ${!isMine ? `<button onclick="openReportModal('live_drops','${d.id}','${d.author_id}','drop')" title="Zgłoś" style="width:34px;height:34px;border:none;border-radius:50%;background:rgba(239,68,68,.1);color:rgba(239,68,68,.85);cursor:pointer;font-size:1rem">🚩</button>`:''}
+          <button onclick="document.getElementById('drop-modal').remove()" style="width:34px;height:34px;border:none;border-radius:50%;background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center">✕</button>
+        </div>
 
         <div style="display:flex;align-items:center;gap:.8rem;margin-bottom:.9rem">
           <div style="width:54px;height:54px;border-radius:16px;
@@ -16700,6 +16703,124 @@ async function _dropSubmit(lat, lng){
     showAlert('⚠️','Błąd', e?.message || '');
     setTimeout(closeAlert, 3000);
   }
+}
+
+// ════════════════════════════════════════════════════════════════
+// MODERATION — Report + Block (uniwersalne, dla każdej treści)
+// ════════════════════════════════════════════════════════════════
+const REPORT_REASONS = [
+  { key:'spam',      label:'Spam / oszustwo',     emoji:'🗑️' },
+  { key:'hate',      label:'Mowa nienawiści',     emoji:'😡' },
+  { key:'sex',       label:'Treści seksualne',    emoji:'🔞' },
+  { key:'violence',  label:'Przemoc',             emoji:'⚔️' },
+  { key:'scam',      label:'Oszustwo / fake',     emoji:'🎣' },
+  { key:'illegal',   label:'Coś nielegalnego',    emoji:'🚨' },
+  { key:'self_harm', label:'Krzywda / samobójstwo',emoji:'💔' },
+  { key:'other',     label:'Inne',                emoji:'❓' }
+];
+
+let _myBlockedIds = new Set();
+
+async function _loadMyBlocks(){
+  if(!_sbUser) { _myBlockedIds = new Set(); return; }
+  try {
+    const { data } = await _SB.from('v_my_blocks').select('blocked_id');
+    _myBlockedIds = new Set((data||[]).map(r=>r.blocked_id));
+  } catch(e){ _myBlockedIds = new Set(); }
+}
+
+function _isBlocked(userId){
+  return _myBlockedIds.has(userId);
+}
+
+function openReportModal(targetTable, targetId, targetUserId, contextLabel){
+  if(!_sbUser){ showAlert('🔒','Zaloguj się','Aby zgłosić'); setTimeout(closeAlert,2000); return; }
+  document.getElementById('report-modal')?.remove();
+  const reasonsHtml = REPORT_REASONS.map(r=>`
+    <button onclick="_submitReport('${targetTable}','${String(targetId).replace(/'/g,'')}','${targetUserId||''}','${r.key}')" style="display:flex;align-items:center;gap:10px;padding:12px;background:#1e293b;border:1px solid #334155;border-radius:10px;cursor:pointer;color:#fff;width:100%;text-align:left;font-family:inherit;margin-bottom:5px;font-size:14px">
+      <span style="font-size:20px">${r.emoji}</span>
+      <span style="flex:1;font-weight:700">${r.label}</span>
+      <span style="color:#64748b;font-size:14px">→</span>
+    </button>`).join('');
+
+  const m = document.createElement('div');
+  m.id = 'report-modal';
+  m.style.cssText = 'position:fixed;inset:0;z-index:6000;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);display:flex;align-items:flex-start;justify-content:center;padding:1rem;overflow-y:auto';
+  m.innerHTML = `
+    <div onclick="event.stopPropagation()" style="width:100%;max-width:420px;margin-top:5vh;background:#0f172a;border:1.5px solid rgba(239,68,68,.4);border-radius:20px;color:#fff;padding:1.4rem;box-shadow:0 20px 50px rgba(0,0,0,.7)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+        <div style="width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#ef4444,#b91c1c);display:flex;align-items:center;justify-content:center;font-size:22px">🚩</div>
+        <div style="flex:1">
+          <div style="font-weight:900;font-size:17px">Zgłoś treść</div>
+          <div style="font-size:11px;color:#94a3b8">${_escHtml(contextLabel||'')}</div>
+        </div>
+        <button onclick="document.getElementById('report-modal').remove()" style="background:#1e293b;border:none;color:#fff;width:34px;height:34px;border-radius:11px;cursor:pointer">✕</button>
+      </div>
+      <div style="font-size:12px;color:#94a3b8;margin-bottom:10px;line-height:1.5">Wybierz powód. Po 3 zgłoszeniach od różnych userów treść <b style="color:#fff">zniknie automatycznie</b>.</div>
+      ${reasonsHtml}
+      ${targetUserId && targetUserId !== _sbUser?.id ? `
+      <button onclick="_blockUser('${targetUserId}','${_escHtml(contextLabel||'').replace(/'/g,'')}')" style="width:100%;margin-top:14px;background:linear-gradient(135deg,#ef4444,#b91c1c);border:none;color:#fff;padding:12px;border-radius:12px;cursor:pointer;font-weight:900;letter-spacing:.04em;text-transform:uppercase">🚫 Zablokuj autora</button>` : ''}
+    </div>`;
+  m.onclick = (e) => { if(e.target===m) m.remove(); };
+  document.body.appendChild(m);
+}
+
+async function _submitReport(targetTable, targetId, targetUserId, reason){
+  if(!_sbUser) return;
+  try {
+    const payload = {
+      reporter_id: _sbUser.id,
+      target_table: targetTable,
+      target_id: String(targetId),
+      reason
+    };
+    if(targetUserId) payload.target_user = targetUserId;
+    const { error } = await _SB.from('reports').insert(payload);
+    if(error){
+      // Unique violation = już zgłoszone
+      if(error.message?.includes('duplicate')){
+        showAlert('✓','Już zgłoszone','Twoje zgłoszenie jest aktywne');
+      } else throw error;
+    } else {
+      showAlert('✓','Zgłoszono','Dzięki — sprawdzimy');
+    }
+    setTimeout(closeAlert, 2500);
+    document.getElementById('report-modal')?.remove();
+  } catch(e){
+    showAlert('⚠️','Błąd', e?.message||''); setTimeout(closeAlert,3000);
+  }
+}
+
+async function _blockUser(userId, name){
+  if(!_sbUser) return;
+  if(!confirm(`Zablokować ${name||'tego usera'}?\n\nNie będziesz widzieć jego treści ani markerów.`)) return;
+  try {
+    const { error } = await _SB.from('user_blocks').insert({ blocker_id:_sbUser.id, blocked_id:userId });
+    if(error && !error.message?.includes('duplicate')) throw error;
+    _myBlockedIds.add(userId);
+    document.getElementById('report-modal')?.remove();
+    document.getElementById('public-profile-modal')?.remove();
+    // Usuń marker peera od razu
+    try {
+      if(typeof _peerMarkers !== 'undefined' && _peerMarkers[userId]){
+        _peerMarkers[userId].remove();
+        delete _peerMarkers[userId];
+      }
+    } catch(e){}
+    showAlert('🚫','Zablokowany', (name||'User')+' nie będzie widoczny');
+    setTimeout(closeAlert, 2500);
+  } catch(e){
+    showAlert('⚠️','Błąd', e?.message||''); setTimeout(closeAlert,3000);
+  }
+}
+
+async function _unblockUser(userId){
+  if(!_sbUser) return;
+  try {
+    await _SB.from('user_blocks').delete().eq('blocker_id', _sbUser.id).eq('blocked_id', userId);
+    _myBlockedIds.delete(userId);
+    showAlert('✓','Odblokowano',''); setTimeout(closeAlert, 1800);
+  } catch(e){ showAlert('⚠️','Błąd', e?.message||''); setTimeout(closeAlert, 2500); }
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -22909,6 +23030,7 @@ function _startPresence(){
         return;
       }
       if(isMe) return; // nie pokazuj siebie
+      if(_isBlocked(key)){ return; } // zablokowanego nie pokazujemy
       seen.add(key);
       if(_peerMarkers[key]){
         const d = _peerData[key];
@@ -23413,14 +23535,18 @@ function _peerTap(key){
           </button>
         </div>
 
-        <!-- Anuluj -->
-        <button onclick="document.getElementById('${id}').remove()"
-          style="width:calc(100% - 2.8rem);margin:.7rem 1.4rem 0;padding:.7rem;border:none;border-radius:12px;
-          background:rgba(255,255,255,.04);color:rgba(255,255,255,.55);font-size:.78rem;
-          cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;
-          border:1px solid rgba(255,255,255,.06);transition:.2s">
-          Anuluj
-        </button>
+        <!-- Anuluj + Zgłoś -->
+        <div style="display:flex;gap:.5rem;margin:.7rem 1.4rem 0">
+          <button onclick="document.getElementById('${id}').remove()"
+            style="flex:1;padding:.7rem;border:none;border-radius:12px;
+            background:rgba(255,255,255,.04);color:rgba(255,255,255,.55);font-size:.78rem;
+            cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;
+            border:1px solid rgba(255,255,255,.06)">Anuluj</button>
+          <button onclick="document.getElementById('${id}').remove();openReportModal('profile_user','${key}','${key}','${safeName}')"
+            title="Zgłoś / Zablokuj"
+            style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);color:rgba(239,68,68,.85);font-size:.78rem;
+            padding:.7rem 1rem;border-radius:12px;cursor:pointer;font-family:inherit;font-weight:600">🚩</button>
+        </div>
       </div>
     </div>`;
   sheet.onclick = ()=>sheet.remove();
@@ -23587,10 +23713,11 @@ async function openPublicProfile(userId, fallbackName, color, emoji){
 
 async function _wallLoad(userId){
   try {
-    const { data: posts } = await _SB.from('profile_wall_posts')
+    let { data: posts } = await _SB.from('profile_wall_posts')
       .select('id,author_id,body,media_url,created_at')
       .eq('profile_id', userId).eq('hidden', false)
       .order('created_at', { ascending:false }).limit(50);
+    posts = (posts||[]).filter(p => !_isBlocked(p.author_id));
 
     const list = document.getElementById('wall-list');
     const cnt = document.getElementById('pub-prof-count');
@@ -23621,7 +23748,7 @@ async function _wallLoad(userId){
             <div style="font-weight:800;font-size:.82rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_wallEsc(aName)}</div>
             <div style="font-size:.6rem;color:rgba(255,255,255,.45);font-family:'JetBrains Mono',monospace">// ${ago}</div>
           </div>
-          ${canDel ? `<button onclick="_wallDelete('${p.id}','${userId}')" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#f87171;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:.8rem">✕</button>` : ''}
+          ${canDel ? `<button onclick="_wallDelete('${p.id}','${userId}')" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#f87171;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:.8rem">✕</button>` : `<button onclick="openReportModal('profile_wall_posts','${p.id}','${p.author_id}','wpis na tablicy')" title="Zgłoś" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.4);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:.8rem">🚩</button>`}
         </div>
         <div style="font-size:.85rem;line-height:1.45;color:rgba(255,255,255,.92);white-space:pre-wrap;word-wrap:break-word">${_wallEsc(p.body)}</div>
       </div>`;
@@ -23823,8 +23950,9 @@ async function _spottedLoad(){
     let q = _SB.from('v_spotted_active').select('*').order('created_at',{ascending:false}).limit(80);
     if(_spottedFilter !== 'all') q = q.eq('category', _spottedFilter);
     if(_spottedCity) q = q.ilike('city', `%${_spottedCity}%`);
-    const { data: posts, error } = await q;
+    let { data: posts, error } = await q;
     if(error) throw error;
+    posts = (posts||[]).filter(p => !_isBlocked(p.author_id));
 
     const list = document.getElementById('spotted-list');
     if(!list) return;
@@ -23843,7 +23971,7 @@ async function _spottedLoad(){
         <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem">
           <span style="background:${cat.color}33;border:1px solid ${cat.color}66;color:${cat.color};padding:.18rem .5rem;border-radius:10px;font-size:.6rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase">${cat.emoji} ${cat.label}</span>
           <span style="font-size:.6rem;color:rgba(255,255,255,.45);font-family:'JetBrains Mono',monospace;flex:1">// ${ago} · ${_wallEsc(p.city)}</span>
-          ${canDel ? `<button onclick="_spottedDelete('${p.id}')" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#f87171;width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:.7rem">✕</button>` : ''}
+          ${canDel ? `<button onclick="_spottedDelete('${p.id}')" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#f87171;width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:.7rem">✕</button>` : `<button onclick="openReportModal('city_spotted','${p.id}','${p.author_id}','ogłoszenie Spotted')" title="Zgłoś" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.4);width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:.7rem">🚩</button>`}
         </div>
         <div style="font-weight:800;font-size:.95rem;color:#fff;line-height:1.3;margin-bottom:.3rem">${_wallEsc(p.title)}</div>
         <div style="font-size:.82rem;line-height:1.45;color:rgba(255,255,255,.85);white-space:pre-wrap;word-wrap:break-word;margin-bottom:.5rem">${_wallEsc(p.body)}</div>
@@ -24241,6 +24369,8 @@ function _onAuthUser(user) {
   _sbUser = user;
   // Auto-prompt push 30s po zalogowaniu
   if(user) _maybePromptPushSoon();
+  // Załaduj listę zablokowanych (filter peer markers + content)
+  if(user) _loadMyBlocks();
   // iPhone PWA banner — pokaż gdy iOS Safari i nie zainstalowane
   if(user) _maybeShowIOSPWAbanner();
   const nameEl   = document.getElementById('drawer-name');
