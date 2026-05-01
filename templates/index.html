@@ -12014,6 +12014,7 @@ function openMetaverseHub(){
         ${_hubItem({icon:'📡', label:'CB Radio', desc:'Mapa wiadomości, czat z okolicą', color:'rgba(59,130,246,.15)', colorB:'rgba(59,130,246,.45)', onClick:`drawerAction('cbradio')`})}
         ${_hubItem({icon:'🔥', label:'Trending teraz', desc:'Najgorętsze spoty w okolicy', badge:'LIVE', color:'rgba(236,72,153,.15)', colorB:'rgba(236,72,153,.55)', onClick:`openTrendingPanel()`})}
         ${_hubItem({icon:'📢', label:'Spotted', desc:'Tablica miasta — zaginione, znalezione, ogłoszenia', badge:'NEW', color:'rgba(251,191,36,.15)', colorB:'rgba(251,191,36,.55)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openCitySpotted,200)`})}
+        ${_hubItem({icon:'🎯', label:'Łowca', desc:'Polowanie na okazje — Allegro/OLX/Vinted, alert gdy nowa oferta', badge:'<span id="hunter-badge">…</span>', color:'rgba(6,182,212,.18)', colorB:'rgba(6,182,212,.6)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openHunter,200)`})}
         ${_hubItem({icon:'🎁', label:'Zostaw drop', desc:'Coś niepotrzebnego? Zostaw — kto pierwszy ten lepszy', badge:'NEW', color:'rgba(251,191,36,.18)', colorB:'rgba(251,191,36,.6)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openCreateDropModal,200)`})}
         ${_isAdmin() ? _hubItem({icon:'👑', label:'Official Drop', desc:'Akcja promocyjna — Cash Hunt / vouchery / nagrody (admin)', badge:'ADMIN', color:'rgba(212,175,55,.22)', colorB:'rgba(212,175,55,.7)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openOfficialDropModal,200)`}) : ''}
         ${_isAdmin() ? _hubItem({icon:'📝', label:'Twoje szkice', desc:'Pending official drops — opublikuj wszystkie naraz', badge:'<span id="drafts-count-badge">…</span>', color:'rgba(168,85,247,.18)', colorB:'rgba(168,85,247,.55)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openDraftsModal,200)`}) : ''}
@@ -12058,6 +12059,15 @@ function openMetaverseHub(){
 }
 
 async function _loadLiveCampaignsBanner(){
+  // Update licznik Łowca (każdy user)
+  if(_sbUser){
+    try {
+      const { data } = await _SB.from('v_my_watches').select('unread_count');
+      const total = (data||[]).reduce((s,w)=>s+(w.unread_count||0), 0);
+      const badge = document.getElementById('hunter-badge');
+      if(badge) badge.textContent = total > 0 ? (total > 99 ? '99+' : String(total)) : '0';
+    } catch(e){}
+  }
   // Update liczniki admin
   if(_isAdmin()){
     try {
@@ -16712,6 +16722,319 @@ async function _dropSubmit(lat, lng){
     setTimeout(closeAlert, 3000);
   }
 }
+
+// ════════════════════════════════════════════════════════════════
+// 🎯 ŁOWCA / CYBER RADAR — polowania na portalach
+// ════════════════════════════════════════════════════════════════
+const HUNTER_PORTALS = [
+  { key:'allegro',          label:'Allegro',     emoji:'🛒', color:'#FF5A00', placeholder:'np. iPhone 14 Pro' },
+  { key:'olx',              label:'OLX',         emoji:'📦', color:'#002F34', placeholder:'np. rower górski' },
+  { key:'vinted',           label:'Vinted',      emoji:'👕', color:'#09B1BA', placeholder:'np. kurtka Nike' },
+  { key:'otomoto',          label:'Otomoto',    emoji:'🚗', color:'#ED1B24', placeholder:'np. BMW E46' },
+  { key:'booking',          label:'Booking',     emoji:'🏨', color:'#003580', placeholder:'np. Zakopane apartament' },
+  { key:'skyscanner',       label:'Skyscanner',  emoji:'✈️', color:'#0770E3', placeholder:'np. lot Warszawa-Rzym' },
+  { key:'ceneo',            label:'Ceneo',       emoji:'💎', color:'#FF6600', placeholder:'np. PS5 dual sense' },
+  { key:'allegro_lokalnie', label:'Allegro Lokalnie', emoji:'📍', color:'#FF5A00', placeholder:'rzeczy w Twoim mieście' },
+  { key:'aliexpress',       label:'AliExpress',  emoji:'🌏', color:'#FF4747', placeholder:'np. wireless earbuds' },
+  { key:'amazon',           label:'Amazon',      emoji:'📦', color:'#FF9900', placeholder:'np. Kindle Paperwhite' },
+  { key:'other',            label:'Inne',        emoji:'🌐', color:'#a855f7', placeholder:'cokolwiek' }
+];
+
+function _hunterPortal(key){ return HUNTER_PORTALS.find(p=>p.key===key) || HUNTER_PORTALS[0]; }
+
+async function openHunter(){
+  if(!_sbUser){ showAlert('🔒','Zaloguj się','Aby polować'); setTimeout(closeAlert,2000); return; }
+  document.getElementById('metaverse-hub')?.remove();
+  document.getElementById('hunter-modal')?.remove();
+
+  const m = document.createElement('div');
+  m.id = 'hunter-modal';
+  m.style.cssText = 'position:fixed;inset:0;z-index:5500;background:#0a0e1a;color:#fff;display:flex;flex-direction:column';
+  m.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;background:linear-gradient(135deg,#0f172a,#020617);border-bottom:1px solid rgba(6,182,212,.2)">
+      <button onclick="document.getElementById('hunter-modal').remove()" style="background:#1e293b;border:none;color:#fff;width:38px;height:38px;border-radius:10px;font-size:20px;cursor:pointer">←</button>
+      <div style="position:relative;width:46px;height:46px;flex-shrink:0">
+        <div class="cyber-conic-ring" style="position:absolute;inset:-3px;border-radius:14px"></div>
+        <div style="position:relative;width:46px;height:46px;border-radius:12px;background:linear-gradient(140deg,#0f172a,#1e293b);display:flex;align-items:center;justify-content:center;font-size:1.5rem;border:1px solid rgba(255,255,255,.1)">🎯</div>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:18px;font-weight:900;background:linear-gradient(135deg,#06b6d4,#67e8f9);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">CYBER ŁOWCA</div>
+        <div style="font-size:11px;color:#06b6d4;font-family:'JetBrains Mono',monospace">// portale w 1 miejscu · alerty w czasie rzeczywistym</div>
+      </div>
+      <button onclick="openCreateWatch()" title="Nowe polowanie" style="background:linear-gradient(135deg,#06b6d4,#3b82f6);border:none;color:#fff;width:42px;height:42px;border-radius:10px;font-size:22px;font-weight:900;cursor:pointer;box-shadow:0 6px 14px rgba(6,182,212,.4)">+</button>
+    </div>
+    <div id="hunter-list" style="flex:1;overflow-y:auto;padding:10px;background:#0a0e1a">
+      <div style="text-align:center;padding:30px;color:#64748b">Ładowanie polowań...</div>
+    </div>`;
+  document.body.appendChild(m);
+  await _loadHunterList();
+}
+
+async function _loadHunterList(){
+  const el = document.getElementById('hunter-list');
+  if(!el) return;
+  try {
+    const { data, error } = await _SB.from('v_my_watches').select('*').order('last_alert_found_at',{ascending:false,nullsFirst:false});
+    if(error) throw error;
+    if(!data?.length){
+      el.innerHTML = `<div style="text-align:center;padding:50px 20px;color:#64748b">
+        <div style="font-size:50px;margin-bottom:10px;opacity:.6">🎯</div>
+        <div style="color:#fff;font-weight:800;margin-bottom:6px;font-size:16px">Brak polowań</div>
+        <div style="font-size:13px;line-height:1.5;margin-bottom:18px">Stwórz pierwsze — wybierz portal,<br>wpisz co szukasz i max cenę.<br>Łowca powiadomi gdy znajdzie!</div>
+        <button onclick="openCreateWatch()" style="background:linear-gradient(135deg,#06b6d4,#3b82f6);border:none;color:#fff;padding:13px 24px;border-radius:12px;cursor:pointer;font-weight:900;letter-spacing:.04em;text-transform:uppercase;box-shadow:0 8px 22px rgba(6,182,212,.4)">+ Nowe polowanie</button>
+      </div>`;
+      return;
+    }
+    el.innerHTML = data.map(w=>{
+      const p = _hunterPortal(w.portal);
+      const exp = new Date(w.expires_at);
+      const expDays = Math.max(0, Math.ceil((exp - new Date()) / (1000*60*60*24)));
+      const hasAlerts = (w.unread_count || 0) > 0;
+      return `<div onclick="_huntOpenWatch('${w.id}')" style="background:${hasAlerts?'linear-gradient(135deg,rgba(6,182,212,.1),rgba(59,130,246,.04))':'#1e293b'};border:1px solid ${hasAlerts?'rgba(6,182,212,.4)':'#334155'};border-radius:14px;padding:12px;margin-bottom:6px;cursor:pointer">
+        <div style="display:flex;gap:10px;align-items:center">
+          <div style="width:44px;height:44px;border-radius:11px;background:${p.color};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${p.emoji}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:3px">
+              <span style="font-weight:800;font-size:14px;color:#fff;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_wallEsc(w.query)}</span>
+              ${hasAlerts ? `<span style="background:#22c55e;color:#0a0e1a;font-size:11px;font-weight:900;padding:2px 8px;border-radius:10px;flex-shrink:0">${w.unread_count}</span>` : ''}
+            </div>
+            <div style="font-size:11px;color:#94a3b8">${p.label}${w.max_price?' · max '+Math.round(w.max_price)+' zł':''}${w.city?' · '+_wallEsc(w.city):''}</div>
+            <div style="font-size:10px;color:#64748b;margin-top:2px;font-family:monospace">// ${w.alert_count||0} alertów łącznie · wygasa za ${expDays}d</div>
+          </div>
+          <div style="font-size:18px;color:#06b6d4">→</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e){
+    el.innerHTML = `<div style="color:#ef4444;text-align:center;padding:30px">Błąd: ${_wallEsc(e.message||'')}</div>`;
+  }
+}
+
+function openCreateWatch(){
+  if(!_sbUser){ showAlert('🔒','Zaloguj się',''); setTimeout(closeAlert,2000); return; }
+  document.getElementById('create-watch-modal')?.remove();
+  const portalCards = HUNTER_PORTALS.map((p,i)=>`
+    <button data-portal="${p.key}" onclick="_cwPickPortal('${p.key}')" class="cw-portal" style="
+      background:${i===0?p.color+'33':'#1e293b'};border:1.5px solid ${i===0?p.color:'#334155'};
+      color:#fff;padding:.7rem .5rem;border-radius:12px;cursor:pointer;font-family:inherit;
+      display:flex;flex-direction:column;align-items:center;gap:.3rem;text-align:center">
+      <span style="font-size:1.4rem">${p.emoji}</span>
+      <span style="font-size:.62rem;font-weight:800">${p.label}</span>
+    </button>`).join('');
+
+  const m = document.createElement('div');
+  m.id = 'create-watch-modal';
+  m.style.cssText = 'position:fixed;inset:0;z-index:5700;background:#0a0e1a;color:#fff;display:flex;flex-direction:column';
+  m.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;background:#0f172a;border-bottom:1px solid #1e293b">
+      <button onclick="document.getElementById('create-watch-modal').remove()" style="background:#1e293b;border:none;color:#fff;width:38px;height:38px;border-radius:10px;font-size:20px;cursor:pointer">←</button>
+      <div style="flex:1">
+        <div style="font-size:17px;font-weight:900;color:#06b6d4">+ Nowe polowanie</div>
+        <div style="font-size:11px;color:#64748b">Wybierz portal i kryteria</div>
+      </div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:14px 16px">
+      <label style="display:block;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:8px">Portal</label>
+      <div id="cw-portals" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px">${portalCards}</div>
+
+      <label style="display:block;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px">Czego szukasz?</label>
+      <input id="cw-query" maxlength="200" placeholder="np. iPhone 14 Pro" style="width:100%;padding:11px 14px;background:#1e293b;border:1px solid #334155;border-radius:11px;color:#fff;font-size:15px;outline:none;margin-bottom:10px">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div>
+          <label style="display:block;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px">Max cena (zł)</label>
+          <input id="cw-max-price" type="number" step="1" placeholder="2500" style="width:100%;padding:11px;background:#1e293b;border:1px solid #334155;border-radius:11px;color:#fff;font-size:15px;outline:none;font-weight:800">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px">Wygasa za</label>
+          <select id="cw-expire" style="width:100%;padding:11px;background:#1e293b;border:1px solid #334155;border-radius:11px;color:#fff;font-size:14px">
+            <option value="7">7 dni</option>
+            <option value="14">14 dni</option>
+            <option value="30" selected>30 dni</option>
+            <option value="60">60 dni</option>
+          </select>
+        </div>
+      </div>
+
+      <label style="display:block;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px">Miasto (opcjonalnie)</label>
+      <input id="cw-city" maxlength="60" placeholder="np. Sieradz" style="width:100%;padding:11px 14px;background:#1e293b;border:1px solid #334155;border-radius:11px;color:#fff;font-size:14px;outline:none;margin-bottom:10px">
+
+      <label style="display:block;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px">Tryb alertów</label>
+      <select id="cw-mode" style="width:100%;padding:11px;background:#1e293b;border:1px solid #334155;border-radius:11px;color:#fff;font-size:14px;margin-bottom:14px">
+        <option value="instant">⚡ Natychmiastowy push (każdy match)</option>
+        <option value="digest" selected>📊 Digest 18:00 (top 3 dziennie)</option>
+        <option value="silent">🔕 Silent (sprawdzaj sam)</option>
+      </select>
+
+      <div style="background:rgba(6,182,212,.08);border:1px solid rgba(6,182,212,.25);border-radius:10px;padding:10px;font-size:11px;color:#06b6d4;margin-bottom:14px">
+        💡 Kliknij dummy seed po stworzeniu, żeby zobaczyć jak wyglądają alerty (test).
+      </div>
+    </div>
+    <div style="padding:12px 14px;background:#0f172a;border-top:1px solid #1e293b">
+      <button onclick="_cwSubmit()" id="cw-submit-btn" style="width:100%;background:linear-gradient(135deg,#06b6d4,#3b82f6);border:none;color:#fff;padding:14px;border-radius:12px;cursor:pointer;font-weight:900;font-size:1rem;letter-spacing:.06em;text-transform:uppercase;box-shadow:0 8px 22px rgba(6,182,212,.4)">🎯 Stwórz polowanie</button>
+    </div>`;
+  document.body.appendChild(m);
+  setTimeout(()=>document.getElementById('cw-query')?.focus(), 200);
+}
+
+let _cwPortal = 'allegro';
+function _cwPickPortal(key){
+  _cwPortal = key;
+  document.querySelectorAll('.cw-portal').forEach(b=>{
+    const p = _hunterPortal(b.dataset.portal);
+    if(b.dataset.portal === key){
+      b.style.background = p.color + '33';
+      b.style.borderColor = p.color;
+    } else {
+      b.style.background = '#1e293b';
+      b.style.borderColor = '#334155';
+    }
+  });
+  // Update placeholder
+  const inp = document.getElementById('cw-query');
+  if(inp){ inp.placeholder = _hunterPortal(key).placeholder; }
+}
+
+async function _cwSubmit(){
+  const query = (document.getElementById('cw-query')?.value||'').trim();
+  if(!query){ showAlert('⚠️','Brak query','Wpisz czego szukasz'); setTimeout(closeAlert,2000); return; }
+  const max_price = parseFloat(document.getElementById('cw-max-price')?.value||'') || null;
+  const exp_days = parseInt(document.getElementById('cw-expire')?.value||'30');
+  const city = (document.getElementById('cw-city')?.value||'').trim() || null;
+  const mode = document.getElementById('cw-mode')?.value || 'digest';
+  const expires_at = new Date(Date.now() + exp_days*24*3600*1000).toISOString();
+  const btn = document.getElementById('cw-submit-btn');
+  if(btn){ btn.disabled=true; btn.style.opacity='.6'; btn.textContent='⏳ Tworzę...'; }
+  try {
+    const { data, error } = await _SB.from('user_watches').insert({
+      user_id: _sbUser.id, portal: _cwPortal, query, max_price,
+      city, notify_mode: mode, expires_at
+    }).select().maybeSingle();
+    if(error) throw error;
+    document.getElementById('create-watch-modal')?.remove();
+    try { if(navigator.vibrate) navigator.vibrate([20,40,20]); } catch(e){}
+    showAlert('🎯','Polowanie aktywne!', `${query} · Łowca pracuje w tle`);
+    setTimeout(closeAlert, 3000);
+    // Auto seed dummy alertów dla testu (demo flow)
+    try {
+      await _SB.rpc('dev_seed_dummy_alerts', { p_watch_id: data.id });
+    } catch(e){}
+    _loadHunterList();
+  } catch(e){
+    showAlert('⚠️','Błąd', e.message||''); setTimeout(closeAlert,3000);
+  } finally {
+    if(btn){ btn.disabled=false; btn.style.opacity='1'; btn.textContent='🎯 Stwórz polowanie'; }
+  }
+}
+
+async function _huntOpenWatch(watchId){
+  document.getElementById('hunter-watch-modal')?.remove();
+  // Pobierz watch info
+  let watch = null;
+  try { const {data} = await _SB.from('user_watches').select('*').eq('id',watchId).maybeSingle(); watch = data; } catch(e){}
+  if(!watch) return;
+  const p = _hunterPortal(watch.portal);
+
+  const m = document.createElement('div');
+  m.id = 'hunter-watch-modal';
+  m.style.cssText = 'position:fixed;inset:0;z-index:5800;background:#0a0e1a;color:#fff;display:flex;flex-direction:column';
+  m.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;background:#0f172a;border-bottom:1px solid #1e293b">
+      <button onclick="document.getElementById('hunter-watch-modal').remove()" style="background:#1e293b;border:none;color:#fff;width:38px;height:38px;border-radius:10px;font-size:20px;cursor:pointer">←</button>
+      <div style="width:42px;height:42px;border-radius:11px;background:${p.color};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${p.emoji}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:15px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_wallEsc(watch.query)}</div>
+        <div style="font-size:11px;color:#94a3b8">${p.label}${watch.max_price?' · max '+Math.round(watch.max_price)+' zł':''}</div>
+      </div>
+      <button onclick="_huntDeleteWatch('${watchId}')" title="Usuń" style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171;width:38px;height:38px;border-radius:10px;cursor:pointer">🗑️</button>
+    </div>
+    <div style="padding:8px 14px;background:#0f172a;border-bottom:1px solid #1e293b;display:flex;gap:6px">
+      <button onclick="_huntSeedDummy('${watchId}')" style="flex:1;background:rgba(6,182,212,.15);border:1px solid rgba(6,182,212,.4);color:#06b6d4;padding:8px;border-radius:10px;cursor:pointer;font-weight:700;font-size:11px;letter-spacing:.04em;text-transform:uppercase">🎲 Dodaj dummy alerty</button>
+    </div>
+    <div id="hunt-alerts-list" style="flex:1;overflow-y:auto;padding:10px;background:#0a0e1a">
+      <div style="text-align:center;padding:30px;color:#64748b">Ładowanie alertów...</div>
+    </div>`;
+  document.body.appendChild(m);
+  _huntLoadAlerts(watchId);
+}
+
+async function _huntLoadAlerts(watchId){
+  const el = document.getElementById('hunt-alerts-list');
+  if(!el) return;
+  try {
+    const { data } = await _SB.from('watch_alerts').select('*').eq('watch_id', watchId).is('dismissed_at', null).order('found_at',{ascending:false}).limit(80);
+    if(!data?.length){
+      el.innerHTML = `<div style="text-align:center;padding:50px 20px;color:#64748b">
+        <div style="font-size:46px;margin-bottom:10px;opacity:.6">⏳</div>
+        <div style="color:#fff;font-weight:700;margin-bottom:5px">Łowca jeszcze nic nie znalazł</div>
+        <div style="font-size:13px;line-height:1.5">Sprawdza co kilka minut.<br>Nowe oferty pojawią się tutaj.</div>
+      </div>`;
+      return;
+    }
+    el.innerHTML = data.map(a=>{
+      const isUrgent = a.alert_type === 'urgent';
+      const isDrop = a.alert_type === 'price_drop';
+      const isUnread = !a.viewed_at;
+      const ago = _formatRelativeTime(a.found_at);
+      const url = a.affiliate_url || a.listing_url;
+      const tag = isUrgent ? '🔥 OKAZJA' : isDrop ? '💸 SPADŁA CENA' : '✨ NOWE';
+      const tagColor = isUrgent ? '#f87171' : isDrop ? '#22c55e' : '#06b6d4';
+      return `<div onclick="_huntClickAlert('${a.id}','${_wallEsc(url).replace(/'/g,'')}')" style="background:${isUnread?'linear-gradient(135deg,rgba(6,182,212,.08),rgba(15,23,42,.6))':'#1e293b'};border:1px solid ${isUnread?'rgba(6,182,212,.3)':'#334155'};border-radius:14px;padding:12px;margin-bottom:6px;cursor:pointer">
+        <div style="display:flex;gap:12px">
+          ${a.listing_image ? `<div style="width:74px;height:74px;border-radius:10px;background:url('${_wallEsc(a.listing_image)}') center/cover #1e293b;flex-shrink:0;border:1px solid #334155"></div>` : `<div style="width:74px;height:74px;border-radius:10px;background:#334155;display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0">📦</div>`}
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+              <span style="background:${tagColor}33;color:${tagColor};padding:1px 6px;border-radius:6px;font-size:10px;font-weight:900;letter-spacing:.05em">${tag}</span>
+              <span style="font-size:10px;color:#64748b;font-family:monospace">${ago}</span>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:#fff;line-height:1.3;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${_wallEsc(a.listing_title)}</div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:18px;font-weight:900;color:#22c55e">${a.listing_price ? Math.round(a.listing_price)+' zł' : '—'}</span>
+              ${a.listing_location ? `<span style="font-size:11px;color:#94a3b8">📍 ${_wallEsc(a.listing_location)}</span>` : ''}
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:8px;background:linear-gradient(135deg,#06b6d4,#3b82f6);color:#fff;padding:8px;border-radius:10px;font-weight:900;font-size:12px;letter-spacing:.05em;text-transform:uppercase;text-align:center">🛒 ZOBACZ OFERTĘ →</div>
+      </div>`;
+    }).join('');
+    // Mark as viewed
+    const unviewed = data.filter(a=>!a.viewed_at).map(a=>a.id);
+    if(unviewed.length){
+      _SB.from('watch_alerts').update({viewed_at:new Date().toISOString()}).in('id', unviewed).then(()=>{});
+    }
+  } catch(e){
+    el.innerHTML = `<div style="color:#ef4444;padding:30px;text-align:center">Błąd: ${_wallEsc(e.message||'')}</div>`;
+  }
+}
+
+async function _huntClickAlert(alertId, url){
+  // Mark clicked (for future affiliate analytics)
+  try { await _SB.rpc('mark_alert_clicked', { p_alert_id: alertId }); } catch(e){}
+  // Otwórz w nowym oknie/tab — Capacitor / iOS Safari respect target=_blank
+  try { window.open(url, '_blank', 'noopener'); } catch(e){
+    window.location.href = url;
+  }
+}
+
+async function _huntSeedDummy(watchId){
+  try {
+    await _SB.rpc('dev_seed_dummy_alerts', { p_watch_id: watchId });
+    showAlert('🎲','3 dummy alerty dodane','Refresh listy...');
+    setTimeout(closeAlert, 1500);
+    setTimeout(()=>_huntLoadAlerts(watchId), 500);
+  } catch(e){ showAlert('⚠️','Błąd', e.message||''); setTimeout(closeAlert,2500); }
+}
+
+async function _huntDeleteWatch(watchId){
+  if(!confirm('Usunąć to polowanie wraz ze wszystkimi alertami?')) return;
+  try {
+    await _SB.from('user_watches').delete().eq('id', watchId);
+    document.getElementById('hunter-watch-modal')?.remove();
+    showAlert('🗑️','Polowanie usunięte',''); setTimeout(closeAlert, 1800);
+    _loadHunterList();
+  } catch(e){ showAlert('⚠️','Błąd', e.message||''); setTimeout(closeAlert,2500); }
+}
+
 
 // ════════════════════════════════════════════════════════════════
 // MODERATION — Report + Block (uniwersalne, dla każdej treści)
