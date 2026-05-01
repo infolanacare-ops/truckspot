@@ -11938,21 +11938,33 @@ window.addEventListener('DOMContentLoaded', () => {
 // METAVERSE HUB MENU — wszystkie funkcje społecznościowe i premium
 // ══════════════════════════════════════════════════════════════════
 function _hubItem(opts){
-  // {icon, label, badge, color, soon, onClick}
+  // Quantum 22-wiek styling — glass + conic ring + cyber typography
   const id = 'hub-i-' + Math.random().toString(36).slice(2,9);
-  const dis = opts.soon ? 'opacity:.55;cursor:not-allowed' : 'cursor:pointer';
+  const dis = opts.soon ? 'opacity:.45;cursor:not-allowed;pointer-events:none' : 'cursor:pointer';
   const handler = opts.soon
     ? `event.stopPropagation();showAlert('🔜','Wkrótce','Ta funkcja jest w trakcie budowy');setTimeout(closeAlert,2000)`
     : `event.stopPropagation();document.getElementById('metaverse-hub')?.remove();setTimeout(()=>{${opts.onClick||''}},150)`;
   const badgeHtml = opts.badge
-    ? `<span style="background:${opts.badgeBg||'rgba(212,175,55,.18)'};color:${opts.badgeColor||'#fbbf24'};border:1px solid ${opts.badgeColor||'rgba(212,175,55,.45)'};font-size:.55rem;font-weight:900;letter-spacing:.05em;padding:3px 7px;border-radius:6px">${opts.badge}</span>`
+    ? `<span style="background:linear-gradient(135deg,rgba(6,182,212,.5),rgba(168,85,247,.4));color:#fff;font-size:.55rem;font-weight:900;letter-spacing:.06em;padding:2px 7px;border-radius:8px;flex-shrink:0;box-shadow:0 2px 6px rgba(6,182,212,.35)">${opts.badge}</span>`
     : '';
-  const soonBadge = opts.soon ? `<span style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.5);font-size:.5rem;font-weight:800;letter-spacing:.06em;padding:3px 6px;border-radius:6px">WKRÓTCE</span>` : '';
-  return `<div id="${id}" onclick="${handler}" style="display:flex;align-items:center;gap:.7rem;padding:.7rem .8rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;${dis};transition:.15s">
-    <div style="width:38px;height:38px;border-radius:11px;background:${opts.color||'rgba(212,175,55,.15)'};border:1px solid ${opts.colorB||'rgba(212,175,55,.4)'};display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0">${opts.icon}</div>
+  const soonBadge = opts.soon ? `<span style="background:rgba(255,255,255,.06);color:rgba(255,255,255,.4);font-size:.5rem;font-weight:800;letter-spacing:.08em;padding:2px 6px;border-radius:6px;flex-shrink:0">WKRÓTCE</span>` : '';
+  const accentColor = opts.colorB || 'rgba(6,182,212,.5)';
+  return `<div id="${id}" onclick="${handler}"
+    style="position:relative;display:flex;align-items:center;gap:.7rem;padding:.85rem .9rem;
+    background:linear-gradient(160deg,rgba(255,255,255,.045) 0%,rgba(255,255,255,.015) 50%,rgba(255,255,255,.025) 100%);
+    border:1px solid rgba(255,255,255,.06);border-radius:16px;${dis};
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    transition:transform .25s cubic-bezier(.34,1.56,.64,1),background .2s,border-color .2s,box-shadow .2s;
+    overflow:hidden"
+    onmouseover="this.style.background='linear-gradient(160deg,rgba(6,182,212,.08),rgba(168,85,247,.04))';this.style.borderColor='${accentColor}';this.style.transform='translateX(2px)';this.style.boxShadow='0 8px 22px rgba(6,182,212,.12)'"
+    onmouseout="this.style.background='linear-gradient(160deg,rgba(255,255,255,.045) 0%,rgba(255,255,255,.015) 50%,rgba(255,255,255,.025) 100%)';this.style.borderColor='rgba(255,255,255,.06)';this.style.transform='';this.style.boxShadow='none'">
+    <div style="position:relative;width:42px;height:42px;flex-shrink:0">
+      <div style="position:absolute;inset:-2px;border-radius:14px;background:conic-gradient(from 45deg,${accentColor},${opts.color||'rgba(168,85,247,.35)'},${accentColor});filter:blur(2px);opacity:.65"></div>
+      <div style="position:relative;width:42px;height:42px;border-radius:12px;background:linear-gradient(140deg,#0f172a,#1e293b);display:flex;align-items:center;justify-content:center;font-size:1.25rem;border:1px solid rgba(255,255,255,.08)">${opts.icon}</div>
+    </div>
     <div style="flex:1;min-width:0">
-      <div style="font-size:.85rem;font-weight:800;color:#fff;line-height:1.15">${opts.label}</div>
-      ${opts.desc ? `<div style="font-size:.65rem;color:rgba(255,255,255,.6);margin-top:1px;line-height:1.2">${opts.desc}</div>` : ''}
+      <div style="font-family:'Space Grotesk','Inter',sans-serif;font-size:.88rem;font-weight:800;color:#fff;line-height:1.2;letter-spacing:-.005em">${opts.label}</div>
+      ${opts.desc ? `<div style="font-size:.62rem;color:rgba(255,255,255,.5);margin-top:2px;line-height:1.3;font-family:'JetBrains Mono',monospace;letter-spacing:.01em">${opts.desc}</div>` : ''}
     </div>
     ${badgeHtml}${soonBadge}
   </div>`;
@@ -11969,18 +11981,26 @@ function openMetaverseHub(){
   const id = 'metaverse-hub';
   const modal = document.createElement('div');
   modal.id = id;
-  modal.style.cssText = 'position:fixed;inset:0;z-index:3500;background:rgba(0,0,0,.72);display:flex;align-items:flex-end;justify-content:center';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:3500;background:radial-gradient(circle at 50% 50%,rgba(6,11,25,.85),rgba(0,0,0,.95));backdrop-filter:blur(12px);display:flex;align-items:flex-end;justify-content:center';
   modal.innerHTML = `
-    <div onclick="event.stopPropagation()" style="width:100%;max-width:480px;background:linear-gradient(160deg,rgba(22,28,48,.98) 0%,rgba(14,18,32,.99) 100%);backdrop-filter:blur(20px);border:1.5px solid rgba(212,175,55,.45);border-bottom:none;border-radius:24px 24px 0 0;padding:1.4rem 1.1rem 1.6rem;box-shadow:0 -4px 32px rgba(0,0,0,.6),0 0 18px rgba(212,175,55,.12) inset;color:#fff;max-height:88vh;overflow-y:auto;animation:slideup .3s">
+    <div onclick="event.stopPropagation()" class="cyber-glass cyber-mesh-bg" style="width:100%;max-width:500px;border:1px solid rgba(6,182,212,.3);border-bottom:none;border-radius:28px 28px 0 0;padding:1.4rem 1.1rem 1.6rem;color:#fff;max-height:90vh;overflow-y:auto;animation:slideup .35s cubic-bezier(.34,1.56,.64,1);position:relative;box-shadow:0 -20px 60px rgba(0,0,0,.6),0 -1px 0 rgba(255,255,255,.18) inset,0 0 80px rgba(6,182,212,.12)">
 
-      <!-- Header -->
-      <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:1rem">
-        <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(140deg,rgba(212,175,55,.28),rgba(168,85,247,.18));border:1px solid rgba(212,175,55,.5);display:flex;align-items:center;justify-content:center;font-size:1.5rem">🌐</div>
-        <div style="flex:1">
-          <div style="font-family:var(--font-head);font-size:1.25rem;font-weight:900;letter-spacing:-.01em">Metaverse Hub</div>
-          <div style="font-size:.7rem;color:rgba(255,255,255,.65)">Cyber życie · skóry · znajomi · gry</div>
+      <!-- scan line cyber overlay -->
+      <div style="position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:28px 28px 0 0;z-index:0">
+        <div style="position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(6,182,212,.4),transparent);animation:cyber-scan 8s linear infinite;opacity:.5"></div>
+      </div>
+
+      <!-- Header CYBER -->
+      <div style="position:relative;display:flex;align-items:center;gap:.7rem;margin-bottom:1rem;z-index:2">
+        <div style="position:relative;width:48px;height:48px;flex-shrink:0">
+          <div class="cyber-conic-ring" style="position:absolute;inset:-3px;border-radius:14px"></div>
+          <div style="position:relative;width:48px;height:48px;border-radius:13px;background:linear-gradient(140deg,#0f172a,#1e293b);display:flex;align-items:center;justify-content:center;font-size:1.55rem;border:1px solid rgba(255,255,255,.1)">🌐</div>
         </div>
-        <button onclick="document.getElementById('${id}').remove()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);width:36px;height:36px;border-radius:11px;color:#fff;font-size:1.1rem;cursor:pointer">✕</button>
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'Space Grotesk',var(--font-head),sans-serif;font-size:1.3rem;font-weight:900;letter-spacing:-.015em" class="cyber-shimmer-text">CYBER ZONE</div>
+          <div style="font-size:.62rem;color:rgba(6,182,212,.85);font-family:'JetBrains Mono',monospace;letter-spacing:.06em">// metaverse · social · zycie · monetyzacja</div>
+        </div>
+        <button onclick="document.getElementById('${id}').remove()" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);width:36px;height:36px;border-radius:11px;color:rgba(255,255,255,.7);font-size:1.05rem;cursor:pointer;backdrop-filter:blur(8px);transition:.2s" onmouseover="this.style.background='rgba(239,68,68,.15)';this.style.color='#fca5a5';this.style.borderColor='rgba(239,68,68,.4)'" onmouseout="this.style.background='rgba(255,255,255,.04)';this.style.color='rgba(255,255,255,.7)';this.style.borderColor='rgba(255,255,255,.1)'">✕</button>
       </div>
 
       <!-- LIVE Cash Hunt banner (jeśli aktywna kampania) -->
@@ -11998,14 +12018,14 @@ function openMetaverseHub(){
       </div>
 
       <!-- Sekcja: Zadania (TOP — najważniejsza) -->
-      <div style="font-size:.62rem;font-weight:800;color:rgba(212,175,55,.95);text-transform:uppercase;letter-spacing:.08em;margin:0 .3rem .5rem">🎮 Zadania & XP</div>
+      <div style="font-family:JetBrains Mono,monospace;font-size:.6rem;font-weight:800;color:#06b6d4;text-transform:uppercase;letter-spacing:.12em;margin:.2rem .3rem .55rem;display:flex;align-items:center;gap:.5rem">🎮 Zadania & XP</div>
       <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem">
         ${_hubItem({icon:'🎯', label:'Moje Zadania', desc:'Daily / Weekly / Monthly · zdobywaj XP i nagrody', badge:_myTasks?.length ? String(_myTasks.length) : '', color:'rgba(212,175,55,.18)', colorB:'rgba(212,175,55,.55)', onClick:`openMyTasksPanel()`})}
         ${_hubItem({icon:'🏆', label:_myStats ? 'Level ' + (_myStats.level||1) : 'Twój level', desc:_myStats ? (_myStats.total_xp||0)+' XP · '+(_myStats.tasks_completed||0)+' zadań' : 'Zdobywaj XP za zadania', color:'rgba(168,85,247,.15)', colorB:'rgba(168,85,247,.45)', onClick:`openMyTasksPanel()`})}
       </div>
 
       <!-- Sekcja: Społeczność -->
-      <div style="font-size:.62rem;font-weight:800;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.08em;margin:0 .3rem .5rem">👥 Społeczność</div>
+      <div style="font-family:JetBrains Mono,monospace;font-size:.6rem;font-weight:800;color:rgba(6,182,212,.7);text-transform:uppercase;letter-spacing:.12em;margin:1rem .3rem .55rem;display:flex;align-items:center;gap:.5rem">👥 Społeczność</div>
       <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem">
         ${_hubItem({icon: _iconSvg('social',{size:24,emoji:'👥'}), label:'Znajomi', desc:'Wyszukaj, dodaj, zobacz na mapie', color:'rgba(59,130,246,.15)', colorB:'rgba(59,130,246,.45)', onClick:`openFriendsPanel()`})}
         ${_hubItem({icon:'💬', label:'Czaty', desc:'Wszystkie konwersacje', badge: (()=>{ let n=0; _dmUnreadByUser?.forEach(v=>n+=v); return n>0 ? (n>9?'9+':String(n)) : ''; })(), color:'rgba(96,165,250,.15)', colorB:'rgba(96,165,250,.45)', onClick:`openConversationsList()`})}
@@ -12025,7 +12045,7 @@ function openMetaverseHub(){
       </div>
 
       <!-- Sekcja: Gamifikacja -->
-      <div style="font-size:.62rem;font-weight:800;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.08em;margin:0 .3rem .5rem">🎮 Gamifikacja</div>
+      <div style="font-family:JetBrains Mono,monospace;font-size:.6rem;font-weight:800;color:rgba(6,182,212,.7);text-transform:uppercase;letter-spacing:.12em;margin:1rem .3rem .55rem;display:flex;align-items:center;gap:.5rem">🎮 Gamifikacja</div>
       <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem">
         ${_hubItem({icon: _iconSvg('steps',{size:24,emoji:'👟'}), label:'Kroki dziś', desc: (_mySteps ? `${_mySteps.steps.toLocaleString('pl-PL')} / ${_mySteps.goal.toLocaleString('pl-PL')} kroków · ${Math.round(100*_mySteps.steps/_mySteps.goal)}%` : 'Cel: 10 000 kroków · zdobądź XP i rabaty'), badge: (_mySteps?.steps>=_mySteps?.goal?'✓':(_mySteps?.steps>0?String(_mySteps.steps):'NEW')), color:'rgba(16,185,129,.15)', colorB:'rgba(16,185,129,.5)', onClick:`openStepsPanel()`})}
         ${_hubItem({icon:'⚡', label:'Codzienne wyzwania', desc:'Nowe taski codziennie + bonusy', badge: _myTasks?.filter(t=>t.horizon==='daily').length ? String(_myTasks.filter(t=>t.horizon==='daily').length) : '', color:'rgba(34,197,94,.15)', colorB:'rgba(34,197,94,.45)', onClick:`openMyTasksPanel()`})}
@@ -12034,7 +12054,7 @@ function openMetaverseHub(){
       </div>
 
       <!-- Sekcja: Customizacja -->
-      <div style="font-size:.62rem;font-weight:800;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.08em;margin:0 .3rem .5rem">🎨 Customizacja</div>
+      <div style="font-family:JetBrains Mono,monospace;font-size:.6rem;font-weight:800;color:rgba(6,182,212,.7);text-transform:uppercase;letter-spacing:.12em;margin:1rem .3rem .55rem;display:flex;align-items:center;gap:.5rem">🎨 Customizacja</div>
       <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem">
         ${_hubItem({icon:'🎨', label:'Skórki interfejsu', desc:'Cyber Neon, Galaxy, Classic...', badge:'PRO', color:'rgba(192,132,252,.15)', colorB:'rgba(192,132,252,.45)', onClick:`openSkinPicker()`})}
         ${_hubItem({icon:'🎨', label:'Stwórz Avatar', desc:'12 stylów + customizacja — wybierz swoją cyber tożsamość', badge:'NEW', color:'rgba(168,85,247,.18)', colorB:'rgba(168,85,247,.55)', onClick:`openAvatarCreator()`})}
@@ -12042,7 +12062,7 @@ function openMetaverseHub(){
       </div>
 
       <!-- Sekcja: Współdzielenie -->
-      <div style="font-size:.62rem;font-weight:800;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.08em;margin:0 .3rem .5rem">📸 Sharing</div>
+      <div style="font-family:JetBrains Mono,monospace;font-size:.6rem;font-weight:800;color:rgba(6,182,212,.7);text-transform:uppercase;letter-spacing:.12em;margin:1rem .3rem .55rem;display:flex;align-items:center;gap:.5rem">📸 Sharing</div>
       <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem">
         ${_hubItem({icon:'📹', label:'Trip Stories', desc:'Auto-film po trasie do TikTok/IG', color:'rgba(236,72,153,.15)', colorB:'rgba(236,72,153,.45)', soon:true})}
         ${_hubItem({icon:'🎵', label:'Spotify status', desc:'Pokazuj co słuchasz innym', color:'rgba(34,197,94,.15)', colorB:'rgba(34,197,94,.45)', soon:true})}
