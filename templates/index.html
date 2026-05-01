@@ -15854,23 +15854,19 @@ function _watchQrailSide(){
 setTimeout(_watchQrailSide, 1500);
 
 // ── QUANTUM RAIL — pionowy, drag→snap edge, M w środku, radial fanout ─────
-// Quantum Rail z RADIAL SUB-MENU — każdy tab ma 1-3 podakcje (poziomo w bok)
+// Quantum Rail — kolejność wg Krzyśka:
+// NAD M (od najwyższego do najbliżej M): Spot / Ekipa / Czaty / Tablica
+// POD M (od najbliżej M do najniższego): Tasks / Kroki / Energy / Ghost / Menu
 const QRAIL_TABS = [
+  // ── NAD M ──
   {icon:'✨', label:'Spot', cls:'tab-spot', subActions:[
     {icon:'➕', label:'Postaw', fn:function(){ openAddSpotModal(); }},
     {icon:'🎬', label:'Reels', fn:function(){ if(typeof openReelsFeed==='function') openReelsFeed('all'); }},
     {icon:'🔥', label:'Trending', fn:function(){ if(typeof openTrendingPanel==='function') openTrendingPanel(); }},
   ]},
-  {icon:'👟', label:'Kroki', cls:'tab-steps', subActions:[
-    {icon:'👟', label:'Licznik', fn:function(){ if(typeof openStepsPanel==='function') openStepsPanel(); }},
-    {icon:'🛡️', label:'Safe drive', fn:function(){ if(typeof openSafeDrivePanel==='function') openSafeDrivePanel(); }},
-  ]},
-  {icon:'🎯', label:'Tasks', cls:'tab-tasks', subActions:[
-    {icon:'🎯', label:'Zadania', fn:function(){ if(typeof openMyTasksPanel==='function') openMyTasksPanel(); }},
-    {icon:'⚡', label:'Daily', fn:function(){ if(typeof openMyTasksPanel==='function') openMyTasksPanel(); }},
-  ]},
-  {icon:'👤', label:'Profil', cls:'tab-avatar', subActions:[
-    {icon:'🌍', label:'Tablica', fn:function(){ if(typeof openMyWorld==='function') openMyWorld(); }},
+  {icon:'👥', label:'Ekipa', cls:'tab-friends', subActions:[
+    {icon:'👥', label:'Znajomi', fn:function(){ openFriendsPanel(); }},
+    {icon:'➕', label:'Grupa', fn:function(){ if(typeof openCreateGroup==='function') openCreateGroup(); }},
   ]},
   {icon:'💬', label:'Czaty', cls:'tab-chats',
     badgeFn: function(){ let n=0; if(window._dmUnreadByUser) window._dmUnreadByUser.forEach(function(v){n+=v;}); return n>0 ? (n>9?'9+':String(n)) : ''; },
@@ -15878,13 +15874,21 @@ const QRAIL_TABS = [
       {icon:'💬', label:'Wszystkie', fn:function(){ openConversationsList(); }},
       {icon:'📡', label:'CB Radio', fn:function(){ drawerAction('cbradio'); }},
     ]},
+  {icon:'🌍', label:'Tablica', cls:'tab-avatar', subActions:[
+    {icon:'🌍', label:'Tablica', fn:function(){ if(typeof openMyWorld==='function') openMyWorld(); }},
+  ]},
+  // ── POD M ──
+  {icon:'🎯', label:'Tasks', cls:'tab-tasks', subActions:[
+    {icon:'🎯', label:'Zadania', fn:function(){ if(typeof openMyTasksPanel==='function') openMyTasksPanel(); }},
+    {icon:'⚡', label:'Daily', fn:function(){ if(typeof openMyTasksPanel==='function') openMyTasksPanel(); }},
+  ]},
+  {icon:'👟', label:'Kroki', cls:'tab-steps', subActions:[
+    {icon:'👟', label:'Licznik', fn:function(){ if(typeof openStepsPanel==='function') openStepsPanel(); }},
+    {icon:'🛡️', label:'Safe drive', fn:function(){ if(typeof openSafeDrivePanel==='function') openSafeDrivePanel(); }},
+  ]},
   {icon:'🔥', label:'Energy', cls:'tab-energy', subActions:[
     {icon:'💓', label:'Pulse', fn:function(){ if(typeof toggleEnergyPulse==='function') toggleEnergyPulse(); }},
     {icon:'🎉', label:'Eventy', fn:function(){ if(typeof _showCampaignList==='function') _showCampaignList(); }},
-  ]},
-  {icon:'👥', label:'Ekipa', cls:'tab-friends', subActions:[
-    {icon:'👥', label:'Znajomi', fn:function(){ openFriendsPanel(); }},
-    {icon:'➕', label:'Grupa', fn:function(){ if(typeof openCreateGroup==='function') openCreateGroup(); }},
   ]},
   {icon:'👻', label:'Ghost', cls:'tab-ghost', subActions:[
     {icon:'👻', label:'Tryb Duch', fn:function(){ if(typeof openGhostPanel==='function') openGhostPanel(); }},
