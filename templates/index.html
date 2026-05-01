@@ -12039,17 +12039,6 @@ function openMetaverseHub(){
       <!-- LIVE Cash Hunt banner (jeśli aktywna kampania) -->
       <div id="hub-live-campaigns" style="display:none;margin-bottom:1rem"></div>
 
-      <!-- Toggle ON/OFF -->
-      <div onclick="toggleMetaverse();document.getElementById('${id}').remove();setTimeout(openMetaverseHub,250)" style="display:flex;align-items:center;gap:.7rem;padding:.85rem .9rem;background:linear-gradient(140deg,${isOn?'rgba(34,197,94,.18)':'rgba(255,255,255,.05)'},${isOn?'rgba(34,197,94,.06)':'rgba(255,255,255,.02)'});border:1.5px solid ${isOn?'rgba(34,197,94,.5)':'rgba(255,255,255,.12)'};border-radius:14px;cursor:pointer;margin-bottom:1rem;transition:.2s">
-        <div style="width:42px;height:24px;border-radius:14px;background:${isOn?'#22c55e':'rgba(255,255,255,.15)'};position:relative;flex-shrink:0;transition:.2s">
-          <div style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;left:${isOn?'20px':'2px'};transition:.2s;box-shadow:0 1px 4px rgba(0,0,0,.3)"></div>
-        </div>
-        <div style="flex:1">
-          <div style="font-size:.95rem;font-weight:800;color:#fff">${isOn ? '✓ Metaverse aktywne' : 'Aktywuj Metaverse'}</div>
-          <div style="font-size:.68rem;color:rgba(255,255,255,.7);margin-top:1px">${isOn ? 'Inni Cię widzą, możesz pisać CB' : 'Pokaż się innym kierowcom'}</div>
-        </div>
-      </div>
-
       <!-- Sekcja: Zadania (TOP — najważniejsza) -->
       <div style="font-family:JetBrains Mono,monospace;font-size:.6rem;font-weight:800;color:#06b6d4;text-transform:uppercase;letter-spacing:.12em;margin:.2rem .3rem .55rem;display:flex;align-items:center;gap:.5rem">🎮 Zadania & XP</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:1.1rem">
@@ -25044,36 +25033,23 @@ function _updateDemoBtn(){
 }
 
 // ══════════════════════════════════════════════════════
-// METAVERSE M button — toggle wszystkich funkcji
+// METAVERSE — domyślnie ZAWSZE aktywny (no toggle)
+// Niewidzialność = Tryb Duch (👻), nie odłączanie metaverse
 // ══════════════════════════════════════════════════════
-let _metaverseActive = false;
+let _metaverseActive = true; // ZAWSZE aktywny
 
-function toggleMetaverse(){
-  _metaverseActive = !_metaverseActive;
-  const fab = document.getElementById('meta-fab');
-  const badge = document.getElementById('meta-fab-badge');
-
-  if(_metaverseActive){
-    fab?.classList.add('active');
-    if(badge){ badge.style.display='flex'; badge.textContent='ON'; }
-    // Uruchom presence jeśli zalogowany
-    if(_sbUser && window.map) _startPresence();
-    // Uruchom demo jeśli nikt nie jest online
-    setTimeout(()=>{
-      const peers = Object.keys(_peerMarkers).filter(k=>!k.startsWith('demo-'));
-      if(peers.length === 0) _startDemo();
-    }, 2000);
-    // Uruchom CB realtime
-    _startCbRealtime();
-    showAlert('🌐','Metaverse ON','Widzisz innych kierowców na mapie w real-time');
-  } else {
-    fab?.classList.remove('active');
-    if(badge){ badge.style.display='none'; }
-    _stopDemo();
-    _stopPresence();
-    showAlert('🌐','Metaverse OFF','');
-  }
+function _autoStartMetaverse(){
+  if(!_sbUser || !window.map) return;
+  try { _startPresence(); } catch(e){ console.warn('presence:', e); }
+  setTimeout(()=>{
+    const peers = Object.keys(_peerMarkers).filter(k=>!k.startsWith('demo-'));
+    if(peers.length === 0) try { _startDemo(); } catch(e){}
+  }, 2000);
+  try { _startCbRealtime(); } catch(e){}
 }
+
+// Backwards-compat dla starych miejsc wywołujących toggleMetaverse
+function toggleMetaverse(){ _autoStartMetaverse(); }
 
 // Inicjalizacja — sprawdź czy użytkownik jest zalogowany
 _SB.auth.getSession().then(({ data: { session } }) => {
@@ -25099,6 +25075,8 @@ function _onAuthUser(user) {
     try { if(typeof _maybePromptPushSoon === 'function') _maybePromptPushSoon(); } catch(e){ console.warn('push prompt:', e); }
     try { if(typeof _loadMyBlocks === 'function') _loadMyBlocks(); } catch(e){ console.warn('blocks:', e); }
     try { if(typeof _maybeShowIOSPWAbanner === 'function') _maybeShowIOSPWAbanner(); } catch(e){ console.warn('ios banner:', e); }
+    // Auto-start metaverse (presence + CB + demo) — bez toggle
+    setTimeout(() => { try { if(typeof _autoStartMetaverse === 'function') _autoStartMetaverse(); } catch(e){ console.warn('metaverse autostart:', e); } }, 1500);
   }
   const nameEl   = document.getElementById('drawer-name');
   const subEl    = document.getElementById('drawer-mode-sub');
