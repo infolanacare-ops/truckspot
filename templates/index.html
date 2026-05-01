@@ -11938,35 +11938,68 @@ window.addEventListener('DOMContentLoaded', () => {
 // METAVERSE HUB MENU — wszystkie funkcje społecznościowe i premium
 // ══════════════════════════════════════════════════════════════════
 function _hubItem(opts){
-  // Quantum 22-wiek styling — glass + conic ring + cyber typography
+  // Quantum 22-wiek BENTO TILE (Apple iOS 19 / Vision Pro / Linear inspired)
+  // opts.wide=true → span 2 columns (featured)
   const id = 'hub-i-' + Math.random().toString(36).slice(2,9);
   const dis = opts.soon ? 'opacity:.45;cursor:not-allowed;pointer-events:none' : 'cursor:pointer';
   const handler = opts.soon
     ? `event.stopPropagation();showAlert('🔜','Wkrótce','Ta funkcja jest w trakcie budowy');setTimeout(closeAlert,2000)`
     : `event.stopPropagation();document.getElementById('metaverse-hub')?.remove();setTimeout(()=>{${opts.onClick||''}},150)`;
+  const wide = !!opts.wide;
+  const accentColor = opts.colorB || 'rgba(6,182,212,.5)';
+  const accentSoft  = opts.color  || 'rgba(168,85,247,.35)';
   const badgeHtml = opts.badge
-    ? `<span style="background:linear-gradient(135deg,rgba(6,182,212,.5),rgba(168,85,247,.4));color:#fff;font-size:.55rem;font-weight:900;letter-spacing:.06em;padding:2px 7px;border-radius:8px;flex-shrink:0;box-shadow:0 2px 6px rgba(6,182,212,.35)">${opts.badge}</span>`
+    ? `<span style="background:linear-gradient(135deg,rgba(6,182,212,.55),rgba(168,85,247,.45));color:#fff;font-size:.55rem;font-weight:900;letter-spacing:.06em;padding:2px 7px;border-radius:8px;box-shadow:0 2px 8px rgba(6,182,212,.35);flex-shrink:0">${opts.badge}</span>`
     : '';
   const soonBadge = opts.soon ? `<span style="background:rgba(255,255,255,.06);color:rgba(255,255,255,.4);font-size:.5rem;font-weight:800;letter-spacing:.08em;padding:2px 6px;border-radius:6px;flex-shrink:0">WKRÓTCE</span>` : '';
-  const accentColor = opts.colorB || 'rgba(6,182,212,.5)';
+
+  // WIDE (featured) — horizontal layout z dużą ikoną
+  if(wide){
+    return `<div id="${id}" onclick="${handler}"
+      style="grid-column:span 2;position:relative;display:flex;align-items:center;gap:.85rem;padding:1rem 1.05rem;
+      background:linear-gradient(135deg,${accentSoft.replace(/[\d.]+\)$/,'.1)')} 0%,rgba(15,23,42,.4) 70%);
+      border:1px solid ${accentColor};border-radius:18px;${dis};
+      backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);
+      transition:transform .3s cubic-bezier(.34,1.56,.64,1),box-shadow .25s,border-color .25s;
+      overflow:hidden;
+      box-shadow:0 1px 0 rgba(255,255,255,.12) inset, 0 8px 22px rgba(0,0,0,.25), 0 0 30px ${accentSoft.replace(/[\d.]+\)$/,'.1)')}"
+      onmouseover="this.style.transform='translateY(-2px) scale(1.01)';this.style.boxShadow='0 1px 0 rgba(255,255,255,.18) inset, 0 14px 36px rgba(0,0,0,.4), 0 0 50px ${accentSoft.replace(/[\d.]+\)$/,'.25)')}'"
+      onmouseout="this.style.transform='';this.style.boxShadow='0 1px 0 rgba(255,255,255,.12) inset, 0 8px 22px rgba(0,0,0,.25), 0 0 30px ${accentSoft.replace(/[\d.]+\)$/,'.1)')}'">
+      <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:radial-gradient(circle,${accentSoft.replace(/[\d.]+\)$/,'.4)')},transparent 65%);filter:blur(20px);pointer-events:none"></div>
+      <div style="position:relative;width:54px;height:54px;flex-shrink:0">
+        <div style="position:absolute;inset:-3px;border-radius:17px;background:conic-gradient(from 45deg,${accentColor},${accentSoft},${accentColor});filter:blur(3px);opacity:.85"></div>
+        <div style="position:relative;width:54px;height:54px;border-radius:15px;background:linear-gradient(140deg,#0f172a,#1e293b);display:flex;align-items:center;justify-content:center;font-size:1.55rem;border:1px solid rgba(255,255,255,.12)">${opts.icon}</div>
+      </div>
+      <div style="position:relative;flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+          <div style="font-family:'Space Grotesk','Inter',sans-serif;font-size:1.05rem;font-weight:900;color:#fff;line-height:1.15;letter-spacing:-.01em;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${opts.label}</div>
+          ${badgeHtml}${soonBadge}
+        </div>
+        ${opts.desc ? `<div style="font-size:.7rem;color:rgba(255,255,255,.6);line-height:1.4;font-family:'JetBrains Mono',monospace;letter-spacing:.01em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${opts.desc}</div>` : ''}
+      </div>
+      <div style="position:relative;font-size:1.4rem;color:${accentColor};opacity:.7;flex-shrink:0">→</div>
+    </div>`;
+  }
+
+  // NORMAL — vertical bento tile (kwadrat-ish), ikona top, label center, badge top-right
   return `<div id="${id}" onclick="${handler}"
-    style="position:relative;display:flex;align-items:center;gap:.7rem;padding:.85rem .9rem;
-    background:linear-gradient(160deg,rgba(255,255,255,.045) 0%,rgba(255,255,255,.015) 50%,rgba(255,255,255,.025) 100%);
-    border:1px solid rgba(255,255,255,.06);border-radius:16px;${dis};
-    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-    transition:transform .25s cubic-bezier(.34,1.56,.64,1),background .2s,border-color .2s,box-shadow .2s;
+    style="position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:.5rem;padding:.85rem .8rem;min-height:108px;
+    background:linear-gradient(160deg,rgba(255,255,255,.05) 0%,rgba(255,255,255,.012) 60%,rgba(255,255,255,.025) 100%);
+    border:1px solid rgba(255,255,255,.07);border-radius:16px;${dis};
+    backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);
+    transition:transform .3s cubic-bezier(.34,1.56,.64,1),background .2s,border-color .2s,box-shadow .2s;
     overflow:hidden"
-    onmouseover="this.style.background='linear-gradient(160deg,rgba(6,182,212,.08),rgba(168,85,247,.04))';this.style.borderColor='${accentColor}';this.style.transform='translateX(2px)';this.style.boxShadow='0 8px 22px rgba(6,182,212,.12)'"
-    onmouseout="this.style.background='linear-gradient(160deg,rgba(255,255,255,.045) 0%,rgba(255,255,255,.015) 50%,rgba(255,255,255,.025) 100%)';this.style.borderColor='rgba(255,255,255,.06)';this.style.transform='';this.style.boxShadow='none'">
-    <div style="position:relative;width:42px;height:42px;flex-shrink:0">
-      <div style="position:absolute;inset:-2px;border-radius:14px;background:conic-gradient(from 45deg,${accentColor},${opts.color||'rgba(168,85,247,.35)'},${accentColor});filter:blur(2px);opacity:.65"></div>
-      <div style="position:relative;width:42px;height:42px;border-radius:12px;background:linear-gradient(140deg,#0f172a,#1e293b);display:flex;align-items:center;justify-content:center;font-size:1.25rem;border:1px solid rgba(255,255,255,.08)">${opts.icon}</div>
+    onmouseover="this.style.background='linear-gradient(160deg,${accentSoft.replace(/[\d.]+\)$/,'.12)')} 0%,rgba(15,23,42,.4) 80%)';this.style.borderColor='${accentColor}';this.style.transform='translateY(-3px) scale(1.02)';this.style.boxShadow='0 12px 28px rgba(0,0,0,.35), 0 0 30px ${accentSoft.replace(/[\d.]+\)$/,'.2)')}'"
+    onmouseout="this.style.background='linear-gradient(160deg,rgba(255,255,255,.05) 0%,rgba(255,255,255,.012) 60%,rgba(255,255,255,.025) 100%)';this.style.borderColor='rgba(255,255,255,.07)';this.style.transform='';this.style.boxShadow='none'">
+    ${opts.badge || opts.soon ? `<div style="position:absolute;top:8px;right:8px;display:flex;gap:4px;z-index:2">${badgeHtml}${soonBadge}</div>` : ''}
+    <div style="position:relative;width:42px;height:42px">
+      <div style="position:absolute;inset:-2px;border-radius:14px;background:conic-gradient(from 45deg,${accentColor},${accentSoft},${accentColor});filter:blur(2.5px);opacity:.75"></div>
+      <div style="position:relative;width:42px;height:42px;border-radius:12px;background:linear-gradient(140deg,#0f172a,#1e293b);display:flex;align-items:center;justify-content:center;font-size:1.25rem;border:1px solid rgba(255,255,255,.1)">${opts.icon}</div>
     </div>
-    <div style="flex:1;min-width:0">
-      <div style="font-family:'Space Grotesk','Inter',sans-serif;font-size:.88rem;font-weight:800;color:#fff;line-height:1.2;letter-spacing:-.005em">${opts.label}</div>
-      ${opts.desc ? `<div style="font-size:.62rem;color:rgba(255,255,255,.5);margin-top:2px;line-height:1.3;font-family:'JetBrains Mono',monospace;letter-spacing:.01em">${opts.desc}</div>` : ''}
+    <div>
+      <div style="font-family:'Space Grotesk','Inter',sans-serif;font-size:.85rem;font-weight:800;color:#fff;line-height:1.15;letter-spacing:-.005em;margin-bottom:2px">${opts.label}</div>
+      ${opts.desc ? `<div style="font-size:.6rem;color:rgba(255,255,255,.5);line-height:1.35;font-family:'JetBrains Mono',monospace;letter-spacing:.01em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${opts.desc}</div>` : ''}
     </div>
-    ${badgeHtml}${soonBadge}
   </div>`;
 }
 
@@ -12019,23 +12052,23 @@ function openMetaverseHub(){
 
       <!-- Sekcja: Zadania (TOP — najważniejsza) -->
       <div style="font-family:JetBrains Mono,monospace;font-size:.6rem;font-weight:800;color:#06b6d4;text-transform:uppercase;letter-spacing:.12em;margin:.2rem .3rem .55rem;display:flex;align-items:center;gap:.5rem">🎮 Zadania & XP</div>
-      <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:1.1rem">
         ${_hubItem({icon:'🎯', label:'Moje Zadania', desc:'Daily / Weekly / Monthly · zdobywaj XP i nagrody', badge:_myTasks?.length ? String(_myTasks.length) : '', color:'rgba(212,175,55,.18)', colorB:'rgba(212,175,55,.55)', onClick:`openMyTasksPanel()`})}
         ${_hubItem({icon:'🏆', label:_myStats ? 'Level ' + (_myStats.level||1) : 'Twój level', desc:_myStats ? (_myStats.total_xp||0)+' XP · '+(_myStats.tasks_completed||0)+' zadań' : 'Zdobywaj XP za zadania', color:'rgba(168,85,247,.15)', colorB:'rgba(168,85,247,.45)', onClick:`openMyTasksPanel()`})}
       </div>
 
       <!-- Sekcja: Społeczność -->
       <div style="font-family:JetBrains Mono,monospace;font-size:.6rem;font-weight:800;color:rgba(6,182,212,.7);text-transform:uppercase;letter-spacing:.12em;margin:1rem .3rem .55rem;display:flex;align-items:center;gap:.5rem">👥 Społeczność</div>
-      <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:1.1rem">
         ${_hubItem({icon: _iconSvg('social',{size:24,emoji:'👥'}), label:'Znajomi', desc:'Wyszukaj, dodaj, zobacz na mapie', color:'rgba(59,130,246,.15)', colorB:'rgba(59,130,246,.45)', onClick:`openFriendsPanel()`})}
-        ${_hubItem({icon:'💬', label:'Czaty', desc:'Wszystkie konwersacje', badge: (()=>{ let n=0; _dmUnreadByUser?.forEach(v=>n+=v); return n>0 ? (n>9?'9+':String(n)) : ''; })(), color:'rgba(96,165,250,.15)', colorB:'rgba(96,165,250,.45)', onClick:`openConversationsList()`})}
+        ${_hubItem({icon:'💬', label:'Czaty', desc:'Rozmowy 1:1 + Grupy ekipy + Live Spot Chat', badge: (()=>{ let n=0; _dmUnreadByUser?.forEach(v=>n+=v); return n>0 ? (n>9?'9+':String(n)) : ''; })(), color:'rgba(96,165,250,.25)', colorB:'rgba(96,165,250,.6)', wide:true, onClick:`openConversationsList()`})}
         ${_hubItem({icon: _iconSvg('photo',{size:24,emoji:'📸'}), label:'AR LIVE', desc:'Kamera + lokale i ziomki w realu', badge:'NEW', color:'rgba(245,158,11,.15)', colorB:'rgba(245,158,11,.45)', onClick:`openARLive()`})}
         ${_hubItem({icon:'💓', label:'Energy Pulse', desc:'Mapa pulsuje energią miasta', badge: _energyEnabled ? 'ON' : '', color:'rgba(239,68,68,.15)', colorB:'rgba(239,68,68,.45)', onClick:`toggleEnergyPulse();document.getElementById('metaverse-hub')?.remove();setTimeout(openMetaverseHub,200)`})}
         ${_hubItem({icon: _isGhost() ? '👻' : '👁️', label: _isGhost() ? 'Tryb niewidzialny ON' : 'Tryb niewidzialny', desc: _ghostLabel(), badge: _isGhost() ? 'ON' : '', color:'rgba(168,85,247,.15)', colorB:'rgba(168,85,247,.45)', onClick:`openGhostPanel()`})}
         ${_hubItem({icon:'📡', label:'CB Radio', desc:'Mapa wiadomości, czat z okolicą', color:'rgba(59,130,246,.15)', colorB:'rgba(59,130,246,.45)', onClick:`drawerAction('cbradio')`})}
         ${_hubItem({icon:'🔥', label:'Trending teraz', desc:'Najgorętsze spoty w okolicy', badge:'LIVE', color:'rgba(236,72,153,.15)', colorB:'rgba(236,72,153,.55)', onClick:`openTrendingPanel()`})}
         ${_hubItem({icon:'📢', label:'Spotted', desc:'Tablica miasta — zaginione, znalezione, ogłoszenia', badge:'NEW', color:'rgba(251,191,36,.15)', colorB:'rgba(251,191,36,.55)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openCitySpotted,200)`})}
-        ${_hubItem({icon:'🎯', label:'Łowca', desc:'Polowanie na okazje — Allegro/OLX/Vinted, alert gdy nowa oferta', badge:'<span id="hunter-badge">…</span>', color:'rgba(6,182,212,.18)', colorB:'rgba(6,182,212,.6)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openHunter,200)`})}
+        ${_hubItem({icon:'🎯', label:'Łowca okazji', desc:'Polowanie na portalach (Allegro/OLX/Vinted/Booking) — alert gdy znajdę okazję', badge:'<span id="hunter-badge">…</span>', color:'rgba(6,182,212,.28)', colorB:'rgba(6,182,212,.7)', wide:true, onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openHunter,200)`})}
         ${_hubItem({icon:'🎁', label:'Zostaw drop', desc:'Coś niepotrzebnego? Zostaw — kto pierwszy ten lepszy', badge:'NEW', color:'rgba(251,191,36,.18)', colorB:'rgba(251,191,36,.6)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openCreateDropModal,200)`})}
         ${_isAdmin() ? _hubItem({icon:'👑', label:'Official Drop', desc:'Akcja promocyjna — Cash Hunt / vouchery / nagrody (admin)', badge:'ADMIN', color:'rgba(212,175,55,.22)', colorB:'rgba(212,175,55,.7)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openOfficialDropModal,200)`}) : ''}
         ${_isAdmin() ? _hubItem({icon:'📝', label:'Twoje szkice', desc:'Pending official drops — opublikuj wszystkie naraz', badge:'<span id="drafts-count-badge">…</span>', color:'rgba(168,85,247,.18)', colorB:'rgba(168,85,247,.55)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openDraftsModal,200)`}) : ''}
@@ -12046,8 +12079,8 @@ function openMetaverseHub(){
 
       <!-- Sekcja: Gamifikacja -->
       <div style="font-family:JetBrains Mono,monospace;font-size:.6rem;font-weight:800;color:rgba(6,182,212,.7);text-transform:uppercase;letter-spacing:.12em;margin:1rem .3rem .55rem;display:flex;align-items:center;gap:.5rem">🎮 Gamifikacja</div>
-      <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem">
-        ${_hubItem({icon: _iconSvg('steps',{size:24,emoji:'👟'}), label:'Kroki dziś', desc: (_mySteps ? `${_mySteps.steps.toLocaleString('pl-PL')} / ${_mySteps.goal.toLocaleString('pl-PL')} kroków · ${Math.round(100*_mySteps.steps/_mySteps.goal)}%` : 'Cel: 10 000 kroków · zdobądź XP i rabaty'), badge: (_mySteps?.steps>=_mySteps?.goal?'✓':(_mySteps?.steps>0?String(_mySteps.steps):'NEW')), color:'rgba(16,185,129,.15)', colorB:'rgba(16,185,129,.5)', onClick:`openStepsPanel()`})}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:1.1rem">
+        ${_hubItem({icon: _iconSvg('steps',{size:24,emoji:'👟'}), label:'Kroki dziś', desc: (_mySteps ? `${_mySteps.steps.toLocaleString('pl-PL')} / ${_mySteps.goal.toLocaleString('pl-PL')} kroków · ${Math.round(100*_mySteps.steps/_mySteps.goal)}% celu — XP + rabaty` : 'Cel: 10 000 kroków · zdobądź XP i rabaty u biznesów'), badge: (_mySteps?.steps>=_mySteps?.goal?'✓':(_mySteps?.steps>0?String(_mySteps.steps):'NEW')), color:'rgba(16,185,129,.25)', colorB:'rgba(16,185,129,.6)', wide:true, onClick:`openStepsPanel()`})}
         ${_hubItem({icon:'⚡', label:'Codzienne wyzwania', desc:'Nowe taski codziennie + bonusy', badge: _myTasks?.filter(t=>t.horizon==='daily').length ? String(_myTasks.filter(t=>t.horizon==='daily').length) : '', color:'rgba(34,197,94,.15)', colorB:'rgba(34,197,94,.45)', onClick:`openMyTasksPanel()`})}
         ${_hubItem({icon:'🏆', label:'Osiągnięcia / Odznaki', desc:'Kolekcjonuj badge i pokazuj się', color:'rgba(251,191,36,.15)', colorB:'rgba(251,191,36,.45)', onClick:`openAchievementsPanel()`})}
         ${_hubItem({icon:'🛡️', label:'Bezpieczna jazda', desc:'Punkty za jazdę bez +50 km/h', badge:`${sd.points} PKT`, color:'rgba(212,175,55,.15)', colorB:'rgba(212,175,55,.45)', onClick:`openSafeDrivePanel()`})}
@@ -12055,7 +12088,7 @@ function openMetaverseHub(){
 
       <!-- Sekcja: Customizacja -->
       <div style="font-family:JetBrains Mono,monospace;font-size:.6rem;font-weight:800;color:rgba(6,182,212,.7);text-transform:uppercase;letter-spacing:.12em;margin:1rem .3rem .55rem;display:flex;align-items:center;gap:.5rem">🎨 Customizacja</div>
-      <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:1.1rem">
         ${_hubItem({icon:'🎨', label:'Skórki interfejsu', desc:'Cyber Neon, Galaxy, Classic...', badge:'PRO', color:'rgba(192,132,252,.15)', colorB:'rgba(192,132,252,.45)', onClick:`openSkinPicker()`})}
         ${_hubItem({icon:'🎨', label:'Stwórz Avatar', desc:'12 stylów + customizacja — wybierz swoją cyber tożsamość', badge:'NEW', color:'rgba(168,85,247,.18)', colorB:'rgba(168,85,247,.55)', onClick:`openAvatarCreator()`})}
         ${_hubItem({icon:'🃏', label:'Moja kolekcja aut', desc:'Pokemon-style karty pojazdów', color:'rgba(99,102,241,.15)', colorB:'rgba(99,102,241,.45)', soon:true})}
@@ -12063,7 +12096,7 @@ function openMetaverseHub(){
 
       <!-- Sekcja: Współdzielenie -->
       <div style="font-family:JetBrains Mono,monospace;font-size:.6rem;font-weight:800;color:rgba(6,182,212,.7);text-transform:uppercase;letter-spacing:.12em;margin:1rem .3rem .55rem;display:flex;align-items:center;gap:.5rem">📸 Sharing</div>
-      <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:1.1rem">
         ${_hubItem({icon:'📹', label:'Trip Stories', desc:'Auto-film po trasie do TikTok/IG', color:'rgba(236,72,153,.15)', colorB:'rgba(236,72,153,.45)', soon:true})}
         ${_hubItem({icon:'🎵', label:'Spotify status', desc:'Pokazuj co słuchasz innym', color:'rgba(34,197,94,.15)', colorB:'rgba(34,197,94,.45)', soon:true})}
       </div>
