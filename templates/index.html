@@ -17115,7 +17115,10 @@ async function _loadReelsFeed(tab){
   const el = document.getElementById('reels-scroll');
   if(!el || !_sbUser) return;
   try {
-    let q = _SB.from('v_reels_feed').select('*').order('created_at',{ascending:false}).limit(60);
+    // Reels = wizualne medium → tylko spoty z foto LUB video
+    let q = _SB.from('v_reels_feed').select('*')
+      .or('photo_url.not.is.null,video_url.not.is.null')
+      .order('created_at',{ascending:false}).limit(60);
     if(tab === 'today'){
       const todayStart = new Date(); todayStart.setHours(0,0,0,0);
       q = q.gte('created_at', todayStart.toISOString());
