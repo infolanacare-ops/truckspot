@@ -17137,6 +17137,8 @@ async function _submitOfficialDrop(lat, lng){
     showAlert('⚠️','Błąd', e?.message||''); setTimeout(closeAlert,3000);
   }
 }
+
+async function openSpotModal(spotId){
   let s = _spotData.get(spotId);
   if(!s){
     // Pobierz z view jeśli nie mamy w cache
