@@ -15883,10 +15883,6 @@ const QRAIL_TABS = [
     }},
   ]},
   // ── POD M ──
-  {icon:'🎯', label:'Tasks', cls:'tab-tasks', subActions:[
-    {icon:'🎯', label:'Zadania', fn:function(){ if(typeof openMyTasksPanel==='function') openMyTasksPanel(); }},
-    {icon:'⚡', label:'Daily', fn:function(){ if(typeof openMyTasksPanel==='function') openMyTasksPanel(); }},
-  ]},
   {icon:'👟', label:'Kroki', cls:'tab-steps', subActions:[
     {icon:'👟', label:'Licznik', fn:function(){ if(typeof openStepsPanel==='function') openStepsPanel(); }},
     {icon:'🛡️', label:'Safe drive', fn:function(){ if(typeof openSafeDrivePanel==='function') openSafeDrivePanel(); }},
@@ -15898,14 +15894,14 @@ const QRAIL_TABS = [
   {icon:'👻', label:'Ghost', cls:'tab-ghost', subActions:[
     {icon:'👻', label:'Tryb Duch', fn:function(){ if(typeof openGhostPanel==='function') openGhostPanel(); }},
   ]},
-  {icon:'☰', label:'Menu', cls:'tab-menu', subActions:[
-    {icon:'🎯', label:'Łowca', fn:function(){ if(typeof openHunter==='function') openHunter(); }},
-    {icon:'🌐', label:'Cyber Zone', fn:function(){ if(typeof openMetaverseHub==='function') openMetaverseHub(); }},
-  ]},
   {icon:'🧭', label:'Navi', cls:'tab-navi', subActions:[
     {icon:'🧭', label:'Plan trasy', fn:function(){ drawerAction('route'); }},
     {icon:'🅿️', label:'Najbliższe parkingi', fn:function(){ drawerAction('nearby'); }},
     {icon:'🔍', label:'Szukaj miejsca', fn:function(){ drawerAction('search'); }},
+  ]},
+  {icon:'🎯', label:'Tasks', cls:'tab-tasks', subActions:[
+    {icon:'🎯', label:'Zadania', fn:function(){ if(typeof openMyTasksPanel==='function') openMyTasksPanel(); }},
+    {icon:'⚡', label:'Daily', fn:function(){ if(typeof openMyTasksPanel==='function') openMyTasksPanel(); }},
   ]},
 ];
 
