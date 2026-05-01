@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import os, json, re, secrets, time, math, requests as _requests
+import os, json, re, secrets, time, math, threading, requests as _requests
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, send_from_directory, send_file, redirect
 import hashlib
@@ -185,15 +185,24 @@ def haversine_km(lat1, lng1, lat2, lng2):
     a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlng/2)**2
     return R * 2 * math.asin(math.sqrt(max(0, a)))
 
+_SUBS_LOCK = threading.Lock()
+
 def load_subscriptions():
     if not os.path.exists(SUBSCRIPTIONS_PATH):
         return []
-    with open(SUBSCRIPTIONS_PATH, encoding="utf-8") as f:
-        return json.load(f)
+    with _SUBS_LOCK:
+        try:
+            with open(SUBSCRIPTIONS_PATH, encoding="utf-8") as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            return []
 
 def save_subscriptions(subs):
-    with open(SUBSCRIPTIONS_PATH, "w", encoding="utf-8") as f:
-        json.dump(subs, f, ensure_ascii=False, indent=2)
+    tmp = SUBSCRIPTIONS_PATH + ".tmp"
+    with _SUBS_LOCK:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(subs, f, ensure_ascii=False, indent=2)
+        os.replace(tmp, SUBSCRIPTIONS_PATH)
 
 def send_push_nearby(lat, lng, cat, text, radius_km=PUSH_ALERT_RADIUS_KM):
     if not PUSH_AVAILABLE or not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:

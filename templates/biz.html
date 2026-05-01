@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0e1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>TS PRO Business — Panel lokalu</title>
+<link rel="icon" href="/static/icons/ts-pro-192.png">
+<link rel="apple-touch-icon" href="/static/icons/ts-pro-256.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Space+Grotesk:wght@700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
+  :root {
+    --bg:#0a0e1a; --surface:#151a28; --surface-2:#1c2235;
+    --border:rgba(212,175,55,.25); --gold:#d4af37; --gold-2:#f5d76e;
+    --text:#f0f3fa; --muted:#8a93a8;
+    --green:#22c55e; --blue:#3b82f6; --red:#ef4444; --orange:#fb923c;
+  }
+  html,body { height:100%; }
+  body {
+    font-family:'Inter',-apple-system,sans-serif;
+    background:radial-gradient(ellipse at top, #1a1f2e 0%, #0a0a0a 80%);
+    color:var(--text); overflow-x:hidden; -webkit-font-smoothing:antialiased;
+    user-select:none; -webkit-user-select:none;
+  }
+  input,textarea { user-select:text; -webkit-user-select:text; }
+
+  /* Login screen */
+  .login-wrap { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .login-card { background:var(--surface); border:1px solid var(--border); border-radius:24px; padding:36px 28px; max-width:400px; width:100%; text-align:center; }
+  .login-card img { width:90px; height:90px; margin:0 auto 16px; display:block; }
+  .login-card h1 { font-family:'Space Grotesk',sans-serif; font-size:24px; margin-bottom:6px; background:linear-gradient(135deg,var(--gold-2),var(--gold)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  .login-card .sub { color:var(--muted); font-size:14px; margin-bottom:28px; }
+  .field { margin-bottom:14px; text-align:left; }
+  .field label { display:block; font-size:12px; font-weight:700; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px; }
+  .field input { width:100%; padding:14px 16px; background:var(--bg); border:1.5px solid rgba(255,255,255,.1); border-radius:11px; color:var(--text); font-family:inherit; font-size:16px; outline:none; transition:.15s; }
+  .field input:focus { border-color:var(--gold); }
+  .btn { display:flex; align-items:center; justify-content:center; gap:10px; padding:16px 24px; border-radius:14px; font-weight:800; font-size:16px; cursor:pointer; border:none; font-family:inherit; transition:transform .1s; width:100%; color:#fff; }
+  .btn:active { transform:scale(.97); }
+  .btn-primary { background:linear-gradient(135deg,var(--gold),#b8860b); color:#0a0e1a; box-shadow:0 8px 24px rgba(212,175,55,.3); }
+  .btn-ghost { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); }
+  .alert-msg { margin-top:16px; padding:12px; border-radius:10px; font-size:13px; display:none; }
+  .alert-msg.show { display:block; }
+  .alert-msg.success { background:rgba(34,197,94,.12); color:#4ade80; border:1px solid rgba(34,197,94,.3); }
+  .alert-msg.error { background:rgba(239,68,68,.12); color:#f87171; border:1px solid rgba(239,68,68,.3); }
+
+  /* Dashboard */
+  .dash { display:none; min-height:100vh; flex-direction:column; }
+  .dash.show { display:flex; }
+  .topbar { display:flex; align-items:center; gap:14px; padding:14px 20px; background:rgba(10,14,26,.85); backdrop-filter:blur(14px); border-bottom:1px solid rgba(255,255,255,.06); position:sticky; top:0; z-index:50; }
+  .topbar-icon { width:42px; height:42px; border-radius:11px; background:linear-gradient(140deg,rgba(212,175,55,.3),rgba(212,175,55,.1)); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:22px; }
+  .topbar-info { flex:1; min-width:0; }
+  .topbar-name { font-family:'Space Grotesk',sans-serif; font-size:17px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .topbar-sub { font-size:11px; color:var(--muted); margin-top:1px; display:flex; align-items:center; gap:6px; }
+  .live-dot { width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green); animation:liveDot 2s infinite; }
+  @keyframes liveDot { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .topbar-btn { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); color:var(--text); width:38px; height:38px; border-radius:10px; cursor:pointer; font-size:16px; }
+
+  .main { flex:1; padding:18px; max-width:880px; margin:0 auto; width:100%; }
+  .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px; }
+  .stat { background:var(--surface); border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:14px 12px; text-align:center; }
+  .stat-num { font-family:'Space Grotesk',sans-serif; font-size:24px; font-weight:800; color:var(--gold); line-height:1; }
+  .stat-label { font-size:10px; color:var(--muted); margin-top:4px; text-transform:uppercase; letter-spacing:0.5px; }
+
+  .actions { display:grid; grid-template-columns:1fr; gap:12px; margin-bottom:24px; }
+  @media (min-width:640px) { .actions { grid-template-columns:repeat(3,1fr); } }
+  .big-btn {
+    background:var(--surface); border:2px solid rgba(255,255,255,.08); border-radius:18px;
+    padding:24px 18px; cursor:pointer; transition:.15s; text-align:left;
+    display:flex; align-items:center; gap:14px; min-height:96px;
+    color:var(--text); font-family:inherit;
+  }
+  .big-btn:active { transform:scale(.98); }
+  .big-btn-icon { font-size:38px; flex-shrink:0; }
+  .big-btn-content { flex:1; min-width:0; }
+  .big-btn-title { font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:800; line-height:1.1; }
+  .big-btn-sub { font-size:12px; color:var(--muted); margin-top:4px; line-height:1.3; }
+  .big-btn.alert { background:linear-gradient(135deg,rgba(212,175,55,.2),rgba(212,175,55,.08)); border-color:rgba(212,175,55,.5); }
+  .big-btn.question { background:linear-gradient(135deg,rgba(96,165,250,.18),rgba(59,130,246,.08)); border-color:rgba(96,165,250,.5); }
+  .big-btn.info { background:linear-gradient(135deg,rgba(168,85,247,.18),rgba(124,58,237,.08)); border-color:rgba(168,85,247,.5); }
+
+  .section-h { font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:0.7px; margin:8px 0 10px; }
+
+  .msg-list { display:flex; flex-direction:column; gap:10px; }
+  .msg-item { background:var(--surface); border:1px solid rgba(255,255,255,.07); border-radius:14px; padding:14px 16px; display:flex; align-items:flex-start; gap:12px; }
+  .msg-emoji { font-size:24px; line-height:1; flex-shrink:0; }
+  .msg-content { flex:1; min-width:0; }
+  .msg-body { font-size:15px; font-weight:600; line-height:1.4; }
+  .msg-meta { display:flex; align-items:center; gap:8px; margin-top:6px; font-size:11px; color:var(--muted); }
+  .countdown { background:rgba(212,175,55,.15); color:var(--gold); padding:2px 7px; border-radius:5px; font-weight:700; }
+  .countdown.expiring { background:rgba(239,68,68,.18); color:#fca5a5; animation:liveDot 1.4s infinite; }
+  .msg-del { background:rgba(239,68,68,.12); border:1px solid rgba(239,68,68,.3); color:#fca5a5; width:36px; height:36px; border-radius:9px; cursor:pointer; font-size:14px; flex-shrink:0; }
+
+  .empty { text-align:center; color:var(--muted); padding:36px 16px; font-size:14px; line-height:1.6; }
+
+  /* Modal create message */
+  .modal { position:fixed; inset:0; background:rgba(0,0,0,.85); backdrop-filter:blur(10px); display:none; align-items:flex-end; justify-content:center; z-index:1000; padding:0; }
+  .modal.show { display:flex; }
+  .modal-card { background:var(--surface); border-top:1.5px solid var(--border); border-radius:24px 24px 0 0; padding:24px 22px 32px; width:100%; max-width:520px; max-height:90vh; overflow-y:auto; animation:slideup .3s; }
+  @keyframes slideup { from { transform:translateY(100%); } to { transform:translateY(0); } }
+  .modal-h { font-family:'Space Grotesk',sans-serif; font-size:20px; font-weight:800; margin-bottom:6px; }
+  .modal-sub { color:var(--muted); font-size:13px; margin-bottom:20px; }
+  textarea { width:100%; min-height:100px; padding:14px 16px; background:var(--bg); border:1.5px solid rgba(255,255,255,.1); border-radius:12px; color:var(--text); font-family:inherit; font-size:16px; outline:none; resize:none; transition:.15s; }
+  textarea:focus { border-color:var(--gold); }
+  .presets { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; margin-bottom:14px; }
+  .preset { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); color:var(--text); padding:8px 12px; border-radius:9px; font-size:12px; cursor:pointer; font-family:inherit; }
+  .preset:active { transform:scale(.96); }
+  .duration-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:18px; }
+  .dur-btn { background:rgba(255,255,255,.06); border:1.5px solid rgba(255,255,255,.1); color:var(--text); padding:14px 6px; border-radius:11px; font-weight:700; cursor:pointer; font-size:13px; font-family:inherit; }
+  .dur-btn.active { background:linear-gradient(135deg,var(--gold),#b8860b); color:#0a0e1a; border-color:var(--gold-2); }
+  .modal-actions { display:flex; gap:8px; }
+  .modal-actions .btn { flex:1; padding:15px; }
+
+  /* ══ KIOSK MODE — full-screen tablet view ══ */
+  body.kiosk { background: linear-gradient(135deg, #0a0e1a 0%, #1a1f2e 100%); }
+  body.kiosk .topbar { padding: 22px 28px; border-bottom: 2px solid rgba(212,175,55,.4); }
+  body.kiosk .topbar-icon { width: 64px; height: 64px; font-size: 32px; border-radius: 16px; }
+  body.kiosk .topbar-name { font-size: 28px; }
+  body.kiosk .topbar-sub { font-size: 14px; }
+  body.kiosk .topbar-btn { display: none; }
+  body.kiosk .main { max-width: 100%; padding: 28px; }
+  body.kiosk .stats { gap: 16px; margin-bottom: 28px; }
+  body.kiosk .stat { padding: 22px 14px; border-radius: 18px; }
+  body.kiosk .stat-num { font-size: 40px; }
+  body.kiosk .stat-label { font-size: 13px; }
+  body.kiosk .quick-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 22px; }
+  body.kiosk .quick-tile {
+    background: linear-gradient(135deg, rgba(212,175,55,.18), rgba(212,175,55,.06));
+    border: 2px solid rgba(212,175,55,.45);
+    border-radius: 18px;
+    padding: 22px 16px;
+    text-align: center;
+    cursor: pointer;
+    color: var(--text);
+    font-family: inherit;
+    transition: transform .12s, box-shadow .12s;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  body.kiosk .quick-tile:active { transform: scale(.96); box-shadow: 0 0 24px rgba(212,175,55,.5); }
+  body.kiosk .quick-tile-icon { font-size: 38px; line-height: 1; }
+  body.kiosk .quick-tile-text { font-size: 15px; font-weight: 800; line-height: 1.3; }
+  body.kiosk .actions { display: none; }    /* hide normal Okazja/Pytanie/Info */
+  body.kiosk .section-h { font-size: 13px; }
+  body.kiosk .msg-item { padding: 18px 22px; border-radius: 16px; min-height: 64px; }
+  body.kiosk .msg-emoji { font-size: 32px; }
+  body.kiosk .msg-body { font-size: 18px; }
+  body.kiosk .msg-meta { font-size: 13px; }
+  body.kiosk .msg-del { width: 48px; height: 48px; font-size: 18px; }
+  body.kiosk .countdown { font-size: 13px; padding: 4px 10px; }
+  body.kiosk .empty { font-size: 16px; padding: 50px 20px; }
+  body.kiosk .kiosk-footer {
+    margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,.08);
+    display: flex; align-items: center; justify-content: space-between;
+    color: var(--muted); font-size: 12px;
+  }
+  body.kiosk .kiosk-footer img { height: 24px; opacity: .8; }
+  body.kiosk .kiosk-toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: linear-gradient(135deg, var(--gold), #b8860b); color: #0a0e1a;
+    padding: 14px 24px; border-radius: 14px; font-weight: 900; font-size: 15px;
+    box-shadow: 0 8px 32px rgba(212,175,55,.5); z-index: 999;
+    animation: kioskToastIn .35s, kioskToastOut .35s 2.2s forwards;
+  }
+  @keyframes kioskToastIn { from { transform: translateX(-50%) translateY(80px); opacity: 0; } to { transform: translateX(-50%) translateY(0); opacity: 1; } }
+  @keyframes kioskToastOut { to { transform: translateX(-50%) translateY(80px); opacity: 0; } }
+
+  /* Place picker */
+  .picker { display:flex; flex-direction:column; gap:8px; }
+  .picker-item { background:var(--surface); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:14px 16px; cursor:pointer; display:flex; align-items:center; gap:12px; }
+  .picker-item:active { transform:scale(.99); }
+  .picker-icon { font-size:24px; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login" class="login-wrap">
+  <div class="login-card">
+    <img src="/static/icons/ts-pro-256.png" alt="TS PRO">
+    <h1>TS PRO Business</h1>
+    <div class="sub">Panel lokalu — zaloguj się</div>
+    <div class="field">
+      <label>Email</label>
+      <input id="email" type="email" autocomplete="email" inputmode="email">
+    </div>
+    <div class="field" style="margin-bottom:18px">
+      <label>Hasło</label>
+      <input id="password" type="password" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary" onclick="doLogin()" id="loginBtn">Zaloguj</button>
+    <button class="btn btn-ghost" onclick="doResetPassword()" id="resetBtn" style="margin-top:10px;font-size:14px;">Zapomniałem hasła</button>
+    <div id="loginAlert" class="alert-msg"></div>
+  </div>
+</div>
+
+<!-- PLACE PICKER -->
+<div id="picker" style="display:none; padding:20px;">
+  <div style="max-width:520px; margin:40px auto;">
+    <h1 style="font-family:'Space Grotesk',sans-serif; font-size:22px; margin-bottom:6px;">Wybierz lokal</h1>
+    <div style="color:var(--muted); font-size:14px; margin-bottom:24px;">Masz dostęp do kilku lokali — wybierz który chcesz zarządzać:</div>
+    <div id="pickerList" class="picker"></div>
+    <button class="btn btn-ghost" onclick="doLogout()" style="margin-top:24px;">Wyloguj się</button>
+  </div>
+</div>
+
+<!-- NO PLACES -->
+<div id="noPlaces" style="display:none; padding:20px;">
+  <div style="max-width:520px; margin:60px auto; text-align:center;">
+    <div style="font-size:64px; margin-bottom:20px;">🏪</div>
+    <h1 style="font-family:'Space Grotesk',sans-serif; font-size:22px; margin-bottom:12px;">Brak przypisanego lokalu</h1>
+    <div style="color:var(--muted); line-height:1.6; margin-bottom:28px;">Twoje konto nie jest jeszcze właścicielem żadnego lokalu w TS PRO.<br><br>Skontaktuj się z nami: <a href="mailto:info.lanacare@gmail.com" style="color:var(--gold);">info.lanacare@gmail.com</a></div>
+    <button class="btn btn-ghost" onclick="doLogout()">Wyloguj się</button>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dash" class="dash">
+  <div class="topbar">
+    <div class="topbar-icon" id="placeIcon">🏪</div>
+    <div class="topbar-info">
+      <div class="topbar-name" id="placeName">—</div>
+      <div class="topbar-sub"><span class="live-dot"></span>LIVE · <span id="placeAddr">—</span></div>
+    </div>
+    <button class="topbar-btn" onclick="doLogout()" title="Wyloguj">⏻</button>
+  </div>
+
+  <div class="main">
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-num" id="statActive">0</div>
+        <div class="stat-label">Aktywne</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" id="statToday">0</div>
+        <div class="stat-label">Dziś dodanych</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" id="statVisits">0</div>
+        <div class="stat-label">Wizyt total</div>
+      </div>
+    </div>
+
+    <!-- KIOSK quick tiles — 1-tap publish (visible only in kiosk mode) -->
+    <div class="quick-tiles" id="quickTiles" style="display:none">
+      <button class="quick-tile" onclick="quickPublish('🔥 Happy Hour 18-20! Drinki -50%','📢',2)">
+        <div class="quick-tile-icon">🔥</div>
+        <div class="quick-tile-text">Happy Hour<br>-50%</div>
+      </button>
+      <button class="quick-tile" onclick="quickPublish('☕ Promo dnia: kawa za 5 zł!','📢',8)">
+        <div class="quick-tile-icon">☕</div>
+        <div class="quick-tile-text">Promo<br>kawy</div>
+      </button>
+      <button class="quick-tile" onclick="quickPublish('🍕 Pizza 2 za 1 do 22:00','📢',4)">
+        <div class="quick-tile-icon">🍕</div>
+        <div class="quick-tile-text">Pizza<br>2 za 1</div>
+      </button>
+      <button class="quick-tile" onclick="quickPublish('🎵 DJ live od 21:00','📢',6)">
+        <div class="quick-tile-icon">🎵</div>
+        <div class="quick-tile-text">DJ live<br>21:00</div>
+      </button>
+      <button class="quick-tile" onclick="quickPublish('🍻 Last call w 30 min!','📢',1)">
+        <div class="quick-tile-icon">🍻</div>
+        <div class="quick-tile-text">Last call<br>30 min</div>
+      </button>
+      <button class="quick-tile" onclick="openCreate('alert')">
+        <div class="quick-tile-icon">✏️</div>
+        <div class="quick-tile-text">Wpisz<br>własną</div>
+      </button>
+    </div>
+
+    <div class="actions">
+      <button class="big-btn alert" onclick="openCreate('alert')">
+        <div class="big-btn-icon">📢</div>
+        <div class="big-btn-content">
+          <div class="big-btn-title">DODAJ OKAZJĘ</div>
+          <div class="big-btn-sub">Happy hour, promocja, zniżka</div>
+        </div>
+      </button>
+      <button class="big-btn question" onclick="openCreate('question')">
+        <div class="big-btn-icon">❓</div>
+        <div class="big-btn-content">
+          <div class="big-btn-title">ZADAJ PYTANIE</div>
+          <div class="big-btn-sub">Ankieta dla klientów w okolicy</div>
+        </div>
+      </button>
+      <button class="big-btn info" onclick="openCreate('info')">
+        <div class="big-btn-icon">ℹ️</div>
+        <div class="big-btn-content">
+          <div class="big-btn-title">INFO</div>
+          <div class="big-btn-sub">Wydarzenie, ogłoszenie</div>
+        </div>
+      </button>
+    </div>
+
+    <div class="section-h">📋 Aktualne wiadomości</div>
+    <div id="msgList" class="msg-list">
+      <div class="empty">Brak aktualnych wiadomości.<br><span style="font-size:12px; opacity:.7;">Kliknij "DODAJ OKAZJĘ" żeby dodać pierwszą.</span></div>
+    </div>
+
+    <div class="kiosk-footer" id="kioskFooter" style="display:none">
+      <div style="display:flex;align-items:center;gap:8px"><img src="/static/icons/ts-pro-192.png" alt=""><span>TS PRO Business · Live</span></div>
+      <div id="kioskClock">--:--</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CREATE -->
+<div id="createModal" class="modal" onclick="if(event.target===this)closeCreate()">
+  <div class="modal-card">
+    <div class="modal-h" id="createTitle">📢 Dodaj okazję</div>
+    <div class="modal-sub" id="createSub">Wiadomość zobaczą userzy TS PRO w 5 km od Twojego lokalu.</div>
+
+    <textarea id="msgBody" maxlength="200" placeholder="Np. Happy Hour 18-20! Drinki -50%"></textarea>
+
+    <div class="presets" id="presets"></div>
+
+    <div class="section-h" style="margin-top:8px;">⏱️ Wygaśnie po:</div>
+    <div class="duration-grid" id="durations">
+      <button class="dur-btn" data-h="2">2h</button>
+      <button class="dur-btn active" data-h="8">8h</button>
+      <button class="dur-btn" data-h="24">24h</button>
+      <button class="dur-btn" data-h="72">3 dni</button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeCreate()">Anuluj</button>
+      <button class="btn btn-primary" id="publishBtn" onclick="publishMsg()">Opublikuj</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SB = supabase.createClient(
+  'https://sabeurtjyasiwozekguh.supabase.co',
+  'sb_publishable_CYTVbJX_l39QajRGz1qb6g_4NpHw1R1',
+  { auth: { persistSession: true, storageKey: 'tspro-biz-auth' } }
+);
+
+let _user = null;
+let _places = [];
+let _currentPlace = null;
+let _createKind = 'alert';
+let _createDur = 8;
+let _refreshTimer = null;
+let _countdownTimer = null;
+
+const KIND_PRESETS = {
+  alert: ['🔥 Happy Hour 18-20! Drinki -50%','🎉 Karaoke wieczór 21:00','🍕 Pizza 2 za 1 do 22:00','💃 DJ live od 20:00','🍻 Last call w 30 min!'],
+  question: ['❓ Co zamawiacie najczęściej?','❓ Wpadniecie dziś wieczorem?','❓ Co gracie z muzyki?','❓ Jakie przekąski lubicie?'],
+  info: ['ℹ️ Otwarte do 24:00','ℹ️ Dziś brak rezerwacji - zapraszamy','ℹ️ Nowe menu od dziś','ℹ️ Parking za rogiem']
+};
+const KIND_TITLE = { alert:'📢 Dodaj okazję', question:'❓ Zadaj pytanie', info:'ℹ️ Dodaj info' };
+const KIND_SUB = {
+  alert:'Wiadomość zobaczą userzy TS PRO w 5 km od Twojego lokalu.',
+  question:'Pytanie pojawi się jako złota łezka "?" nad lokalem.',
+  info:'Info pojawi się jako złota łezka "i" nad lokalem.'
+};
+
+// ── AUTH ──────────────────────────────────────────────
+async function doLogin(){
+  const email = document.getElementById('email').value.trim();
+  const pwd   = document.getElementById('password').value;
+  const btn   = document.getElementById('loginBtn');
+  const al    = document.getElementById('loginAlert');
+  al.className = 'alert-msg';
+  if(!email || !pwd){ al.className='alert-msg show error'; al.textContent='Wpisz email i hasło.'; return; }
+  btn.disabled = true; btn.textContent = 'Loguję...';
+  const { data, error } = await SB.auth.signInWithPassword({ email, password: pwd });
+  btn.disabled = false; btn.textContent = 'Zaloguj';
+  if(error){ al.className='alert-msg show error'; al.textContent = error.message || 'Błąd logowania'; return; }
+  _user = data.user;
+  await loadPlaces();
+}
+
+async function doResetPassword(){
+  const email = document.getElementById('email').value.trim();
+  const al    = document.getElementById('loginAlert');
+  al.className = 'alert-msg';
+  if(!email){
+    al.className = 'alert-msg show error';
+    al.textContent = 'Wpisz email do którego wysłać link resetu.';
+    document.getElementById('email').focus();
+    return;
+  }
+  const btn = document.getElementById('resetBtn');
+  btn.disabled = true; btn.textContent = 'Wysyłam...';
+  const { error } = await SB.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + '/biz'
+  });
+  btn.disabled = false; btn.textContent = 'Zapomniałem hasła';
+  if(error){
+    al.className = 'alert-msg show error';
+    al.textContent = error.message || 'Błąd wysyłki';
+    return;
+  }
+  al.className = 'alert-msg show success';
+  al.innerHTML = `Wysłałem link na <strong>${email}</strong>.<br>Sprawdź <strong>Inbox</strong> i <strong>Spam</strong>.<br>Klik link → ustaw nowe hasło → wróć tutaj.`;
+}
+
+// Pokaż formularz nowego hasła (wywoływane przez onAuthStateChange PASSWORD_RECOVERY event)
+function _showResetForm(){
+  showOnly('login');
+  const card = document.querySelector('.login-card');
+  if(!card) return;
+  card.innerHTML = `
+    <img src="/static/icons/ts-pro-256.png" alt="TS PRO">
+    <h1>Ustaw nowe hasło</h1>
+    <div class="sub">Wpisz nowe hasło dla swojego konta TS PRO.</div>
+    <div class="field">
+      <label>Nowe hasło</label>
+      <input id="newPwd" type="password" autocomplete="new-password">
+    </div>
+    <div class="field" style="margin-bottom:18px">
+      <label>Powtórz hasło</label>
+      <input id="newPwd2" type="password" autocomplete="new-password" onkeydown="if(event.key==='Enter')saveNewPassword()">
+    </div>
+    <button class="btn btn-primary" id="savePwdBtn" onclick="saveNewPassword()">Zapisz hasło</button>
+    <div id="loginAlert" class="alert-msg"></div>`;
+  setTimeout(() => document.getElementById('newPwd')?.focus(), 100);
+}
+async function _checkRecoveryFlow(){ _showResetForm(); }
+
+async function saveNewPassword(){
+  const p1 = document.getElementById('newPwd').value;
+  const p2 = document.getElementById('newPwd2').value;
+  const al = document.getElementById('loginAlert');
+  al.className = 'alert-msg';
+  if(p1.length < 6){ al.className='alert-msg show error'; al.textContent='Hasło min. 6 znaków.'; return; }
+  if(p1 !== p2){ al.className='alert-msg show error'; al.textContent='Hasła się nie zgadzają.'; return; }
+  const btn = document.getElementById('savePwdBtn');
+  btn.disabled = true; btn.textContent = 'Zapisuję...';
+  const { error } = await SB.auth.updateUser({ password: p1 });
+  btn.disabled = false; btn.textContent = 'Zapisz hasło';
+  if(error){ al.className='alert-msg show error'; al.textContent = error.message; return; }
+  // Przeładuj stronę bez hash żeby normalny login się pokazał
+  window.location.href = '/biz';
+}
+
+async function doLogout(){
+  await SB.auth.signOut();
+  _user = null; _currentPlace = null; _places = [];
+  if(_refreshTimer){ clearInterval(_refreshTimer); _refreshTimer=null; }
+  if(_countdownTimer){ clearInterval(_countdownTimer); _countdownTimer=null; }
+  showOnly('login');
+}
+
+function showOnly(id){
+  ['login','picker','noPlaces','dash'].forEach(k => {
+    const el = document.getElementById(k);
+    if(!el) return;
+    if(k === id){ el.style.display = id==='dash' ? 'flex':'block'; el.classList.add('show'); }
+    else { el.style.display = 'none'; el.classList.remove('show'); }
+  });
+}
+
+// ── PLACES ────────────────────────────────────────────
+async function loadPlaces(){
+  if(!_user) return;
+  // Sprawdź czy admin — wtedy widzi wszystkie lokale
+  const { data: prof } = await SB.from('profiles').select('is_admin').eq('id', _user.id).maybeSingle();
+  const isAdmin = !!prof?.is_admin;
+  let q = SB.from('places').select('*').order('name');
+  if(!isAdmin) q = q.eq('owner_user_id', _user.id);
+  const { data, error } = await q;
+  if(error){ console.error('places:', error); alert('Błąd: '+error.message); return; }
+  _places = data || [];
+  if(isAdmin && _places.length){
+    // Pokaż info że wchodzi jako admin
+    console.log('[BIZ] Admin mode — wszystkie lokale:', _places.length);
+  }
+  if(_places.length === 0){ showOnly('noPlaces'); return; }
+  if(_places.length === 1){ openPlace(_places[0]); return; }
+  // Multiple — picker
+  const list = document.getElementById('pickerList');
+  list.innerHTML = _places.map(p => `
+    <div class="picker-item" onclick='openPlaceById(${p.id})'>
+      <div class="picker-icon">${PLACE_ICON(p)}</div>
+      <div style="flex:1; min-width:0;">
+        <div style="font-weight:800; font-size:15px;">${escapeHtml(p.name)}</div>
+        <div style="font-size:12px; color:var(--muted); margin-top:2px;">${escapeHtml(p.city || p.address || '')}</div>
+      </div>
+    </div>`).join('');
+  showOnly('picker');
+}
+
+function openPlaceById(id){
+  const p = _places.find(x => x.id === id);
+  if(p) openPlace(p);
+}
+
+const PLACE_ICONS = {cafe:'☕',pub:'🍻',club:'🪩',restaurant:'🍔',gym:'💪',fitness:'💪',shop:'🛍️',beauty:'💅',music_venue:'🎵',cinema:'🎬',other:'🏪'};
+function PLACE_ICON(p){ return PLACE_ICONS[p?.category] || '🏪'; }
+
+async function openPlace(p){
+  _currentPlace = p;
+  document.getElementById('placeIcon').textContent = PLACE_ICON(p);
+  document.getElementById('placeName').textContent = p.name;
+  document.getElementById('placeAddr').textContent = p.address || p.city || '';
+  document.getElementById('statVisits').textContent = p.visits_total || 0;
+  showOnly('dash');
+  await refreshMessages();
+  if(_refreshTimer) clearInterval(_refreshTimer);
+  _refreshTimer = setInterval(refreshMessages, 30000);
+  if(_countdownTimer) clearInterval(_countdownTimer);
+  _countdownTimer = setInterval(updateCountdowns, 30000);
+  if(_isKiosk() && !_kiosk) _enableKiosk();
+}
+
+// ── MESSAGES ──────────────────────────────────────────
+let _activeMessages = [];
+
+async function refreshMessages(){
+  if(!_currentPlace) return;
+  const { data, error } = await SB.from('place_messages')
+    .select('*').eq('place_id', _currentPlace.id)
+    .gt('expires_at', new Date().toISOString())
+    .order('created_at', { ascending:false });
+  if(error){ console.warn('msgs:', error); return; }
+  _activeMessages = data || [];
+  renderMessages();
+  document.getElementById('statActive').textContent = _activeMessages.length;
+  // dziś dodane (incl. wygasłe)
+  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  const { count } = await SB.from('place_messages').select('id', { count:'exact', head:true })
+    .eq('place_id', _currentPlace.id).gte('created_at', todayStart.toISOString());
+  document.getElementById('statToday').textContent = count || 0;
+}
+
+function renderMessages(){
+  const el = document.getElementById('msgList');
+  if(_activeMessages.length === 0){
+    el.innerHTML = `<div class="empty">Brak aktualnych wiadomości.<br><span style="font-size:12px; opacity:.7;">Kliknij "DODAJ OKAZJĘ" żeby dodać pierwszą.</span></div>`;
+    return;
+  }
+  el.innerHTML = _activeMessages.map(m => {
+    const remaining = msToHuman(new Date(m.expires_at) - Date.now());
+    const expiringSoon = (new Date(m.expires_at) - Date.now()) < 30*60*1000;
+    return `<div class="msg-item">
+      <div class="msg-emoji">${escapeHtml(m.emoji || '📢')}</div>
+      <div class="msg-content">
+        <div class="msg-body">${escapeHtml(m.body || '')}</div>
+        <div class="msg-meta">
+          <span class="countdown ${expiringSoon?'expiring':''}" data-expires="${m.expires_at}">⏱️ ${remaining}</span>
+          <span>·</span>
+          <span>${formatTime(m.created_at)}</span>
+        </div>
+      </div>
+      <button class="msg-del" onclick="deleteMsg(${m.id})" title="Usuń">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function updateCountdowns(){
+  document.querySelectorAll('.countdown[data-expires]').forEach(el => {
+    const ms = new Date(el.dataset.expires) - Date.now();
+    if(ms <= 0){ refreshMessages(); return; }
+    el.textContent = '⏱️ ' + msToHuman(ms);
+    el.classList.toggle('expiring', ms < 30*60*1000);
+  });
+}
+
+function msToHuman(ms){
+  if(ms <= 0) return 'wygasło';
+  const m = Math.floor(ms / 60000);
+  if(m < 60) return `${m} min`;
+  const h = Math.floor(m / 60), mm = m % 60;
+  if(h < 24) return mm ? `${h}h ${mm}m` : `${h}h`;
+  return `${Math.floor(h/24)}d ${h%24}h`;
+}
+
+function formatTime(iso){
+  return new Date(iso).toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'});
+}
+
+async function deleteMsg(id){
+  if(!confirm('Usunąć tę wiadomość?')) return;
+  const { error } = await SB.from('place_messages').delete().eq('id', id);
+  if(error){ alert('Błąd: '+error.message); return; }
+  refreshMessages();
+}
+
+// ── CREATE ────────────────────────────────────────────
+function openCreate(kind){
+  _createKind = kind;
+  document.getElementById('createTitle').textContent = KIND_TITLE[kind];
+  document.getElementById('createSub').textContent = KIND_SUB[kind];
+  document.getElementById('msgBody').value = '';
+  // presets
+  const ps = document.getElementById('presets');
+  ps.innerHTML = (KIND_PRESETS[kind] || []).map(p => `<button class="preset" onclick='applyPreset(${JSON.stringify(p)})'>${escapeHtml(p)}</button>`).join('');
+  // duration default
+  _createDur = 8;
+  document.querySelectorAll('.dur-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.h,10) === _createDur));
+  document.querySelectorAll('.dur-btn').forEach(b => { b.onclick = () => { _createDur = parseInt(b.dataset.h,10); document.querySelectorAll('.dur-btn').forEach(x => x.classList.toggle('active', x===b)); }; });
+  document.getElementById('createModal').classList.add('show');
+  setTimeout(() => document.getElementById('msgBody').focus(), 200);
+}
+
+function applyPreset(text){
+  document.getElementById('msgBody').value = text;
+}
+
+function closeCreate(){
+  document.getElementById('createModal').classList.remove('show');
+}
+
+async function publishMsg(){
+  const body = document.getElementById('msgBody').value.trim();
+  if(!body){ alert('Wpisz treść wiadomości'); return; }
+  const emoji = _createKind === 'question' ? '❓' : _createKind === 'info' ? 'ℹ️' : '📢';
+  const expires_at = new Date(Date.now() + _createDur*3600*1000).toISOString();
+  const btn = document.getElementById('publishBtn');
+  btn.disabled = true; btn.textContent = 'Wysyłam...';
+  const { error } = await SB.from('place_messages').insert({
+    place_id: _currentPlace.id, body, emoji, expires_at
+  });
+  btn.disabled = false; btn.textContent = 'Opublikuj';
+  if(error){ alert('Błąd: '+error.message); return; }
+  closeCreate();
+  refreshMessages();
+}
+
+// ── UTIL ──────────────────────────────────────────────
+function escapeHtml(s){ return (s||'').toString().replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ── KIOSK MODE ────────────────────────────────────────
+let _kiosk = false;
+let _wakeLock = null;
+
+function _isKiosk(){
+  return new URLSearchParams(window.location.search).get('kiosk') === '1';
+}
+
+async function _enableKiosk(){
+  _kiosk = true;
+  document.body.classList.add('kiosk');
+  document.getElementById('quickTiles').style.display = 'grid';
+  document.getElementById('kioskFooter').style.display = 'flex';
+  // Wake Lock — ekran nie gaśnie
+  try {
+    if('wakeLock' in navigator){
+      _wakeLock = await navigator.wakeLock.request('screen');
+      document.addEventListener('visibilitychange', async () => {
+        if(_wakeLock !== null && document.visibilityState === 'visible'){
+          try { _wakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
+        }
+      });
+    }
+  } catch(e){ console.warn('wake lock:', e); }
+  // Zegar w footerze
+  const updateClock = () => {
+    const el = document.getElementById('kioskClock');
+    if(el) el.textContent = new Date().toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'});
+  };
+  updateClock();
+  setInterval(updateClock, 30000);
+  // Auto-reload strony co 1h żeby pobrać aktualizacje
+  setTimeout(() => window.location.reload(), 60*60*1000);
+}
+
+async function quickPublish(body, emoji, hours){
+  if(!_currentPlace) return;
+  const expires_at = new Date(Date.now() + (hours||8)*3600*1000).toISOString();
+  const { error } = await SB.from('place_messages').insert({
+    place_id: _currentPlace.id, body, emoji, expires_at
+  });
+  if(error){
+    _kioskToast('❌ Błąd: ' + (error.message || 'spróbuj ponownie'));
+    return;
+  }
+  _kioskToast(`✅ Opublikowano! Wygasa za ${hours}h`);
+  refreshMessages();
+}
+
+function _kioskToast(text){
+  const old = document.querySelector('.kiosk-toast');
+  if(old) old.remove();
+  const el = document.createElement('div');
+  el.className = 'kiosk-toast';
+  el.textContent = text;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2700);
+}
+
+// ── BOOT ──────────────────────────────────────────────
+let _recoveryHandled = false;
+
+// PASSWORD_RECOVERY event jest emitowany gdy Supabase wykryje że user wszedł z linku resetu
+SB.auth.onAuthStateChange((event, session) => {
+  if(event === 'PASSWORD_RECOVERY'){
+    _recoveryHandled = true;
+    _showResetForm();
+  }
+});
+
+// Auto-detect recovery flow z URL: ?code=... (PKCE) lub #type=recovery (legacy)
+(async () => {
+  const hasRecoveryHash = window.location.hash.includes('type=recovery');
+  const hasPKCECode = new URLSearchParams(window.location.search).has('code');
+
+  if(hasRecoveryHash || hasPKCECode){
+    // Daj Supabase chwilę żeby przetworzył URL i emitował PASSWORD_RECOVERY event
+    showOnly('login');
+    await new Promise(r => setTimeout(r, 800));
+    if(_recoveryHandled) return;
+    // Fallback: jeśli event nie poszedł ale jest sesja — i tak pokaż formularz nowego hasła
+    const { data } = await SB.auth.getSession();
+    if(data?.session?.user){
+      _showResetForm();
+      return;
+    }
+  }
+
+  const { data } = await SB.auth.getSession();
+  if(data?.session?.user){
+    _user = data.session.user;
+    await loadPlaces();
+    if(_isKiosk() && _currentPlace) _enableKiosk();
+  } else {
+    showOnly('login');
+  }
+})();
+
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape') closeCreate();
+  if(e.key === 'Enter' && document.getElementById('login').style.display !== 'none' && document.activeElement?.id === 'password'){
+    doLogin();
+  }
+});
+</script>
+</body>
+</html>

@@ -5540,24 +5540,6 @@ function _landingEnter(){
   </div>
 </div>
 
-<!-- DM PANEL — prywatna rozmowa -->
-<div class="dm-panel" id="dm-panel">
-  <div class="dm-header">
-    <button class="panel-close" onclick="closeDmPanel()" style="position:relative;top:0;right:0;margin-left:-.3rem">✕</button>
-    <div class="dm-header-avatar" id="dm-header-avatar">👤</div>
-    <div class="dm-header-name" id="dm-header-name">Kierowca</div>
-    <div class="dm-online-dot" id="dm-online-dot"></div>
-  </div>
-  <div class="dm-messages" id="dm-messages"></div>
-  <div class="dm-input-row">
-    <textarea class="dm-textarea" id="dm-textarea" placeholder="Wiadomość..." maxlength="500" rows="1"
-      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendDm()}"></textarea>
-    <button class="dm-send-btn" onclick="sendDm()">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-    </button>
-  </div>
-</div>
-
 <!-- FAVORITES PANEL -->
 <div class="favs-panel" id="favs-panel">
   <div class="panel-handle"></div>
@@ -7774,12 +7756,12 @@ function toggleFav(s, btn){
 // ── Play / Pause ──
 function radioToggle(){
   if(!radioAudio){ radioAudio=new Audio(); radioAudio.volume=radioVolVal; }
-  if(radioPlaying){ stopRadio(); }
+  if(radioPlaying){ _radioStopLegacy(); }
   else if(radioCurrentStation){ radioLoadStation(radioCurrentStation); }
   else { openRadioPanel(); }
 }
 
-function stopRadio(){
+function _radioStopLegacy(){
   if(radioAudio){ radioAudio.pause(); radioAudio.src=''; }
   radioPlaying=false;
   updateRadioUI('■ Stopped');
@@ -10220,7 +10202,6 @@ let _rtlTimer = null;
 let _rtlDragInited = false;
 
 function showRouteTimeline(){ /* nav-route-tl nieużywany — zastąpiony przez nav-pois-strip */ }
-function hideRouteTimeline(){ }
 function toggleRouteTimeline(){ togglePoisStrip(); }
 
 let _poisStripHidden = false; // użytkownik ręcznie schował
@@ -13308,7 +13289,6 @@ function openPlaceModal(placeId, originEv){
         <button onclick="_navToPlace(${p.id})" style="flex:1;background:linear-gradient(135deg,#d4af37,#b8860b);border:none;color:#0a0e1a;border-radius:11px;padding:.7rem;font-weight:900;font-size:.82rem;cursor:pointer">🚗 Nawiguj</button>
         <button onclick="_sharePlaceToFriend(${p.id})" style="flex:1;background:rgba(96,165,250,.2);border:1px solid rgba(96,165,250,.5);color:#60a5fa;border-radius:11px;padding:.7rem;font-weight:800;font-size:.78rem;cursor:pointer">📍 Wyślij ziomkowi</button>
       </div>
-      ${isOwner?`<button onclick="document.getElementById('place-modal').remove();openMyPlacePanel(${p.id})" style="width:100%;margin-top:.5rem;background:rgba(168,85,247,.2);border:1px solid rgba(168,85,247,.5);color:#c084fc;border-radius:11px;padding:.65rem;font-weight:800;font-size:.78rem;cursor:pointer">⚙️ Zarządzaj moim lokalem</button>`:''}
     </div>`;
   modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
   document.body.appendChild(modal);
@@ -25027,7 +25007,7 @@ function _peerTap(key){
             <span style="font-size:1.35rem;filter:drop-shadow(0 0 8px rgba(255,255,255,.4))">🌍</span>
             <span style="font-size:.66rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase">Tablica</span>
           </button>
-          <button onclick="document.getElementById('${id}').remove(); _openDm('${key}','${safeName}','${emoji}')"
+          <button onclick="document.getElementById('${id}').remove(); _chatOpenWith('${key}','${safeName}')"
             style="display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:1rem .3rem;
             border:none;border-radius:16px;cursor:pointer;font-family:inherit;color:#fff;
             background:

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TS PRO Admin · Zadania</title>
+<link rel="icon" href="/static/icons/ts-pro-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Space+Grotesk:wght@700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#0a0e1a; --surface:#151a28; --surface-2:#1c2235;
+    --gold:#d4af37; --gold-2:#f5d76e; --border:rgba(212,175,55,.25);
+    --text:#f0f3fa; --muted:#8a93a8;
+    --green:#22c55e; --blue:#3b82f6; --red:#ef4444; --purple:#a855f7;
+  }
+  html,body{height:100%}
+  body{
+    font-family:'Inter',-apple-system,sans-serif;
+    background:radial-gradient(ellipse at top,#1a1f2e 0%,#0a0a0a 80%);
+    color:var(--text); -webkit-font-smoothing:antialiased; min-height:100vh;
+  }
+  .wrap{max-width:1100px; margin:0 auto; padding:24px 20px 60px}
+  header{display:flex; align-items:center; gap:14px; margin-bottom:28px; padding-bottom:18px; border-bottom:1px solid rgba(255,255,255,.08)}
+  header img{width:48px; height:48px; border-radius:12px}
+  header h1{font-family:'Space Grotesk',sans-serif; font-size:26px; font-weight:900; background:linear-gradient(135deg,var(--gold-2),var(--gold)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent}
+  header .badge{font-size:11px; font-weight:700; color:var(--purple); background:rgba(168,85,247,.15); border:1px solid rgba(168,85,247,.4); padding:3px 10px; border-radius:6px; letter-spacing:1px}
+  header button{margin-left:auto; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); color:var(--text); padding:8px 14px; border-radius:10px; font-weight:700; cursor:pointer}
+
+  /* Login */
+  .login-wrap{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px}
+  .login-card{background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:36px 28px; max-width:380px; width:100%; text-align:center}
+  .login-card img{width:80px; height:80px; margin:0 auto 14px; display:block}
+  .login-card h1{font-family:'Space Grotesk',sans-serif; font-size:22px; margin-bottom:6px; background:linear-gradient(135deg,var(--gold-2),var(--gold)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent}
+  .login-card .sub{color:var(--muted); font-size:13px; margin-bottom:20px}
+
+  /* Tabs */
+  .tabs{display:flex; gap:6px; margin-bottom:24px; padding:4px; background:rgba(0,0,0,.25); border-radius:12px}
+  .tab{flex:1; padding:10px; border:none; background:transparent; color:var(--muted); font-weight:700; font-size:13px; border-radius:9px; cursor:pointer; font-family:inherit; transition:.15s}
+  .tab.active{background:rgba(212,175,55,.18); color:var(--gold)}
+
+  /* Stats grid */
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:24px}
+  .stat{background:var(--surface); border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:14px; text-align:center}
+  .stat-num{font-family:'Space Grotesk',sans-serif; font-size:26px; font-weight:800; color:var(--gold); line-height:1}
+  .stat-label{font-size:10px; color:var(--muted); margin-top:4px; text-transform:uppercase; letter-spacing:.5px}
+
+  /* Form */
+  .form-card{background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:22px; margin-bottom:24px}
+  .form-card h2{font-family:'Space Grotesk',sans-serif; font-size:18px; margin-bottom:14px; color:var(--gold)}
+  .row{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px}
+  @media (max-width:640px){ .row{grid-template-columns:1fr} .stats{grid-template-columns:repeat(2,1fr)} }
+  .field{display:flex; flex-direction:column; gap:5px}
+  .field label{font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px}
+  .field input, .field select, .field textarea{
+    padding:10px 12px; background:var(--bg); border:1.5px solid rgba(255,255,255,.1);
+    border-radius:9px; color:var(--text); font-family:inherit; font-size:14px; outline:none;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{border-color:var(--gold)}
+  .field textarea{min-height:60px; resize:vertical}
+  .btn{padding:12px 20px; border-radius:11px; font-weight:800; cursor:pointer; border:none; font-family:inherit; font-size:14px; color:#fff}
+  .btn-primary{background:linear-gradient(135deg,var(--gold),#b8860b); color:#0a0e1a; box-shadow:0 6px 20px rgba(212,175,55,.3)}
+  .btn-ghost{background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); color:var(--text)}
+
+  /* List */
+  .list{display:flex; flex-direction:column; gap:8px}
+  .list-item{background:var(--surface); border:1px solid rgba(255,255,255,.06); border-radius:12px; padding:14px 16px; display:flex; align-items:center; gap:12px}
+  .list-item .icon{font-size:24px}
+  .list-item .info{flex:1; min-width:0}
+  .list-item .title{font-weight:800; font-size:14px}
+  .list-item .meta{font-size:11px; color:var(--muted); margin-top:3px}
+  .badge-h{display:inline-block; font-size:10px; font-weight:800; padding:2px 7px; border-radius:5px; margin-right:5px; text-transform:uppercase; letter-spacing:.5px}
+  .h-daily{background:rgba(34,197,94,.15); color:#4ade80}
+  .h-weekly{background:rgba(96,165,250,.15); color:#60a5fa}
+  .h-monthly{background:rgba(168,85,247,.15); color:#c084fc}
+  .h-campaign{background:rgba(251,146,60,.15); color:#fdba74}
+
+  .alert{padding:10px 14px; border-radius:9px; font-size:13px; margin-bottom:14px; display:none}
+  .alert.show{display:block}
+  .alert.success{background:rgba(34,197,94,.12); color:#4ade80; border:1px solid rgba(34,197,94,.3)}
+  .alert.error{background:rgba(239,68,68,.12); color:#f87171; border:1px solid rgba(239,68,68,.3)}
+  .empty{text-align:center; color:var(--muted); padding:40px 20px; font-size:14px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login" class="login-wrap">
+  <div class="login-card">
+    <img src="/static/icons/ts-pro-256.png" alt="TS PRO">
+    <h1>TS PRO Admin</h1>
+    <div class="sub">Panel zadań — tylko dla admina</div>
+    <div class="field" style="text-align:left; margin-bottom:12px">
+      <label>Email</label>
+      <input id="email" type="email" autocomplete="email">
+    </div>
+    <div class="field" style="text-align:left; margin-bottom:16px">
+      <label>Hasło</label>
+      <input id="password" type="password" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="doLogin()" id="loginBtn">Zaloguj</button>
+    <div id="loginAlert" class="alert" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dash" style="display:none">
+  <div class="wrap">
+    <header>
+      <img src="/static/icons/ts-pro-192.png" alt="">
+      <div>
+        <h1>TS PRO Studio</h1>
+        <span class="badge">ADMIN · ZADANIA</span>
+      </div>
+      <button onclick="doLogout()">Wyloguj</button>
+    </header>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-num" id="statActive">0</div><div class="stat-label">Aktywnych</div></div>
+      <div class="stat"><div class="stat-num" id="statCompletions">0</div><div class="stat-label">Wykonań</div></div>
+      <div class="stat"><div class="stat-num" id="statSponsors">0</div><div class="stat-label">Sponsorów</div></div>
+      <div class="stat"><div class="stat-num" id="statCampaigns">0</div><div class="stat-label">Kampanii</div></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="create" onclick="setTab('create')">➕ Stwórz zadanie</button>
+      <button class="tab" data-tab="list" onclick="setTab('list')">📋 Lista zadań</button>
+      <button class="tab" data-tab="campaigns" onclick="setTab('campaigns')">🔥 Kampanie</button>
+    </div>
+
+    <!-- CREATE -->
+    <div id="tab-create" class="tab-content">
+      <div class="form-card">
+        <h2>📝 Nowe zadanie</h2>
+        <div class="row">
+          <div class="field" style="grid-column:1/-1">
+            <label>Tytuł zadania *</label>
+            <input id="t-title" type="text" placeholder="np. Zrób 10000 kroków w Sieradzu">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field" style="grid-column:1/-1">
+            <label>Opis</label>
+            <textarea id="t-desc" placeholder="Krótki opis zachęcający usera"></textarea>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Emoji</label>
+            <input id="t-emoji" type="text" maxlength="2" placeholder="🎯" value="🎯">
+          </div>
+          <div class="field">
+            <label>Source (kto tworzy)</label>
+            <select id="t-source">
+              <option value="system">System (TS PRO)</option>
+              <option value="company">Company (firma)</option>
+              <option value="community">Community (user)</option>
+              <option value="live">Live (czasowe)</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Typ mechaniki</label>
+            <select id="t-type">
+              <option value="steps">🚶 Steps (kroki)</option>
+              <option value="visit">📍 Visit (wizyta)</option>
+              <option value="photo">📷 Photo</option>
+              <option value="video">🎥 Video</option>
+              <option value="quiz">🧩 Quiz</option>
+              <option value="social">💬 Social (DM/spotkanie)</option>
+              <option value="shop_online">🛍️ Shop online (sponsor)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Horyzont</label>
+            <select id="t-horizon">
+              <option value="daily">⚡ Daily (24h)</option>
+              <option value="weekly">📅 Weekly (7 dni)</option>
+              <option value="monthly">🏆 Monthly (30 dni)</option>
+              <option value="campaign">🔥 Campaign (kampania)</option>
+              <option value="permanent">♾️ Permanent</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Cel (liczba)</label>
+            <input id="t-goal" type="number" placeholder="np. 5000" value="1">
+          </div>
+          <div class="field">
+            <label>Jednostka</label>
+            <input id="t-unit" type="text" placeholder="kroki / wizyt / zdjęć">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>XP nagroda</label>
+            <input id="t-xp" type="number" value="50">
+          </div>
+          <div class="field">
+            <label>Sponsor (opcjonalnie)</label>
+            <select id="t-sponsor">
+              <option value="">— Brak —</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Miasto (opcjonalnie)</label>
+            <input id="t-city" type="text" placeholder="np. Sieradz">
+          </div>
+          <div class="field">
+            <label>Kończy się za (godziny)</label>
+            <input id="t-hours" type="number" value="24">
+          </div>
+        </div>
+
+        <details style="margin-top:14px; background:rgba(0,0,0,.2); padding:14px; border-radius:10px">
+          <summary style="cursor:pointer; font-weight:700; color:var(--gold); font-size:13px">📍 Geofence (opcjonalne) — zadanie odblokowuje się gdy user jest blisko</summary>
+          <div style="margin-top:12px">
+            <div class="row">
+              <div class="field">
+                <label>Latitude</label>
+                <input id="t-lat" type="number" step="0.000001" placeholder="np. 51.59">
+              </div>
+              <div class="field">
+                <label>Longitude</label>
+                <input id="t-lng" type="number" step="0.000001" placeholder="np. 18.73">
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label>Radius (m)</label>
+                <input id="t-radius" type="number" value="30">
+              </div>
+              <div class="field">
+                <label>Min czas obecności (s)</label>
+                <input id="t-dwell" type="number" value="60">
+              </div>
+            </div>
+            <div class="field">
+              <label><input type="checkbox" id="t-hidden" style="margin-right:6px"> Hidden until nearby (Pokemon Go fog)</label>
+            </div>
+          </div>
+        </details>
+
+        <details style="margin-top:10px; background:rgba(0,0,0,.2); padding:14px; border-radius:10px">
+          <summary style="cursor:pointer; font-weight:700; color:var(--gold); font-size:13px">🧩 Quiz (jeśli type=quiz)</summary>
+          <div style="margin-top:12px">
+            <div class="field" style="margin-bottom:10px">
+              <label>Pytanie</label>
+              <input id="t-quizq" type="text" placeholder="np. Ile lat ma magistrat w Sieradzu?">
+            </div>
+            <div class="field">
+              <label>Odpowiedź (case insensitive)</label>
+              <input id="t-quiza" type="text" placeholder="np. 200">
+            </div>
+          </div>
+        </details>
+
+        <div style="display:flex; gap:8px; margin-top:18px">
+          <button class="btn btn-primary" onclick="createTask()" id="createBtn">💾 Zapisz zadanie</button>
+          <button class="btn btn-ghost" onclick="resetForm()">🔄 Resetuj</button>
+        </div>
+        <div id="createAlert" class="alert" style="margin-top:12px"></div>
+      </div>
+    </div>
+
+    <!-- LIST -->
+    <div id="tab-list" class="tab-content" style="display:none">
+      <div class="form-card">
+        <h2>📋 Wszystkie zadania</h2>
+        <div id="taskList" class="list"><div class="empty">Ładuję…</div></div>
+      </div>
+    </div>
+
+    <!-- CAMPAIGNS -->
+    <div id="tab-campaigns" class="tab-content" style="display:none">
+      <div class="form-card">
+        <h2>🔥 Kampanie</h2>
+        <div id="campaignList" class="list"><div class="empty">Ładuję…</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SB = supabase.createClient(
+  'https://sabeurtjyasiwozekguh.supabase.co',
+  'sb_publishable_CYTVbJX_l39QajRGz1qb6g_4NpHw1R1',
+  { auth:{persistSession:true, storageKey:'tspro-admin-auth'} }
+);
+
+const ADMIN_EMAILS = ['truckspot.info@gmail.com', 'krzysiek89sadowski@gmail.com', 'info.lanacare@gmail.com', 'kbakowicz86@gmail.com'];
+let _user = null;
+let _sponsors = [];
+
+async function doLogin(){
+  const email = document.getElementById('email').value.trim();
+  const pwd = document.getElementById('password').value;
+  const al = document.getElementById('loginAlert');
+  const btn = document.getElementById('loginBtn');
+  al.className = 'alert';
+  if(!email || !pwd){ al.className='alert show error'; al.textContent='Wpisz email i hasło.'; return; }
+  if(!ADMIN_EMAILS.includes(email.toLowerCase())){
+    al.className='alert show error'; al.textContent='To konto nie ma uprawnień admin.'; return;
+  }
+  btn.disabled = true; btn.textContent = 'Loguję…';
+  const {data, error} = await SB.auth.signInWithPassword({email, password:pwd});
+  btn.disabled = false; btn.textContent = 'Zaloguj';
+  if(error){ al.className='alert show error'; al.textContent=error.message||'Błąd'; return; }
+  _user = data.user;
+  await loadDash();
+}
+
+async function doLogout(){
+  await SB.auth.signOut();
+  _user = null;
+  document.getElementById('login').style.display='flex';
+  document.getElementById('dash').style.display='none';
+}
+
+async function loadDash(){
+  document.getElementById('login').style.display='none';
+  document.getElementById('dash').style.display='block';
+  await loadSponsors();
+  await loadStats();
+  await loadTasks();
+  await loadCampaigns();
+}
+
+async function loadSponsors(){
+  const {data} = await SB.from('sponsors').select('id,name,type,category').eq('active',true).order('name');
+  _sponsors = data || [];
+  const sel = document.getElementById('t-sponsor');
+  sel.innerHTML = '<option value="">— Brak —</option>' +
+    _sponsors.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${s.type})</option>`).join('');
+  document.getElementById('statSponsors').textContent = _sponsors.length;
+}
+
+async function loadStats(){
+  const [{count: aCount}, {count: tCount}, {count: cCount}] = await Promise.all([
+    SB.from('tasks').select('id',{count:'exact',head:true}).eq('active',true),
+    SB.from('task_progress').select('id',{count:'exact',head:true}).eq('completed',true),
+    SB.from('campaigns').select('id',{count:'exact',head:true}).eq('active',true),
+  ]);
+  document.getElementById('statActive').textContent = aCount || 0;
+  document.getElementById('statCompletions').textContent = tCount || 0;
+  document.getElementById('statCampaigns').textContent = cCount || 0;
+}
+
+async function loadTasks(){
+  const el = document.getElementById('taskList');
+  const {data, error} = await SB.from('tasks').select('id,title,emoji,source,type,horizon,goal_value,goal_unit,xp_reward,city,active,total_completions,ends_at')
+    .order('created_at',{ascending:false}).limit(100);
+  if(error){ el.innerHTML = `<div class="empty">Błąd: ${error.message}</div>`; return; }
+  if(!data?.length){ el.innerHTML = `<div class="empty">Brak zadań — stwórz pierwsze!</div>`; return; }
+  el.innerHTML = data.map(t => `
+    <div class="list-item">
+      <div class="icon">${t.emoji||'🎯'}</div>
+      <div class="info">
+        <div class="title">${escapeHtml(t.title)}</div>
+        <div class="meta">
+          <span class="badge-h h-${t.horizon}">${t.horizon}</span>
+          ${t.source} · ${t.type}${t.city?' · 📍 '+escapeHtml(t.city):''} · ${t.xp_reward} XP · ${t.total_completions||0} wykonań
+        </div>
+      </div>
+      <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px" onclick="toggleActive(${t.id},${!t.active})">${t.active?'⏸ Pauza':'▶ Wznów'}</button>
+      <button class="btn btn-ghost" style="padding:6px 10px;font-size:12px" onclick="deleteTask(${t.id})">🗑️</button>
+    </div>`).join('');
+}
+
+async function loadCampaigns(){
+  const el = document.getElementById('campaignList');
+  const {data, error} = await SB.from('campaigns').select('*').order('created_at',{ascending:false});
+  if(error){ el.innerHTML = `<div class="empty">Błąd: ${error.message}</div>`; return; }
+  if(!data?.length){ el.innerHTML = `<div class="empty">Brak kampanii.</div>`; return; }
+  el.innerHTML = data.map(c => `
+    <div class="list-item">
+      <div class="icon">${c.banner_emoji||'🔥'}</div>
+      <div class="info">
+        <div class="title">${escapeHtml(c.title)}</div>
+        <div class="meta">📍 ${escapeHtml(c.city)} · max ${c.max_winners||'∞'} wygrywających ${c.active?'· ✅ aktywna':'· ⏸ wstrzymana'}</div>
+      </div>
+    </div>`).join('');
+}
+
+async function createTask(){
+  const al = document.getElementById('createAlert');
+  const btn = document.getElementById('createBtn');
+  al.className='alert';
+  const title = document.getElementById('t-title').value.trim();
+  if(!title){ al.className='alert show error'; al.textContent='Tytuł wymagany.'; return; }
+  const hours = parseInt(document.getElementById('t-hours').value || '24', 10);
+  const lat = parseFloat(document.getElementById('t-lat').value);
+  const lng = parseFloat(document.getElementById('t-lng').value);
+  const sponsorId = document.getElementById('t-sponsor').value;
+  const payload = {
+    title,
+    description: document.getElementById('t-desc').value.trim() || null,
+    emoji: document.getElementById('t-emoji').value || '🎯',
+    source: document.getElementById('t-source').value,
+    type: document.getElementById('t-type').value,
+    horizon: document.getElementById('t-horizon').value,
+    goal_value: parseInt(document.getElementById('t-goal').value || '1', 10),
+    goal_unit: document.getElementById('t-unit').value.trim() || null,
+    xp_reward: parseInt(document.getElementById('t-xp').value || '50', 10),
+    sponsor_id: sponsorId ? parseInt(sponsorId, 10) : null,
+    city: document.getElementById('t-city').value.trim() || null,
+    starts_at: new Date().toISOString(),
+    ends_at: new Date(Date.now() + hours*3600*1000).toISOString(),
+    active: true,
+  };
+  if(!isNaN(lat) && !isNaN(lng)){
+    payload.lat = lat; payload.lng = lng;
+    payload.trigger_radius_m = parseInt(document.getElementById('t-radius').value || '30', 10);
+    payload.min_dwell_seconds = parseInt(document.getElementById('t-dwell').value || '60', 10);
+    payload.hidden_until_nearby = document.getElementById('t-hidden').checked;
+  }
+  if(payload.type === 'quiz'){
+    payload.quiz_question = document.getElementById('t-quizq').value.trim() || null;
+    payload.quiz_answer = document.getElementById('t-quiza').value.trim() || null;
+  }
+  btn.disabled = true; btn.textContent = 'Zapisuję…';
+  const {error} = await SB.from('tasks').insert(payload);
+  btn.disabled = false; btn.textContent = '💾 Zapisz zadanie';
+  if(error){ al.className='alert show error'; al.textContent='Błąd: '+(error.message||error.code); return; }
+  al.className='alert show success'; al.textContent='✅ Zadanie utworzone!';
+  resetForm();
+  await loadStats();
+  await loadTasks();
+}
+
+async function toggleActive(id, newState){
+  await SB.from('tasks').update({active:newState}).eq('id', id);
+  await loadStats();
+  await loadTasks();
+}
+
+async function deleteTask(id){
+  if(!confirm('Usunąć zadanie? (nieodwracalne)')) return;
+  await SB.from('tasks').delete().eq('id', id);
+  await loadStats();
+  await loadTasks();
+}
+
+function resetForm(){
+  ['t-title','t-desc','t-unit','t-city','t-lat','t-lng','t-quizq','t-quiza'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('t-emoji').value = '🎯';
+  document.getElementById('t-goal').value = '1';
+  document.getElementById('t-xp').value = '50';
+  document.getElementById('t-hours').value = '24';
+  document.getElementById('t-radius').value = '30';
+  document.getElementById('t-dwell').value = '60';
+  document.getElementById('t-hidden').checked = false;
+}
+
+function setTab(name){
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.tab-content').forEach(c => c.style.display = c.id === 'tab-'+name ? 'block' : 'none');
+}
+
+function escapeHtml(s){ return String(s||'').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+
+(async () => {
+  const {data} = await SB.auth.getSession();
+  if(data?.session?.user && ADMIN_EMAILS.includes((data.session.user.email||'').toLowerCase())){
+    _user = data.session.user;
+    await loadDash();
+  }
+})();
+</script>
+</body>
+</html>
