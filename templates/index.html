@@ -6826,37 +6826,63 @@ function enterMode(mode){
     map.addControl(new mapboxgl.NavigationControl({showCompass:true, visualizePitch:true}), 'top-left');
     map.on('click', (e)=>{ onMapClickForMsg(e); onMapClick(e); });
 
-    // ── LONG-PRESS NA MAPIE → Quick Spot (Krzysiek's idea: dodawanie spotów w drodze) ──
-    let _longPressTimer = null;
-    let _longPressStart = null;
-    map.on('mousedown', (e)=>{
-      if(!_sbUser) return;
-      _longPressStart = e.lngLat;
-      _longPressTimer = setTimeout(()=>{
-        if(_longPressStart){
-          openQuickSpotModal(_longPressStart.lat, _longPressStart.lng);
-          try { if(navigator.vibrate) navigator.vibrate([20, 50, 20]); } catch(_){}
-        }
-        _longPressTimer = null;
-      }, 600);
-    });
-    map.on('mouseup', ()=>{ if(_longPressTimer){ clearTimeout(_longPressTimer); _longPressTimer = null; } _longPressStart = null; });
-    map.on('drag', ()=>{ if(_longPressTimer){ clearTimeout(_longPressTimer); _longPressTimer = null; } _longPressStart = null; });
-    // Touch support
-    map.on('touchstart', (e)=>{
-      if(!_sbUser) return;
-      if(!e.lngLat) return;
-      _longPressStart = e.lngLat;
-      _longPressTimer = setTimeout(()=>{
-        if(_longPressStart){
-          openQuickSpotModal(_longPressStart.lat, _longPressStart.lng);
-          try { if(navigator.vibrate) navigator.vibrate([20, 50, 20]); } catch(_){}
-        }
-        _longPressTimer = null;
-      }, 600);
-    });
-    map.on('touchend', ()=>{ if(_longPressTimer){ clearTimeout(_longPressTimer); _longPressTimer = null; } _longPressStart = null; });
-    map.on('touchmove', ()=>{ if(_longPressTimer){ clearTimeout(_longPressTimer); _longPressTimer = null; } _longPressStart = null; });
+    // ── LONG-PRESS NA MAPIE → Quick Spot (natywny DOM listener — Mapbox touch event nie zawiera lngLat) ──
+    (function _setupMapLongPress(){
+      const canvas = map.getCanvas?.();
+      if(!canvas) return;
+      let lpTimer = null;
+      let lpStart = null;   // {x,y,t}
+      let lpFired = false;
+
+      function clear(){ if(lpTimer){ clearTimeout(lpTimer); lpTimer = null; } lpStart = null; }
+
+      function start(x, y){
+        if(!_sbUser) return;
+        lpStart = { x, y };
+        lpFired = false;
+        lpTimer = setTimeout(()=>{
+          if(!lpStart) return;
+          lpFired = true;
+          try {
+            // Konwertuj canvas pixel coords → lngLat
+            const rect = canvas.getBoundingClientRect();
+            const lngLat = map.unproject([lpStart.x - rect.left, lpStart.y - rect.top]);
+            openQuickSpotModal(lngLat.lat, lngLat.lng);
+            if(navigator.vibrate) navigator.vibrate([20, 50, 20]);
+          } catch(e){ console.warn('long-press unproject:', e); }
+          lpTimer = null;
+        }, 600);
+      }
+
+      function move(x, y){
+        if(!lpStart) return;
+        const dx = Math.abs(x - lpStart.x);
+        const dy = Math.abs(y - lpStart.y);
+        if(dx > 10 || dy > 10) clear();  // user drags = anuluj
+      }
+
+      // Touch (mobile)
+      canvas.addEventListener('touchstart', (e)=>{
+        if(e.touches.length !== 1) { clear(); return; }
+        const t = e.touches[0];
+        start(t.clientX, t.clientY);
+      }, {passive:true});
+      canvas.addEventListener('touchmove', (e)=>{
+        if(!e.touches[0]) return;
+        move(e.touches[0].clientX, e.touches[0].clientY);
+      }, {passive:true});
+      canvas.addEventListener('touchend', clear, {passive:true});
+      canvas.addEventListener('touchcancel', clear, {passive:true});
+
+      // Mouse (desktop test)
+      canvas.addEventListener('mousedown', (e)=>{
+        if(e.button !== 0) return;
+        start(e.clientX, e.clientY);
+      });
+      canvas.addEventListener('mousemove', (e)=>move(e.clientX, e.clientY));
+      canvas.addEventListener('mouseup', clear);
+      canvas.addEventListener('mouseleave', clear);
+    })();
     map.on('moveend', ()=>{ if(map.getZoom()>=8) loadOsmParkings(); loadReports(); if(activeFuelCards().length>0) loadFuelStations(); });
     map.once('load', ()=>{
       if(!gpsActive) startGps();
