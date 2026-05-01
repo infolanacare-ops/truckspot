@@ -16927,22 +16927,32 @@ async function _cwSubmit(){
   const btn = document.getElementById('cw-submit-btn');
   if(btn){ btn.disabled=true; btn.style.opacity='.6'; btn.textContent='⏳ Tworzę...'; }
   try {
-    const { data, error } = await _SB.from('user_watches').insert({
-      user_id: _sbUser.id, portal: _cwPortal, query, max_price,
-      city, notify_mode: mode, expires_at
-    }).select().maybeSingle();
-    if(error) throw error;
+    // Minimum payload — żadne dziwne kolumny które mogą rzucać 500
+    const payload = {
+      user_id: _sbUser.id,
+      portal: _cwPortal,
+      query: query.slice(0, 200),
+      notify_mode: mode,
+      expires_at
+    };
+    if(max_price && max_price > 0) payload.max_price = max_price;
+    if(city) payload.city = city.slice(0, 60);
+    console.log('[hunter] INSERT payload:', payload);
+    const { data, error } = await _SB.from('user_watches').insert(payload).select().maybeSingle();
+    if(error){ console.error('[hunter] INSERT error:', error); throw error; }
+    if(!data){ throw new Error('Brak odpowiedzi z bazy (RLS lub schema)'); }
     document.getElementById('create-watch-modal')?.remove();
     try { if(navigator.vibrate) navigator.vibrate([20,40,20]); } catch(e){}
     showAlert('🎯','Polowanie aktywne!', `${query} · Łowca pracuje w tle`);
     setTimeout(closeAlert, 3000);
     // Auto seed dummy alertów dla testu (demo flow)
-    try {
-      await _SB.rpc('dev_seed_dummy_alerts', { p_watch_id: data.id });
-    } catch(e){}
+    try { await _SB.rpc('dev_seed_dummy_alerts', { p_watch_id: data.id }); } catch(e){ console.warn('[hunter] seed dummy fail:', e); }
     _loadHunterList();
   } catch(e){
-    showAlert('⚠️','Błąd', e.message||''); setTimeout(closeAlert,3000);
+    console.error('[hunter] _cwSubmit fail:', e);
+    const msg = e?.message || e?.details || e?.hint || JSON.stringify(e).slice(0, 200) || 'unknown';
+    showAlert('⚠️','Błąd zapisu', msg);
+    setTimeout(closeAlert, 5000);
   } finally {
     if(btn){ btn.disabled=false; btn.style.opacity='1'; btn.textContent='🎯 Stwórz polowanie'; }
   }
