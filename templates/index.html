@@ -15324,7 +15324,7 @@ async function openAddSpotModal(){
     setTimeout(closeAlert, 2500);
     return;
   }
-  _spotPicker = { vibe:'chill', photoFile:null, photoDataUrl:null, lat, lng };
+  _spotPicker = { vibe:'chill', photoFile:null, photoDataUrl:null, videoFile:null, videoUrl:null, mediaType:'photo', tags:[], visibility:'public', lat, lng };
   document.getElementById('spot-modal')?.remove();
 
   const modal = document.createElement('div');
@@ -15344,18 +15344,39 @@ async function openAddSpotModal(){
       </div>
     </div>
 
-    <!-- PORTAL FOTO -->
+    <!-- MEDIA TYPE TOGGLE: 📷 Foto / 🎬 Video -->
+    <div style="display:flex;gap:6px;padding:0 1.2rem;max-width:520px;margin:0 auto 8px;position:relative;z-index:2">
+      <button onclick="_setMediaType('photo')" id="media-toggle-photo" style="flex:1;padding:10px;background:linear-gradient(135deg,rgba(6,182,212,.3),rgba(59,130,246,.15));border:1px solid rgba(6,182,212,.6);border-radius:11px;color:#fff;font-family:inherit;font-weight:800;font-size:.78rem;cursor:pointer;letter-spacing:.04em">📷 FOTO</button>
+      <button onclick="_setMediaType('video')" id="media-toggle-video" style="flex:1;padding:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.7);border-radius:11px;font-family:inherit;font-weight:800;font-size:.78rem;cursor:pointer;letter-spacing:.04em">🎬 VIDEO</button>
+    </div>
+
+    <!-- PORTAL MEDIA -->
     <div class="q-photo-wrap">
-      <label class="q-portal" for="spot-photo-input">
+      <label class="q-portal" for="spot-media-input">
         <div class="q-portal-ring outer"></div>
         <div class="q-portal-ring"></div>
         <div class="q-portal-inner" id="spot-photo-preview">
           <div class="q-portal-icon">⊙</div>
-          <div class="q-portal-label">Dodaj zdjęcie</div>
-          <div class="q-portal-hint">OPTIONAL · MAX 10MB</div>
+          <div class="q-portal-label" id="spot-media-label">Dodaj zdjęcie</div>
+          <div class="q-portal-hint" id="spot-media-hint">OPTIONAL · MAX 10MB</div>
         </div>
       </label>
-      <input id="spot-photo-input" type="file" accept="image/*" capture="environment" onchange="_onSpotPhotoChange(this)" style="display:none">
+      <input id="spot-media-input" type="file" accept="image/*" capture="environment" onchange="_onSpotMediaChange(this)" style="display:none">
+    </div>
+
+    <!-- TAGI #wiosna #park -->
+    <div style="padding:0 1.2rem;max-width:520px;margin:0 auto 10px;position:relative;z-index:2">
+      <input id="spot-tags" type="text" placeholder="#wiosna #park #sieradz (oddziel spacją)" maxlength="120" style="width:100%;padding:11px 14px;background:rgba(168,85,247,.06);border:1px solid rgba(168,85,247,.3);border-radius:12px;color:#fff;font-family:'JetBrains Mono',monospace;font-size:.8rem;outline:none;box-sizing:border-box;backdrop-filter:blur(8px)">
+    </div>
+
+    <!-- VISIBILITY: Kto widzi -->
+    <div style="padding:0 1.2rem;max-width:520px;margin:0 auto 10px;position:relative;z-index:2">
+      <label style="display:block;font-size:.6rem;color:rgba(255,255,255,.55);font-family:'JetBrains Mono',monospace;margin-bottom:6px;letter-spacing:.08em">// KTO WIDZI</label>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+        <button onclick="_setVisibility('public')" id="vis-public" style="padding:10px 6px;background:linear-gradient(135deg,rgba(6,182,212,.3),rgba(59,130,246,.15));border:1px solid rgba(6,182,212,.6);border-radius:11px;color:#fff;font-family:inherit;font-weight:700;font-size:.7rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font-size:1.1rem">🌍</span><span>Wszyscy</span></button>
+        <button onclick="_setVisibility('friends')" id="vis-friends" style="padding:10px 6px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.7);border-radius:11px;font-family:inherit;font-weight:700;font-size:.7rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font-size:1.1rem">👥</span><span>Znajomi</span></button>
+        <button onclick="_setVisibility('private')" id="vis-private" style="padding:10px 6px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.7);border-radius:11px;font-family:inherit;font-weight:700;font-size:.7rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font-size:1.1rem">🔒</span><span>Tylko ja</span></button>
+      </div>
     </div>
 
     <!-- VIBE CRYSTALS -->
@@ -15474,28 +15495,88 @@ function _updateSpotCharCount(){
   if(el && count) count.textContent = `${el.value.length} / 280`;
 }
 
-function _onSpotPhotoChange(input){
+function _setMediaType(type){
+  _spotPicker.mediaType = type;
+  const photoBtn = document.getElementById('media-toggle-photo');
+  const videoBtn = document.getElementById('media-toggle-video');
+  const input = document.getElementById('spot-media-input');
+  const label = document.getElementById('spot-media-label');
+  const hint = document.getElementById('spot-media-hint');
+  if(type === 'photo'){
+    if(photoBtn){ photoBtn.style.background='linear-gradient(135deg,rgba(6,182,212,.3),rgba(59,130,246,.15))'; photoBtn.style.borderColor='rgba(6,182,212,.6)'; photoBtn.style.color='#fff'; }
+    if(videoBtn){ videoBtn.style.background='rgba(255,255,255,.04)'; videoBtn.style.borderColor='rgba(255,255,255,.12)'; videoBtn.style.color='rgba(255,255,255,.7)'; }
+    if(input){ input.accept='image/*'; input.value=''; }
+    if(label) label.textContent = 'Dodaj zdjęcie';
+    if(hint) hint.textContent = 'OPTIONAL · MAX 10MB';
+  } else {
+    if(videoBtn){ videoBtn.style.background='linear-gradient(135deg,rgba(168,85,247,.3),rgba(236,72,153,.15))'; videoBtn.style.borderColor='rgba(168,85,247,.6)'; videoBtn.style.color='#fff'; }
+    if(photoBtn){ photoBtn.style.background='rgba(255,255,255,.04)'; photoBtn.style.borderColor='rgba(255,255,255,.12)'; photoBtn.style.color='rgba(255,255,255,.7)'; }
+    if(input){ input.accept='video/*'; input.value=''; }
+    if(label) label.textContent = 'Dodaj video';
+    if(hint) hint.textContent = 'MAX 60s · MAX 25MB';
+  }
+}
+
+function _setVisibility(level){
+  _spotPicker.visibility = level;
+  ['public','friends','private'].forEach(k=>{
+    const b = document.getElementById('vis-'+k);
+    if(!b) return;
+    if(k === level){
+      const colors = {public:'6,182,212', friends:'168,85,247', private:'251,146,60'};
+      const c = colors[k];
+      b.style.background = `linear-gradient(135deg,rgba(${c},.3),rgba(${c},.1))`;
+      b.style.borderColor = `rgba(${c},.6)`;
+      b.style.color = '#fff';
+    } else {
+      b.style.background = 'rgba(255,255,255,.04)';
+      b.style.borderColor = 'rgba(255,255,255,.12)';
+      b.style.color = 'rgba(255,255,255,.7)';
+    }
+  });
+}
+
+function _onSpotMediaChange(input){
   const file = input.files?.[0];
   if(!file) return;
-  if(file.size > 10 * 1024 * 1024){
-    showAlert('⚠️','Za duże zdjęcie','Maksymalnie 10 MB');
+  const isVideo = (_spotPicker.mediaType === 'video') || file.type.startsWith('video/');
+  const maxMB = isVideo ? 25 : 10;
+  if(file.size > maxMB * 1024 * 1024){
+    showAlert('⚠️', isVideo?'Za duże video':'Za duże zdjęcie', `Maksymalnie ${maxMB} MB`);
     setTimeout(closeAlert, 2500);
     input.value = '';
     return;
   }
-  _spotPicker.photoFile = file;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    _spotPicker.photoDataUrl = e.target.result;
+  if(isVideo){
+    _spotPicker.videoFile = file;
+    _spotPicker.photoFile = null;
+    const url = URL.createObjectURL(file);
+    _spotPicker.videoDataUrl = url;
     const preview = document.getElementById('spot-photo-preview');
     if(preview){
-      preview.innerHTML = `<img src="${e.target.result}" alt="">`;
+      preview.innerHTML = `<video src="${url}" muted autoplay loop playsinline style="width:100%;height:100%;object-fit:cover;border-radius:50%"></video>`;
       preview.style.background = '#000';
-      preview.style.border = '1px solid rgba(16,185,129,.55)';
+      preview.style.border = '1px solid rgba(168,85,247,.55)';
     }
-  };
-  reader.readAsDataURL(file);
+  } else {
+    _spotPicker.photoFile = file;
+    _spotPicker.videoFile = null;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      _spotPicker.photoDataUrl = e.target.result;
+      const preview = document.getElementById('spot-photo-preview');
+      if(preview){
+        preview.innerHTML = `<img src="${e.target.result}" alt="">`;
+        preview.style.background = '#000';
+        preview.style.border = '1px solid rgba(16,185,129,.55)';
+      }
+    };
+    reader.readAsDataURL(file);
+  }
 }
+
+// Backwards-compat (stary referencer)
+function _onSpotPhotoChange(input){ _onSpotMediaChange(input); }
 
 // ── QUANTUM MORPH WINDOW — uniwersalny floating modal ──────────────────────
 // Każde wywołanie: _morphWindow({id, html, originEv, onClose})
@@ -15599,7 +15680,8 @@ async function _submitSpot(){
 
   try {
     let photoUrl = null;
-    // 1) Upload foto jeśli jest
+    let videoUrl = null;
+    // 1a) Upload foto jeśli jest
     if(_spotPicker.photoFile){
       const ext = (_spotPicker.photoFile.name.split('.').pop()||'jpg').toLowerCase().slice(0,4);
       const path = `${_sbUser.id}/${Date.now()}.${ext}`;
@@ -15610,14 +15692,31 @@ async function _submitSpot(){
       const { data: pub } = _SB.storage.from('spots').getPublicUrl(path);
       photoUrl = pub?.publicUrl || null;
     }
-    // 2) Insert do tabeli spots (auto-join trigger doda nas do spot_joins)
+    // 1b) Upload video jeśli jest
+    if(_spotPicker.videoFile){
+      const ext = (_spotPicker.videoFile.name.split('.').pop()||'mp4').toLowerCase().slice(0,4);
+      const path = `${_sbUser.id}/v_${Date.now()}.${ext}`;
+      const { error: upErr } = await _SB.storage.from('spots').upload(path, _spotPicker.videoFile, {
+        cacheControl:'3600', upsert:false, contentType: _spotPicker.videoFile.type || 'video/mp4',
+      });
+      if(upErr) throw upErr;
+      const { data: pub } = _SB.storage.from('spots').getPublicUrl(path);
+      videoUrl = pub?.publicUrl || null;
+    }
+    // 2) Tagi z input
+    const tagsRaw = (document.getElementById('spot-tags')?.value || '').trim();
+    const tags = tagsRaw ? [...new Set(tagsRaw.split(/\s+/).map(t=>t.replace(/^#/,'').toLowerCase().slice(0,30)).filter(t=>t.length>0).slice(0,10))] : null;
+    // 3) Insert do tabeli spots (auto-join trigger doda nas do spot_joins)
     const payload = {
       posted_by: _sbUser.id,
       lat: _spotPicker.lat,
       lng: _spotPicker.lng,
       photo_url: photoUrl,
+      video_url: videoUrl,
       description: desc || null,
       vibe: _spotPicker.vibe,
+      visibility: _spotPicker.visibility || 'public',
+      tags: tags
     };
     if(_spotPicker.isEvent){
       const t = (_spotPicker.title||'').trim();
@@ -15759,8 +15858,8 @@ setTimeout(_watchQrailSide, 1500);
 const QRAIL_TABS = [
   {icon:'✨', label:'Spot', cls:'tab-spot', subActions:[
     {icon:'➕', label:'Postaw', fn:function(){ openAddSpotModal(); }},
+    {icon:'🎬', label:'Reels', fn:function(){ if(typeof openReelsFeed==='function') openReelsFeed('all'); }},
     {icon:'🔥', label:'Trending', fn:function(){ if(typeof openTrendingPanel==='function') openTrendingPanel(); }},
-    {icon:'📢', label:'Spotted', fn:function(){ if(typeof openCitySpotted==='function') openCitySpotted(); }},
   ]},
   {icon:'👟', label:'Kroki', cls:'tab-steps', subActions:[
     {icon:'👟', label:'Licznik', fn:function(){ if(typeof openStepsPanel==='function') openStepsPanel(); }},
@@ -16971,6 +17070,185 @@ async function _dropSubmit(lat, lng){
     setTimeout(closeAlert, 3000);
   }
 }
+
+// ════════════════════════════════════════════════════════════════
+// 🎬 REELS FEED — vertical swipe full-screen (TikTok/IG style)
+// 3 zakładki: 🌍 Wszystkie / 👥 Od znajomych / 📍 Dzisiaj w okolicy
+// ════════════════════════════════════════════════════════════════
+let _reelsFeedTab = 'all';
+let _reelsFeedItems = [];
+let _reelsCurrentIdx = 0;
+
+async function openReelsFeed(tab){
+  if(!_sbUser){ showAlert('🔒','Zaloguj się','Aby przeglądać Reels'); setTimeout(closeAlert,2200); return; }
+  if(tab) _reelsFeedTab = tab;
+  document.getElementById('reels-feed-modal')?.remove();
+
+  const m = document.createElement('div');
+  m.id = 'reels-feed-modal';
+  m.style.cssText = 'position:fixed;inset:0;z-index:6500;background:#000;color:#fff;display:flex;flex-direction:column;overflow:hidden';
+  m.innerHTML = `
+    <!-- Top: tabs -->
+    <div style="position:absolute;top:0;left:0;right:0;z-index:10;padding:env(safe-area-inset-top,12px) 12px 10px;background:linear-gradient(180deg,rgba(0,0,0,.7),transparent);display:flex;align-items:center;gap:8px">
+      <button onclick="document.getElementById('reels-feed-modal').remove()" style="background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.18);color:#fff;width:36px;height:36px;border-radius:11px;font-size:1.1rem;cursor:pointer;backdrop-filter:blur(8px)">←</button>
+      <div style="flex:1;display:flex;gap:5px;justify-content:center">
+        ${[
+          {k:'all',l:'🌍 Wszystkie'},
+          {k:'friends',l:'👥 Znajomi'},
+          {k:'today',l:'📍 Dzisiaj'},
+        ].map(t=>{
+          const active = t.k === _reelsFeedTab;
+          return `<button onclick="openReelsFeed('${t.k}')" style="background:${active?'rgba(255,255,255,.2)':'rgba(0,0,0,.4)'};border:1px solid ${active?'rgba(255,255,255,.5)':'rgba(255,255,255,.15)'};color:#fff;padding:7px 12px;border-radius:10px;font-family:inherit;font-size:.7rem;font-weight:800;cursor:pointer;letter-spacing:.04em;backdrop-filter:blur(8px)">${t.l}</button>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- Reels container — vertical scroll with snap -->
+    <div id="reels-scroll" style="flex:1;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none">
+      <div style="text-align:center;padding:50px 20px;color:#94a3b8;font-family:'JetBrains Mono',monospace;font-size:.85rem">// loading reels...</div>
+    </div>`;
+  document.body.appendChild(m);
+  await _loadReelsFeed(_reelsFeedTab);
+}
+
+async function _loadReelsFeed(tab){
+  const el = document.getElementById('reels-scroll');
+  if(!el || !_sbUser) return;
+  try {
+    let q = _SB.from('v_reels_feed').select('*').order('created_at',{ascending:false}).limit(60);
+    if(tab === 'today'){
+      const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+      q = q.gte('created_at', todayStart.toISOString());
+      if(_spottedCity) q = q.ilike('city', '%'+_spottedCity+'%');
+    }
+    if(tab === 'friends'){
+      const myId = _sbUser.id;
+      const fIds = [..._friendIds, myId];
+      if(fIds.length === 1){
+        // No friends yet
+        el.innerHTML = `<div style="text-align:center;padding:60px 30px;color:#fff">
+          <div style="font-size:60px;margin-bottom:14px;opacity:.6">👥</div>
+          <div style="font-weight:800;font-size:18px;margin-bottom:6px">Brak znajomych</div>
+          <div style="font-size:13px;color:#94a3b8;line-height:1.5">Dodaj znajomych — ich Reels pojawią się tutaj</div>
+        </div>`;
+        return;
+      }
+      q = q.in('posted_by', fIds);
+    }
+    const { data, error } = await q;
+    if(error) throw error;
+    _reelsFeedItems = data || [];
+    if(!_reelsFeedItems.length){
+      el.innerHTML = `<div style="text-align:center;padding:60px 30px;color:#fff">
+        <div style="font-size:60px;margin-bottom:14px;opacity:.6">🎬</div>
+        <div style="font-weight:800;font-size:18px;margin-bottom:6px">Brak Reels</div>
+        <div style="font-size:13px;color:#94a3b8;line-height:1.5">Bądź pierwszy — postaw spot z foto/video!</div>
+        <button onclick="document.getElementById('reels-feed-modal').remove();setTimeout(openAddSpotModal,250)" style="margin-top:18px;background:linear-gradient(135deg,#06b6d4,#3b82f6);border:none;color:#fff;padding:12px 22px;border-radius:12px;font-weight:900;cursor:pointer;letter-spacing:.04em;text-transform:uppercase">+ Postaw spot</button>
+      </div>`;
+      return;
+    }
+    el.innerHTML = _reelsFeedItems.map((r, i) => _renderReelCard(r, i)).join('');
+    // Autoplay video gdy widoczne (Intersection Observer)
+    _initReelsObserver(el);
+  } catch(e){
+    el.innerHTML = `<div style="color:#ef4444;padding:30px;text-align:center">Błąd: ${_wallEsc(e.message||'')}</div>`;
+  }
+}
+
+function _renderReelCard(r, idx){
+  const ago = _wallTimeAgo(r.created_at);
+  const aName = r.author_name || 'TRIBE';
+  const aAv = r.author_avatar || '';
+  const tags = (r.tags||[]).slice(0,5).map(t=>`<span style="background:rgba(168,85,247,.3);color:#fff;padding:2px 8px;border-radius:8px;font-size:.6rem;font-weight:700;font-family:'JetBrains Mono',monospace">#${_wallEsc(t)}</span>`).join(' ');
+  const mediaHtml = r.video_url
+    ? `<video data-reel-video="${idx}" src="${_wallEsc(r.video_url)}" muted loop playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover"></video>`
+    : (r.photo_url ? `<img src="${_wallEsc(r.photo_url)}" style="width:100%;height:100%;object-fit:cover">` : `<div style="width:100%;height:100%;background:linear-gradient(160deg,#0f172a,#020617);display:flex;align-items:center;justify-content:center;font-size:60px;opacity:.4">${_spotVibeEmoji(r.vibe)}</div>`);
+  const visIcon = r.visibility === 'friends' ? '👥' : r.visibility === 'private' ? '🔒' : '🌍';
+  return `<div data-reel-idx="${idx}" style="height:100vh;width:100vw;scroll-snap-align:start;position:relative;background:#000;overflow:hidden">
+    ${mediaHtml}
+    <!-- Gradient overlay -->
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 50%,rgba(0,0,0,.85))"></div>
+
+    <!-- Info bottom-left -->
+    <div style="position:absolute;left:14px;right:80px;bottom:env(safe-area-inset-bottom,80px);z-index:5">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer" onclick="document.getElementById('reels-feed-modal').remove();setTimeout(()=>openPublicProfile('${r.posted_by}','${_wallEsc(aName).replace(/'/g,'')}','#06b6d4','👤'),250)">
+        <div style="width:36px;height:36px;border-radius:50%;${aAv?`background:url('${aAv}') center/cover`:'background:linear-gradient(135deg,#06b6d4,#3b82f6)'};border:2px solid #fff"></div>
+        <div style="font-weight:900;font-size:14px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.5)">${_wallEsc(aName)}</div>
+        <span style="font-size:11px;color:rgba(255,255,255,.7);font-family:'JetBrains Mono',monospace">${visIcon} · ${ago}</span>
+      </div>
+      ${r.title ? `<div style="font-weight:800;font-size:16px;color:#fff;margin-bottom:5px;text-shadow:0 1px 4px rgba(0,0,0,.5)">${_wallEsc(r.title)}</div>` : ''}
+      ${r.description ? `<div style="font-size:13px;color:rgba(255,255,255,.92);line-height:1.4;margin-bottom:6px;text-shadow:0 1px 4px rgba(0,0,0,.5);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">${_wallEsc(r.description)}</div>` : ''}
+      ${tags ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${tags}</div>` : ''}
+      <div onclick="document.getElementById('reels-feed-modal').remove();setTimeout(()=>{if(window.map)window.map.flyTo({center:[${r.lng},${r.lat}],zoom:16,duration:800});openSpotModal(${r.id})},250)" style="cursor:pointer;display:inline-flex;align-items:center;gap:5px;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);color:#fff;padding:5px 10px;border-radius:10px;font-size:11px;font-family:'JetBrains Mono',monospace">📍 Pokaż na mapie</div>
+    </div>
+
+    <!-- Actions right column (like, comment, share) -->
+    <div style="position:absolute;right:12px;bottom:env(safe-area-inset-bottom,100px);z-index:5;display:flex;flex-direction:column;gap:14px;align-items:center">
+      <button onclick="_reelLikeToggle('${r.id}',${idx})" style="background:none;border:none;color:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:inherit">
+        <span id="reel-like-${idx}" style="font-size:32px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.6));transition:transform .2s">${r.i_liked?'❤️':'🤍'}</span>
+        <span id="reel-likecount-${idx}" style="font-size:11px;font-weight:800;text-shadow:0 1px 3px rgba(0,0,0,.6)">${r.like_count||0}</span>
+      </button>
+      <button onclick="document.getElementById('reels-feed-modal').remove();setTimeout(()=>openSpotModal(${r.id}),250)" style="background:none;border:none;color:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:inherit">
+        <span style="font-size:30px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.6))">💬</span>
+        <span style="font-size:11px;font-weight:800;text-shadow:0 1px 3px rgba(0,0,0,.6)">${r.comment_count||0}</span>
+      </button>
+      <button onclick="navigator.share?.({title:'${_wallEsc(r.title||'Spot na TribeSpot')}',url:window.location.origin+'/?spot=${r.id}'}).catch(()=>{}) || (navigator.clipboard?.writeText(window.location.origin+'/?spot=${r.id}'),showAlert('🔗','Skopiowano link','przeklej w innym czacie'))" style="background:none;border:none;color:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:inherit">
+        <span style="font-size:30px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.6))">📤</span>
+        <span style="font-size:10px;font-weight:800;text-shadow:0 1px 3px rgba(0,0,0,.6)">share</span>
+      </button>
+    </div>
+  </div>`;
+}
+
+let _reelsObserver = null;
+function _initReelsObserver(container){
+  if(_reelsObserver){ _reelsObserver.disconnect(); }
+  _reelsObserver = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      const idx = parseInt(e.target.dataset.reelIdx, 10);
+      const video = e.target.querySelector('video');
+      if(!video) return;
+      if(e.isIntersecting && e.intersectionRatio > 0.6){
+        try { video.play().catch(()=>{}); } catch(_){}
+        _reelsCurrentIdx = idx;
+      } else {
+        try { video.pause(); video.currentTime = 0; } catch(_){}
+      }
+    });
+  }, { root: container, threshold: [0.6] });
+  container.querySelectorAll('[data-reel-idx]').forEach(el=>_reelsObserver.observe(el));
+}
+
+async function _reelLikeToggle(spotId, idx){
+  if(!_sbUser){ showAlert('🔒','Zaloguj się',''); setTimeout(closeAlert,2000); return; }
+  const item = _reelsFeedItems[idx];
+  if(!item) return;
+  const newLiked = !item.i_liked;
+  // Optimistic UI
+  item.i_liked = newLiked;
+  item.like_count = (item.like_count||0) + (newLiked?1:-1);
+  const heart = document.getElementById('reel-like-'+idx);
+  const cnt = document.getElementById('reel-likecount-'+idx);
+  if(heart){ heart.textContent = newLiked?'❤️':'🤍'; heart.style.transform='scale(1.4)'; setTimeout(()=>{ if(heart) heart.style.transform=''; }, 200); }
+  if(cnt) cnt.textContent = item.like_count;
+  try {
+    if(navigator.vibrate) navigator.vibrate(15);
+  } catch(e){}
+  try {
+    if(newLiked){
+      await _SB.from('spot_likes').insert({ spot_id: spotId, user_id: _sbUser.id });
+    } else {
+      await _SB.from('spot_likes').delete().eq('spot_id', spotId).eq('user_id', _sbUser.id);
+    }
+  } catch(e){
+    // Rollback
+    item.i_liked = !newLiked;
+    item.like_count = Math.max(0, item.like_count + (newLiked?-1:1));
+    if(heart) heart.textContent = item.i_liked?'❤️':'🤍';
+    if(cnt) cnt.textContent = item.like_count;
+  }
+}
+
 
 // ════════════════════════════════════════════════════════════════
 // 🌍 TWÓJ ŚWIAT — lustro aktywności (drawer entry)
