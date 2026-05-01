@@ -6825,6 +6825,38 @@ function enterMode(mode){
     window.map = map; // expose globalnie żeby moduły (places, search) mogły używać window.map
     map.addControl(new mapboxgl.NavigationControl({showCompass:true, visualizePitch:true}), 'top-left');
     map.on('click', (e)=>{ onMapClickForMsg(e); onMapClick(e); });
+
+    // ── LONG-PRESS NA MAPIE → Quick Spot (Krzysiek's idea: dodawanie spotów w drodze) ──
+    let _longPressTimer = null;
+    let _longPressStart = null;
+    map.on('mousedown', (e)=>{
+      if(!_sbUser) return;
+      _longPressStart = e.lngLat;
+      _longPressTimer = setTimeout(()=>{
+        if(_longPressStart){
+          openQuickSpotModal(_longPressStart.lat, _longPressStart.lng);
+          try { if(navigator.vibrate) navigator.vibrate([20, 50, 20]); } catch(_){}
+        }
+        _longPressTimer = null;
+      }, 600);
+    });
+    map.on('mouseup', ()=>{ if(_longPressTimer){ clearTimeout(_longPressTimer); _longPressTimer = null; } _longPressStart = null; });
+    map.on('drag', ()=>{ if(_longPressTimer){ clearTimeout(_longPressTimer); _longPressTimer = null; } _longPressStart = null; });
+    // Touch support
+    map.on('touchstart', (e)=>{
+      if(!_sbUser) return;
+      if(!e.lngLat) return;
+      _longPressStart = e.lngLat;
+      _longPressTimer = setTimeout(()=>{
+        if(_longPressStart){
+          openQuickSpotModal(_longPressStart.lat, _longPressStart.lng);
+          try { if(navigator.vibrate) navigator.vibrate([20, 50, 20]); } catch(_){}
+        }
+        _longPressTimer = null;
+      }, 600);
+    });
+    map.on('touchend', ()=>{ if(_longPressTimer){ clearTimeout(_longPressTimer); _longPressTimer = null; } _longPressStart = null; });
+    map.on('touchmove', ()=>{ if(_longPressTimer){ clearTimeout(_longPressTimer); _longPressTimer = null; } _longPressStart = null; });
     map.on('moveend', ()=>{ if(map.getZoom()>=8) loadOsmParkings(); loadReports(); if(activeFuelCards().length>0) loadFuelStations(); });
     map.once('load', ()=>{
       if(!gpsActive) startGps();
@@ -15495,6 +15527,156 @@ function _pickSpotVibe(key){
     if(b.dataset.vibe === key) b.classList.add('active');
     else b.classList.remove('active');
   });
+}
+
+// ════════════════════════════════════════════════════════════════
+// 📍 QUICK SPOT — long-press na mapę → szybki spot z foto/wiadomością
+// Krzysiek's idea: dodawaj spoty "w drodze" jadąc, klikając miejsce
+// ════════════════════════════════════════════════════════════════
+let _quickSpot = { lat:null, lng:null, photoFile:null, ttl:'24h', visibility:'public' };
+
+async function openQuickSpotModal(lat, lng){
+  if(!_sbUser){ showAlert('🔒','Zaloguj się','Aby dodać spot'); setTimeout(closeAlert,2200); return; }
+  _quickSpot = { lat, lng, photoFile:null, ttl:'24h', visibility:'public' };
+  document.getElementById('quick-spot-modal')?.remove();
+
+  const m = document.createElement('div');
+  m.id = 'quick-spot-modal';
+  m.style.cssText = 'position:fixed;inset:0;z-index:5800;background:rgba(0,0,0,.85);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:1rem;animation:fadeIn .25s';
+  m.innerHTML = `
+    <div onclick="event.stopPropagation()" style="width:100%;max-width:420px;background:linear-gradient(160deg,rgba(15,23,42,.96),rgba(2,6,23,.98));border:1.5px solid rgba(6,182,212,.45);border-radius:22px;padding:1.4rem;box-shadow:0 24px 60px rgba(0,0,0,.7),0 0 50px rgba(6,182,212,.18);position:relative;overflow:hidden">
+      <div style="position:absolute;top:-30px;right:-30px;width:140px;height:140px;background:radial-gradient(circle,rgba(6,182,212,.4),transparent 70%);filter:blur(24px);pointer-events:none"></div>
+
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;position:relative">
+        <div style="position:relative;width:46px;height:46px;flex-shrink:0">
+          <div class="cyber-conic-ring" style="position:absolute;inset:-3px;border-radius:14px"></div>
+          <div style="position:relative;width:46px;height:46px;border-radius:13px;background:linear-gradient(140deg,#0f172a,#1e293b);display:flex;align-items:center;justify-content:center;font-size:1.4rem;border:1px solid rgba(255,255,255,.1)">📍</div>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:900;font-size:1.05rem;color:#fff" class="cyber-shimmer-text">SZYBKI SPOT</div>
+          <div style="font-size:.62rem;color:rgba(6,182,212,.85);font-family:'JetBrains Mono',monospace">// ${lat.toFixed(5)}, ${lng.toFixed(5)}</div>
+        </div>
+        <button onclick="document.getElementById('quick-spot-modal').remove()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.7);width:32px;height:32px;border-radius:10px;cursor:pointer">✕</button>
+      </div>
+
+      <!-- TTL toggle -->
+      <label style="display:block;font-size:.62rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px;font-family:'JetBrains Mono',monospace">// JAK DŁUGO ZOSTAJE</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">
+        <button onclick="_qsSetTTL('24h')" id="qs-ttl-24h" style="padding:11px;background:linear-gradient(135deg,rgba(6,182,212,.3),rgba(59,130,246,.15));border:1px solid rgba(6,182,212,.6);color:#fff;font-family:inherit;font-weight:800;border-radius:11px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font-size:1.1rem">⏳</span><span style="font-size:.7rem">24 GODZINY</span></button>
+        <button onclick="_qsSetTTL('forever')" id="qs-ttl-forever" style="padding:11px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.7);font-family:inherit;font-weight:800;border-radius:11px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font-size:1.1rem">🔥</span><span style="font-size:.7rem">NA ZAWSZE</span></button>
+      </div>
+
+      <!-- Visibility -->
+      <label style="display:block;font-size:.62rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px;font-family:'JetBrains Mono',monospace">// KTO WIDZI</label>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px">
+        <button onclick="_qsSetVis('public')" id="qs-vis-public" style="padding:9px 6px;background:linear-gradient(135deg,rgba(6,182,212,.3),rgba(59,130,246,.15));border:1px solid rgba(6,182,212,.6);color:#fff;font-family:inherit;font-weight:700;font-size:.7rem;border-radius:11px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px"><span>🌍</span><span>Wszyscy</span></button>
+        <button onclick="_qsSetVis('friends')" id="qs-vis-friends" style="padding:9px 6px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.7);font-family:inherit;font-weight:700;font-size:.7rem;border-radius:11px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px"><span>👥</span><span>Znajomi</span></button>
+        <button onclick="_qsSetVis('private')" id="qs-vis-private" style="padding:9px 6px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.7);font-family:inherit;font-weight:700;font-size:.7rem;border-radius:11px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px"><span>🔒</span><span>Tylko ja</span></button>
+      </div>
+
+      <!-- Foto opt -->
+      <label style="display:block;font-size:.62rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px;font-family:'JetBrains Mono',monospace">// FOTO (opcjonalnie)</label>
+      <input type="file" id="qs-photo-input" accept="image/*" capture="environment" onchange="_qsPhoto(event)" style="display:none">
+      <button onclick="document.getElementById('qs-photo-input').click()" id="qs-photo-btn" style="width:100%;padding:11px;background:rgba(168,85,247,.1);border:1px dashed rgba(168,85,247,.4);color:#c4b5fd;font-family:inherit;font-weight:700;border-radius:11px;cursor:pointer;font-size:.78rem;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px">📷 Dodaj zdjęcie</button>
+
+      <!-- Wiadomość -->
+      <label style="display:block;font-size:.62rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px;font-family:'JetBrains Mono',monospace">// CO TU JEST</label>
+      <textarea id="qs-desc" maxlength="280" rows="2" placeholder="Co tu zobaczyłeś? (opcjonalnie)" style="width:100%;padding:11px;background:rgba(6,182,212,.05);border:1px solid rgba(6,182,212,.25);color:#fff;border-radius:11px;outline:none;font-family:inherit;font-size:.85rem;resize:vertical;margin-bottom:14px"></textarea>
+
+      <div style="display:flex;gap:8px">
+        <button onclick="document.getElementById('quick-spot-modal').remove()" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.7);padding:12px;border-radius:12px;cursor:pointer;font-weight:700">Anuluj</button>
+        <button onclick="_qsSubmit()" id="qs-submit-btn" style="flex:2;background:linear-gradient(135deg,#06b6d4,#3b82f6);border:none;color:#fff;padding:12px;border-radius:12px;cursor:pointer;font-weight:900;letter-spacing:.05em;text-transform:uppercase;box-shadow:0 8px 22px rgba(6,182,212,.4)">⚡ Postaw spot</button>
+      </div>
+    </div>`;
+  m.onclick = (e)=>{ if(e.target===m) m.remove(); };
+  document.body.appendChild(m);
+}
+
+function _qsSetTTL(ttl){
+  _quickSpot.ttl = ttl;
+  const a = document.getElementById('qs-ttl-24h');
+  const b = document.getElementById('qs-ttl-forever');
+  if(ttl === '24h'){
+    if(a){ a.style.background='linear-gradient(135deg,rgba(6,182,212,.3),rgba(59,130,246,.15))'; a.style.borderColor='rgba(6,182,212,.6)'; a.style.color='#fff'; }
+    if(b){ b.style.background='rgba(255,255,255,.04)'; b.style.borderColor='rgba(255,255,255,.1)'; b.style.color='rgba(255,255,255,.7)'; }
+  } else {
+    if(b){ b.style.background='linear-gradient(135deg,rgba(251,191,36,.3),rgba(236,72,153,.15))'; b.style.borderColor='rgba(251,191,36,.6)'; b.style.color='#fff'; }
+    if(a){ a.style.background='rgba(255,255,255,.04)'; a.style.borderColor='rgba(255,255,255,.1)'; a.style.color='rgba(255,255,255,.7)'; }
+  }
+}
+
+function _qsSetVis(level){
+  _quickSpot.visibility = level;
+  ['public','friends','private'].forEach(k=>{
+    const b = document.getElementById('qs-vis-'+k);
+    if(!b) return;
+    if(k === level){
+      const colors = {public:'6,182,212', friends:'168,85,247', private:'251,146,60'};
+      const c = colors[k];
+      b.style.background = `linear-gradient(135deg,rgba(${c},.3),rgba(${c},.15))`;
+      b.style.borderColor = `rgba(${c},.6)`;
+      b.style.color = '#fff';
+    } else {
+      b.style.background='rgba(255,255,255,.04)';
+      b.style.borderColor='rgba(255,255,255,.1)';
+      b.style.color='rgba(255,255,255,.7)';
+    }
+  });
+}
+
+function _qsPhoto(ev){
+  const file = ev.target?.files?.[0];
+  if(!file) return;
+  if(file.size > 10*1024*1024){ showAlert('⚠️','Foto za duże','Max 10 MB'); setTimeout(closeAlert,2500); return; }
+  _quickSpot.photoFile = file;
+  const btn = document.getElementById('qs-photo-btn');
+  if(btn){ btn.style.background='rgba(34,197,94,.15)'; btn.style.borderColor='rgba(34,197,94,.5)'; btn.style.color='#22c55e'; btn.innerHTML='✓ Foto dodane: '+file.name.slice(0,20); }
+}
+
+async function _qsSubmit(){
+  if(!_sbUser) return;
+  const desc = (document.getElementById('qs-desc')?.value || '').trim().slice(0, 280);
+  const btn = document.getElementById('qs-submit-btn');
+  if(btn){ btn.disabled=true; btn.style.opacity='.6'; btn.textContent='⏳ POSTUJĘ...'; }
+  try {
+    let photoUrl = null;
+    if(_quickSpot.photoFile){
+      const ext = (_quickSpot.photoFile.name.split('.').pop()||'jpg').toLowerCase().slice(0,4);
+      const path = `${_sbUser.id}/qs_${Date.now()}.${ext}`;
+      const { error: upErr } = await _SB.storage.from('spots').upload(path, _quickSpot.photoFile, {
+        cacheControl:'3600', upsert:false, contentType: _quickSpot.photoFile.type || 'image/jpeg',
+      });
+      if(upErr) throw upErr;
+      const { data: pub } = _SB.storage.from('spots').getPublicUrl(path);
+      photoUrl = pub?.publicUrl || null;
+    }
+    // active_until: 24h od teraz lub 1000 dni (≈"forever")
+    const activeUntil = _quickSpot.ttl === 'forever'
+      ? new Date(Date.now() + 1000*24*3600*1000).toISOString()
+      : new Date(Date.now() + 24*3600*1000).toISOString();
+    const payload = {
+      posted_by: _sbUser.id,
+      lat: _quickSpot.lat,
+      lng: _quickSpot.lng,
+      photo_url: photoUrl,
+      description: desc || null,
+      vibe: 'view',
+      visibility: _quickSpot.visibility || 'public',
+      active_until: activeUntil,
+      permanent: _quickSpot.ttl === 'forever',
+      from_route: navActive
+    };
+    const { data, error } = await _SB.from('spots').insert(payload).select().single();
+    if(error) throw error;
+    document.getElementById('quick-spot-modal')?.remove();
+    try { if(navigator.vibrate) navigator.vibrate([20,40,20,40,40]); } catch(e){}
+    showAlert('⚡','Spot postawiony!', _quickSpot.ttl==='forever'?'Zostaje na zawsze':'Wygasa za 24h');
+    setTimeout(closeAlert, 2800);
+    _loadSpotsNearby(15);
+  } catch(e){
+    showAlert('⚠️','Błąd', e?.message||''); setTimeout(closeAlert,3000);
+    if(btn){ btn.disabled=false; btn.style.opacity='1'; btn.textContent='⚡ Postaw spot'; }
+  }
 }
 
 function _toggleEventMode(){
