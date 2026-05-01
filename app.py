@@ -432,6 +432,64 @@ h1{font-size:1.6rem;font-weight:900;margin-bottom:.5rem;background:linear-gradie
 </body></html>"""
     return html
 
+@app.route("/event/<slug>")
+@app.route("/event")
+def event_landing(slug=None):
+    """Landing dla akcji promocyjnej (Cash Hunt etc.)
+    Renderuje hype landing page z countdown, info o kampanii.
+    """
+    # Domyślnie pokazujemy generic Cash Hunt landing
+    title = "Wielkie Polowanie TribeSpot"
+    if slug:
+        title = slug.replace('-', ' ').replace('_',' ').title()
+    html = """<!DOCTYPE html><html lang="pl"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>""" + title + """ — TribeSpot</title>
+<meta name="theme-color" content="#0a0e1a">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(ellipse at top,#1a1f2e 0%,#020617 60%);color:#fff;min-height:100vh;padding:1.5rem 1rem;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;position:relative}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle at 20% 30%,rgba(212,175,55,.15),transparent 40%),radial-gradient(circle at 80% 70%,rgba(251,191,36,.12),transparent 50%);pointer-events:none}
+.crown{font-size:3rem;margin-bottom:1rem;filter:drop-shadow(0 0 20px rgba(251,191,36,.6));animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+h1{font-family:'Space Grotesk','Inter',sans-serif;font-size:clamp(1.7rem,5vw,2.6rem);font-weight:900;letter-spacing:-.02em;background:linear-gradient(135deg,#fef3c7,#fbbf24 50%,#d4af37);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;text-align:center;line-height:1.1;margin-bottom:.5rem}
+.kicker{font-family:'JetBrains Mono',monospace;font-size:.75rem;color:#fbbf24;letter-spacing:.15em;text-transform:uppercase;margin-bottom:1.5rem;text-align:center}
+.card{max-width:480px;width:100%;background:linear-gradient(160deg,rgba(212,175,55,.08),rgba(2,6,23,.6));border:1.5px solid rgba(212,175,55,.45);border-radius:24px;padding:2rem 1.5rem;backdrop-filter:blur(12px);box-shadow:0 24px 60px rgba(0,0,0,.6),0 0 80px rgba(212,175,55,.18)}
+.howit{margin-top:1.5rem;text-align:left}
+.howit-title{font-size:.65rem;color:#fbbf24;font-weight:800;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.6rem;text-align:center}
+.step{display:flex;gap:.8rem;align-items:start;padding:.8rem;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;margin-bottom:.5rem}
+.step-num{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#fbbf24,#d4af37);color:#0a0e1a;font-weight:900;font-size:.85rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-text{font-size:.85rem;line-height:1.5;color:rgba(255,255,255,.85)}
+.step-text b{color:#fef3c7}
+.cta{display:block;width:100%;background:linear-gradient(135deg,#fef3c7,#fbbf24 50%,#d4af37);color:#0a0e1a;padding:1.1rem;border-radius:14px;font-weight:900;font-size:1rem;letter-spacing:.06em;text-transform:uppercase;text-align:center;text-decoration:none;margin-top:1.5rem;box-shadow:0 12px 30px rgba(212,175,55,.5),0 1px 0 rgba(255,255,255,.5) inset}
+.note{font-size:.7rem;color:#94a3b8;text-align:center;margin-top:1rem;line-height:1.5;font-family:'JetBrains Mono',monospace}
+.dots{display:flex;justify-content:center;gap:6px;margin-top:1.5rem}
+.dot{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 10px #22c55e;animation:pulse 1.5s ease-in-out infinite}
+.dot:nth-child(2){animation-delay:.3s}
+.dot:nth-child(3){animation-delay:.6s}
+@keyframes pulse{0%,100%{opacity:.4;transform:scale(.85)}50%{opacity:1;transform:scale(1.1)}}
+</style></head><body>
+<div class="card">
+  <div class="crown">👑</div>
+  <div class="kicker">// Cash Hunt LIVE</div>
+  <h1>""" + title + """</h1>
+  <div style="text-align:center;color:#fde68a;font-size:.9rem;font-weight:600;line-height:1.5">Po mieście rozsiane są <b style="color:#fff">złote nagrody</b>.<br>Otwórz TribeSpot i sprawdź mapę.</div>
+  <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+  <div class="howit">
+    <div class="howit-title">JAK GRAĆ</div>
+    <div class="step"><div class="step-num">1</div><div class="step-text"><b>Otwórz apkę</b> na telefonie i pozwól na lokalizację</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-text">Zobacz <b>👑 złote markery</b> na mapie — to nagrody</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-text"><b>Idź na miejsce</b> (≤200 m) i kliknij <b>"Biorę!"</b></div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-text">Zrób <b>📸 zdjęcie</b> nagrody jako proof — kasa Twoja!</div></div>
+  </div>
+  <a href="/install" class="cta">📲 Zainstaluj TribeSpot →</a>
+  <a href="https://app.tribespot.eu" style="display:block;text-align:center;color:#06b6d4;font-size:.85rem;margin-top:.8rem;text-decoration:none;font-weight:700">albo otwórz w przeglądarce →</a>
+  <div class="note">// kto pierwszy ten lepszy<br>// limit 1 nagroda na osobę</div>
+</div>
+</body></html>"""
+    return html
+
+
 @app.route("/biz")
 def biz_dashboard():
     return render_template("biz.html")
@@ -1302,28 +1360,41 @@ def api_notify_checkin():
 
 @app.route("/api/notify-drop", methods=["POST"])
 def api_notify_drop():
-    """Push do userów w okolicy (≤2 km) gdy ktoś zostawia drop."""
+    """Push do userów w okolicy (≤2 km zwykłe / ≤10 km official Cash Hunt)."""
     if not PUSH_AVAILABLE or not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
         return jsonify({"ok": False, "error": "push not configured"}), 503
     data = request.get_json(force=True) or {}
     author_id = data.get("author_id")
     title = (data.get("title") or "Coś fajnego")[:80]
     qty = int(data.get("qty") or 1)
+    is_official = bool(data.get("is_official"))
+    campaign = (data.get("campaign") or "Promocja")[:80]
+    prize_label = (data.get("prize_label") or "")[:80]
     try:
         lat = float(data.get("lat"))
         lng = float(data.get("lng"))
     except (TypeError, ValueError):
         return jsonify({"ok": False, "error": "bad coords"}), 400
 
+    radius_km = 10.0 if is_official else 2.0
+
+    if is_official:
+        push_title = f"👑 {campaign} LIVE!"
+        push_body = f"{title}{' · '+prize_label if prize_label else ''} · pędź na miejsce!"
+    else:
+        push_title = "🎁 Ktoś zostawił coś obok!"
+        push_body = f"{title} · {qty} szt · kto pierwszy ten lepszy"
+
     payload = json.dumps({
-        "title": f"🎁 Ktoś zostawił coś obok!",
-        "body":  f"{title} · {qty} szt · kto pierwszy ten lepszy",
+        "title": push_title,
+        "body":  push_body,
         "icon":  "/static/icons/ts-pro-192.png",
         "badge": "/static/icons/ts-pro-96.png",
-        "tag":   "drop-nearby",
+        "tag":   "official-drop" if is_official else "drop-nearby",
         "renotify": True,
         "data": {
             "kind": "drop",
+            "official": is_official,
             "lat": lat, "lng": lng,
             "url": "/",
         },
@@ -1346,7 +1417,7 @@ def api_notify_drop():
         if slat is None or slng is None:
             continue
         try:
-            if hav_km(lat, lng, float(slat), float(slng)) <= 2.0:
+            if hav_km(lat, lng, float(slat), float(slng)) <= radius_km:
                 targets.append(s)
         except Exception:
             continue

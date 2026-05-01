@@ -11982,6 +11982,9 @@ function openMetaverseHub(){
         <button onclick="document.getElementById('${id}').remove()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);width:36px;height:36px;border-radius:11px;color:#fff;font-size:1.1rem;cursor:pointer">✕</button>
       </div>
 
+      <!-- LIVE Cash Hunt banner (jeśli aktywna kampania) -->
+      <div id="hub-live-campaigns" style="display:none;margin-bottom:1rem"></div>
+
       <!-- Toggle ON/OFF -->
       <div onclick="toggleMetaverse();document.getElementById('${id}').remove();setTimeout(openMetaverseHub,250)" style="display:flex;align-items:center;gap:.7rem;padding:.85rem .9rem;background:linear-gradient(140deg,${isOn?'rgba(34,197,94,.18)':'rgba(255,255,255,.05)'},${isOn?'rgba(34,197,94,.06)':'rgba(255,255,255,.02)'});border:1.5px solid ${isOn?'rgba(34,197,94,.5)':'rgba(255,255,255,.12)'};border-radius:14px;cursor:pointer;margin-bottom:1rem;transition:.2s">
         <div style="width:42px;height:24px;border-radius:14px;background:${isOn?'#22c55e':'rgba(255,255,255,.15)'};position:relative;flex-shrink:0;transition:.2s">
@@ -12012,6 +12015,7 @@ function openMetaverseHub(){
         ${_hubItem({icon:'🔥', label:'Trending teraz', desc:'Najgorętsze spoty w okolicy', badge:'LIVE', color:'rgba(236,72,153,.15)', colorB:'rgba(236,72,153,.55)', onClick:`openTrendingPanel()`})}
         ${_hubItem({icon:'📢', label:'Spotted', desc:'Tablica miasta — zaginione, znalezione, ogłoszenia', badge:'NEW', color:'rgba(251,191,36,.15)', colorB:'rgba(251,191,36,.55)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openCitySpotted,200)`})}
         ${_hubItem({icon:'🎁', label:'Zostaw drop', desc:'Coś niepotrzebnego? Zostaw — kto pierwszy ten lepszy', badge:'NEW', color:'rgba(251,191,36,.18)', colorB:'rgba(251,191,36,.6)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openCreateDropModal,200)`})}
+        ${_isAdmin() ? _hubItem({icon:'👑', label:'Official Drop', desc:'Akcja promocyjna — Cash Hunt / vouchery / nagrody (admin)', badge:'ADMIN', color:'rgba(212,175,55,.22)', colorB:'rgba(212,175,55,.7)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openOfficialDropModal,200)`}) : ''}
         ${_hubItem({icon:'🎯', label: _myStatus ? 'Status: ' + (_statusByKey(_myStatus.key)?.label || 'aktywny') : 'Mój status', desc: _myStatus ? (_myStatus.text || 'Widoczny nad Twoim avatarem') : 'Powiedz światu co teraz robisz', badge: _myStatus ? (_statusByKey(_myStatus.key)?.emoji||'ON') : 'NEW', color:'rgba(168,85,247,.18)', colorB:'rgba(168,85,247,.6)', onClick:`openStatusPicker()`})}
         ${_hubItem({icon:'🎉', label:'Live eventy / Kampanie', desc:_activeCampaign ? _activeCampaign.title : 'Aktywne kampanie w okolicy', badge: _activeCampaign?'LIVE':'', color:'rgba(251,146,60,.15)', colorB:'rgba(251,146,60,.5)', onClick:`openMyTasksPanel()`})}
       </div>
@@ -12047,6 +12051,76 @@ function openMetaverseHub(){
     </div>`;
   modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
   document.body.appendChild(modal);
+  // Załaduj live kampanie (Cash Hunt etc.)
+  _loadLiveCampaignsBanner();
+}
+
+async function _loadLiveCampaignsBanner(){
+  const wrap = document.getElementById('hub-live-campaigns');
+  if(!wrap || !_SB) return;
+  try {
+    const { data } = await _SB.from('v_active_campaigns').select('*').order('started_at',{ascending:false}).limit(3);
+    if(!data?.length){ wrap.style.display='none'; return; }
+    wrap.style.display='block';
+    wrap.innerHTML = data.map(c=>{
+      const remaining = c.active_count || 0;
+      const claimed = c.claimed_count || 0;
+      const total = c.total_count || (remaining + claimed);
+      const valueLeft = c.active_value ? Math.round(c.active_value) : 0;
+      const isOver = remaining === 0;
+      return `<div style="background:linear-gradient(135deg,rgba(212,175,55,.18),rgba(251,191,36,.08));border:1.5px solid rgba(212,175,55,.55);border-radius:16px;padding:1rem;cursor:pointer;box-shadow:0 6px 20px rgba(212,175,55,.18),0 1px 0 rgba(255,255,255,.18) inset;position:relative;overflow:hidden;margin-bottom:6px" onclick="document.getElementById('metaverse-hub')?.remove();setTimeout(_showCampaignList,200)">
+        <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:radial-gradient(circle,rgba(251,191,36,.5),transparent 70%);filter:blur(10px);pointer-events:none"></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;position:relative">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 10px #22c55e;animation:peer-pulse-dot 1.5s ease-in-out infinite"></span>
+          <span style="font-size:.6rem;font-weight:900;color:#22c55e;letter-spacing:.1em">LIVE NOW</span>
+          <span style="flex:1"></span>
+          <span style="font-size:.55rem;color:#fbbf24;font-family:'JetBrains Mono',monospace">// ${c.prize_type||''}</span>
+        </div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:900;font-size:1.05rem;color:#fef3c7;margin-bottom:4px">${_wallEsc(c.campaign)}</div>
+        <div style="display:flex;align-items:center;gap:14px;font-size:.78rem;color:#fff">
+          <div><span style="color:#fbbf24;font-weight:900;font-size:1.1rem">${remaining}</span><span style="color:#94a3b8">/${total}</span> zostało</div>
+          ${valueLeft ? `<div style="color:#fde68a">💰 ${valueLeft} zł czeka</div>` : ''}
+          ${isOver ? '<div style="color:#f87171;font-weight:800">— rozdane</div>' : ''}
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e){ wrap.style.display='none'; }
+}
+
+async function _showCampaignList(){
+  if(!_SB) return;
+  document.getElementById('campaign-list-modal')?.remove();
+  const m = document.createElement('div');
+  m.id = 'campaign-list-modal';
+  m.style.cssText = 'position:fixed;inset:0;z-index:5500;background:#0a0e1a;color:#fff;display:flex;flex-direction:column';
+  m.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;background:#0f172a;border-bottom:1px solid #1e293b">
+      <button onclick="document.getElementById('campaign-list-modal').remove()" style="background:#1e293b;border:none;color:#fff;width:38px;height:38px;border-radius:10px;font-size:20px;cursor:pointer">←</button>
+      <div style="flex:1">
+        <div style="font-size:18px;font-weight:900;background:linear-gradient(135deg,#fef3c7,#d4af37);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">👑 Live Drops</div>
+        <div style="font-size:11px;color:#64748b">Aktywne nagrody na mapie</div>
+      </div>
+    </div>
+    <div id="campaign-list" style="flex:1;overflow-y:auto;padding:10px;background:#0a0e1a"><div style="text-align:center;padding:30px;color:#64748b">Ładowanie...</div></div>`;
+  document.body.appendChild(m);
+  try {
+    const { data } = await _SB.from('v_drops_active').select('*').eq('is_official', true).order('created_at',{ascending:false}).limit(50);
+    const el = document.getElementById('campaign-list');
+    if(!data?.length){ el.innerHTML = '<div style="text-align:center;padding:40px;color:#64748b">Brak aktywnych official drops</div>'; return; }
+    el.innerHTML = data.map(d=>{
+      const remaining = Math.max(0, (d.quantity||1) - (d.claimed_count||0));
+      return `<div onclick="document.getElementById('campaign-list-modal').remove();setTimeout(()=>{if(window.map)window.map.flyTo({center:[${d.lng},${d.lat}],zoom:16,duration:800});openDropModal('${d.id}')},400)" style="display:flex;gap:12px;padding:12px;background:linear-gradient(135deg,rgba(212,175,55,.1),rgba(251,191,36,.04));border-radius:14px;margin-bottom:6px;cursor:pointer;border:1px solid rgba(212,175,55,.3)">
+        <div style="width:50px;height:50px;border-radius:14px;background:linear-gradient(135deg,#fef3c7,#fbbf24,#d4af37);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;box-shadow:0 6px 14px rgba(212,175,55,.4)">👑</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:900;font-size:14px;color:#fef3c7;margin-bottom:2px">${_wallEsc(d.title)}</div>
+          <div style="font-size:11px;color:#94a3b8;margin-bottom:4px">${_wallEsc(d.official_campaign||'Promocja')}${d.prize_label?' · '+_wallEsc(d.prize_label):''}</div>
+          <div style="font-size:11px;color:${remaining>0?'#22c55e':'#f87171'};font-weight:700">${remaining>0?'🟢 dostępne':'🔴 zgarnięte'}${d.verify_required?' · 📸 verify':''}</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e){
+    document.getElementById('campaign-list').innerHTML = `<div style="color:#ef4444;padding:30px;text-align:center">Błąd: ${_wallEsc(e.message||'')}</div>`;
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -15918,36 +15992,81 @@ function _initDropsLayer(){
     window.map.once('load', _initDropsLayer);
     return;
   }
-  // Image (one-time)
+  // Images (one-time)
   if(!window.map.hasImage('ts-drop-icon')){
     window.map.addImage('ts-drop-icon', _emojiToImage('🎁', ['#fef3c7','#fbbf24','#d4af37'], 72));
+  }
+  if(!window.map.hasImage('ts-drop-official-icon')){
+    // Większa złota wersja z koroną
+    window.map.addImage('ts-drop-official-icon', _emojiToImage('👑', ['#fef3c7','#fcd34d','#b45309'], 96));
   }
   // Source
   window.map.addSource('ts-drops', { type:'geojson', data:{type:'FeatureCollection', features:[]} });
 
-  // Pulsing halo (circle layer, GPU-rendered, animowany przez setPaintProperty)
+  // Pulsing halo (większy i jaśniejszy dla official)
   window.map.addLayer({
     id: 'ts-drops-halo',
     type: 'circle',
     source: 'ts-drops',
     paint: {
-      'circle-radius':  ['interpolate',['linear'],['zoom'], 10, 18, 16, 38, 20, 70],
-      'circle-color':   '#fbbf24',
-      'circle-opacity': 0.32,
+      'circle-radius':  ['case', ['get','is_official'],
+        ['interpolate',['linear'],['zoom'], 10, 28, 16, 60, 20, 110],
+        ['interpolate',['linear'],['zoom'], 10, 18, 16, 38, 20, 70]],
+      'circle-color':   ['case', ['get','is_official'], '#fcd34d', '#fbbf24'],
+      'circle-opacity': ['case', ['get','is_official'], 0.5, 0.32],
       'circle-blur':    0.7
     }
   });
 
-  // Icon
+  // Outer ring tylko dla official (double ring effect)
+  window.map.addLayer({
+    id: 'ts-drops-official-ring',
+    type: 'circle',
+    source: 'ts-drops',
+    filter: ['==', ['get','is_official'], true],
+    paint: {
+      'circle-radius':  ['interpolate',['linear'],['zoom'], 10, 22, 16, 48, 20, 90],
+      'circle-color':   'transparent',
+      'circle-stroke-color': '#fef3c7',
+      'circle-stroke-width': 2,
+      'circle-stroke-opacity': 0.85
+    }
+  });
+
+  // Icon (większa dla official)
   window.map.addLayer({
     id: 'ts-drops-icons',
     type: 'symbol',
     source: 'ts-drops',
     layout: {
-      'icon-image': 'ts-drop-icon',
-      'icon-size':  ['interpolate',['linear'],['zoom'], 10, 0.5, 16, 0.85, 20, 1.15],
+      'icon-image': ['case', ['get','is_official'], 'ts-drop-official-icon', 'ts-drop-icon'],
+      'icon-size':  ['case', ['get','is_official'],
+        ['interpolate',['linear'],['zoom'], 10, 0.65, 16, 1.1, 20, 1.5],
+        ['interpolate',['linear'],['zoom'], 10, 0.5,  16, 0.85, 20, 1.15]],
       'icon-allow-overlap': true,
       'icon-anchor': 'center'
+    }
+  });
+
+  // Prize label dla official drops (gold text pod ikoną)
+  window.map.addLayer({
+    id: 'ts-drops-prize-label',
+    type: 'symbol',
+    source: 'ts-drops',
+    filter: ['has', 'prize_label'],
+    layout: {
+      'text-field': ['get','prize_label'],
+      'text-size': ['interpolate',['linear'],['zoom'], 10, 11, 16, 14, 20, 16],
+      'text-font': ['Open Sans Bold','Arial Unicode MS Bold'],
+      'text-offset': [0, 1.8],
+      'text-anchor': 'top',
+      'text-allow-overlap': false,
+      'text-max-width': 7
+    },
+    paint: {
+      'text-color': '#fef3c7',
+      'text-halo-color': '#0a0e1a',
+      'text-halo-width': 2.5
     }
   });
 
@@ -15997,10 +16116,12 @@ function _setDropsData(){
   const features = [];
   _dropData.forEach(d => {
     const remaining = Math.max(0, (d.quantity||1) - (d.claimed_count||0));
+    const props = { id: d.id, remaining, is_official: !!d.is_official };
+    if(d.prize_label) props.prize_label = d.prize_label;
     features.push({
       type: 'Feature',
       geometry: { type: 'Point', coordinates: [parseFloat(d.lng), parseFloat(d.lat)] },
-      properties: { id: d.id, remaining }
+      properties: props
     });
   });
   window.map.getSource('ts-drops').setData({ type:'FeatureCollection', features });
@@ -16188,6 +16309,11 @@ async function openDropModal(dropId){
 
 async function _dropClaim(dropId){
   if(!_sbUser){ showAlert('🔒','Zaloguj się','Aby brać dropy'); setTimeout(closeAlert,2200); return; }
+  // Sprawdź czy drop wymaga zdjęcia (verify_required)
+  const d = _dropData.get(dropId);
+  if(d?.verify_required){
+    return _dropClaimWithVerify(dropId);
+  }
   let lat = userLat, lng = userLng;
   if(!lat || !lng){
     try { const c = JSON.parse(localStorage.getItem('ts_last_gps')||'null'); if(c?.lat){ lat=c.lat; lng=c.lng; } } catch(e){}
@@ -16219,6 +16345,78 @@ async function _dropClaim(dropId){
     console.log('[drop] claim err', e);
     showAlert('⚠️','Błąd', e?.message || '');
     setTimeout(closeAlert, 3000);
+  }
+}
+
+// Verify-required claim flow (zdjęcie z miejsca → upload → RPC claim_drop_with_verify)
+function _dropClaimWithVerify(dropId){
+  if(!_sbUser) return;
+  document.getElementById('drop-verify-modal')?.remove();
+  const m = document.createElement('div');
+  m.id = 'drop-verify-modal';
+  m.style.cssText = 'position:fixed;inset:0;z-index:5900;background:rgba(0,0,0,.92);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:1rem';
+  m.innerHTML = `
+    <div onclick="event.stopPropagation()" style="width:100%;max-width:420px;background:linear-gradient(160deg,#0f172a,#020617);border:1.5px solid rgba(212,175,55,.5);border-radius:22px;color:#fff;padding:1.5rem;box-shadow:0 24px 60px rgba(0,0,0,.7),0 0 50px rgba(212,175,55,.2)">
+      <div style="text-align:center;margin-bottom:1.2rem">
+        <div style="font-size:50px;margin-bottom:8px">📸</div>
+        <div style="font-weight:900;font-size:18px;background:linear-gradient(135deg,#fef3c7,#d4af37);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">ZRÓB ZDJĘCIE NAGRODY</div>
+        <div style="font-size:13px;color:#94a3b8;margin-top:6px;line-height:1.5">Aby zgarnąć — pokaż że jesteś na miejscu z nagrodą w ręce.<br><span style="color:#fbbf24">Anti-cheat: bez foto = bez kasy</span></div>
+      </div>
+      <input type="file" id="dv-photo-input" accept="image/*" capture="environment" onchange="_dvPhotoSelected(event,'${dropId}')" style="display:none">
+      <button onclick="document.getElementById('dv-photo-input').click()" style="width:100%;background:linear-gradient(135deg,#fbbf24,#d4af37);border:none;color:#0a0e1a;padding:14px;border-radius:12px;cursor:pointer;font-weight:900;font-size:15px;letter-spacing:.04em;text-transform:uppercase;box-shadow:0 8px 22px rgba(212,175,55,.5)">📸 Otwórz aparat / galerię</button>
+      <div id="dv-status" style="text-align:center;font-size:12px;color:#94a3b8;margin-top:10px;font-family:monospace"></div>
+      <button onclick="document.getElementById('drop-verify-modal').remove()" style="width:100%;margin-top:10px;background:#1e293b;border:1px solid #334155;color:#94a3b8;padding:10px;border-radius:10px;cursor:pointer;font-weight:700">Anuluj</button>
+    </div>`;
+  document.body.appendChild(m);
+}
+
+async function _dvPhotoSelected(ev, dropId){
+  const file = ev.target?.files?.[0];
+  if(!file) return;
+  const status = document.getElementById('dv-status');
+  if(status) status.textContent = '// kompresuję...';
+
+  let lat = userLat, lng = userLng;
+  if(!lat || !lng){ try { const c = JSON.parse(localStorage.getItem('ts_last_gps')||'null'); if(c?.lat){ lat=c.lat; lng=c.lng; } } catch(e){} }
+  if(!lat || !lng){ showAlert('📍','Brak GPS',''); setTimeout(closeAlert,2200); return; }
+
+  try {
+    // Resize do max 1200px + JPEG 0.85
+    const img = await new Promise((res, rej)=>{ const i = new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=URL.createObjectURL(file); });
+    const MAX = 1200;
+    const scale = Math.min(1, MAX/Math.max(img.width, img.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.width*scale); c.height = Math.round(img.height*scale);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    const blob = await new Promise(r=>c.toBlob(r, 'image/jpeg', 0.85));
+
+    if(status) status.textContent = '// upload...';
+    const path = `${_sbUser.id}/claim_${dropId}_${Date.now()}.jpg`;
+    const { error: upErr } = await _SB.storage.from('avatars').upload(path, blob, { contentType:'image/jpeg', upsert:true });
+    if(upErr) throw upErr;
+    const { data: pub } = _SB.storage.from('avatars').getPublicUrl(path);
+    const photoUrl = pub?.publicUrl;
+
+    if(status) status.textContent = '// claim...';
+    const { data, error } = await _SB.rpc('claim_drop_with_verify', { p_drop_id: dropId, p_lat: lat, p_lng: lng, p_photo_url: photoUrl });
+    if(error) throw error;
+    if(!data?.ok){
+      const map = {'auth_required':'Zaloguj się','not_found':'Drop nie istnieje','inactive':'Drop wygasł','sold_out':'Już rozdane','already_claimed':'Już to wziąłeś','too_far': data?.distance_m?`Za daleko: ${data.distance_m}m`:'Za daleko (max 200m)','photo_required':'Wymagane zdjęcie'};
+      showAlert('🚫', 'Nie udało się', map[data?.error] || data?.error || 'unknown');
+      setTimeout(closeAlert, 3000);
+      return;
+    }
+    document.getElementById('drop-verify-modal')?.remove();
+    document.getElementById('drop-modal')?.remove();
+    try { if(navigator.vibrate) navigator.vibrate([20,40,20,60,80,40,80]); } catch(e){}
+    const msg = data.pending_verify ? 'Czekaj na weryfikację admina · powiadomienie wkrótce' : `MASZ ${data.prize_label||'nagrodę'}!`;
+    showAlert('🏆', '🎉 ZGARNIĘTE!', msg);
+    setTimeout(closeAlert, 4500);
+    _loadDropsNearby(15);
+  } catch(e){
+    console.log('[verify claim]', e);
+    if(status) status.textContent = '// błąd: '+(e?.message||'');
+    showAlert('⚠️','Błąd', e?.message||''); setTimeout(closeAlert,3500);
   }
 }
 
@@ -16341,7 +16539,155 @@ async function _dropSubmit(lat, lng){
   }
 }
 
-async function openSpotModal(spotId){
+// ════════════════════════════════════════════════════════════════
+// OFFICIAL DROPS — Cash Hunt / vouchery / nagrody (admin only)
+// ════════════════════════════════════════════════════════════════
+const _ADMIN_EMAILS = ['info.lanacare@gmail.com'];
+function _isAdmin(){
+  return _sbUser && _ADMIN_EMAILS.includes((_sbUser.email||'').toLowerCase());
+}
+
+const PRIZE_TYPES = [
+  { key:'cash',       label:'💵 Gotówka',          unit:'zł', placeholder:'np. 100' },
+  { key:'voucher',    label:'🎟️ Voucher',          unit:'zł', placeholder:'np. 50' },
+  { key:'product',    label:'📦 Produkt',           unit:'',   placeholder:'wartość przybliżona' },
+  { key:'experience', label:'🎢 Doświadczenie',     unit:'',   placeholder:'np. 200' },
+  { key:'ticket',     label:'🎫 Bilet',             unit:'',   placeholder:'np. 80' },
+  { key:'other',      label:'✨ Inne',              unit:'',   placeholder:'wartość (opcjonalna)' }
+];
+
+function openOfficialDropModal(){
+  if(!_isAdmin()){ showAlert('🔒','Tylko admin','Cash Hunt to feature admina'); setTimeout(closeAlert, 2200); return; }
+  let lat = userLat, lng = userLng;
+  if(!lat || !lng){
+    try { const c = JSON.parse(localStorage.getItem('ts_last_gps')||'null'); if(c?.lat){ lat=c.lat; lng=c.lng; } } catch(e){}
+  }
+  if(!lat || !lng){ showAlert('📍','Brak GPS','Musisz być w miejscu gdzie zostawiasz drop'); setTimeout(closeAlert,2800); return; }
+
+  document.getElementById('official-drop-modal')?.remove();
+  const types = PRIZE_TYPES.map(t=>`<option value="${t.key}">${t.label}</option>`).join('');
+
+  const m = document.createElement('div');
+  m.id = 'official-drop-modal';
+  m.style.cssText = 'position:fixed;inset:0;z-index:5800;background:rgba(0,0,0,.88);backdrop-filter:blur(10px);display:flex;align-items:flex-start;justify-content:center;padding:1rem;overflow-y:auto';
+  m.innerHTML = `
+    <div onclick="event.stopPropagation()" style="width:100%;max-width:480px;margin-top:3vh;background:linear-gradient(160deg,#0f172a,#020617);border:1.5px solid rgba(212,175,55,.5);border-radius:22px;color:#fff;padding:1.4rem;box-shadow:0 24px 60px rgba(0,0,0,.7),0 0 60px rgba(212,175,55,.2);position:relative;overflow:hidden">
+      <div style="position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:300px;height:120px;background:radial-gradient(ellipse,rgba(212,175,55,.5),transparent 70%);filter:blur(30px);pointer-events:none"></div>
+
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.2rem;position:relative">
+        <div style="width:50px;height:50px;border-radius:14px;background:linear-gradient(135deg,#fef3c7,#fbbf24,#d4af37);display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 8px 22px rgba(212,175,55,.5),0 1px 0 rgba(255,255,255,.45) inset">👑</div>
+        <div style="flex:1">
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:900;font-size:1.15rem;letter-spacing:-.01em;background:linear-gradient(135deg,#fef3c7,#d4af37);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">OFFICIAL DROP</div>
+          <div style="font-size:11px;color:rgba(212,175,55,.85);font-family:'JetBrains Mono',monospace">// admin · Cash Hunt &amp; promo</div>
+        </div>
+        <button onclick="document.getElementById('official-drop-modal').remove()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;width:34px;height:34px;border-radius:11px;cursor:pointer;font-size:16px">✕</button>
+      </div>
+
+      <label style="display:block;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px">Nazwa kampanii</label>
+      <input id="od-campaign" maxlength="80" placeholder="np. 'Wielkie Polowanie 1.05'" value="Wielkie Polowanie ${new Date().toLocaleDateString('pl-PL')}" style="width:100%;padding:11px;background:#1e293b;border:1px solid #334155;border-radius:10px;color:#fff;font-size:14px;outline:none;margin-bottom:10px">
+
+      <label style="display:block;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px">Typ nagrody</label>
+      <select id="od-prize-type" onchange="_odUpdatePrizeUnit()" style="width:100%;padding:11px;background:#1e293b;border:1px solid #334155;border-radius:10px;color:#fff;font-size:14px;margin-bottom:10px">${types}</select>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div>
+          <label style="display:block;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px">Wartość <span id="od-unit">(zł)</span></label>
+          <input id="od-prize-value" type="number" min="1" step="1" placeholder="100" style="width:100%;padding:11px;background:#1e293b;border:1px solid #334155;border-radius:10px;color:#fff;font-size:14px;outline:none;font-weight:800">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px">Wygasa za</label>
+          <select id="od-exp" style="width:100%;padding:11px;background:#1e293b;border:1px solid #334155;border-radius:10px;color:#fff;font-size:14px">
+            <option value="2">2h</option>
+            <option value="4">4h</option>
+            <option value="8" selected>8h</option>
+            <option value="24">24h</option>
+            <option value="48">48h</option>
+          </select>
+        </div>
+      </div>
+
+      <label style="display:block;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px">Tytuł / opis nagrody</label>
+      <input id="od-title" maxlength="80" placeholder="np. '100 zł cash 💰'" style="width:100%;padding:11px;background:#1e293b;border:1px solid #334155;border-radius:10px;color:#fff;font-size:14px;outline:none;margin-bottom:10px">
+
+      <label style="display:block;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px">Hint / opis (opcjonalny)</label>
+      <textarea id="od-desc" maxlength="500" rows="2" placeholder="np. 'Pod ławką w parku, czerwona koperta'" style="width:100%;padding:11px;background:#1e293b;border:1px solid #334155;border-radius:10px;color:#fff;font-size:13px;outline:none;margin-bottom:10px;resize:vertical;font-family:inherit"></textarea>
+
+      <label style="display:flex;align-items:center;gap:8px;background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.25);border-radius:10px;padding:10px;cursor:pointer;margin-bottom:14px">
+        <input id="od-verify" type="checkbox" checked style="width:18px;height:18px;accent-color:#d4af37;cursor:pointer">
+        <span style="flex:1;font-size:13px;color:#fde68a">📸 <b>Wymagaj zdjęcia</b> przy claim (anti-cheat)<br><span style="font-size:11px;color:#94a3b8;font-weight:400">Userzy musi zrobić foto na miejscu by potwierdzić</span></span>
+      </label>
+
+      <div style="background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.25);border-radius:10px;padding:10px;font-size:12px;color:#fbbf24;margin-bottom:14px">
+        📍 Lokalizacja: <b>Twoja aktualna pozycja</b><br>
+        <span style="font-family:monospace;font-size:11px;color:#94a3b8">${lat.toFixed(5)}, ${lng.toFixed(5)}</span><br>
+        🔔 Push do wszystkich w okolicy <b>10 km</b>
+      </div>
+
+      <div style="display:flex;gap:8px">
+        <button onclick="document.getElementById('official-drop-modal').remove()" style="flex:1;background:#1e293b;border:1px solid #334155;color:#94a3b8;padding:13px;border-radius:12px;cursor:pointer;font-weight:700">Anuluj</button>
+        <button onclick="_submitOfficialDrop(${lat},${lng})" style="flex:2;background:linear-gradient(135deg,#fef3c7,#fbbf24 50%,#d4af37);border:none;color:#0a0e1a;padding:13px;border-radius:12px;cursor:pointer;font-weight:900;letter-spacing:.04em;text-transform:uppercase;box-shadow:0 8px 22px rgba(212,175,55,.5),0 1px 0 rgba(255,255,255,.5) inset">👑 OPUBLIKUJ</button>
+      </div>
+    </div>`;
+  m.onclick = (e) => { if(e.target===m) m.remove(); };
+  document.body.appendChild(m);
+  _odUpdatePrizeUnit();
+}
+
+function _odUpdatePrizeUnit(){
+  const sel = document.getElementById('od-prize-type');
+  const unit = document.getElementById('od-unit');
+  const val = document.getElementById('od-prize-value');
+  if(!sel || !unit) return;
+  const t = PRIZE_TYPES.find(x=>x.key===sel.value);
+  if(t){
+    unit.textContent = t.unit ? '('+t.unit+')' : '(opcjonalnie)';
+    if(val) val.placeholder = t.placeholder;
+  }
+}
+
+async function _submitOfficialDrop(lat, lng){
+  if(!_isAdmin()) return;
+  const campaign = (document.getElementById('od-campaign')?.value||'').trim();
+  const prizeType = document.getElementById('od-prize-type')?.value || 'cash';
+  const prizeValue = parseFloat(document.getElementById('od-prize-value')?.value||'0') || null;
+  const title = (document.getElementById('od-title')?.value||'').trim();
+  const desc = (document.getElementById('od-desc')?.value||'').trim();
+  const verify = !!document.getElementById('od-verify')?.checked;
+  const exph = parseInt(document.getElementById('od-exp')?.value||'8');
+  if(!title){ showAlert('⚠️','Brak tytułu',''); setTimeout(closeAlert,2000); return; }
+  const expires_at = new Date(Date.now() + exph*3600*1000).toISOString();
+  const prizeLabel = prizeValue ? (PRIZE_TYPES.find(t=>t.key===prizeType)?.unit ? `${prizeValue} ${PRIZE_TYPES.find(t=>t.key===prizeType).unit}` : title) : title;
+
+  try {
+    const { error } = await _SB.from('live_drops').insert({
+      author_id: _sbUser.id, lat, lng,
+      title, description: desc || null, quantity: 1, expires_at,
+      is_official: true, prize_type: prizeType, prize_value: prizeValue,
+      prize_label: prizeLabel, official_campaign: campaign || 'Promocja',
+      verify_required: verify
+    });
+    if(error) throw error;
+    document.getElementById('official-drop-modal')?.remove();
+    try { if(navigator.vibrate) navigator.vibrate([20,40,20,40,20]); } catch(e){}
+    showAlert('👑','OFFICIAL DROP LIVE!', `${title} · push 10km radius`);
+    setTimeout(closeAlert, 3500);
+    _loadDropsNearby(20);
+
+    // Mass push do okolicy 10km
+    try {
+      fetch('/api/notify-drop', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          author_id: _sbUser.id, lat, lng, title,
+          qty: 1, is_official: true, campaign,
+          prize_label: prizeLabel
+        })
+      }).catch(()=>{});
+    } catch(e){}
+  } catch(e){
+    showAlert('⚠️','Błąd', e?.message||''); setTimeout(closeAlert,3000);
+  }
+}
   let s = _spotData.get(spotId);
   if(!s){
     // Pobierz z view jeśli nie mamy w cache
