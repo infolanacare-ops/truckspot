@@ -18508,7 +18508,7 @@ async function openSpotModal(spotId){
   const modal = document.createElement('div');
   modal.id = 'spot-detail-modal';
   modal.style.cssText = 'position:fixed;inset:0;z-index:5400;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;padding:0';
-  modal.onclick = (e) => { if(e.target === modal){ _stopSpotLiveCounter(); modal.remove(); } };
+  modal.onclick = (e) => { if(e.target === modal){ _stopSpotLiveCounter(); _stopSpotCmtChannel(); modal.remove(); } };
   modal.innerHTML = `
     <div onclick="event.stopPropagation()" style="width:100%;max-width:520px;background:linear-gradient(160deg,rgba(22,28,48,.98),rgba(10,14,26,.99));border-top:2px solid ${isEvent?'#fbbf24':vibe.color};border-radius:24px 24px 0 0;padding:0;color:#fff;max-height:85vh;overflow-y:auto;animation:dmBubbleIn .35s">
       ${s.photo_url ? `<div style="width:100%;height:240px;background:#000;overflow:hidden;border-radius:24px 24px 0 0;position:relative">
@@ -18579,16 +18579,139 @@ async function openSpotModal(spotId){
             : amIJoined
               ? `<button onclick="_leaveSpotAction(${s.id})" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:11px;padding:12px;font-weight:800;font-size:.82rem;cursor:pointer">✓ Jesteś tu — opuść</button>`
               : `<button onclick="_joinSpotAction(${s.id})" style="flex:1;background:linear-gradient(135deg,${vibe.color},${vibe.color}cc);border:none;color:#fff;border-radius:11px;padding:12px;font-weight:900;font-size:.85rem;cursor:pointer;box-shadow:0 4px 14px ${vibe.color}66">✨ DOŁĄCZ</button>`}
-          <button onclick="_stopSpotLiveCounter();document.getElementById('spot-detail-modal').remove();if(window.map)window.map.flyTo({center:[${s.lng},${s.lat}],zoom:17,duration:800})" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:11px;padding:12px;font-weight:800;font-size:.82rem;cursor:pointer">📍 Pokaż na mapie</button>
+          <button onclick="_stopSpotLiveCounter();_stopSpotCmtChannel();document.getElementById('spot-detail-modal').remove();if(window.map)window.map.flyTo({center:[${s.lng},${s.lat}],zoom:17,duration:800})" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:11px;padding:12px;font-weight:800;font-size:.82rem;cursor:pointer">📍 Pokaż na mapie</button>
         </div>
-        <button onclick="_stopSpotLiveCounter();document.getElementById('spot-detail-modal').remove();setTimeout(()=>_openSpotChat(${s.id}, '${((s.title||'spot')+'').replace(/'/g,"\\'").slice(0,40)}'), 200)" style="width:100%;margin-top:10px;background:linear-gradient(135deg,rgba(6,182,212,.45),rgba(59,130,246,.35));border:1px solid rgba(6,182,212,.6);color:#fff;border-radius:12px;padding:13px;font-weight:900;font-size:.85rem;cursor:pointer;letter-spacing:.04em;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(6,182,212,.3)">
+        <button onclick="_stopSpotLiveCounter();_stopSpotCmtChannel();document.getElementById('spot-detail-modal').remove();setTimeout(()=>_openSpotChat(${s.id}, '${((s.title||'spot')+'').replace(/'/g,"\\'").slice(0,40)}'), 200)" style="width:100%;margin-top:10px;background:linear-gradient(135deg,rgba(6,182,212,.45),rgba(59,130,246,.35));border:1px solid rgba(6,182,212,.6);color:#fff;border-radius:12px;padding:13px;font-weight:900;font-size:.85rem;cursor:pointer;letter-spacing:.04em;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(6,182,212,.3)">
           <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;animation:peer-pulse-dot 1.6s ease-in-out infinite"></span>
           💬 LIVE CHAT NA MIEJSCU
         </button>
+
+        <!-- ── KOMENTARZE ──────────────────────────────────────────── -->
+        <div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:1rem">💭</span>
+            <span style="font-weight:900;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:#fff">Komentarze</span>
+            <span id="spot-cmt-count" style="font-size:.7rem;color:rgba(255,255,255,.55);font-family:'JetBrains Mono',monospace">${s.comment_count||0}</span>
+          </div>
+          ${_sbUser ? `
+          <div style="display:flex;gap:6px;margin-bottom:10px">
+            <input id="spot-cmt-input" type="text" maxlength="500" placeholder="Napisz komentarz…"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();_spotCommentSend(${s.id})}"
+              style="flex:1;padding:10px 12px;border:1.5px solid rgba(255,255,255,.12);border-radius:11px;background:rgba(255,255,255,.04);color:#fff;font-size:.82rem;font-family:inherit;outline:none">
+            <button onclick="_spotCommentSend(${s.id})" style="background:linear-gradient(135deg,${vibe.color},${vibe.color}cc);border:none;color:#fff;border-radius:11px;padding:0 14px;font-weight:900;cursor:pointer;font-size:.78rem">→</button>
+          </div>
+          ` : `<div style="font-size:.72rem;color:rgba(255,255,255,.5);text-align:center;padding:8px 0;margin-bottom:6px">🔒 Zaloguj się żeby komentować</div>`}
+          <div id="spot-cmt-list" style="display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto">
+            <div style="text-align:center;color:rgba(255,255,255,.4);font-size:.72rem;padding:14px">⌛ Ładowanie…</div>
+          </div>
+        </div>
       </div>
     </div>`;
   document.body.appendChild(modal);
   if(isEvent) _startSpotLiveCounter(spotId);
+  _loadSpotComments(spotId);
+}
+
+// ── KOMENTARZE — load / send / delete + Realtime ─────────────────────────────
+let _spotCmtChannel = null;
+
+function _stopSpotCmtChannel(){
+  if(_spotCmtChannel){
+    try { _SB.removeChannel(_spotCmtChannel); } catch(_){}
+    _spotCmtChannel = null;
+  }
+}
+
+async function _loadSpotComments(spotId){
+  const list = document.getElementById('spot-cmt-list');
+  if(!list) return;
+  try {
+    const { data, error } = await _SB.from('v_spot_comments')
+      .select('*').eq('spot_id', spotId).order('created_at', { ascending: false }).limit(200);
+    if(error) throw error;
+    _renderSpotComments(data || [], spotId);
+  } catch(e){
+    list.innerHTML = `<div style="text-align:center;color:rgba(239,68,68,.7);font-size:.72rem;padding:14px">Nie udało się pobrać komentarzy</div>`;
+  }
+  // Realtime: subscribe na zmiany dla tego spota
+  if(_spotCmtChannel){ try { _SB.removeChannel(_spotCmtChannel); } catch(_){} }
+  _spotCmtChannel = _SB.channel('spot-cmt-'+spotId)
+    .on('postgres_changes', {event:'*', schema:'public', table:'spot_comments', filter:`spot_id=eq.${spotId}`}, ()=>{
+      _loadSpotComments(spotId);
+    }).subscribe();
+}
+
+function _renderSpotComments(rows, spotId){
+  const list = document.getElementById('spot-cmt-list');
+  const cnt  = document.getElementById('spot-cmt-count');
+  if(cnt) cnt.textContent = rows.length;
+  if(!list) return;
+  if(!rows.length){
+    list.innerHTML = `<div style="text-align:center;color:rgba(255,255,255,.4);font-size:.72rem;padding:14px;font-style:italic">Bądź pierwszy 👋</div>`;
+    return;
+  }
+  const me = _sbUser?.id;
+  list.innerHTML = rows.map(c => {
+    const ago = _agoShort(c.created_at);
+    const av  = c.author_avatar
+      ? `<div style="width:28px;height:28px;border-radius:50%;background:url('${c.author_avatar}') center/cover;flex-shrink:0;border:1.5px solid rgba(255,255,255,.15)"></div>`
+      : `<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#06b6d4,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;color:#fff;flex-shrink:0">${(c.author_name||'?')[0].toUpperCase()}</div>`;
+    const canDel = me === c.user_id;
+    return `<div style="display:flex;gap:8px;align-items:flex-start">
+      ${av}
+      <div style="flex:1;min-width:0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:8px 10px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+          <span style="font-weight:800;font-size:.74rem;color:#fff">${_escHtml(c.author_name||'Anon')}</span>
+          <span style="font-size:.62rem;color:rgba(255,255,255,.45);font-family:'JetBrains Mono',monospace">${ago}</span>
+          ${canDel ? `<button onclick="_spotCommentDelete(${c.id},${spotId})" style="margin-left:auto;background:none;border:none;color:rgba(239,68,68,.7);cursor:pointer;font-size:.7rem;padding:0">✕</button>` : ''}
+        </div>
+        <div style="font-size:.78rem;color:rgba(255,255,255,.88);line-height:1.4;word-wrap:break-word">${_escHtml(c.text)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function _spotCommentSend(spotId){
+  if(!_sbUser) return;
+  const input = document.getElementById('spot-cmt-input');
+  if(!input) return;
+  const text = input.value.trim();
+  if(!text || text.length > 500) return;
+  input.disabled = true;
+  try {
+    const { error } = await _SB.from('spot_comments').insert({
+      spot_id: spotId, user_id: _sbUser.id, text
+    });
+    if(error) throw error;
+    input.value = '';
+    if(navigator.vibrate) navigator.vibrate(15);
+  } catch(e){
+    showAlert('⚠️','Błąd', e.message || 'Nie wysłano');
+    setTimeout(closeAlert, 2000);
+  } finally {
+    input.disabled = false;
+    input.focus();
+  }
+}
+
+async function _spotCommentDelete(commentId, spotId){
+  if(!_sbUser) return;
+  if(!confirm('Usunąć komentarz?')) return;
+  try {
+    const { error } = await _SB.from('spot_comments').delete().eq('id', commentId);
+    if(error) throw error;
+  } catch(e){
+    showAlert('⚠️','Błąd', e.message || 'Nie usunięto');
+    setTimeout(closeAlert, 2000);
+  }
+}
+
+function _agoShort(ts){
+  const d = (Date.now() - new Date(ts).getTime())/1000;
+  if(d < 60) return 'teraz';
+  if(d < 3600) return Math.floor(d/60)+'m';
+  if(d < 86400) return Math.floor(d/3600)+'h';
+  return Math.floor(d/86400)+'d';
 }
 
 // ── TRIBESPOT TRENDING — top 10 spotów dziś w okolicy ───────────────────────
