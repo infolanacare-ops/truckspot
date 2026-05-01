@@ -5173,6 +5173,7 @@ function _landingEnter(){
     <div class="menu-item" onclick="drawerAction('add')"><div class="menu-icon" style="background:rgba(139,92,246,.12);border-color:#8b5cf6"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></span></div><span class="menu-label" data-i="menu_add">Add a spot</span><span class="menu-badge">+10 pts</span></div>
     <div class="menu-item" onclick="closeDrawer();setTimeout(openHunter,250)"><div class="menu-icon" style="background:rgba(6,182,212,.15);border-color:#06b6d4"><span style="font-size:1.2rem">🎯</span></div><span class="menu-label">Łowca — polowanie na okazje</span><span class="menu-badge" style="background:linear-gradient(135deg,#06b6d4,#3b82f6);color:#fff">NEW</span></div>
     <div class="menu-item" onclick="closeDrawer();setTimeout(openMyWorld,250)"><div class="menu-icon" style="background:rgba(168,85,247,.18);border-color:#a855f7"><span style="font-size:1.2rem">🌍</span></div><span class="menu-label">Twój świat — lustro aktywności</span><span class="menu-badge" style="background:linear-gradient(135deg,#a855f7,#ec4899);color:#fff">NEW</span></div>
+    <div class="menu-item" onclick="closeDrawer();setTimeout(openStatusPicker,250)"><div class="menu-icon" style="background:rgba(245,158,11,.18);border-color:#f59e0b"><span style="font-size:1.2rem">🎯</span></div><span class="menu-label">Mój status — chmurka nad avatarem</span></div>
     <div class="menu-item" onclick="closeDrawer();setTimeout(openMetaverseHub,250)"><div class="menu-icon" style="background:linear-gradient(140deg,rgba(6,182,212,.2),rgba(168,85,247,.15));border-color:#06b6d4"><span style="font-size:1.2rem">🌐</span></div><span class="menu-label">Cyber Zone — wszystkie funkcje</span><span class="menu-badge" style="background:linear-gradient(135deg,#06b6d4,#3b82f6);color:#fff">HUB</span></div>
     <div class="menu-item" onclick="closeDrawer();setTimeout(openAchievementsPanel,250)"><div class="menu-icon" style="background:rgba(251,191,36,.18);border-color:#fbbf24"><span style="font-size:1.2rem">🏆</span></div><span class="menu-label">Osiągnięcia / Odznaki</span></div>
     <div class="menu-item" onclick="drawerAction('myspots')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg></span></div><span class="menu-label" data-i="menu_myspots">My spots</span></div>
@@ -15771,8 +15772,6 @@ const QRAIL_TABS = [
   ]},
   {icon:'👤', label:'Profil', cls:'tab-avatar', subActions:[
     {icon:'👤', label:'Profil', fn:function(){ if(typeof openProfile==='function') openProfile(); }},
-    {icon:'🌍', label:'Tablica', fn:function(){ if(typeof openMyWorld==='function') openMyWorld(); }},
-    {icon:'🎯', label:'Status', fn:function(){ if(typeof openStatusPicker==='function') openStatusPicker(); }},
   ]},
   {icon:'💬', label:'Czaty', cls:'tab-chats',
     badgeFn: function(){ let n=0; if(window._dmUnreadByUser) window._dmUnreadByUser.forEach(function(v){n+=v;}); return n>0 ? (n>9?'9+':String(n)) : ''; },
