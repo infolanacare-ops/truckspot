@@ -15771,7 +15771,7 @@ const QRAIL_TABS = [
     {icon:'⚡', label:'Daily', fn:function(){ if(typeof openMyTasksPanel==='function') openMyTasksPanel(); }},
   ]},
   {icon:'👤', label:'Profil', cls:'tab-avatar', subActions:[
-    {icon:'👤', label:'Profil', fn:function(){ if(typeof openProfile==='function') openProfile(); }},
+    {icon:'🌍', label:'Tablica', fn:function(){ if(typeof openMyWorld==='function') openMyWorld(); }},
   ]},
   {icon:'💬', label:'Czaty', cls:'tab-chats',
     badgeFn: function(){ let n=0; if(window._dmUnreadByUser) window._dmUnreadByUser.forEach(function(v){n+=v;}); return n>0 ? (n>9?'9+':String(n)) : ''; },
@@ -15964,12 +15964,9 @@ function _qrailLayoutFanout(){
   let gap = Math.min(46, Math.max(36, usable / (tabsPerSide + 0.5)));
   tabs.forEach((tab, i) => {
     let y;
-    if(N % 2 === 0){
-      if(i < half){ y = (i - half) * gap; }       // np. -3*gap..-gap dla pierwszej połowy
-      else        { y = (i - half + 1) * gap; }   // gap..3*gap dla drugiej
-    } else {
-      y = (i - half) * gap;
-    }
+    // Zawsze omijamy pozycję y=0 (gdzie siedzi M button) — niezależnie od parzystości N
+    if(i < half){ y = (i - half) * gap; }       // pierwsza połowa: -half*gap..-gap (nad M)
+    else        { y = (i - half + 1) * gap; }   // druga połowa: gap..(N-half)*gap (pod M)
     tab.style.setProperty('--qx', '0px');
     tab.style.setProperty('--qy', y.toFixed(1) + 'px');
   });
