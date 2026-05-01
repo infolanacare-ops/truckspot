@@ -6883,7 +6883,14 @@ function enterMode(mode){
       canvas.addEventListener('mouseup', clear);
       canvas.addEventListener('mouseleave', clear);
     })();
-    map.on('moveend', ()=>{ if(map.getZoom()>=8) loadOsmParkings(); loadReports(); if(activeFuelCards().length>0) loadFuelStations(); });
+    map.on('moveend', ()=>{
+      // TIR raporty/parkingi WYŁĄCZONE dla TribeSpot — załączasz w trybie TIR drawer
+      if(window._tirMode){
+        if(map.getZoom()>=8) loadOsmParkings();
+        loadReports();
+        if(activeFuelCards().length>0) loadFuelStations();
+      }
+    });
     map.once('load', ()=>{
       if(!gpsActive) startGps();
       // Pokemon Go hub: aplikuj 3.5D atmosferę zaraz po załadowaniu stylu
@@ -16788,15 +16795,16 @@ function _initDropsLayer(){
   // Source
   window.map.addSource('ts-drops', { type:'geojson', data:{type:'FeatureCollection', features:[]} });
 
-  // Pulsing halo (większy i jaśniejszy dla official)
+  // Pulsing halo (większy i jaśniejszy dla official) — interpolate na top level, case w stops
   window.map.addLayer({
     id: 'ts-drops-halo',
     type: 'circle',
     source: 'ts-drops',
     paint: {
-      'circle-radius':  ['case', ['get','is_official'],
-        ['interpolate',['linear'],['zoom'], 10, 28, 16, 60, 20, 110],
-        ['interpolate',['linear'],['zoom'], 10, 18, 16, 38, 20, 70]],
+      'circle-radius':  ['interpolate',['linear'],['zoom'],
+        10, ['case', ['get','is_official'], 28, 18],
+        16, ['case', ['get','is_official'], 60, 38],
+        20, ['case', ['get','is_official'], 110, 70]],
       'circle-color':   ['case', ['get','is_official'], '#fcd34d', '#fbbf24'],
       'circle-opacity': ['case', ['get','is_official'], 0.5, 0.32],
       'circle-blur':    0.7
@@ -16818,16 +16826,17 @@ function _initDropsLayer(){
     }
   });
 
-  // Icon (większa dla official)
+  // Icon (większa dla official) — interpolate na top level, case w stops
   window.map.addLayer({
     id: 'ts-drops-icons',
     type: 'symbol',
     source: 'ts-drops',
     layout: {
       'icon-image': ['case', ['get','is_official'], 'ts-drop-official-icon', 'ts-drop-icon'],
-      'icon-size':  ['case', ['get','is_official'],
-        ['interpolate',['linear'],['zoom'], 10, 0.65, 16, 1.1, 20, 1.5],
-        ['interpolate',['linear'],['zoom'], 10, 0.5,  16, 0.85, 20, 1.15]],
+      'icon-size':  ['interpolate',['linear'],['zoom'],
+        10, ['case', ['get','is_official'], 0.65, 0.5],
+        16, ['case', ['get','is_official'], 1.1,  0.85],
+        20, ['case', ['get','is_official'], 1.5,  1.15]],
       'icon-allow-overlap': true,
       'icon-anchor': 'center'
     }
@@ -26033,10 +26042,7 @@ let _metaverseActive = true; // ZAWSZE aktywny
 function _autoStartMetaverse(){
   if(!_sbUser || !window.map) return;
   try { _startPresence(); } catch(e){ console.warn('presence:', e); }
-  setTimeout(()=>{
-    const peers = Object.keys(_peerMarkers).filter(k=>!k.startsWith('demo-'));
-    if(peers.length === 0) try { _startDemo(); } catch(e){}
-  }, 2000);
+  // Demo userzy WYŁĄCZENI (Krzysiek: 'pousuwaj te duchy')
   try { _startCbRealtime(); } catch(e){}
 }
 
