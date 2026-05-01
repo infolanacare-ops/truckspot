@@ -24703,12 +24703,12 @@ _SB.auth.onAuthStateChange((_event, session) => {
 
 function _onAuthUser(user) {
   _sbUser = user;
-  // Auto-prompt push 30s po zalogowaniu
-  if(user) _maybePromptPushSoon();
-  // Załaduj listę zablokowanych (filter peer markers + content)
-  if(user) _loadMyBlocks();
-  // iPhone PWA banner — pokaż gdy iOS Safari i nie zainstalowane
-  if(user) _maybeShowIOSPWAbanner();
+  // Wszystkie wywołania bezpiecznie — żaden brakujący helper nie zablokuje loginu
+  if(user){
+    try { if(typeof _maybePromptPushSoon === 'function') _maybePromptPushSoon(); } catch(e){ console.warn('push prompt:', e); }
+    try { if(typeof _loadMyBlocks === 'function') _loadMyBlocks(); } catch(e){ console.warn('blocks:', e); }
+    try { if(typeof _maybeShowIOSPWAbanner === 'function') _maybeShowIOSPWAbanner(); } catch(e){ console.warn('ios banner:', e); }
+  }
   const nameEl   = document.getElementById('drawer-name');
   const subEl    = document.getElementById('drawer-mode-sub');
   const avatarEl = document.getElementById('drawer-avatar');
