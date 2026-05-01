@@ -12046,25 +12046,41 @@ function openMetaverseHub(){
         ${_hubItem({icon:'🏆', label:_myStats ? 'Level ' + (_myStats.level||1) : 'Twój level', desc:_myStats ? (_myStats.total_xp||0)+' XP · '+(_myStats.tasks_completed||0)+' zadań' : 'Zdobywaj XP za zadania', color:'rgba(168,85,247,.15)', colorB:'rgba(168,85,247,.45)', onClick:`openMyTasksPanel()`})}
       </div>
 
-      <!-- Sekcja: Społeczność -->
-      <div style="font-family:JetBrains Mono,monospace;font-size:.6rem;font-weight:800;color:rgba(6,182,212,.7);text-transform:uppercase;letter-spacing:.12em;margin:1rem .3rem .55rem;display:flex;align-items:center;gap:.5rem">👥 Społeczność</div>
+      <!-- Sekcja: ŚWIAT TERAZ (live action) -->
+      <div style="font-family:JetBrains Mono,monospace;font-size:.6rem;font-weight:800;color:#06b6d4;text-transform:uppercase;letter-spacing:.12em;margin:1rem .3rem .55rem;display:flex;align-items:center;gap:.5rem">🌍 Świat teraz <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e;animation:peer-pulse-dot 1.5s ease-in-out infinite"></span></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:1.1rem">
-        ${_hubItem({icon: _iconSvg('social',{size:24,emoji:'👥'}), label:'Znajomi', desc:'Wyszukaj, dodaj, zobacz na mapie', color:'rgba(59,130,246,.15)', colorB:'rgba(59,130,246,.45)', onClick:`openFriendsPanel()`})}
-        ${_hubItem({icon:'💬', label:'Czaty', desc:'Rozmowy 1:1 + Grupy ekipy + Live Spot Chat', badge: (()=>{ let n=0; _dmUnreadByUser?.forEach(v=>n+=v); return n>0 ? (n>9?'9+':String(n)) : ''; })(), color:'rgba(96,165,250,.25)', colorB:'rgba(96,165,250,.6)', wide:true, onClick:`openConversationsList()`})}
-        ${_hubItem({icon: _iconSvg('photo',{size:24,emoji:'📸'}), label:'AR LIVE', desc:'Kamera + lokale i ziomki w realu', badge:'NEW', color:'rgba(245,158,11,.15)', colorB:'rgba(245,158,11,.45)', onClick:`openARLive()`})}
-        ${_hubItem({icon:'💓', label:'Energy Pulse', desc:'Mapa pulsuje energią miasta', badge: _energyEnabled ? 'ON' : '', color:'rgba(239,68,68,.15)', colorB:'rgba(239,68,68,.45)', onClick:`toggleEnergyPulse();document.getElementById('metaverse-hub')?.remove();setTimeout(openMetaverseHub,200)`})}
-        ${_hubItem({icon: _isGhost() ? '👻' : '👁️', label: _isGhost() ? 'Tryb niewidzialny ON' : 'Tryb niewidzialny', desc: _ghostLabel(), badge: _isGhost() ? 'ON' : '', color:'rgba(168,85,247,.15)', colorB:'rgba(168,85,247,.45)', onClick:`openGhostPanel()`})}
-        ${_hubItem({icon:'📡', label:'CB Radio', desc:'Mapa wiadomości, czat z okolicą', color:'rgba(59,130,246,.15)', colorB:'rgba(59,130,246,.45)', onClick:`drawerAction('cbradio')`})}
-        ${_hubItem({icon:'🔥', label:'Trending teraz', desc:'Najgorętsze spoty w okolicy', badge:'LIVE', color:'rgba(236,72,153,.15)', colorB:'rgba(236,72,153,.55)', onClick:`openTrendingPanel()`})}
-        ${_hubItem({icon:'📢', label:'Spotted', desc:'Tablica miasta — zaginione, znalezione, ogłoszenia', badge:'NEW', color:'rgba(251,191,36,.15)', colorB:'rgba(251,191,36,.55)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openCitySpotted,200)`})}
-        ${_hubItem({icon:'🎯', label:'Łowca okazji', desc:'Polowanie na portalach (Allegro/OLX/Vinted/Booking) — alert gdy znajdę okazję', badge:'<span id="hunter-badge">…</span>', color:'rgba(6,182,212,.28)', colorB:'rgba(6,182,212,.7)', wide:true, onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openHunter,200)`})}
-        ${_hubItem({icon:'🎁', label:'Zostaw drop', desc:'Coś niepotrzebnego? Zostaw — kto pierwszy ten lepszy', badge:'NEW', color:'rgba(251,191,36,.18)', colorB:'rgba(251,191,36,.6)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openCreateDropModal,200)`})}
-        ${_isAdmin() ? _hubItem({icon:'👑', label:'Official Drop', desc:'Akcja promocyjna — Cash Hunt / vouchery / nagrody (admin)', badge:'ADMIN', color:'rgba(212,175,55,.22)', colorB:'rgba(212,175,55,.7)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openOfficialDropModal,200)`}) : ''}
-        ${_isAdmin() ? _hubItem({icon:'📝', label:'Twoje szkice', desc:'Pending official drops — opublikuj wszystkie naraz', badge:'<span id="drafts-count-badge">…</span>', color:'rgba(168,85,247,.18)', colorB:'rgba(168,85,247,.55)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openDraftsModal,200)`}) : ''}
-        ${_isAdmin() ? _hubItem({icon:'🛡️', label:'Moderacja', desc:'Zgłoszenia od userów — Twoja decyzja zostaje vs. ukryć', badge:'<span id="mod-count-badge">…</span>', color:'rgba(239,68,68,.18)', colorB:'rgba(239,68,68,.55)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openModerationPanel,200)`}) : ''}
-        ${_hubItem({icon:'🎯', label: _myStatus ? 'Status: ' + (_statusByKey(_myStatus.key)?.label || 'aktywny') : 'Mój status', desc: _myStatus ? (_myStatus.text || 'Widoczny nad Twoim avatarem') : 'Powiedz światu co teraz robisz', badge: _myStatus ? (_statusByKey(_myStatus.key)?.emoji||'ON') : 'NEW', color:'rgba(168,85,247,.18)', colorB:'rgba(168,85,247,.6)', onClick:`openStatusPicker()`})}
-        ${_hubItem({icon:'🎉', label:'Live eventy / Kampanie', desc:_activeCampaign ? _activeCampaign.title : 'Aktywne kampanie w okolicy', badge: _activeCampaign?'LIVE':'', color:'rgba(251,146,60,.15)', colorB:'rgba(251,146,60,.5)', onClick:`openMyTasksPanel()`})}
+        ${_hubItem({icon:'🎉', label:'Wydarzenia LIVE', desc:_activeCampaign ? _activeCampaign.title : 'Eventy + kampanie + Cash Hunt — to co dzieje się TERAZ', badge: _activeCampaign?'LIVE':'NEW', color:'rgba(251,146,60,.25)', colorB:'rgba(251,146,60,.6)', wide:true, onClick:`_showCampaignList()`})}
+        ${_hubItem({icon:'🔥', label:'Trending', desc:'Najgorętsze spoty w okolicy', badge:'LIVE', color:'rgba(236,72,153,.18)', colorB:'rgba(236,72,153,.6)', onClick:`openTrendingPanel()`})}
+        ${_hubItem({icon:'📢', label:'Spotted', desc:'Tablica miasta — ogłoszenia', badge:'NEW', color:'rgba(251,191,36,.18)', colorB:'rgba(251,191,36,.6)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openCitySpotted,200)`})}
+        ${_hubItem({icon:'💓', label:'Energy Pulse', desc:'Mapa pulsuje energią miasta', badge: _energyEnabled ? 'ON' : '', color:'rgba(239,68,68,.18)', colorB:'rgba(239,68,68,.55)', onClick:`toggleEnergyPulse();document.getElementById('metaverse-hub')?.remove();setTimeout(openMetaverseHub,200)`})}
       </div>
+
+      <!-- Sekcja: LUDZIE -->
+      <div style="font-family:JetBrains Mono,monospace;font-size:.6rem;font-weight:800;color:rgba(6,182,212,.7);text-transform:uppercase;letter-spacing:.12em;margin:1rem .3rem .55rem;display:flex;align-items:center;gap:.5rem">👥 Ludzie</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:1.1rem">
+        ${_hubItem({icon:'💬', label:'Czaty', desc:'Rozmowy 1:1 + Grupy ekipy + Live Spot Chat', badge: (()=>{ let n=0; _dmUnreadByUser?.forEach(v=>n+=v); return n>0 ? (n>9?'9+':String(n)) : ''; })(), color:'rgba(96,165,250,.25)', colorB:'rgba(96,165,250,.6)', wide:true, onClick:`openConversationsList()`})}
+        ${_hubItem({icon: _iconSvg('social',{size:24,emoji:'👥'}), label:'Znajomi', desc:'Wyszukaj, dodaj, zobacz na mapie', color:'rgba(59,130,246,.18)', colorB:'rgba(59,130,246,.55)', onClick:`openFriendsPanel()`})}
+        ${_hubItem({icon: _iconSvg('photo',{size:24,emoji:'📸'}), label:'AR LIVE', desc:'Kamera + ludzie + lokale w realu', badge:'NEW', color:'rgba(245,158,11,.18)', colorB:'rgba(245,158,11,.55)', onClick:`openARLive()`})}
+        ${_hubItem({icon:'📡', label:'CB Radio', desc:'Mapa wiadomości, czat z okolicą', color:'rgba(59,130,246,.18)', colorB:'rgba(59,130,246,.55)', onClick:`drawerAction('cbradio')`})}
+        ${_hubItem({icon: _isGhost() ? '👻' : '👁️', label: _isGhost() ? 'Duch ON' : 'Tryb Duch', desc: _ghostLabel(), badge: _isGhost() ? 'ON' : '', color:'rgba(168,85,247,.18)', colorB:'rgba(168,85,247,.55)', onClick:`openGhostPanel()`})}
+      </div>
+
+      <!-- Sekcja: AKCJA (rzeczy do zrobienia) -->
+      <div style="font-family:JetBrains Mono,monospace;font-size:.6rem;font-weight:800;color:rgba(6,182,212,.7);text-transform:uppercase;letter-spacing:.12em;margin:1rem .3rem .55rem;display:flex;align-items:center;gap:.5rem">🎯 Akcja</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:1.1rem">
+        ${_hubItem({icon:'🎯', label:'Łowca okazji', desc:'Polowanie na portalach (Allegro/OLX/Vinted/Booking) — alert gdy znajdę', badge:'<span id="hunter-badge">…</span>', color:'rgba(6,182,212,.28)', colorB:'rgba(6,182,212,.7)', wide:true, onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openHunter,200)`})}
+        ${_hubItem({icon:'🎁', label:'Zostaw drop', desc:'Niepotrzebne rzeczy — kto pierwszy ten lepszy', badge:'NEW', color:'rgba(251,191,36,.2)', colorB:'rgba(251,191,36,.6)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openCreateDropModal,200)`})}
+        ${_hubItem({icon:'🎯', label: _myStatus ? 'Status' : 'Mój status', desc: _myStatus ? (_statusByKey(_myStatus.key)?.label || 'aktywny') : 'Powiedz światu co robisz', badge: _myStatus ? (_statusByKey(_myStatus.key)?.emoji||'ON') : 'NEW', color:'rgba(168,85,247,.2)', colorB:'rgba(168,85,247,.6)', onClick:`openStatusPicker()`})}
+      </div>
+
+      ${_isAdmin() ? `
+      <!-- Sekcja: ADMIN (tylko dla Krzyśka) -->
+      <div style="font-family:JetBrains Mono,monospace;font-size:.6rem;font-weight:800;color:#fbbf24;text-transform:uppercase;letter-spacing:.12em;margin:1rem .3rem .55rem;display:flex;align-items:center;gap:.5rem">👑 Admin Zone</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:1.1rem">
+        ${_hubItem({icon:'👑', label:'Official Drop', desc:'Cash Hunt / vouchery / nagrody', badge:'ADMIN', color:'rgba(212,175,55,.25)', colorB:'rgba(212,175,55,.7)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openOfficialDropModal,200)`})}
+        ${_hubItem({icon:'📝', label:'Szkice', desc:'Pending — opublikuj wszystkie naraz', badge:'<span id="drafts-count-badge">…</span>', color:'rgba(168,85,247,.2)', colorB:'rgba(168,85,247,.6)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openDraftsModal,200)`})}
+        ${_hubItem({icon:'🛡️', label:'Moderacja', desc:'Zgłoszenia od userów — Twoja decyzja', badge:'<span id="mod-count-badge">…</span>', color:'rgba(239,68,68,.2)', colorB:'rgba(239,68,68,.6)', wide:true, onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openModerationPanel,200)`})}
+      </div>` : ''}
 
       <!-- Sekcja: Gamifikacja -->
       <div style="font-family:JetBrains Mono,monospace;font-size:.6rem;font-weight:800;color:rgba(6,182,212,.7);text-transform:uppercase;letter-spacing:.12em;margin:1rem .3rem .55rem;display:flex;align-items:center;gap:.5rem">🎮 Gamifikacja</div>
