@@ -15875,7 +15875,12 @@ const QRAIL_TABS = [
       {icon:'📡', label:'CB Radio', fn:function(){ drawerAction('cbradio'); }},
     ]},
   {icon:'🌍', label:'Tablica', cls:'tab-avatar', subActions:[
-    {icon:'🌍', label:'Tablica', fn:function(){ if(typeof openMyWorld==='function') openMyWorld(); }},
+    {icon:'🌍', label:'Tablica', fn:function(){
+      // Tablica = mój publiczny profil (jak inni mnie widzą) z timeline aktywności
+      if(!_sbUser){ showAlert('🔒','Zaloguj się',''); setTimeout(closeAlert,2000); return; }
+      const nm = (window.profile?.display_name) || (window.profile?.name) || (_sbUser.email?.split('@')[0]) || 'TY';
+      if(typeof openPublicProfile==='function') openPublicProfile(_sbUser.id, nm, '#06b6d4', '👤');
+    }},
   ]},
   // ── POD M ──
   {icon:'🎯', label:'Tasks', cls:'tab-tasks', subActions:[
@@ -24914,6 +24919,8 @@ async function openPublicProfile(userId, fallbackName, color, emoji){
 
       <!-- TABS: Tablica / Spotted / Drops / Spoty -->
       <div style="padding:0 1.4rem .8rem;display:flex;gap:5px;overflow-x:auto;scrollbar-width:none">
+        <button onclick="_pubProfSetVisibility('${userId}','public')" id="pub-vis-public" style="flex-shrink:0;background:linear-gradient(135deg,rgba(6,182,212,.3),rgba(59,130,246,.15));border:1px solid rgba(6,182,212,.6);color:#fff;padding:.35rem .65rem;border-radius:10px;cursor:pointer;font-size:.65rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;font-family:inherit;margin-right:6px">🌍 Wszyscy</button>
+        <button onclick="_pubProfSetVisibility('${userId}','friends')" id="pub-vis-friends" style="flex-shrink:0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.7);padding:.35rem .65rem;border-radius:10px;cursor:pointer;font-size:.65rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;font-family:inherit;margin-right:10px">👥 Znajomi</button>
         <button onclick="_pubProfTab('${userId}','wall')" data-tab="wall" class="pub-tab pub-tab-active" style="flex-shrink:0;background:linear-gradient(135deg,rgba(168,85,247,.35),rgba(99,102,241,.25));border:1px solid rgba(168,85,247,.6);color:#fff;padding:.4rem .75rem;border-radius:11px;cursor:pointer;font-size:.7rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;font-family:inherit">📌 Tablica</button>
         <button onclick="_pubProfTab('${userId}','spotted')" data-tab="spotted" class="pub-tab" style="flex-shrink:0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.7);padding:.4rem .75rem;border-radius:11px;cursor:pointer;font-size:.7rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;font-family:inherit">📢 Ogłoszenia</button>
         <button onclick="_pubProfTab('${userId}','drops')" data-tab="drops" class="pub-tab" style="flex-shrink:0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.7);padding:.4rem .75rem;border-radius:11px;cursor:pointer;font-size:.7rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;font-family:inherit">🎁 Dropy</button>
@@ -25004,7 +25011,29 @@ function _pubProfRenderSocials(prof){
   }).join('');
 }
 
+let _pubProfVisibility = 'public';   // 'public' | 'friends'
+let _pubProfCurrentTab = 'wall';
+let _pubProfCurrentUserId = null;
+
+function _pubProfSetVisibility(userId, level){
+  _pubProfVisibility = level;
+  _pubProfCurrentUserId = userId;
+  const pBtn = document.getElementById('pub-vis-public');
+  const fBtn = document.getElementById('pub-vis-friends');
+  if(level === 'public'){
+    if(pBtn){ pBtn.style.background='linear-gradient(135deg,rgba(6,182,212,.3),rgba(59,130,246,.15))'; pBtn.style.borderColor='rgba(6,182,212,.6)'; pBtn.style.color='#fff'; }
+    if(fBtn){ fBtn.style.background='rgba(255,255,255,.04)'; fBtn.style.borderColor='rgba(255,255,255,.1)'; fBtn.style.color='rgba(255,255,255,.7)'; }
+  } else {
+    if(fBtn){ fBtn.style.background='linear-gradient(135deg,rgba(168,85,247,.3),rgba(236,72,153,.15))'; fBtn.style.borderColor='rgba(168,85,247,.6)'; fBtn.style.color='#fff'; }
+    if(pBtn){ pBtn.style.background='rgba(255,255,255,.04)'; pBtn.style.borderColor='rgba(255,255,255,.1)'; pBtn.style.color='rgba(255,255,255,.7)'; }
+  }
+  // Re-render aktualnej zakładki z nowym filtrem
+  if(_pubProfCurrentTab) _pubProfTab(userId, _pubProfCurrentTab);
+}
+
 async function _pubProfTab(userId, tab){
+  _pubProfCurrentTab = tab;
+  _pubProfCurrentUserId = userId;
   // Update buttons styles
   document.querySelectorAll('.pub-tab').forEach(b=>{
     const isActive = b.dataset.tab === tab;
@@ -25100,7 +25129,11 @@ async function _pubProfLoadSpots(userId){
   const el = document.getElementById('pub-prof-content');
   if(!el) return;
   try {
-    const { data } = await _SB.from('spots').select('*').eq('posted_by',userId).eq('hidden',false).order('created_at',{ascending:false}).limit(40);
+    let q = _SB.from('spots').select('*').eq('posted_by',userId).eq('hidden',false).order('created_at',{ascending:false}).limit(40);
+    // Filter visibility (Wszyscy = tylko public; Znajomi = friends + public)
+    if(_pubProfVisibility === 'friends') q = q.in('visibility', ['public','friends']);
+    else q = q.eq('visibility', 'public');
+    const { data } = await q;
     if(!data?.length){
       el.innerHTML = `<div style="text-align:center;padding:2.5rem 1rem;color:rgba(255,255,255,.4);font-size:.85rem"><div style="font-size:38px;margin-bottom:8px;opacity:.5">📍</div>Brak spotów jeszcze</div>`;
       return;
