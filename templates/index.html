@@ -12016,6 +12016,7 @@ function openMetaverseHub(){
         ${_hubItem({icon:'📢', label:'Spotted', desc:'Tablica miasta — zaginione, znalezione, ogłoszenia', badge:'NEW', color:'rgba(251,191,36,.15)', colorB:'rgba(251,191,36,.55)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openCitySpotted,200)`})}
         ${_hubItem({icon:'🎁', label:'Zostaw drop', desc:'Coś niepotrzebnego? Zostaw — kto pierwszy ten lepszy', badge:'NEW', color:'rgba(251,191,36,.18)', colorB:'rgba(251,191,36,.6)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openCreateDropModal,200)`})}
         ${_isAdmin() ? _hubItem({icon:'👑', label:'Official Drop', desc:'Akcja promocyjna — Cash Hunt / vouchery / nagrody (admin)', badge:'ADMIN', color:'rgba(212,175,55,.22)', colorB:'rgba(212,175,55,.7)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openOfficialDropModal,200)`}) : ''}
+        ${_isAdmin() ? _hubItem({icon:'📝', label:'Twoje szkice', desc:'Pending official drops — opublikuj wszystkie naraz', badge:'<span id="drafts-count-badge">…</span>', color:'rgba(168,85,247,.18)', colorB:'rgba(168,85,247,.55)', onClick:`document.getElementById('metaverse-hub')?.remove();setTimeout(openDraftsModal,200)`}) : ''}
         ${_hubItem({icon:'🎯', label: _myStatus ? 'Status: ' + (_statusByKey(_myStatus.key)?.label || 'aktywny') : 'Mój status', desc: _myStatus ? (_myStatus.text || 'Widoczny nad Twoim avatarem') : 'Powiedz światu co teraz robisz', badge: _myStatus ? (_statusByKey(_myStatus.key)?.emoji||'ON') : 'NEW', color:'rgba(168,85,247,.18)', colorB:'rgba(168,85,247,.6)', onClick:`openStatusPicker()`})}
         ${_hubItem({icon:'🎉', label:'Live eventy / Kampanie', desc:_activeCampaign ? _activeCampaign.title : 'Aktywne kampanie w okolicy', badge: _activeCampaign?'LIVE':'', color:'rgba(251,146,60,.15)', colorB:'rgba(251,146,60,.5)', onClick:`openMyTasksPanel()`})}
       </div>
@@ -12056,6 +12057,14 @@ function openMetaverseHub(){
 }
 
 async function _loadLiveCampaignsBanner(){
+  // Update licznik szkiców w kafelku admin
+  if(_isAdmin()){
+    try {
+      const { data: drafts } = await _SB.from('v_my_pending_drops').select('id');
+      const badge = document.getElementById('drafts-count-badge');
+      if(badge) badge.textContent = drafts?.length ? String(drafts.length) : '0';
+    } catch(e){}
+  }
   const wrap = document.getElementById('hub-live-campaigns');
   if(!wrap || !_SB) return;
   try {
@@ -12085,6 +12094,160 @@ async function _loadLiveCampaignsBanner(){
       </div>`;
     }).join('');
   } catch(e){ wrap.style.display='none'; }
+}
+
+async function openDraftsModal(){
+  if(!_isAdmin()){ showAlert('🔒','Tylko admin',''); setTimeout(closeAlert,2000); return; }
+  document.getElementById('drafts-modal')?.remove();
+  const m = document.createElement('div');
+  m.id = 'drafts-modal';
+  m.style.cssText = 'position:fixed;inset:0;z-index:5500;background:#0a0e1a;color:#fff;display:flex;flex-direction:column';
+  m.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;background:#0f172a;border-bottom:1px solid #1e293b">
+      <button onclick="document.getElementById('drafts-modal').remove()" style="background:#1e293b;border:none;color:#fff;width:38px;height:38px;border-radius:10px;font-size:20px;cursor:pointer">←</button>
+      <div style="flex:1">
+        <div style="font-size:18px;font-weight:900">📝 Twoje szkice</div>
+        <div style="font-size:11px;color:#64748b">Pending drops · publikuj naraz</div>
+      </div>
+    </div>
+    <div id="drafts-list" style="flex:1;overflow-y:auto;padding:10px;background:#0a0e1a"><div style="text-align:center;padding:30px;color:#64748b">Ładowanie...</div></div>
+    <div id="drafts-publish-bar" style="padding:12px 14px;background:#0f172a;border-top:1px solid #1e293b;display:none">
+      <button onclick="_publishAllDrafts()" id="publish-all-btn" style="width:100%;background:linear-gradient(135deg,#fef3c7,#fbbf24 50%,#d4af37);border:none;color:#0a0e1a;padding:16px;border-radius:14px;cursor:pointer;font-weight:900;font-size:1rem;letter-spacing:.06em;text-transform:uppercase;box-shadow:0 12px 30px rgba(212,175,55,.5),0 1px 0 rgba(255,255,255,.5) inset">
+        🚀 ROZPOCZNIJ POLOWANIE
+      </button>
+      <div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:8px;font-family:monospace">// Aktywuje wszystkie szkice + Spotted ogłoszenie + event spot + push 10km</div>
+    </div>`;
+  document.body.appendChild(m);
+  try {
+    const { data, error } = await _SB.from('v_my_pending_drops').select('*').order('created_at', {ascending:true});
+    if(error) throw error;
+    const el = document.getElementById('drafts-list');
+    const bar = document.getElementById('drafts-publish-bar');
+    if(!data?.length){
+      el.innerHTML = `<div style="text-align:center;padding:50px 20px;color:#64748b">
+        <div style="font-size:50px;margin-bottom:10px;opacity:.5">📝</div>
+        <div style="color:#fff;font-weight:800;margin-bottom:6px">Brak szkiców</div>
+        <div style="font-size:13px">Stwórz Official Drop w trybie 📝 Szkic, żeby tu się pojawił</div>
+        <button onclick="document.getElementById('drafts-modal').remove();setTimeout(openOfficialDropModal,200)" style="margin-top:18px;background:linear-gradient(135deg,#fbbf24,#d4af37);border:none;color:#0a0e1a;padding:12px 22px;border-radius:12px;font-weight:900;cursor:pointer">+ Stwórz pierwszy</button>
+      </div>`;
+      bar.style.display = 'none';
+      return;
+    }
+    bar.style.display = 'block';
+    // Kampanie groupwise
+    const byCamp = {};
+    data.forEach(d => { const c = d.official_campaign || 'Promocja'; (byCamp[c] = byCamp[c] || []).push(d); });
+    el.innerHTML = Object.entries(byCamp).map(([camp, drops])=>{
+      const total = drops.reduce((s,d)=>s+(parseFloat(d.prize_value)||0), 0);
+      const dropsList = drops.map(d=>{
+        const verify = d.verify_required ? '📸' : '';
+        return `<div style="display:flex;gap:10px;padding:10px;background:#1e293b;border-radius:10px;margin-bottom:5px;border:1px solid #334155">
+          <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#fef3c7,#fbbf24,#d4af37);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">👑</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:800;font-size:13px;color:#fef3c7">${_wallEsc(d.title)}</div>
+            <div style="font-size:11px;color:#94a3b8">${_wallEsc(d.prize_label||'')} ${verify}</div>
+            <div style="font-size:10px;color:#64748b;font-family:monospace">${parseFloat(d.lat).toFixed(4)}, ${parseFloat(d.lng).toFixed(4)}</div>
+          </div>
+          <button onclick="_deleteDraft('${d.id}')" style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171;width:32px;height:32px;border-radius:8px;cursor:pointer;flex-shrink:0">✕</button>
+        </div>`;
+      }).join('');
+      return `<div style="margin-bottom:14px">
+        <div style="font-size:12px;color:#fbbf24;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;padding:0 4px">📦 ${_wallEsc(camp)} · ${drops.length} drop${drops.length>1?'s':''}${total?' · '+total+' zł':''}</div>
+        ${dropsList}
+      </div>`;
+    }).join('');
+  } catch(e){
+    document.getElementById('drafts-list').innerHTML = `<div style="color:#ef4444;padding:30px;text-align:center">Błąd: ${_wallEsc(e.message||'')}</div>`;
+  }
+}
+
+async function _deleteDraft(id){
+  if(!confirm('Usunąć ten szkic?')) return;
+  try {
+    await _SB.from('live_drops').delete().eq('id', id);
+    openDraftsModal(); // refresh
+  } catch(e){ showAlert('⚠️','Błąd',e.message||''); setTimeout(closeAlert,2500); }
+}
+
+async function _publishAllDrafts(){
+  if(!_isAdmin()) return;
+  const btn = document.getElementById('publish-all-btn');
+  if(btn){ btn.disabled=true; btn.style.opacity='0.6'; btn.textContent='🔄 Publikuję...'; }
+  try {
+    // 1. Pobierz pending drops żeby wiedzieć centrum + kampanię + meta
+    const { data: drafts } = await _SB.from('v_my_pending_drops').select('*');
+    if(!drafts?.length){ showAlert('⚠️','Brak szkiców',''); setTimeout(closeAlert,2000); return; }
+    // Centrum: avg lat/lng
+    const cLat = drafts.reduce((s,d)=>s+parseFloat(d.lat),0) / drafts.length;
+    const cLng = drafts.reduce((s,d)=>s+parseFloat(d.lng),0) / drafts.length;
+    // Główna kampania (najliczniejsza)
+    const campCount = {};
+    drafts.forEach(d=>{ const c = d.official_campaign||'Promocja'; campCount[c] = (campCount[c]||0)+1; });
+    const mainCamp = Object.entries(campCount).sort((a,b)=>b[1]-a[1])[0][0];
+    const totalValue = drafts.reduce((s,d)=>s+(parseFloat(d.prize_value)||0), 0);
+    const expSorted = drafts.map(d=>new Date(d.expires_at).getTime()).sort((a,b)=>a-b);
+    const earliestExp = new Date(expSorted[0]).toISOString();
+
+    // 2. RPC publish: pending → active
+    const { data: pubRes, error: pubErr } = await _SB.rpc('publish_pending_drops', { p_campaign: mainCamp });
+    if(pubErr) throw pubErr;
+
+    // 3. Stwórz event spot na mapie (centralne wydarzenie)
+    try {
+      const eventTitle = `👑 ${mainCamp}`;
+      const eventBody = `${drafts.length} nagród rozsianych po okolicy${totalValue?' · łącznie '+totalValue+' zł':''}. Sprawdź mapę — szukaj 👑 markerów!`;
+      await _SB.from('spots').insert({
+        lat: cLat, lng: cLng, vibe: 'event',
+        title: eventTitle,
+        start_at: new Date().toISOString(),
+        end_at: earliestExp,
+        event_type: 'other',
+        why: eventBody,
+        posted_by: _sbUser.id
+      });
+    } catch(e){ console.log('[publish] event spot fail', e); }
+
+    // 4. Stwórz City Spotted ogłoszenie (kategoria event)
+    try {
+      // Pobierz miasto z cache lub fetch
+      let city = _spottedCity || '';
+      if(!city){
+        try { const c = JSON.parse(localStorage.getItem('ts_city_cache')||'null'); if(c?.city) city = c.city; } catch(e){}
+        if(!city) city = profile?.homeBase || profile?.country || 'Sieradz';
+      }
+      const spotBody = `🏃 ${drafts.length} nagród rozsianych po mieście. Otwórz mapę i szukaj 👑 markerów. Kto pierwszy ten lepszy!${totalValue?' Łącznie '+totalValue+' zł do zgarnięcia.':''}`;
+      await _SB.from('city_spotted').insert({
+        author_id: _sbUser.id,
+        city, category: 'event',
+        title: `👑 ${mainCamp} LIVE!`,
+        body: spotBody
+      });
+    } catch(e){ console.log('[publish] spotted fail', e); }
+
+    // 5. Push 10km do okolicy (jeden zbiorczy push z centrum)
+    try {
+      fetch('/api/notify-drop', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          author_id: _sbUser.id, lat: cLat, lng: cLng,
+          title: `${drafts.length} nagród rozsianych po okolicy`,
+          qty: drafts.length, is_official: true, campaign: mainCamp,
+          prize_label: totalValue ? `${totalValue} zł łącznie` : ''
+        })
+      }).catch(()=>{});
+    } catch(e){}
+
+    document.getElementById('drafts-modal')?.remove();
+    try { if(navigator.vibrate) navigator.vibrate([20,40,20,80,40,80,40,80]); } catch(e){}
+    showAlert('🚀','POLOWANIE WYSTARTOWAŁO!', `${pubRes?.published||drafts.length} dropów LIVE · push 10km · Spotted + event`);
+    setTimeout(closeAlert, 5000);
+    _loadDropsNearby(20);
+    // Fly to center
+    if(window.map) window.map.flyTo({center:[cLng, cLat], zoom: 13, duration: 1500});
+  } catch(e){
+    if(btn){ btn.disabled=false; btn.style.opacity='1'; btn.textContent='🚀 ROZPOCZNIJ POLOWANIE'; }
+    showAlert('⚠️','Błąd publikacji', e?.message||''); setTimeout(closeAlert,3500);
+  }
 }
 
 async function _showCampaignList(){
@@ -16612,15 +16775,21 @@ function openOfficialDropModal(){
       <label style="display:block;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px">Hint / opis (opcjonalny)</label>
       <textarea id="od-desc" maxlength="500" rows="2" placeholder="np. 'Pod ławką w parku, czerwona koperta'" style="width:100%;padding:11px;background:#1e293b;border:1px solid #334155;border-radius:10px;color:#fff;font-size:13px;outline:none;margin-bottom:10px;resize:vertical;font-family:inherit"></textarea>
 
-      <label style="display:flex;align-items:center;gap:8px;background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.25);border-radius:10px;padding:10px;cursor:pointer;margin-bottom:14px">
+      <label style="display:flex;align-items:center;gap:8px;background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.25);border-radius:10px;padding:10px;cursor:pointer;margin-bottom:10px">
         <input id="od-verify" type="checkbox" checked style="width:18px;height:18px;accent-color:#d4af37;cursor:pointer">
-        <span style="flex:1;font-size:13px;color:#fde68a">📸 <b>Wymagaj zdjęcia</b> przy claim (anti-cheat)<br><span style="font-size:11px;color:#94a3b8;font-weight:400">Userzy musi zrobić foto na miejscu by potwierdzić</span></span>
+        <span style="flex:1;font-size:13px;color:#fde68a">📸 <b>Wymagaj zdjęcia</b> przy claim (anti-cheat)<br><span style="font-size:11px;color:#94a3b8;font-weight:400">User musi zrobić foto na miejscu by potwierdzić</span></span>
       </label>
+
+      <label style="display:block;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px">Tryb publikacji</label>
+      <select id="od-mode" style="width:100%;padding:11px;background:#1e293b;border:1px solid #334155;border-radius:10px;color:#fff;font-size:14px;margin-bottom:10px">
+        <option value="pending" selected>📝 SZKIC (ukryty — opublikujesz później wszystkie naraz)</option>
+        <option value="active">🟢 OD RAZU LIVE (push do wszystkich)</option>
+      </select>
 
       <div style="background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.25);border-radius:10px;padding:10px;font-size:12px;color:#fbbf24;margin-bottom:14px">
         📍 Lokalizacja: <b>Twoja aktualna pozycja</b><br>
         <span style="font-family:monospace;font-size:11px;color:#94a3b8">${lat.toFixed(5)}, ${lng.toFixed(5)}</span><br>
-        🔔 Push do wszystkich w okolicy <b>10 km</b>
+        🔔 Push 10km gdy <b>opublikujesz polowanie</b>
       </div>
 
       <div style="display:flex;gap:8px">
@@ -16654,9 +16823,11 @@ async function _submitOfficialDrop(lat, lng){
   const desc = (document.getElementById('od-desc')?.value||'').trim();
   const verify = !!document.getElementById('od-verify')?.checked;
   const exph = parseInt(document.getElementById('od-exp')?.value||'8');
+  const mode = document.getElementById('od-mode')?.value || 'pending'; // 'pending' lub 'active'
   if(!title){ showAlert('⚠️','Brak tytułu',''); setTimeout(closeAlert,2000); return; }
   const expires_at = new Date(Date.now() + exph*3600*1000).toISOString();
-  const prizeLabel = prizeValue ? (PRIZE_TYPES.find(t=>t.key===prizeType)?.unit ? `${prizeValue} ${PRIZE_TYPES.find(t=>t.key===prizeType).unit}` : title) : title;
+  const unit = PRIZE_TYPES.find(t=>t.key===prizeType)?.unit;
+  const prizeLabel = prizeValue ? (unit ? `${prizeValue} ${unit}` : title) : title;
 
   try {
     const { error } = await _SB.from('live_drops').insert({
@@ -16664,26 +16835,31 @@ async function _submitOfficialDrop(lat, lng){
       title, description: desc || null, quantity: 1, expires_at,
       is_official: true, prize_type: prizeType, prize_value: prizeValue,
       prize_label: prizeLabel, official_campaign: campaign || 'Promocja',
-      verify_required: verify
+      verify_required: verify,
+      status: mode  // 'pending' = ukryty albo 'active' = od razu live
     });
     if(error) throw error;
     document.getElementById('official-drop-modal')?.remove();
     try { if(navigator.vibrate) navigator.vibrate([20,40,20,40,20]); } catch(e){}
-    showAlert('👑','OFFICIAL DROP LIVE!', `${title} · push 10km radius`);
-    setTimeout(closeAlert, 3500);
+    if(mode === 'active'){
+      showAlert('👑','OFFICIAL DROP LIVE!', `${title} · push 10km radius`);
+      setTimeout(closeAlert, 3500);
+      // Mass push do okolicy 10km tylko jeśli LIVE
+      try {
+        fetch('/api/notify-drop', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({
+            author_id: _sbUser.id, lat, lng, title,
+            qty: 1, is_official: true, campaign,
+            prize_label: prizeLabel
+          })
+        }).catch(()=>{});
+      } catch(e){}
+    } else {
+      showAlert('📝','Szkic zapisany', 'Klik "ROZPOCZNIJ POLOWANIE" gdy będziesz gotów');
+      setTimeout(closeAlert, 3000);
+    }
     _loadDropsNearby(20);
-
-    // Mass push do okolicy 10km
-    try {
-      fetch('/api/notify-drop', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({
-          author_id: _sbUser.id, lat, lng, title,
-          qty: 1, is_official: true, campaign,
-          prize_label: prizeLabel
-        })
-      }).catch(()=>{});
-    } catch(e){}
   } catch(e){
     showAlert('⚠️','Błąd', e?.message||''); setTimeout(closeAlert,3000);
   }
