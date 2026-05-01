@@ -15787,19 +15787,13 @@ const QRAIL_TABS = [
   ]},
   {icon:'🎨', label:'Avatar', cls:'tab-avatar', subActions:[
     {icon:'👤', label:'Profil', fn:function(){ if(typeof openProfile==='function') openProfile(); }},
-    {icon:'👁️', label:'Mój widok', fn:function(){
-      // Pokazuje jak inni widzą Twój profil publiczny + timeline aktywności
-      if(!_sbUser){ showAlert('🔒','Zaloguj się',''); setTimeout(closeAlert,2000); return; }
-      const nm = (window.profile?.display_name) || (window.profile?.name) || (_sbUser.email?.split('@')[0]) || 'TY';
-      if(typeof openPublicProfile==='function') openPublicProfile(_sbUser.id, nm, '#06b6d4', '👤');
-    }},
+    {icon:'🌍', label:'Tablica', fn:function(){ if(typeof openMyWorld==='function') openMyWorld(); }},
     {icon:'🎯', label:'Status', fn:function(){ if(typeof openStatusPicker==='function') openStatusPicker(); }},
   ]},
   {icon:'👻', label:'Ghost', cls:'tab-ghost', subActions:[
     {icon:'👻', label:'Tryb Duch', fn:function(){ if(typeof openGhostPanel==='function') openGhostPanel(); }},
   ]},
   {icon:'☰', label:'Menu', cls:'tab-menu', subActions:[
-    {icon:'🌍', label:'Twój świat', fn:function(){ if(typeof openMyWorld==='function') openMyWorld(); }},
     {icon:'🎯', label:'Łowca', fn:function(){ if(typeof openHunter==='function') openHunter(); }},
     {icon:'🌐', label:'Cyber Zone', fn:function(){ if(typeof openMetaverseHub==='function') openMetaverseHub(); }},
   ]},
