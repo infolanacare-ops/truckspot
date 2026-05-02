@@ -26501,7 +26501,17 @@ _SB.auth.getSession().then(({ data: { session } }) => {
   if (session) _onAuthUser(session.user);
 });
 _SB.auth.onAuthStateChange((_event, session) => {
-  _onAuthUser(session?.user || null);
+  console.log('[auth] event:', _event, 'has session:', !!session?.user);
+  // Twardy logout TYLKO na explicit SIGNED_OUT lub INITIAL_SESSION-bez-sesji.
+  // TOKEN_REFRESHED / USER_UPDATED z chwilowo nullem NIE wyrzucają usera (race condition w refresh).
+  if (_event === 'SIGNED_OUT') {
+    _onAuthUser(null);
+  } else if (session?.user) {
+    _onAuthUser(session.user);
+  } else if (_event === 'INITIAL_SESSION' && !_sbUser) {
+    // Pierwsze skanowanie storage — naprawdę nie ma sesji
+    _onAuthUser(null);
+  }
   // wyślij email powitalny przy pierwszym logowaniu przez Google
   if (_event === 'SIGNED_IN' && session?.user) {
     const u = session.user;
