@@ -2377,11 +2377,24 @@ body[data-skin="galaxy"] .player-bubble{background:linear-gradient(140deg,#c084f
   border-top-color:var(--peer-color,#8b5cf6);
 }
 .peer-name{
-  font-size:.58rem;font-weight:700;color:#fff;
-  background:rgba(0,0,0,.55);backdrop-filter:blur(6px);
-  padding:1px 5px;border-radius:6px;
-  max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:.55rem;font-weight:800;color:#fff;
+  background:linear-gradient(135deg,rgba(0,0,0,.85),rgba(0,0,0,.7));
+  backdrop-filter:blur(10px);
+  padding:2px 6px;border-radius:8px;
+  max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   letter-spacing:.02em;
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 2px 6px rgba(0,0,0,.3);
+  /* Auto-fade po 4s nieaktywności żeby nie zaśmiecać widoku gdy peery blisko siebie */
+  animation:peerNameFade 8s ease-in forwards;
+}
+@keyframes peerNameFade{
+  0%, 50% { opacity:1; transform:translateY(0); }
+  100% { opacity:.35; transform:translateY(-1px); }
+}
+.peer-avatar:hover .peer-name{
+  opacity:1 !important;
+  animation:none;
 }
 /* Modal otwarty → ukryj WSZYSTKIE chmurki/markery peer'ów żeby nie przebijały się */
 body:has(#friends-panel) .peer-name,
@@ -7552,10 +7565,11 @@ function startGps(){
     if(!navActive){
       if(!gpsMarker) gpsMarker=mkGpsDotMarker(lat,lng);
       else _hubMarkerLerpTo(lat, lng); // smooth lerp zamiast skoku
-      // Force flyTo: gdy mapa daleko od pozycji usera (>30km), zawsze przyleć
+      // Force flyTo: gdy mapa daleko od markera GPS LUB zoom za mały, zawsze przyleć
       const c = map.getCenter();
       const distFromCenterKm = haversineKm(lat, lng, c.lat, c.lng);
-      const shouldForceFly = distFromCenterKm > 30 && !window._userPanning;
+      const currentZoom = map.getZoom();
+      const shouldForceFly = (distFromCenterKm > 5 || currentZoom < 15) && !window._userPanning;
       if(!_gpsCentered || shouldForceFly){
         _gpsCentered=true;
         // Pokemon Go 5D Ultra — pitch 72 (prawie pierwsza osoba), zoom 18
@@ -24591,7 +24605,15 @@ if(savedMode && savedProfile){
 // ── SUPABASE AUTH ─────────────────────────────────────────────────────────────
 const _SB = supabase.createClient(
   'https://sabeurtjyasiwozekguh.supabase.co',
-  'sb_publishable_CYTVbJX_l39QajRGz1qb6g_4NpHw1R1'
+  'sb_publishable_CYTVbJX_l39QajRGz1qb6g_4NpHw1R1',
+  {
+    auth: {
+      persistSession: true,        // sesja w localStorage (po wyjściu z apki nie wyloguje)
+      autoRefreshToken: true,      // automatyczny refresh access_token przed wygaśnięciem
+      detectSessionInUrl: true,    // OAuth callback (Google/Apple/Facebook)
+      // NIE zmieniamy storage/storageKey — zachowujemy default żeby istniejący userzy zostali zalogowani
+    }
+  }
 );
 
 let _sbUser = null;
