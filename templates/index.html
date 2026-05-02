@@ -12314,6 +12314,14 @@ function openMetaverseHub(){
   if(existing){ existing.remove(); return; }
 
   const sd = _safeDriveLoad();
+  // Preload week/month sum dla kafelki Kroki (background, nie blokuje)
+  if(_sbUser && _SB && !window._stepsSummaryFetched){
+    window._stepsSummaryFetched = true;
+    _SB.rpc('steps_summary').then(({data}) => {
+      const s = (Array.isArray(data) && data[0]) || data;
+      if(s){ window._stepsWeek = s.week_steps || 0; window._stepsMonth = s.month_steps || 0; }
+    }).catch(()=>{});
+  }
   const isOn = _metaverseActive;
 
   const id = 'metaverse-hub';
@@ -12389,7 +12397,7 @@ function openMetaverseHub(){
       <!-- Sekcja: Gamifikacja -->
       <div style="font-family:JetBrains Mono,monospace;font-size:.6rem;font-weight:800;color:rgba(6,182,212,.7);text-transform:uppercase;letter-spacing:.12em;margin:1rem .3rem .55rem;display:flex;align-items:center;gap:.5rem">🎮 Gamifikacja</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:1.1rem">
-        ${_hubItem({icon: _iconSvg('steps',{size:24,emoji:'👟'}), label:'Kroki dziś', desc: (_mySteps ? `${_mySteps.steps.toLocaleString('pl-PL')} / ${_mySteps.goal.toLocaleString('pl-PL')} kroków · ${Math.round(100*_mySteps.steps/_mySteps.goal)}% celu — XP + rabaty` : 'Cel: 10 000 kroków · zdobądź XP i rabaty u biznesów'), badge: (_mySteps?.steps>=_mySteps?.goal?'✓':(_mySteps?.steps>0?String(_mySteps.steps):'NEW')), color:'rgba(16,185,129,.25)', colorB:'rgba(16,185,129,.6)', wide:true, onClick:`openStepsPanel()`})}
+        ${_hubItem({icon: _iconSvg('steps',{size:24,emoji:'👟'}), label:'👟 Kroki', desc: (_mySteps ? `Dziś <b>${_mySteps.steps.toLocaleString('pl-PL')}</b> / ${_mySteps.goal.toLocaleString('pl-PL')} · ${Math.round(100*_mySteps.steps/_mySteps.goal)}%${window._stepsWeek ? ' · 7d <b>'+window._stepsWeek.toLocaleString('pl-PL')+'</b>' : ''}${window._stepsMonth ? ' · 30d <b>'+window._stepsMonth.toLocaleString('pl-PL')+'</b>' : ''}` : 'Cel: 10 000 kroków · auto-zaliczane zadania + XP'), badge: (_mySteps?.steps>=_mySteps?.goal?'✓':(_mySteps?.steps>0?String(_mySteps.steps):'NEW')), color:'rgba(16,185,129,.25)', colorB:'rgba(16,185,129,.6)', wide:true, onClick:`openStepsPanel()`})}
         ${_hubItem({icon:'⚡', label:'Codzienne wyzwania', desc:'Nowe taski codziennie + bonusy', badge: _myTasks?.filter(t=>t.horizon==='daily').length ? String(_myTasks.filter(t=>t.horizon==='daily').length) : '', color:'rgba(34,197,94,.15)', colorB:'rgba(34,197,94,.45)', onClick:`openMyTasksPanel()`})}
         ${_hubItem({icon:'🏆', label:'Osiągnięcia / Odznaki', desc:'Kolekcjonuj badge i pokazuj się', color:'rgba(251,191,36,.15)', colorB:'rgba(251,191,36,.45)', onClick:`openAchievementsPanel()`})}
         ${_hubItem({icon:'🛡️', label:'Bezpieczna jazda', desc:'Punkty za jazdę bez +50 km/h', badge:`${sd.points} PKT`, color:'rgba(212,175,55,.15)', colorB:'rgba(212,175,55,.45)', onClick:`openSafeDrivePanel()`})}
@@ -15382,7 +15390,30 @@ async function _addSteps(n, source='manual_test'){
   // Auto-sync co 100 kroków albo gdy przeskoczy goal
   if(_mySteps.steps - prev >= 100 || (prev < _mySteps.goal && _mySteps.steps >= _mySteps.goal)){
     _syncStepsToSupabase(true);
+    _autoClaimStepTasks(_mySteps.steps); // auto-zaliczanie zadań krokowych
   }
+}
+
+// AUTO-ZALICZANIE ZADAŃ KROKOWYCH (Kris 02.05.2026: "kroki maja zaliczać te zadania automatycznie")
+async function _autoClaimStepTasks(currentSteps){
+  if(!_sbUser || !_SB) return;
+  try {
+    const { data, error } = await _SB.rpc('auto_claim_step_tasks', { p_today_steps: currentSteps });
+    if(error){ console.warn('auto_claim_step_tasks:', error); return; }
+    if(Array.isArray(data) && data.length > 0){
+      // Pokaż celebrację dla każdego zaliczonego zadania
+      data.forEach((t, idx) => {
+        setTimeout(() => {
+          showAlert('🎉', 'Zadanie zaliczone!', `${t.title} · +${t.xp_granted} XP`);
+          setTimeout(closeAlert, 3000);
+          if(navigator.vibrate) navigator.vibrate([30, 50, 30, 50, 80]);
+        }, idx * 1200);
+      });
+      // Refresh task progress + stats w tle
+      try { if(typeof _loadMyProgress === 'function') _loadMyProgress(); } catch(e){}
+      try { if(typeof _loadMyStats === 'function') _loadMyStats(); } catch(e){}
+    }
+  } catch(e){ console.warn('autoClaimStepTasks:', e); }
 }
 
 function _updateStepsPanelUI(){
@@ -15401,6 +15432,17 @@ async function openStepsPanel(){
   document.getElementById('metaverse-hub')?.remove();
   document.getElementById('steps-modal')?.remove();
   if(!_mySteps) await _initStepsToday();
+
+  // Pobierz agregacje (week/month/year) + last 30 days
+  let summary = null, last30 = [];
+  try {
+    const [{ data: sumData }, { data: histData }] = await Promise.all([
+      _SB.rpc('steps_summary'),
+      _SB.rpc('steps_last_n_days', { p_days: 30 })
+    ]);
+    summary = (Array.isArray(sumData) && sumData[0]) || sumData || null;
+    last30 = histData || [];
+  } catch(e){ console.warn('steps summary:', e); }
 
   const pct = Math.min(100, Math.round(100 * _mySteps.steps / _mySteps.goal));
   const remaining = Math.max(0, _mySteps.goal - _mySteps.steps);
@@ -15446,6 +15488,49 @@ async function openStepsPanel(){
       <div style="max-width:520px;margin:0 auto 1.4rem;background:rgba(255,255,255,.05);border-radius:999px;height:14px;overflow:hidden;border:1px solid rgba(16,185,129,.2)">
         <div id="steps-bar" style="width:${pct}%;height:100%;background:linear-gradient(90deg,#10b981,#34d399);transition:width .8s ease"></div>
       </div>
+
+      ${summary ? `
+      <!-- Statystyki: Tydzień / Miesiąc / Rok -->
+      <div style="max-width:520px;margin:0 auto 1.4rem;display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        <div style="background:linear-gradient(160deg,rgba(16,185,129,.18),rgba(16,185,129,.06));border:1px solid rgba(16,185,129,.4);border-radius:14px;padding:12px;text-align:center">
+          <div style="font-size:.55rem;color:rgba(16,185,129,.85);font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">📅 Tydzień</div>
+          <div style="font-family:var(--font-head);font-size:1.3rem;font-weight:900;color:#fff;line-height:1">${(summary.week_steps||0).toLocaleString('pl-PL')}</div>
+          <div style="font-size:.55rem;color:rgba(255,255,255,.55);margin-top:3px">śr. ${(summary.week_avg||0).toLocaleString('pl-PL')}/dzień</div>
+        </div>
+        <div style="background:linear-gradient(160deg,rgba(168,85,247,.18),rgba(168,85,247,.06));border:1px solid rgba(168,85,247,.4);border-radius:14px;padding:12px;text-align:center">
+          <div style="font-size:.55rem;color:rgba(168,85,247,.85);font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">📆 Miesiąc</div>
+          <div style="font-family:var(--font-head);font-size:1.3rem;font-weight:900;color:#fff;line-height:1">${(summary.month_steps||0).toLocaleString('pl-PL')}</div>
+          <div style="font-size:.55rem;color:rgba(255,255,255,.55);margin-top:3px">śr. ${(summary.month_avg||0).toLocaleString('pl-PL')}/dzień</div>
+        </div>
+        <div style="background:linear-gradient(160deg,rgba(251,191,36,.18),rgba(251,191,36,.06));border:1px solid rgba(251,191,36,.4);border-radius:14px;padding:12px;text-align:center">
+          <div style="font-size:.55rem;color:rgba(251,191,36,.85);font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">🔥 Streak</div>
+          <div style="font-family:var(--font-head);font-size:1.3rem;font-weight:900;color:#fff;line-height:1">${summary.current_streak||0}</div>
+          <div style="font-size:.55rem;color:rgba(255,255,255,.55);margin-top:3px">${(summary.current_streak||0)===1 ? 'dzień' : 'dni 5k+'}</div>
+        </div>
+      </div>
+
+      <!-- Heatmap 30 dni -->
+      ${last30.length>0 ? `
+      <div style="max-width:520px;margin:0 auto 1.4rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="color:rgba(255,255,255,.85);font-weight:900;font-size:.7rem;text-transform:uppercase;letter-spacing:.08em">📊 Ostatnie 30 dni</div>
+          <div style="font-size:.6rem;color:rgba(255,255,255,.5);font-family:'JetBrains Mono',monospace">rekord: ${(summary.best_steps||0).toLocaleString('pl-PL')}</div>
+        </div>
+        <div style="display:flex;gap:3px;align-items:flex-end;height:60px;background:rgba(255,255,255,.03);border-radius:10px;padding:8px;border:1px solid rgba(255,255,255,.06)">
+          ${last30.map(d => {
+            const max = Math.max(...last30.map(x=>x.steps), summary.today_goal||10000);
+            const h = max > 0 ? Math.round(100 * d.steps / max) : 0;
+            const color = d.met ? 'linear-gradient(180deg,#10b981,#059669)' : (d.steps > 0 ? 'linear-gradient(180deg,rgba(16,185,129,.5),rgba(16,185,129,.25))' : 'rgba(255,255,255,.06)');
+            return `<div title="${d.date}: ${d.steps.toLocaleString('pl-PL')} kroków" style="flex:1;height:${Math.max(h,4)}%;background:${color};border-radius:3px;min-height:4px;transition:height .4s"></div>`;
+          }).join('')}
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.55rem;color:rgba(255,255,255,.4);font-family:'JetBrains Mono',monospace;margin-top:4px;padding:0 4px">
+          <span>${last30[0]?.date?.slice(5) || ''}</span>
+          <span>${last30[Math.floor(last30.length/2)]?.date?.slice(5) || ''}</span>
+          <span>dziś</span>
+        </div>
+      </div>` : ''}
+      ` : ''}
 
       <!-- Test buttons (do usunięcia gdy plug pedometru) -->
       <div style="max-width:520px;margin:0 auto 1.4rem;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.4);border-radius:14px;padding:.9rem">
