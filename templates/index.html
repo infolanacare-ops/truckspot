@@ -21260,6 +21260,15 @@ const MAP_SKINS = [
     mapStyle:'mapbox://styles/mapbox/standard-satellite', atmosphere:'cyber',
     cssFilter:'saturate(1.4) hue-rotate(220deg) brightness(.85) contrast(1.25)',
     accent:'#06b6d4', isPro:true },
+  // 2D — płaskie widoki dla tych co wolą czysty mapy bez 3D (Kris 02.05.2026)
+  { key:'flat-streets', label:'Klasyczna 2D', sub:'Płaska mapa Mapbox · czysta', emoji:'🗺️',
+    mapStyle:'mapbox://styles/mapbox/streets-v12', atmosphere:'classic',
+    cssFilter:'saturate(1.08) contrast(1.06) brightness(1.02)',
+    pitch:0, bearing:0, accent:'#3b82f6', isPro:false },
+  { key:'flat-sat',     label:'Satelita 2D',  sub:'Płaska mapa satelitarna', emoji:'🌍',
+    mapStyle:'mapbox://styles/mapbox/satellite-streets-v12', atmosphere:'classic',
+    cssFilter:'saturate(1.18) contrast(1.10) brightness(1.05)',
+    pitch:0, bearing:0, accent:'#10b981', isPro:false },
 ];
 
 function setMapSkin(key){
@@ -21287,7 +21296,11 @@ function setMapSkin(key){
     try { if(typeof _apply3d === 'function') _apply3d(skin.atmosphere); } catch(e){}
     _applyMapSkinExtras(key);
   }
-  // 4) Update brand accent CSS variable
+  // 4) Pitch/bearing — jeśli skin definiuje (np. 2D widoki = pitch:0)
+  if(typeof skin.pitch === 'number'){
+    try { window.map.easeTo({ pitch: skin.pitch, bearing: skin.bearing ?? 0, duration: 800 }); } catch(e){}
+  }
+  // 5) Update brand accent CSS variable
   document.documentElement.style.setProperty('--skin-accent', skin.accent);
   showAlert(skin.emoji, skin.label, skin.sub);
   setTimeout(closeAlert, 1800);
