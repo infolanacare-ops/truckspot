@@ -5215,8 +5215,6 @@ function _landingEnter(){
     <div class="menu-item" onclick="drawerAction('all')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="M3 7l6-4 6 4 6-4v14l-6 4-6-4-6 4V7z"/><path d="M9 3v14M15 7v14"/></svg></span></div><span class="menu-label" data-i="menu_all">All parkings</span></div>
     <div class="menu-item" onclick="drawerAction('search')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span></div><span class="menu-label" data-i="menu_search">Search</span></div>
     <div id="scenic-menu-item" class="menu-item" onclick="drawerAction('scenic')" style="display:none"><div class="menu-icon" style="background:rgba(16,185,129,.12);border-color:#10b981"><span class="si"><svg viewBox="0 0 24 24"><path d="M8 3l4 8 5-5 5 15H2L8 3z"/></svg></span></div><span class="menu-label">Piękne widoki / Scenic</span><span class="menu-badge" id="scenic-badge" style="display:none">ON</span></div>
-    <div id="markets-menu-item" class="menu-item" onclick="drawerAction('markets')"><div class="menu-icon" style="background:rgba(249,115,22,.12);border-color:#f97316"><span class="si"><svg viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></span></div><span class="menu-label" data-i="menu_markets">Flohmarkt / Markets</span><span class="menu-badge" id="markets-badge" style="display:none">ON</span></div>
-    <div class="menu-item" onclick="drawerAction('autobahn')"><div class="menu-icon" style="background:rgba(0,100,200,.12);border-color:#0064c8"><span style="font-size:1.1rem">🇩🇪</span></div><span class="menu-label">Autobahn DE (oficjalne MOP)</span><span class="menu-badge" id="autobahn-badge" style="display:none">ON</span></div>
     <div class="menu-sep"></div>
     <div class="menu-section" data-i="sec_community">Community</div>
     <div class="menu-item" onclick="closeDrawer();setTimeout(openSafeDrivePanel,250)"><div class="menu-icon" style="background:rgba(212,175,55,.15);border-color:#d4af37"><span style="font-size:1.15rem">🛡️</span></div><span class="menu-label">Bezpieczna jazda</span><span class="menu-badge" id="sd-points-badge" style="background:linear-gradient(135deg,#fbbf24,#d4af37);color:#1e293b;font-weight:900">0</span></div>
@@ -5236,7 +5234,6 @@ function _landingEnter(){
     <div class="menu-item" onclick="drawerAction('share')"><div class="menu-icon" style="background:rgba(16,185,129,.12);border-color:#10b981"><span class="si"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></span></div><span class="menu-label" data-i="menu_share">Recommend TruckSpot</span><span class="menu-badge green">+50 pts</span></div>
     <div class="menu-sep"></div>
     <div class="menu-section" data-i="sec_tools">Tools</div>
-    <div class="menu-item" onclick="drawerAction('tacho')"><div class="menu-icon" style="background:rgba(212,175,55,.12);border-color:#d4af37"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span></div><span class="menu-label">Tachograf EU</span><span class="menu-badge" id="tacho-badge" style="display:none">ON</span></div>
     <div class="menu-item" onclick="drawerAction('gps')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg></span></div><span class="menu-label" data-i="menu_gps">GPS Alerts</span><span class="menu-badge" id="gps-badge" style="display:none">ON</span></div>
     <div class="menu-item" onclick="drawerAction('radio')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg></span></div><span class="menu-label" data-i="menu_radio">Radio</span></div>
     <div class="menu-sep"></div>
@@ -6919,10 +6916,7 @@ function enterMode(mode){
     setTimeout(()=>map.resize(),100);
   }
 
-  // Flohmarkt/Markets only for bus and tourist modes
-  const marketsItem = document.getElementById('markets-menu-item');
-  if(marketsItem) marketsItem.style.display = (mode === 'tir') ? 'none' : '';
-  if(mode === 'tir' && marketsVisible) hideMarkets();
+  // Markets/Autobahn DE wyrzucone 02.05.2026 — TribeSpot dla młodych w Sieradzu nie dla niemieckich autostrad
 
   // Scenic views only for tourist mode
   const scenicItem = document.getElementById('scenic-menu-item');
@@ -6963,16 +6957,13 @@ function drawerAction(action){
   setTimeout(()=>{
     if(action==='nearby') findNearest();
     else if(action==='route') openRoute();
-    else if(action==='markets') toggleMarkets();
     else if(action==='scenic') toggleScenic();
-    else if(action==='autobahn') toggleAutobahn();
     else if(action==='favs') openFavsPanel();
     else if(action==='cbradio') openMsgsPanel();
     else if(action==='all') map.flyTo({center:[12.0,51.5],zoom:5});
     else if(action==='add') startAddMode();
     else if(action==='search') openSearch();
     else if(action==='rank') openRank();
-    else if(action==='tacho') openTacho();
     else if(action==='gps') toggleGps();
     else if(action==='radio') toggleRadioBar();
     else if(action==='share') shareApp();
