@@ -2383,12 +2383,21 @@ body[data-skin="galaxy"] .player-bubble{background:linear-gradient(140deg,#c084f
   max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   letter-spacing:.02em;
 }
-/* Modal otwarty → ukryj chmurki peer'ów żeby nie przebijały się przez nakładkę */
+/* Modal otwarty → ukryj WSZYSTKIE chmurki/markery peer'ów żeby nie przebijały się */
 body:has(#friends-panel) .peer-name,
 body:has(#metaverse-hub) .peer-name,
 body:has(#steps-modal) .peer-name,
-body:has(.q-modal) .peer-name {
-  opacity: 0; pointer-events: none; transition: opacity .2s;
+body:has(#mytasks-modal) .peer-name,
+body:has(.q-modal) .peer-name,
+body:has(#spot-detail-modal) .peer-name,
+body:has(#auth-modal[style*="block"]) .peer-name {
+  opacity: 0 !important; pointer-events: none !important; visibility: hidden !important;
+  transition: opacity .2s;
+}
+/* Plus ukryj tooltip mapboxowy gdy modal */
+body:has(#friends-panel) .mapboxgl-popup,
+body:has(#metaverse-hub) .mapboxgl-popup {
+  display: none !important;
 }
 /* ══ ZNAJOMY — złota aura, większy, korona ══ */
 .peer-avatar.friend .peer-dot{
@@ -7543,7 +7552,11 @@ function startGps(){
     if(!navActive){
       if(!gpsMarker) gpsMarker=mkGpsDotMarker(lat,lng);
       else _hubMarkerLerpTo(lat, lng); // smooth lerp zamiast skoku
-      if(!_gpsCentered){
+      // Force flyTo: gdy mapa daleko od pozycji usera (>30km), zawsze przyleć
+      const c = map.getCenter();
+      const distFromCenterKm = haversineKm(lat, lng, c.lat, c.lng);
+      const shouldForceFly = distFromCenterKm > 30 && !window._userPanning;
+      if(!_gpsCentered || shouldForceFly){
         _gpsCentered=true;
         // Pokemon Go 5D Ultra — pitch 72 (prawie pierwsza osoba), zoom 18
         map.flyTo({center:[lng,lat], zoom:18, pitch:72, bearing:0, duration:2200});
@@ -21891,18 +21904,14 @@ async function toggleFavParking(p){
   const btn = document.getElementById(`fav-btn-${p.id}`);
   if(btn) btn.textContent = favIsStored(p.id) ? '❤️' : '🤍';
 
-  // Sync z Supabase jeśli zalogowany
-  if(_sbUser){
-    const { data: { session } } = await _SB.auth.getSession();
-    if(!session) return;
+  // Sync z Supabase jeśli zalogowany — używa _authFetch (auto-refresh tokenu)
+  if(_sbUser && typeof _authFetch === 'function'){
     if(removing){
-      await fetch(`/api/favorites/parking/${p.id}`, {
-        method:'DELETE', headers:{ Authorization:'Bearer '+session.access_token }
-      });
+      await _authFetch(`/api/favorites/parking/${p.id}`, { method:'DELETE' });
     } else {
-      await fetch('/api/favorites', {
+      await _authFetch('/api/favorites', {
         method:'POST',
-        headers:{ Authorization:'Bearer '+session.access_token, 'Content-Type':'application/json' },
+        headers:{ 'Content-Type':'application/json' },
         body: JSON.stringify({ spot_type:'parking', spot_id: p.id })
       });
     }
@@ -24475,7 +24484,33 @@ function checkAlertFromUrl(){
   }
 }
 
-if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+// Service Worker — auto-update + force update przy wykryciu nowej wersji
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js').then(reg => {
+    // Sprawdź update przy każdym otwarciu
+    reg.update();
+    // Wykryj nową wersję i auto-aktywuj (skipWaiting w SW)
+    reg.addEventListener('updatefound', () => {
+      const sw = reg.installing;
+      if(!sw) return;
+      sw.addEventListener('statechange', () => {
+        if(sw.state === 'installed' && navigator.serviceWorker.controller){
+          // Nowa wersja gotowa → SW zrobi clients.navigate w activate
+          console.log('[SW] Nowa wersja zainstalowana, aktywuję...');
+        }
+      });
+    });
+    // Sprawdź update co 5 min (gdy karta otwarta długo)
+    setInterval(() => reg.update().catch(()=>{}), 5 * 60 * 1000);
+  });
+  // Reload page przy controller change (gdy nowy SW przejmie klient)
+  let _swReloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if(_swReloaded) return;
+    _swReloaded = true;
+    window.location.reload();
+  });
+}
 
 // resume session if already set up
 const savedMode = localStorage.getItem('ts_mode');
