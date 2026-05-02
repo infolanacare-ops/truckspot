@@ -5221,7 +5221,6 @@ function _landingEnter(){
     <div class="menu-item" onclick="drawerAction('share')"><div class="menu-icon" style="background:rgba(16,185,129,.12);border-color:#10b981"><span class="si"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></span></div><span class="menu-label" data-i="menu_share">Recommend TruckSpot</span><span class="menu-badge green">+50 pts</span></div>
     <div class="menu-sep"></div>
     <div class="menu-section" data-i="sec_tools">Tools</div>
-    <div class="menu-item" onclick="drawerAction('gps')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg></span></div><span class="menu-label" data-i="menu_gps">GPS Alerts</span><span class="menu-badge" id="gps-badge" style="display:none">ON</span></div>
     <div class="menu-item" onclick="drawerAction('radio')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg></span></div><span class="menu-label" data-i="menu_radio">Radio</span></div>
     <div class="menu-sep"></div>
     <div class="menu-section" data-i="sec_settings">Settings</div>
@@ -5244,7 +5243,6 @@ function _landingEnter(){
     </div>
 
     <div class="menu-item" onclick="drawerAction('lang')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span></div><span class="menu-label" data-i="menu_lang">Language</span></div>
-    <div class="menu-item" onclick="drawerAction('mode')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span></div><span class="menu-label" data-i="menu_mode">Change mode</span></div>
     <div class="menu-sep"></div>
     <div id="auth-menu-item" class="menu-item" onclick="closeDrawer();setTimeout(_sbUser?_authSignOut:openAuthModal,200)">
       <div class="menu-icon" style="background:rgba(0,180,200,.12);border-color:#00b4c8">
@@ -6940,7 +6938,6 @@ function drawerAction(action){
     else if(action==='add') startAddMode();
     else if(action==='search') openSearch();
     else if(action==='rank') openRank();
-    else if(action==='gps') toggleGps();
     else if(action==='radio') toggleRadioBar();
     else if(action==='share') shareApp();
     else if(action==='myspots') showMySpots();
