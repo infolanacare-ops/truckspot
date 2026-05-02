@@ -5198,13 +5198,7 @@ function _landingEnter(){
     </div>
   </div>
   <div class="drawer-menu">
-    <div class="menu-section" data-i="sec_nav">Navigation</div>
-    <div class="menu-item" onclick="drawerAction('route')"><div class="menu-icon" style="background:rgba(59,130,246,.12);border-color:#3b82f6"><span class="si"><svg viewBox="0 0 24 24"><polygon points="12 2 19 21 12 17 5 21 12 2"/></svg></span></div><span class="menu-label" data-i="menu_route">Plan route</span></div>
-    <div class="menu-item" onclick="drawerAction('nearby')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg></span></div><span class="menu-label" data-i="menu_near">Nearest parkings</span></div>
-    <div class="menu-item" onclick="drawerAction('all')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="M3 7l6-4 6 4 6-4v14l-6 4-6-4-6 4V7z"/><path d="M9 3v14M15 7v14"/></svg></span></div><span class="menu-label" data-i="menu_all">All parkings</span></div>
-    <div class="menu-item" onclick="drawerAction('search')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span></div><span class="menu-label" data-i="menu_search">Search</span></div>
-    <div id="scenic-menu-item" class="menu-item" onclick="drawerAction('scenic')" style="display:none"><div class="menu-icon" style="background:rgba(16,185,129,.12);border-color:#10b981"><span class="si"><svg viewBox="0 0 24 24"><path d="M8 3l4 8 5-5 5 15H2L8 3z"/></svg></span></div><span class="menu-label">Piękne widoki / Scenic</span><span class="menu-badge" id="scenic-badge" style="display:none">ON</span></div>
-    <div class="menu-sep"></div>
+    <!-- SPOŁECZNOŚĆ — pierwsza, bo TribeSpot to social, nie nav -->
     <div class="menu-section" data-i="sec_community">Community</div>
     <div class="menu-item" onclick="closeDrawer();setTimeout(openSafeDrivePanel,250)"><div class="menu-icon" style="background:rgba(212,175,55,.15);border-color:#d4af37"><span style="font-size:1.15rem">🛡️</span></div><span class="menu-label">Bezpieczna jazda</span><span class="menu-badge" id="sd-points-badge" style="background:linear-gradient(135deg,#fbbf24,#d4af37);color:#1e293b;font-weight:900">0</span></div>
     <div class="menu-item" onclick="closeDrawer();setTimeout(openSkinPicker,250)"><div class="menu-icon" style="background:rgba(192,132,252,.15);border-color:#c084fc"><span style="font-size:1.15rem">🎨</span></div><span class="menu-label">Wygląd / Skórki</span><span class="menu-badge" style="background:linear-gradient(135deg,#fbbf24,#d4af37);color:#1e293b;font-weight:900">PRO</span></div>
@@ -5215,10 +5209,19 @@ function _landingEnter(){
     <div class="menu-item" onclick="closeDrawer();setTimeout(openMetaverseHub,250)"><div class="menu-icon" style="background:linear-gradient(140deg,rgba(6,182,212,.2),rgba(168,85,247,.15));border-color:#06b6d4"><span style="font-size:1.2rem">🌐</span></div><span class="menu-label">Cyber Zone — wszystkie funkcje</span><span class="menu-badge" style="background:linear-gradient(135deg,#06b6d4,#3b82f6);color:#fff">HUB</span></div>
     <div class="menu-item" onclick="closeDrawer();setTimeout(openAchievementsPanel,250)"><div class="menu-icon" style="background:rgba(251,191,36,.18);border-color:#fbbf24"><span style="font-size:1.2rem">🏆</span></div><span class="menu-label">Osiągnięcia / Odznaki</span></div>
     <div class="menu-item" onclick="drawerAction('myspots')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg></span></div><span class="menu-label" data-i="menu_myspots">My spots</span></div>
-    <div class="menu-item" onclick="drawerAction('favs')"><div class="menu-icon" style="background:rgba(212,175,55,.12);border-color:#d4af37"><span class="si"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span></div><span class="menu-label">Ulubione parkingi</span><span class="menu-badge" id="favs-count" style="display:none">0</span></div>
     <div class="menu-item" onclick="drawerAction('rank')"><div class="menu-icon" style="background:rgba(212,175,55,.12);border-color:#d4af37"><span class="si"><svg viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg></span></div><span class="menu-label" data-i="menu_rank">Ranking</span></div>
     <div class="menu-item" onclick="closeDrawer();setTimeout(openInstallModal,250)"><div class="menu-icon" style="background:rgba(212,175,55,.15);border-color:#d4af37"><span style="font-size:1.15rem">📥</span></div><span class="menu-label">Zainstaluj jako apkę</span><span class="menu-badge" style="background:linear-gradient(135deg,#fbbf24,#d4af37);color:#1e293b;font-weight:900">FREE</span></div>
-    <div class="menu-item" onclick="drawerAction('share')"><div class="menu-icon" style="background:rgba(16,185,129,.12);border-color:#10b981"><span class="si"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></span></div><span class="menu-label" data-i="menu_share">Recommend TruckSpot</span><span class="menu-badge green">+50 pts</span></div>
+    <div class="menu-item" onclick="drawerAction('share')"><div class="menu-icon" style="background:rgba(16,185,129,.12);border-color:#10b981"><span class="si"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></span></div><span class="menu-label" data-i="menu_share">Poleć TribeSpot</span><span class="menu-badge green">+50 pts</span></div>
+    <div class="menu-sep"></div>
+
+    <!-- NAWIGACJA — po Społeczności (TribeSpot to social, nawigacja jest tylko funkcją) -->
+    <div class="menu-section" data-i="sec_nav">Navigation</div>
+    <div class="menu-item" onclick="drawerAction('route')"><div class="menu-icon" style="background:rgba(59,130,246,.12);border-color:#3b82f6"><span class="si"><svg viewBox="0 0 24 24"><polygon points="12 2 19 21 12 17 5 21 12 2"/></svg></span></div><span class="menu-label" data-i="menu_route">Plan route</span></div>
+    <div class="menu-item" onclick="drawerAction('nearby')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg></span></div><span class="menu-label" data-i="menu_near">Nearest parkings</span></div>
+    <div class="menu-item" onclick="drawerAction('all')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="M3 7l6-4 6 4 6-4v14l-6 4-6-4-6 4V7z"/><path d="M9 3v14M15 7v14"/></svg></span></div><span class="menu-label" data-i="menu_all">All parkings</span></div>
+    <div class="menu-item" onclick="drawerAction('search')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span></div><span class="menu-label" data-i="menu_search">Search</span></div>
+    <div class="menu-item" onclick="drawerAction('favs')"><div class="menu-icon" style="background:rgba(212,175,55,.12);border-color:#d4af37"><span class="si"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span></div><span class="menu-label">Ulubione parkingi</span><span class="menu-badge" id="favs-count" style="display:none">0</span></div>
+    <div id="scenic-menu-item" class="menu-item" onclick="drawerAction('scenic')" style="display:none"><div class="menu-icon" style="background:rgba(16,185,129,.12);border-color:#10b981"><span class="si"><svg viewBox="0 0 24 24"><path d="M8 3l4 8 5-5 5 15H2L8 3z"/></svg></span></div><span class="menu-label">Piękne widoki / Scenic</span><span class="menu-badge" id="scenic-badge" style="display:none">ON</span></div>
     <div class="menu-sep"></div>
     <div class="menu-section" data-i="sec_tools">Tools</div>
     <div class="menu-item" onclick="drawerAction('radio')"><div class="menu-icon"><span class="si"><svg viewBox="0 0 24 24"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg></span></div><span class="menu-label" data-i="menu_radio">Radio</span></div>
@@ -11176,6 +11179,7 @@ function startNavigation(){
   _unlockSpeech();         // odblokuj speechSynthesis — Android wymaga user gesture
   _startAudioKeepAlive();  // cicha pętla = audio focus w tle i przy zablokowanym ekranie
   navActive=true; navStepIdx=0; navCIdx=0; navLastLat=null; navLastLng=null;
+  window._navStartTime = new Date().toISOString(); // Faza D: TRASA STORY — start trasy
   // Re-render gpsMarker żeby dostał arrow ring
   if(gpsMarker){ try { const ll = gpsMarker.getLngLat(); gpsMarker.remove(); gpsMarker = mkGpsDotMarker(ll.lat, ll.lng); } catch(e){} }
   _smoothBearing=null; _navLockedZoom=null; _zuptSnapLat=null; _zuptSnapLng=null;
@@ -11902,8 +11906,8 @@ function _safeDriveShowAwardToast(result){
   setTimeout(closeAlert, 4500);
 }
 
-// Modal podsumowania trasy — wywoływany ze stopNavigation
-function _showTripSummary(){
+// Modal podsumowania trasy + TRASA STORY (Faza D, 02.05.2026) — spoty z trasy
+async function _showTripSummary(){
   const s = _safeDriveLoad();
   const distKm = _sessionDistKm.toFixed(1);
   const violations = _sessionViolations;
@@ -11914,12 +11918,57 @@ function _showTripSummary(){
     ? `<div style="font-size:.78rem;color:rgba(255,255,255,.7);margin-top:.4rem">Jeśli reszta dnia bez przekroczeń → <b style="color:#fbbf24">+10 pkt</b> jutro</div>`
     : `<div style="font-size:.78rem;color:rgba(255,255,255,.6);margin-top:.4rem">Dziś ${s.todayViolations}× przekroczenie — punkty stracone na dziś</div>`;
 
+  // FAZA D: pobierz spoty z trasy (from_route=true od _navStartTime)
+  let routeSpots = [];
+  if(_sbUser && window._navStartTime && window._SB){
+    try {
+      const { data, error } = await _SB.from('spots')
+        .select('id, lat, lng, photo_url, description, vibe, created_at, comment_count, like_count')
+        .eq('posted_by', _sbUser.id)
+        .eq('from_route', true)
+        .gte('created_at', window._navStartTime)
+        .order('created_at', { ascending: true })
+        .limit(50);
+      if(!error && data) routeSpots = data;
+    } catch(e){ console.warn('TripSummary: nie udało się pobrać route spotów', e); }
+  }
+
+  // Sekcja TRASA STORY (tylko gdy są spoty)
+  const storySection = routeSpots.length > 0 ? `
+    <div style="margin:1.1rem 0 .3rem;padding-top:.9rem;border-top:1px solid rgba(255,255,255,.12)">
+      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.7rem">
+        <span style="font-size:1.1rem">📖</span>
+        <span style="font-weight:900;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:#fff">Trasa Story</span>
+        <span style="font-size:.65rem;color:rgba(255,255,255,.55);font-family:'JetBrains Mono',monospace">${routeSpots.length} ${routeSpots.length===1?'spot':'spoty'}</span>
+      </div>
+      <div style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:thin;padding-bottom:4px">
+        ${routeSpots.map(sp => {
+          const v = SPOT_VIBES.find(x=>x.key===sp.vibe) || {emoji:'✨',color:'#a855f7',name:sp.vibe};
+          const photo = sp.photo_url
+            ? `<div style="width:100%;height:100%;background:url('${sp.photo_url}') center/cover;border-radius:11px"></div>`
+            : `<div style="width:100%;height:100%;background:linear-gradient(135deg,${v.color}55,${v.color}22);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.4rem">${v.emoji}</div>`;
+          return `<div onclick="document.getElementById('${id}').remove();setTimeout(()=>openSpotModal(${sp.id}),250)"
+              style="flex:0 0 84px;height:84px;cursor:pointer;border:1.5px solid ${v.color}66;border-radius:12px;overflow:hidden;position:relative">
+            ${photo}
+            <div style="position:absolute;inset:auto 0 0 0;background:linear-gradient(transparent,rgba(0,0,0,.85));padding:4px 5px">
+              <div style="font-size:.6rem;color:${v.color};font-weight:800;text-transform:uppercase;letter-spacing:.04em">${v.emoji} ${v.name}</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;gap:6px;margin-top:.7rem">
+        <button onclick="_shareTripStory(${JSON.stringify(routeSpots.map(s=>s.id)).replace(/"/g,'&quot;')}, ${distKm})" style="flex:1;background:linear-gradient(135deg,rgba(168,85,247,.5),rgba(236,72,153,.4));border:1px solid rgba(168,85,247,.7);color:#fff;border-radius:11px;padding:.6rem;font-weight:800;font-size:.72rem;cursor:pointer;letter-spacing:.04em;text-transform:uppercase">📢 Udostępnij Story</button>
+        <button onclick="document.getElementById('${id}').remove();setTimeout(()=>{ if(window.map && ${routeSpots[0].lng}) window.map.flyTo({center:[${routeSpots[0].lng},${routeSpots[0].lat}],zoom:13,duration:900}); },250)" style="flex:1;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:11px;padding:.6rem;font-weight:800;font-size:.72rem;cursor:pointer;letter-spacing:.04em;text-transform:uppercase">🗺 Pokaż na mapie</button>
+      </div>
+    </div>
+  ` : '';
+
   const id = 'trip-summary-' + Date.now();
   const modal = document.createElement('div');
   modal.id = id;
   modal.style.cssText = 'position:fixed;inset:0;z-index:3500;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:1.2rem;animation:fadein .25s';
   modal.innerHTML = `
-    <div style="width:100%;max-width:340px;background:linear-gradient(160deg,rgba(22,28,48,.98) 0%,rgba(14,18,32,.98) 100%);backdrop-filter:blur(18px);border:1.5px solid rgba(212,175,55,.5);border-radius:22px;padding:1.5rem;box-shadow:0 8px 32px rgba(0,0,0,.6),0 0 18px rgba(212,175,55,.18) inset;color:#fff;text-align:center">
+    <div style="width:100%;max-width:380px;background:linear-gradient(160deg,rgba(22,28,48,.98) 0%,rgba(14,18,32,.98) 100%);backdrop-filter:blur(18px);border:1.5px solid rgba(212,175,55,.5);border-radius:22px;padding:1.5rem;box-shadow:0 8px 32px rgba(0,0,0,.6),0 0 18px rgba(212,175,55,.18) inset;color:#fff;text-align:center;max-height:88vh;overflow-y:auto">
       <div style="font-size:2.5rem;margin-bottom:.4rem">🏁</div>
       <div style="font-family:var(--font-head);font-size:1.4rem;font-weight:900;letter-spacing:-.01em">Trasa zakończona</div>
       <div style="font-size:.85rem;color:rgba(255,255,255,.8);margin-top:.3rem">Przejechałeś <b style="color:#fbbf24">${distKm} km</b></div>
@@ -11936,10 +11985,33 @@ function _showTripSummary(){
         </div>
       </div>
       ${todayPending}
+      ${storySection}
       <button onclick="document.getElementById('${id}').remove()" style="margin-top:1rem;width:100%;padding:.75rem;border:none;border-radius:14px;background:linear-gradient(135deg,#fbbf24 0%,#d4af37 100%);color:#1e293b;font-family:var(--font);font-size:.9rem;font-weight:900;cursor:pointer;letter-spacing:.04em">OK</button>
     </div>`;
   modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
   document.body.appendChild(modal);
+}
+
+// FAZA D: udostępnij trasę jako post na Wallu (profile_wall_posts)
+async function _shareTripStory(spotIds, distKm){
+  if(!_sbUser || !Array.isArray(spotIds) || spotIds.length === 0) return;
+  const spotCount = spotIds.length;
+  const text = `📖 Trasa Story · ${distKm} km · ${spotCount} ${spotCount===1?'spot':'spotów'} po drodze`;
+  try {
+    const { error } = await _SB.from('profile_wall_posts').insert({
+      profile_id: _sbUser.id,
+      author_id: _sbUser.id,
+      content: text,
+      meta: { type: 'trip_story', distKm, spot_ids: spotIds, ts: new Date().toISOString() }
+    });
+    if(error) throw error;
+    showAlert('✓','Story udostępnione','Zobaczą znajomi na Twojej tablicy');
+    setTimeout(closeAlert, 2500);
+    if(navigator.vibrate) navigator.vibrate([20,40,20]);
+  } catch(e){
+    showAlert('⚠️','Błąd', e.message || 'Nie udało się udostępnić');
+    setTimeout(closeAlert, 2500);
+  }
 }
 
 // Aktualizuj badge w drawerze z aktualną liczbą punktów
