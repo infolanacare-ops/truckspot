@@ -5600,6 +5600,23 @@ function _landingEnter(){
     <span class="rot-arrow">▾</span>
   </button>
   <div class="route-opts-body" id="route-opts-body">
+    <!-- Profil trasy: jak się poruszasz -->
+    <div class="ro-section">Jak się poruszasz</div>
+    <div class="ro-type-grid">
+      <div class="ro-type-card active" data-rp="auto" onclick="setRouteProfile('auto')" title="Samochodem / motorem">
+        <svg viewBox="0 0 24 24"><path d="M5 17h14M5 17v-5l2-5h10l2 5v5M5 17l-1 3M19 17l1 3"/><circle cx="8" cy="17" r="2"/><circle cx="16" cy="17" r="2"/></svg>
+        Auto
+      </div>
+      <div class="ro-type-card" data-rp="cycling" onclick="setRouteProfile('cycling')" title="Rowerem — ścieżki rowerowe">
+        <svg viewBox="0 0 24 24"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM12 17.5L9 13l4-3 3 4h2"/></svg>
+        Rower
+      </div>
+      <div class="ro-type-card" data-rp="walking" onclick="setRouteProfile('walking')" title="Pieszo — kroki liczone w hubie">
+        <svg viewBox="0 0 24 24"><circle cx="13" cy="4" r="2"/><path d="M13 6l-2 4 3 3v6l-2 1M14 13l3-2-2-4-3 1"/></svg>
+        Pieszo
+      </div>
+    </div>
+
     <!-- Typ trasy -->
     <div class="ro-section">Typ trasy</div>
     <div class="ro-type-grid">
@@ -8669,6 +8686,27 @@ let waypointCount = 0;
 
 // ── Opcje trasy ──
 let routeType = localStorage.getItem('ts_route_type') || 'fast';
+let _routeProfile = localStorage.getItem('ts_route_profile') || 'auto'; // auto | cycling | walking
+
+function setRouteProfile(p){
+  _routeProfile = p;
+  localStorage.setItem('ts_route_profile', p);
+  document.querySelectorAll('.ro-type-card[data-rp]').forEach(c => c.classList.toggle('active', c.dataset.rp === p));
+  // Re-route jeśli już mamy załadowaną trasę
+  try { if(typeof updateRouteOptsSummary === 'function') updateRouteOptsSummary(); } catch(e){}
+  if(typeof routeCoords !== 'undefined' && Array.isArray(routeCoords) && routeCoords.length >= 2){
+    try { if(typeof rebuildRoute === 'function') rebuildRoute(); } catch(e){}
+  }
+  // Walking mode: aktywuj step counter w hubie (kroki liczone w czasie rzeczywistym)
+  if(p === 'walking'){
+    try { if(typeof _stepStart === 'function') _stepStart(); } catch(e){}
+    showAlert('🚶','Tryb pieszy','Kroki liczone w hubie metaverse');
+    setTimeout(closeAlert, 2200);
+  } else if(p === 'cycling'){
+    showAlert('🚴','Trasa rowerowa','Ścieżki rowerowe priorytetowe');
+    setTimeout(closeAlert, 2200);
+  }
+}
 
 // Fallback routing dla TIR gdy pełne ograniczenia nie dają trasy
 // ══════════════════════════════════════════════════════
@@ -8887,8 +8925,12 @@ function buildRouteUrlTirFallback(coordStr, mode){
 }
 
 function buildRouteUrl(coordStr, fromBearing = null){
-  // TIR wymaga profilu 'driving' — max_height/width/weight/length nie działają z driving-traffic
-  const profile = (currentMode === 'tir' || routeType === 'short') ? 'driving' : 'driving-traffic';
+  // Profile selection: rower/pieszo > tir > driving-traffic
+  let profile;
+  if(_routeProfile === 'cycling') profile = 'cycling';
+  else if(_routeProfile === 'walking') profile = 'walking';
+  else if(currentMode === 'tir' || routeType === 'short') profile = 'driving';
+  else profile = 'driving-traffic';
   const excl = [];
   if(document.getElementById('av-motorway')?.checked) excl.push('motorway');
   if(document.getElementById('av-toll')?.checked)     excl.push('toll');
@@ -24281,20 +24323,27 @@ if(savedMode && savedProfile){
 </script>
 
 <!-- ── AUTH MODAL ──────────────────────────────────────────────────────────── -->
-<div id="auth-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.75);display:flex;align-items:flex-end;justify-content:center">
-  <div style="background:#1a1f2e;border-radius:24px 24px 0 0;padding:32px 24px 40px;width:100%;max-width:480px;box-shadow:0 -8px 40px rgba(0,0,0,.5)">
-    <div style="text-align:center;margin-bottom:24px">
-      <div style="font-size:2rem;margin-bottom:8px">🚛</div>
+<div id="auth-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.75);overflow-y:auto;-webkit-overflow-scrolling:touch">
+  <div style="min-height:100%;display:flex;align-items:center;justify-content:center;padding:20px 0;box-sizing:border-box">
+  <div style="background:#1a1f2e;border-radius:24px;padding:28px 22px 32px;width:calc(100% - 24px);max-width:480px;box-shadow:0 8px 40px rgba(0,0,0,.5);margin:auto">
+    <div style="text-align:center;margin-bottom:20px;position:relative">
+      <button onclick="_authClose()" aria-label="Zamknij" style="position:absolute;top:-8px;right:-8px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+      <div style="font-size:2.2rem;margin-bottom:6px;background:linear-gradient(135deg,#fbbf24,#d4af37);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-weight:900;font-family:'Space Grotesk',var(--font-head),sans-serif;letter-spacing:-.02em">TS</div>
       <div style="font-size:1.3rem;font-weight:700;color:#fff" id="auth-title">Zaloguj się do TribeSpot</div>
-      <div style="font-size:.85rem;color:#94a3b8;margin-top:4px" id="auth-sub">Twoje trasy, ulubione miejsca i historia AI</div>
+      <div style="font-size:.85rem;color:#94a3b8;margin-top:4px" id="auth-sub">Twoje plemię, spoty i ekipa w okolicy</div>
     </div>
 
     <div id="auth-error" style="display:none;background:#ef444422;border:1px solid #ef4444;border-radius:10px;padding:10px 14px;color:#fca5a5;font-size:.85rem;margin-bottom:16px"></div>
 
-    <input id="sb-auth-email" type="email" placeholder="E-mail" autocomplete="email"
-      style="width:100%;box-sizing:border-box;background:#0f1623;border:1px solid #334155;border-radius:12px;padding:14px 16px;color:#fff;font-size:1rem;margin-bottom:12px;outline:none">
-    <input id="sb-auth-password" type="password" placeholder="Hasło (min. 6 znaków)" autocomplete="current-password"
-      style="width:100%;box-sizing:border-box;background:#0f1623;border:1px solid #334155;border-radius:12px;padding:14px 16px;color:#fff;font-size:1rem;margin-bottom:16px;outline:none">
+    <input id="sb-auth-email" type="email" placeholder="E-mail" autocomplete="email" autocapitalize="none" inputmode="email" spellcheck="false"
+      onfocus="setTimeout(()=>this.scrollIntoView({behavior:'smooth',block:'center'}),300)"
+      style="width:100%;box-sizing:border-box;background:#0f1623;border:1px solid #334155;border-radius:12px;padding:14px 16px;color:#fff;font-size:16px;margin-bottom:12px;outline:none;-webkit-appearance:none;-webkit-text-fill-color:#fff">
+    <div style="position:relative;margin-bottom:16px">
+      <input id="sb-auth-password" type="password" placeholder="Hasło (min. 6 znaków)" autocomplete="current-password"
+        onfocus="setTimeout(()=>this.scrollIntoView({behavior:'smooth',block:'center'}),300)"
+        style="width:100%;box-sizing:border-box;background:#0f1623;border:1px solid #334155;border-radius:12px;padding:14px 50px 14px 16px;color:#fff;font-size:16px;outline:none;-webkit-appearance:none;-webkit-text-fill-color:#fff">
+      <button type="button" onclick="_authTogglePass(this)" aria-label="Pokaż hasło" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:36px;height:36px;background:transparent;border:none;color:#94a3b8;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center">👁</button>
+    </div>
 
     <button onclick="_authSubmit()" id="auth-btn"
       style="width:100%;background:linear-gradient(135deg,#00b4c8,#0ea5e9);border:none;border-radius:12px;padding:16px;color:#fff;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:12px">
@@ -24330,7 +24379,7 @@ if(savedMode && savedProfile){
       <span style="color:#94a3b8;font-size:.85rem" id="auth-toggle-text">Nie masz konta?</span>
       <button onclick="_authToggleMode()" style="background:none;border:none;color:#00b4c8;font-size:.85rem;cursor:pointer;font-weight:600" id="auth-toggle-btn">Zarejestruj się</button>
     </div>
-    <button onclick="_authClose()" style="position:absolute;top:16px;right:20px;background:none;border:none;color:#94a3b8;font-size:1.4rem;cursor:pointer">✕</button>
+  </div>
   </div>
 </div>
 
@@ -26245,6 +26294,7 @@ function _onAuthUser(user) {
     if (menuLbl)  menuLbl.textContent  = 'Wyloguj się';
     if (hintEl)   hintEl.textContent   = '✏️ Edytuj profil';
     document.getElementById('auth-modal').style.display = 'none';
+    if(window._authHistoryPushed){ try { window.history.back(); } catch(e){} window._authHistoryPushed = false; }
     // jeśli onboarding nadal widoczny, wejdź od razu do apki
     const ob = document.getElementById('onboarding');
     if (ob && ob.style.display !== 'none') {
@@ -26350,14 +26400,44 @@ function _loadUserProfile() {
 }
 
 function openAuthModal() {
-  document.getElementById('auth-modal').style.display = 'flex';
+  document.getElementById('auth-modal').style.display = 'block';
   document.getElementById('auth-error').style.display = 'none';
   document.getElementById('sb-auth-email').value = '';
   document.getElementById('sb-auth-password').value = '';
+  // Android back button → zamyka modal zamiast wyjść z apki
+  try {
+    if(window.history && !window._authHistoryPushed){
+      window.history.pushState({modal:'auth'}, '', window.location.href);
+      window._authHistoryPushed = true;
+      window.addEventListener('popstate', _authPopstateHandler, { once: true });
+    }
+  } catch(e){}
+}
+
+function _authPopstateHandler(){
+  const m = document.getElementById('auth-modal');
+  if(m && m.style.display !== 'none'){
+    m.style.display = 'none';
+    window._authHistoryPushed = false;
+  }
 }
 
 function _authClose() {
   document.getElementById('auth-modal').style.display = 'none';
+  if(window._authHistoryPushed){
+    try { window.history.back(); } catch(e){}
+    window._authHistoryPushed = false;
+  }
+}
+
+// Pokaż/ukryj hasło (kliknięcie ikonki oka)
+function _authTogglePass(btn){
+  const inp = document.getElementById('sb-auth-password');
+  if(!inp) return;
+  const showing = inp.type === 'text';
+  inp.type = showing ? 'password' : 'text';
+  btn.textContent = showing ? '👁' : '🙈';
+  btn.setAttribute('aria-label', showing ? 'Pokaż hasło' : 'Ukryj hasło');
 }
 
 function _authToggleMode() {
@@ -26521,6 +26601,7 @@ async function _authPhoneVerify(){
     if(error) throw error;
     document.getElementById('phone-auth-modal')?.remove();
     document.getElementById('auth-modal').style.display = 'none';
+    if(window._authHistoryPushed){ try { window.history.back(); } catch(e){} window._authHistoryPushed = false; }
     showAlert('✅','Telefon zweryfikowany','Witaj w TribeSpot');
     setTimeout(closeAlert, 2500);
   } catch(e){
