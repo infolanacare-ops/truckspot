@@ -7513,8 +7513,12 @@ function _bearingDeg(lat1, lng1, lat2, lng2){
 }
 
 function startGps(){
-  if(!navigator.geolocation){ showAlert('❌','GPS','Not available'); return; }
-  gpsActive=true; setEl('gps-badge','ON'); document.getElementById('gps-badge').style.display='';
+  if(!navigator.geolocation){ showAlert('❌','GPS','Twoja przeglądarka nie obsługuje GPS'); setTimeout(closeAlert,3000); return; }
+  if(window.gpsActive) return; // już startowany
+  gpsActive=true;
+  // Guard: gps-badge może już nie istnieć (wyrzucone z menu 02.05)
+  const gpsBadge = document.getElementById('gps-badge');
+  if(gpsBadge){ gpsBadge.textContent = 'ON'; gpsBadge.style.display=''; }
   let _gpsCentered = false;
   // Hub mode: aktywuj gyroscope (kompas) — używany do bearing kamery jako fallback
   if(!_gyroActive) _startGyro();
@@ -7566,11 +7570,29 @@ function startGps(){
         showAlert(MODE_CONFIG[currentMode].markerEmoji, p.name, ds+' · '+p.city, p);
       }
     });
-  },()=>{},{enableHighAccuracy:true,maximumAge:1000,timeout:15000});
-  showAlert('📡','GPS','Alerts active');
+  },(err)=>{
+    // GPS error — pokaż helpful komunikat zamiast cichej porażki
+    gpsActive = false;
+    let title = '📍 GPS niedostępny', msg = '';
+    if(err.code === 1){ // PERMISSION_DENIED
+      title = '📍 Włącz lokalizację';
+      msg = 'TribeSpot potrzebuje GPS żebyś widział ludzi w okolicy. Kliknij ikonę 🔒/🌐 w pasku adresu i pozwól na lokalizację.';
+    } else if(err.code === 2){ // POSITION_UNAVAILABLE
+      msg = 'Sygnał GPS niedostępny. Wyjdź na otwartą przestrzeń i spróbuj ponownie.';
+    } else if(err.code === 3){ // TIMEOUT
+      msg = 'GPS odpowiada wolno. Sprawdzam ponownie...';
+      setTimeout(() => { if(!window.gpsActive) startGps(); }, 4000);
+    } else {
+      msg = 'Spróbuj ponownie za chwilę.';
+    }
+    showAlert('📍', title, msg);
+    setTimeout(closeAlert, 5000);
+  },{enableHighAccuracy:true,maximumAge:1000,timeout:15000});
 }
 function stopGps(){
-  gpsActive=false; document.getElementById('gps-badge').style.display='none';
+  gpsActive=false;
+  const gpsBadge = document.getElementById('gps-badge');
+  if(gpsBadge) gpsBadge.style.display='none';
   if(gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
   if(gpsMarker){gpsMarker.remove();gpsMarker=null;}
   alertedIds.clear();
@@ -26246,6 +26268,14 @@ let _metaverseActive = true; // ZAWSZE aktywny
 
 function _autoStartMetaverse(){
   if(!_sbUser || !window.map) return;
+  // GPS od razu z metaverse (Kris 02.05.2026: "GPS musi się włączać odrazu z metaverse")
+  try {
+    if(typeof startGps === 'function' && !window.gpsActive){
+      // Jeśli mapa jeszcze ładowana, poczekaj; jak gotowa — start natychmiast
+      if(window.map.loaded?.()) startGps();
+      else window.map.once('load', () => { if(!window.gpsActive) startGps(); });
+    }
+  } catch(e){ console.warn('gps autostart:', e); }
   try { _startPresence(); } catch(e){ console.warn('presence:', e); }
   // Demo userzy WYŁĄCZENI (Krzysiek: 'pousuwaj te duchy')
   try { _startCbRealtime(); } catch(e){}
