@@ -1,9 +1,9 @@
-// TribeSpot Service Worker — v41
+// TribeSpot Service Worker — v42
 // HTML nigdy nie cachowany → zawsze świeży kod przy każdym otwarciu
 // Aktualizacja: cichy reload wszystkich klientów, zero banerów
-const STATIC_CACHE = 'ts-static-v41';  // ikony, manifest (rzadko się zmieniają)
-const DATA_CACHE   = 'ts-data-v41';    // API responses
-const TILE_CACHE   = 'ts-tiles-v41';   // kafelki mapy
+const STATIC_CACHE = 'ts-static-v42';  // ikony, manifest (rzadko się zmieniają)
+const DATA_CACHE   = 'ts-data-v42';    // API responses
+const TILE_CACHE   = 'ts-tiles-v42';   // kafelki mapy
 
 // Tylko naprawdę statyczne assety — NIE cachujemy HTML
 const STATIC_ASSETS = [

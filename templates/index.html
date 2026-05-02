@@ -26583,28 +26583,37 @@ function _onAuthUser(user) {
   }
 }
 
-// Auto-refresh tokenu Supabase gdy stary (>30 min) przed fetch — fix 401 errors
+// Auto-refresh tokenu Supabase gdy stary (>5 min do końca) przed fetch — fix 401 errors
 async function _getFreshToken(){
-  if(!_SB) return null;
+  if(!_SB) { console.log('[auth] no _SB'); return null; }
   try {
     let { data: { session } } = await _SB.auth.getSession();
-    if(!session) return null;
-    // expires_at jest w sekundach UTC
+    if(!session) { console.log('[auth] no session'); return null; }
     const expiresInMs = (session.expires_at * 1000) - Date.now();
-    // Jeśli token wygaśnie w ciągu 5 min — odśwież proaktywnie
+    console.log('[auth] token expires in:', Math.round(expiresInMs/60000), 'min');
+    // Jeśli token wygaśnie w ciągu 5 min lub już wygasł — odśwież
     if(expiresInMs < 5 * 60 * 1000){
+      console.log('[auth] refreshing token...');
       const { data, error } = await _SB.auth.refreshSession();
-      if(!error && data?.session) session = data.session;
+      if(error){ console.warn('[auth] refresh FAILED:', error); return null; }
+      if(data?.session){ session = data.session; console.log('[auth] refreshed OK'); }
     }
     return session.access_token;
-  } catch(e){ return null; }
+  } catch(e){ console.warn('[auth] getFreshToken error:', e); return null; }
 }
 
 async function _authFetch(url, opts={}){
   const token = await _getFreshToken();
-  if(!token) return null;
+  if(!token) { console.warn('[auth] no token for', url); return null; }
   const headers = { ...(opts.headers||{}), Authorization: 'Bearer ' + token };
-  return fetch(url, { ...opts, headers });
+  const r = await fetch(url, { ...opts, headers });
+  if(r.status === 401){
+    // 401 mimo świeżego tokenu — prawdziwie wygasły refresh_token (full reauth needed)
+    console.warn('[auth] 401 z świeżym tokenem — refresh_token też wygasł, trzeba relog');
+    // Spróbuj ponownie zalogować silently — Supabase ma persistSession=true, czasem działa
+    try { await _SB.auth.refreshSession(); } catch(e){}
+  }
+  return r;
 }
 
 async function _loadUserProfile() {
