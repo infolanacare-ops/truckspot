@@ -24623,6 +24623,7 @@ let _authMode = 'login'; // 'login' | 'register'
 // METAVERSE — real-time presence (avatary na mapie)
 // ══════════════════════════════════════════════════════
 let _presenceCh   = null;   // Supabase channel
+let _myPresenceKey = null;  // klucz pod którym dołączyliśmy do channelu (auth.id lub anon-XXXX)
 let _friendIds    = new Set(); // ID zaakceptowanych znajomych — używane do oznaczania awatarów
 let _peerMarkers  = {};     // { userId: mapboxgl.Marker }
 let _peerBubbleTimers = {}; // { userId: timeoutId } — auto-ukrycie dymki CB
@@ -24946,18 +24947,25 @@ function _refreshPeerMarkersFriendStatus(){
 
 function _startPresence(){
   if(_presenceCh) return; // już działa
+  // Defensive: bez zalogowanego usera nie startuj — inaczej userzy widzą siebie jako "anon" peera
+  if(!_sbUser?.id){
+    console.log('[Presence] skip: _sbUser jeszcze nie ustawiony — spróbuję ponownie za 2s');
+    setTimeout(() => { if(!_presenceCh && _sbUser?.id) _startPresence(); }, 2000);
+    return;
+  }
   // Załaduj listę znajomych przed startem żeby od razu mieć złote awatary
   _loadFriendIds();
   // Start auto-detekcji akcji (driving/walking/cafe/...)
   setTimeout(_startActionDetection, 1500);
 
   const profile = (()=>{ try{ return JSON.parse(localStorage.getItem('ts_profile')||'{}'); }catch(e){ return {}; } })();
-  const emoji   = profile.emoji || '🚛';
+  const emoji   = profile.emoji || '🚶';
   const color   = profile.color || '#8b5cf6';
-  const name    = profile.display_name || profile.name || (_sbUser?.email?.split('@')[0]) || 'Trucker';
+  const name    = profile.display_name || profile.name || (_sbUser?.email?.split('@')[0]) || 'Spotter';
 
+  _myPresenceKey = _sbUser.id;
   _presenceCh = _SB.channel('ts-world-presence', {
-    config: { presence: { key: _sbUser?.id || ('anon-'+Math.random().toString(36).slice(2,8)) } }
+    config: { presence: { key: _myPresenceKey } }
   });
   // Auto-inject status_key/text/expires_at do każdego track payload (jeśli aktywny)
   const _origTrack = _presenceCh.track.bind(_presenceCh);
@@ -24978,7 +24986,7 @@ function _startPresence(){
     const seen = new Set();
     Object.entries(state).forEach(([key, presences]) => {
       const p = presences[0];
-      const isMe = key === (_sbUser?.id);
+      const isMe = key === _myPresenceKey || key === (_sbUser?.id) || key.startsWith('anon-');
       console.log(`[Presence] peer ${isMe?'(MNIE)':''}`, key.slice(0,8), 'lat=', p?.lat, 'lng=', p?.lng, 'name=', p?.name);
       if(!p || !p.lat || !p.lng){
         if(!isMe) console.warn('[Presence] ⚠️ peer BEZ GPS — marker SKIP', key.slice(0,8), p?.name);
@@ -25030,7 +25038,7 @@ function _startPresence(){
     // Przelicz strefy aktywności
     const peersSnap = {};
     Object.entries(_presenceCh.presenceState()).forEach(([key, presences]) => {
-      if(key === _sbUser?.id) return;
+      if(key === _myPresenceKey || key === _sbUser?.id || key.startsWith('anon-')) return;
       const p = presences[0];
       if(p && p.lat && p.lng) peersSnap[key] = p;
     });
@@ -25297,7 +25305,7 @@ async function _clearStatus(){
 function _mkPeerMarker(key, p){
   const isFriend = _friendIds && _friendIds.has(key);
   const color = isFriend ? '#d4af37' : (p.color || '#8b5cf6');
-  const emoji = p.emoji || '🚛';
+  const emoji = p.emoji || '🚶';
   const name  = (p.name||'?').substring(0, isFriend ? 16 : 12);
   const action = p.action; // {emoji, label}
   const actionBadge = action ? `<div class="peer-action" title="${action.label||''}"><span>${action.emoji}</span></div>` : '';
