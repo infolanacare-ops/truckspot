@@ -2383,6 +2383,13 @@ body[data-skin="galaxy"] .player-bubble{background:linear-gradient(140deg,#c084f
   max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   letter-spacing:.02em;
 }
+/* Modal otwarty → ukryj chmurki peer'ów żeby nie przebijały się przez nakładkę */
+body:has(#friends-panel) .peer-name,
+body:has(#metaverse-hub) .peer-name,
+body:has(#steps-modal) .peer-name,
+body:has(.q-modal) .peer-name {
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
 /* ══ ZNAJOMY — złota aura, większy, korona ══ */
 .peer-avatar.friend .peer-dot{
   width:48px;height:48px;
@@ -12847,6 +12854,46 @@ function _friendStatusFor(userId, friendships){
   return f.status; // rejected/blocked
 }
 
+// Pofruń do pozycji znajomego na mapie + pokaż info chmurkę
+function _flyToFriend(userId, name){
+  // Zamknij panel Znajomi
+  document.getElementById('friends-panel')?.remove();
+  // Pobierz pozycję z presence channel
+  let lat = null, lng = null;
+  try {
+    const state = _presenceCh?.presenceState?.() || {};
+    const arr = state[userId];
+    if(Array.isArray(arr) && arr.length > 0){
+      lat = arr[0].lat; lng = arr[0].lng;
+    }
+  } catch(e){}
+  // Fallback: marker peer'a
+  if((!lat || !lng) && _peerMarkers?.[userId]){
+    try { const ll = _peerMarkers[userId].getLngLat(); lat = ll.lat; lng = ll.lng; } catch(e){}
+  }
+  if(!lat || !lng){
+    showAlert('📡', 'Brak pozycji', `${name} nie udostępnia teraz lokalizacji`);
+    setTimeout(closeAlert, 2500);
+    return;
+  }
+  // Animowany flyTo + krótki pulse na markerze
+  if(window.map){
+    window.map.flyTo({ center: [lng, lat], zoom: 17, pitch: 60, bearing: 0, duration: 2000, essential: true });
+    showAlert('📍', `Lecę do ${name}`, 'Zobacz co robi');
+    setTimeout(closeAlert, 2200);
+    // Highlight peer marker (krótki puls)
+    setTimeout(() => {
+      const el = _peerMarkers?.[userId]?.getElement?.();
+      if(el){
+        el.style.transition = 'transform .3s';
+        el.style.transform = 'scale(1.3)';
+        setTimeout(() => { el.style.transform = ''; }, 600);
+      }
+    }, 1400);
+    if(navigator.vibrate) navigator.vibrate(20);
+  }
+}
+
 async function openFriendsPanel(){
   if(!_sbUser){
     showAlert('🔒','Logowanie wymagane','Zaloguj się aby dodawać znajomych');
@@ -13016,6 +13063,7 @@ async function _renderFriendsTab(friendships){
           <div style="font-size:.85rem;font-weight:800;display:flex;align-items:center">${p.display_name||'?'}${streakBadge}</div>
           <div style="font-size:.62rem;color:rgba(255,255,255,.55)">${online?'<span style="color:#22c55e">● online</span> · ':''}${p.country||''}</div>
         </div>
+        ${online ? `<button onclick="_flyToFriend('${p.id}','${(p.display_name||'?').replace(/'/g,'')}')" title="Pofruń do jego pozycji na mapie" style="background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.5);color:#22c55e;border-radius:9px;padding:.45rem .55rem;font-weight:800;font-size:.78rem;cursor:pointer">📍</button>` : ''}
         <button onclick="openChatWith('${p.id}','${(p.display_name||'?').replace(/'/g,'')}')" style="position:relative;background:rgba(96,165,250,.2);border:1px solid rgba(96,165,250,.5);color:#60a5fa;border-radius:9px;padding:.45rem .55rem;font-weight:800;font-size:.78rem;cursor:pointer">
           💬${unread ? `<span style="position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;font-size:.55rem;font-weight:900;border-radius:9px;padding:1px 5px;min-width:16px">${unread>9?'9+':unread}</span>` : ''}
         </button>

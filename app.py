@@ -198,11 +198,22 @@ def load_subscriptions():
             return []
 
 def save_subscriptions(subs):
-    tmp = SUBSCRIPTIONS_PATH + ".tmp"
+    # Unikalny tmp file per request (pid+thread+secret) — chroni przed race condition
+    # gdy 2 requesty jednocześnie. Plus _SUBS_LOCK serializuje na poziomie procesu.
     with _SUBS_LOCK:
-        with open(tmp, "w", encoding="utf-8") as f:
-            json.dump(subs, f, ensure_ascii=False, indent=2)
-        os.replace(tmp, SUBSCRIPTIONS_PATH)
+        tmp = f"{SUBSCRIPTIONS_PATH}.{os.getpid()}.{secrets.token_hex(4)}.tmp"
+        try:
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(subs, f, ensure_ascii=False, indent=2)
+            os.replace(tmp, SUBSCRIPTIONS_PATH)
+        except Exception:
+            # Cleanup tmp jeśli coś poszło nie tak
+            try:
+                if os.path.exists(tmp):
+                    os.remove(tmp)
+            except Exception:
+                pass
+            raise
 
 def send_push_nearby(lat, lng, cat, text, radius_km=PUSH_ALERT_RADIUS_KM):
     if not PUSH_AVAILABLE or not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
