@@ -5208,7 +5208,6 @@ function _landingEnter(){
     <div class="menu-section" data-i="sec_community">Community</div>
     <div class="menu-item" onclick="closeDrawer();setTimeout(openSafeDrivePanel,250)"><div class="menu-icon" style="background:rgba(212,175,55,.15);border-color:#d4af37"><span style="font-size:1.15rem">🛡️</span></div><span class="menu-label">Bezpieczna jazda</span><span class="menu-badge" id="sd-points-badge" style="background:linear-gradient(135deg,#fbbf24,#d4af37);color:#1e293b;font-weight:900">0</span></div>
     <div class="menu-item" onclick="closeDrawer();setTimeout(openSkinPicker,250)"><div class="menu-icon" style="background:rgba(192,132,252,.15);border-color:#c084fc"><span style="font-size:1.15rem">🎨</span></div><span class="menu-label">Wygląd / Skórki</span><span class="menu-badge" style="background:linear-gradient(135deg,#fbbf24,#d4af37);color:#1e293b;font-weight:900">PRO</span></div>
-    <div class="menu-item" id="demo-mode-btn" onclick="closeDrawer();setTimeout(toggleDemoMode,200)"><div class="menu-icon" style="background:rgba(139,92,246,.12);border-color:#8b5cf6"><span style="font-size:1.1rem">🌐</span></div><span class="menu-label">Demo Mode — przykładowi kierowcy</span></div>
     <div class="menu-item" onclick="drawerAction('add')"><div class="menu-icon" style="background:rgba(139,92,246,.12);border-color:#8b5cf6"><span class="si"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></span></div><span class="menu-label" data-i="menu_add">Add a spot</span><span class="menu-badge">+10 pts</span></div>
     <div class="menu-item" onclick="closeDrawer();setTimeout(openHunter,250)"><div class="menu-icon" style="background:rgba(6,182,212,.15);border-color:#06b6d4"><span style="font-size:1.2rem">🎯</span></div><span class="menu-label">Łowca — polowanie na okazje</span><span class="menu-badge" style="background:linear-gradient(135deg,#06b6d4,#3b82f6);color:#fff">NEW</span></div>
     <div class="menu-item" onclick="closeDrawer();setTimeout(openMyWorld,250)"><div class="menu-icon" style="background:rgba(168,85,247,.18);border-color:#a855f7"><span style="font-size:1.2rem">🌍</span></div><span class="menu-label">Twój świat — lustro aktywności</span><span class="menu-badge" style="background:linear-gradient(135deg,#a855f7,#ec4899);color:#fff">NEW</span></div>
@@ -5474,17 +5473,6 @@ function _landingEnter(){
 </div>
 
 <!-- MARKET COUNTRY FILTER STRIP -->
-<div id="market-country-filter">
-  <button class="mf-pill active" data-c="" onclick="setMarketsCountry(this,'')">🌍 Wszystkie</button>
-  <button class="mf-pill" data-c="DE" onclick="setMarketsCountry(this,'DE')">🇩🇪 DE</button>
-  <button class="mf-pill" data-c="FR" onclick="setMarketsCountry(this,'FR')">🇫🇷 FR</button>
-  <button class="mf-pill" data-c="PL" onclick="setMarketsCountry(this,'PL')">🇵🇱 PL</button>
-  <button class="mf-pill" data-c="CZ" onclick="setMarketsCountry(this,'CZ')">🇨🇿 CZ</button>
-  <button class="mf-pill" data-c="AT" onclick="setMarketsCountry(this,'AT')">🇦🇹 AT</button>
-  <button class="mf-pill" data-c="IT" onclick="setMarketsCountry(this,'IT')">🇮🇹 IT</button>
-  <button class="mf-pill" data-c="HU" onclick="setMarketsCountry(this,'HU')">🇭🇺 HU</button>
-  <button class="mf-pill" data-c="RO" onclick="setMarketsCountry(this,'RO')">🇷🇴 RO</button>
-</div>
 
 <!-- MAP MESSAGES FAB -->
 <button class="msg-fab" id="msg-fab" onclick="toggleDropMode()" title="Napisz wiadomość na mapie" style="display:none">📢</button>
@@ -6350,7 +6338,8 @@ function _finishLogin(name, loginType){
   profile.loginType = loginType;
   saveProfile();
   localStorage.setItem('ts_driver_name', profile.name);
-  goToStep('step-mode');
+  // Step-mode wyrzucony 02.05.2026 (TribeSpot dla młodych — domyślnie 'car', tryby do burgera)
+  enterMode('car');
 }
 
 function loginWithEmail(){
@@ -6956,7 +6945,6 @@ function drawerAction(action){
     else if(action==='share') shareApp();
     else if(action==='myspots') showMySpots();
     else if(action==='lang'){ document.getElementById('onboarding').style.display='flex'; document.getElementById('onboarding').classList.remove('hiding'); document.getElementById('app').classList.remove('visible'); goToStep('step-lang'); }
-    else if(action==='mode'){ document.getElementById('onboarding').style.display='flex'; document.getElementById('onboarding').classList.remove('hiding'); document.getElementById('app').classList.remove('visible'); goToStep('step-mode'); }
   },300);
 }
 
