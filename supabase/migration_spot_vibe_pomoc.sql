@@ -11,9 +11,10 @@ ALTER TABLE public.spots ADD CONSTRAINT spots_vibe_check
   CHECK (vibe IN ('party','chill','food','sport','view','queue','event','other','pomoc'));
 
 -- 2. Index dla szybkiego filtrowania spotów Pomoc (Arena dashboard)
-CREATE INDEX IF NOT EXISTS idx_spots_pomoc_active
+-- UWAGA: NIE używamy NOW() w WHERE — PostgreSQL wymaga IMMUTABLE w index predicate
+CREATE INDEX IF NOT EXISTS idx_spots_pomoc
   ON public.spots (active_until DESC)
-  WHERE NOT hidden AND active_until > NOW() AND vibe = 'pomoc';
+  WHERE vibe = 'pomoc' AND NOT hidden;
 
 -- 3. Komentarz do dokumentacji w bazie
 COMMENT ON COLUMN public.spots.vibe IS
